@@ -1,4 +1,4 @@
-project('gtk_try_out', ['c', 'cpp'],
+project('libpsy', ['c', 'cpp'],
     version : '0.1',
     default_options : [
         'warning_level=3',
