@@ -1,0 +1,6 @@
+
+#mesondefine PSY_VERSION
+#mesondefine HAVE_BUILTIN_ADD_OVERFLOW
+#mesondefine HAVE_BUILTIN_SUB_OVERFLOW
+#mesondefine HAVE_BUILTIN_MUL_OVERFLOW
+
