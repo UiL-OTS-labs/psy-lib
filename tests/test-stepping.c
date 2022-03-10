@@ -1,20 +1,20 @@
 
 #include <glib.h>
 #include <gio/gio.h>
-#include <ddd-trial.h>
-#include <ddd-loop.h>
-#include <ddd-stepping-stones.h>
+#include <psy-trial.h>
+#include <psy-loop.h>
+#include <psy-stepping-stones.h>
 
 void
-on_trial_enter(DddStep* self, gint64 tstamp, gpointer data)
+on_trial_enter(PsyStep* self, gint64 tstamp, gpointer data)
 {
     gint64 *in_cb = data;
     *in_cb = tstamp;
-    ddd_step_leave(self, tstamp);
+    psy_step_leave(self, tstamp);
 }
 
 void
-on_final_step_leave(DddStep* self, gint64 tstamp, gpointer data)
+on_final_step_leave(PsyStep* self, gint64 tstamp, gpointer data)
 {
     (void) self;
     (void) tstamp;
@@ -33,7 +33,7 @@ on_basic_step_activate(GApplication* app,
 
     g_application_hold(app);
 
-    DddTrial* trial = ddd_trial_new();
+    PsyTrial* trial = psy_trial_new();
 
     g_signal_connect(
             trial,
@@ -46,7 +46,7 @@ on_basic_step_activate(GApplication* app,
             app);
 
     now = g_get_monotonic_time();
-    ddd_step_enter(DDD_STEP(trial), now);
+    psy_step_enter(PSY_STEP(trial), now);
 }
 
 static int
@@ -79,12 +79,12 @@ typedef struct LoopParams {
     gint64 index;
     gint64 increment;
     gint64 stop;
-    DddLoopCondition condition;
+    PsyLoopCondition condition;
     LoopStats stats;
 } LoopParams;
 
 static void
-on_loop_iter(DddLoop*   loop,
+on_loop_iter(PsyLoop*   loop,
              gint64     index,
              gint64     timestamp,
              gpointer   data
@@ -96,10 +96,10 @@ on_loop_iter(DddLoop*   loop,
     stats->count++;
     stats->sum += index;
 
-    g_assert_true(index == ddd_loop_get_index(loop));
+    g_assert_true(index == psy_loop_get_index(loop));
 
     timestamp = g_get_monotonic_time();
-    ddd_step_activate(DDD_STEP(loop), timestamp);
+    psy_step_activate(PSY_STEP(loop), timestamp);
 }
 
 static void
@@ -108,7 +108,7 @@ on_basic_loop_activate(GApplication* app,
 {
     g_application_hold(app);
     LoopParams* params = data;
-    DddLoop* loop = g_object_new(DDD_TYPE_LOOP,
+    PsyLoop* loop = g_object_new(PSY_TYPE_LOOP,
                                  "index", params->index,
                                  "stop", params->stop,
                                  "increment", params->increment,
@@ -121,7 +121,7 @@ on_basic_loop_activate(GApplication* app,
 
     gint64 timestamp = g_get_monotonic_time();
 
-    ddd_step_enter(DDD_STEP(loop), timestamp);
+    psy_step_enter(PSY_STEP(loop), timestamp);
 }
 
 static int
@@ -130,10 +130,10 @@ test_basic_loop(int argc, char** argv)
     int status;
 
     gint64 index, stop, increment;
-    DddLoopCondition condition;
+    PsyLoopCondition condition;
 
     // Test default parameters
-    DddLoop *loop = ddd_loop_new();
+    PsyLoop *loop = psy_loop_new();
     g_object_get(loop,
                  "index", &index,
                  "stop", &stop,
@@ -144,12 +144,12 @@ test_basic_loop(int argc, char** argv)
     g_assert_true(index == 0);
     g_assert_true(stop == 0);
     g_assert_true(increment == 1);
-    g_assert_true(condition == DDD_LOOP_CONDITION_LESS);
-    g_assert_true(ddd_loop_test(loop) == FALSE);
+    g_assert_true(condition == PSY_LOOP_CONDITION_LESS);
+    g_assert_true(psy_loop_test(loop) == FALSE);
 
-    ddd_loop_destroy(loop);
+    psy_loop_destroy(loop);
 
-    // test DDD_LOOP_LESS
+    // test PSY_LOOP_LESS
     index = 0, increment = 1, stop = 5;
     LoopParams lparams = {
         .index = index,
@@ -176,12 +176,12 @@ test_basic_loop(int argc, char** argv)
     g_assert_true(lparams.stats.sum          == regular.sum);
     g_assert_true(lparams.stats.index_at_end == regular.index_at_end);
 
-    // test DDD_LOOP_GREATER_EQUAL
+    // test PSY_LOOP_GREATER_EQUAL
     index = 10, increment = -2, stop = -10;
     lparams.index = index;
     lparams.stop  = stop;
     lparams.increment = increment;
-    lparams.condition = DDD_LOOP_CONDITION_GREATER_EQUAL;
+    lparams.condition = PSY_LOOP_CONDITION_GREATER_EQUAL;
     memset(&lparams.stats, 0, sizeof(lparams.stats));
     memset(&regular, 0, sizeof(regular));
 
@@ -202,12 +202,12 @@ test_basic_loop(int argc, char** argv)
     g_assert_true(lparams.stats.sum          == regular.sum);
     g_assert_true(lparams.stats.index_at_end == regular.index_at_end);
 
-    // DDD_LOOP_LESS_EQUAL
+    // PSY_LOOP_LESS_EQUAL
     index = 0, increment = 2, stop = 19;
     lparams.index = index;
     lparams.stop  = stop;
     lparams.increment = increment;
-    lparams.condition = DDD_LOOP_CONDITION_LESS_EQUAL;
+    lparams.condition = PSY_LOOP_CONDITION_LESS_EQUAL;
     memset(&lparams.stats, 0, sizeof(lparams.stats));
     memset(&regular, 0, sizeof(regular));
 
@@ -228,12 +228,12 @@ test_basic_loop(int argc, char** argv)
     g_assert_true(lparams.stats.sum          == regular.sum);
     g_assert_true(lparams.stats.index_at_end == regular.index_at_end);
 
-    // DDD_LOOP_GREATER
+    // PSY_LOOP_GREATER
     index = 0, increment = 2, stop = 19;
     lparams.index = index;
     lparams.stop  = stop;
     lparams.increment = increment;
-    lparams.condition = DDD_LOOP_CONDITION_GREATER;
+    lparams.condition = PSY_LOOP_CONDITION_GREATER;
     memset(&lparams.stats, 0, sizeof(lparams.stats));
     memset(&regular, 0, sizeof(regular));
 
@@ -254,12 +254,12 @@ test_basic_loop(int argc, char** argv)
     g_assert_true(lparams.stats.sum          == regular.sum);
     g_assert_true(lparams.stats.index_at_end == regular.index_at_end);
 
-    // DDD_LOOP_EQUAL
+    // PSY_LOOP_EQUAL
     index = 50, increment = 2, stop = 50;
     lparams.index = index;
     lparams.stop  = stop;
     lparams.increment = increment;
-    lparams.condition = DDD_LOOP_CONDITION_EQUAL;
+    lparams.condition = PSY_LOOP_CONDITION_EQUAL;
     memset(&lparams.stats, 0, sizeof(lparams.stats));
     memset(&regular, 0, sizeof(regular));
 
@@ -290,10 +290,10 @@ typedef struct StoneParams {
 }StoneParams;
 
 static void
-on_stones_enter(DddStep* step, gint64 timestamp, gpointer data)
+on_stones_enter(PsyStep* step, gint64 timestamp, gpointer data)
 {
     //g_print("%s\n", __func__);
-    g_assert(DDD_IS_STEPPING_STONES(step));
+    g_assert(PSY_IS_STEPPING_STONES(step));
     (void) step;
     (void) timestamp;
     StoneParams* pars = data;
@@ -301,7 +301,7 @@ on_stones_enter(DddStep* step, gint64 timestamp, gpointer data)
 }
 
 static void
-on_stones_leave(DddStep* step, gint64 timestamp, gpointer data)
+on_stones_leave(PsyStep* step, gint64 timestamp, gpointer data)
 {
     //g_print("%s\n", __func__);
     (void) step;
@@ -312,17 +312,17 @@ on_stones_leave(DddStep* step, gint64 timestamp, gpointer data)
 }
 
 static void
-on_stones_trial_enter(DddStep* step, gint64 timestamp, gpointer data)
+on_stones_trial_enter(PsyStep* step, gint64 timestamp, gpointer data)
 {
     //g_print("%s\n", __func__);
     (void) timestamp;
     StoneParams *pars = data;
-    ddd_step_leave(step, g_get_monotonic_time());
+    psy_step_leave(step, g_get_monotonic_time());
     pars->trial_activated++;
 }
 
 static void
-on_stones_loop_iterate(DddLoop* loop,
+on_stones_loop_iterate(PsyLoop* loop,
                        gint64 index,
                        gint64 timestamp,
                        gpointer data)
@@ -333,7 +333,7 @@ on_stones_loop_iterate(DddLoop* loop,
     (void) timestamp;
 
     pars->loop_iterations++;
-    ddd_loop_iterate(loop, g_get_monotonic_time());
+    psy_loop_iterate(loop, g_get_monotonic_time());
 }
 
 static void
@@ -344,12 +344,12 @@ on_basic_stepping_stones_activate(GApplication* app, gpointer data)
     GError* error = NULL;
     StoneParams* pars = data;
 
-    DddSteppingStones* stones = ddd_stepping_stones_new();
-    DddTrial *trial = ddd_trial_new();
-    DddLoop *loop = ddd_loop_new_full(0, 10000, 1, DDD_LOOP_CONDITION_LESS);
-    DddSteppingStones *rolling_stones = ddd_stepping_stones_new();
-    DddSteppingStones *empty = ddd_stepping_stones_new();
-    DddTrial *inner_trial = ddd_trial_new();
+    PsySteppingStones* stones = psy_stepping_stones_new();
+    PsyTrial *trial = psy_trial_new();
+    PsyLoop *loop = psy_loop_new_full(0, 10000, 1, PSY_LOOP_CONDITION_LESS);
+    PsySteppingStones *rolling_stones = psy_stepping_stones_new();
+    PsySteppingStones *empty = psy_stepping_stones_new();
+    PsyTrial *inner_trial = psy_trial_new();
 
     g_signal_connect(stones, "enter", G_CALLBACK(on_stones_enter), pars);
     g_signal_connect(stones, "leave", G_CALLBACK(on_stones_leave), app);
@@ -359,27 +359,27 @@ on_basic_stepping_stones_activate(GApplication* app, gpointer data)
     g_signal_connect(empty, "enter", G_CALLBACK(on_stones_enter), pars);
     g_signal_connect(inner_trial, "enter", G_CALLBACK(on_stones_trial_enter), pars);
 
-    ddd_stepping_stones_add_step_by_name(
-            stones, "trial", DDD_STEP(trial), &error
+    psy_stepping_stones_add_step_by_name(
+            stones, "trial", PSY_STEP(trial), &error
             );
     g_assert_no_error(error);
-    g_assert_true(DDD_STEP(stones) == ddd_step_get_parent(DDD_STEP(trial)));
-    ddd_stepping_stones_add_step_by_name(
-            stones, "trial", DDD_STEP(loop), &error
+    g_assert_true(PSY_STEP(stones) == psy_step_get_parent(PSY_STEP(trial)));
+    psy_stepping_stones_add_step_by_name(
+            stones, "trial", PSY_STEP(loop), &error
             );
     g_assert_error(error,
-                   DDD_STEPPING_STONES_ERROR,
-                   DDD_STEPPING_STONES_ERROR_KEY_EXISTS);
+                   PSY_STEPPING_STONES_ERROR,
+                   PSY_STEPPING_STONES_ERROR_KEY_EXISTS);
     g_error_free(error);
     error = NULL;
-    ddd_stepping_stones_add_step(stones, DDD_STEP(loop));
-    ddd_stepping_stones_add_step(stones, DDD_STEP(rolling_stones));
+    psy_stepping_stones_add_step(stones, PSY_STEP(loop));
+    psy_stepping_stones_add_step(stones, PSY_STEP(rolling_stones));
 
     // Add the inner trial to the inner stepping stones.
-    ddd_stepping_stones_add_step(rolling_stones, DDD_STEP(inner_trial));
-    ddd_stepping_stones_add_step(rolling_stones, DDD_STEP(empty));
+    psy_stepping_stones_add_step(rolling_stones, PSY_STEP(inner_trial));
+    psy_stepping_stones_add_step(rolling_stones, PSY_STEP(empty));
 
-    ddd_step_enter(DDD_STEP(stones), g_get_monotonic_time());
+    psy_step_enter(PSY_STEP(stones), g_get_monotonic_time());
 }
 
 
