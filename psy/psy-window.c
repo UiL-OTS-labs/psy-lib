@@ -3,9 +3,9 @@
 #include <epoxy/glx.h>
 #include "psy-window.h"
 
-#include "psy-gl-program.h"
-#include "psy-gl-vbuffer.h"
-#include "psy-gl-texture.h"
+#include "gl/psy-gl-program.h"
+#include "gl/psy-gl-vbuffer.h"
+#include "gl/psy-gl-texture.h"
 
 struct _PsyWindow {
     GtkWindow       parent;
