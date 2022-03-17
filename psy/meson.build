@@ -23,19 +23,16 @@ configure_file (
     configuration : cdata
 )
 
-config_incdirs= include_directories('.')
-libpsy_incdirs= include_directories('external_libs')
+config_incdirs = include_directories('.')
+libpsy_incdirs = include_directories(
+    'external_libs',
+    'gl'
+)
 
 
 libpsy_headers = files(
     'psy-clock.h',
     'psy-duration.h',
-    'psy-gl-error.h',
-    'psy-gl-fragment-shader.h',
-    'psy-gl-program.h',
-    'psy-gl-shader.h',
-    'psy-gl-texture.h',
-    'psy-gl-vbuffer.h',
     'psy-loop.h',
     'psy-matrix4.h',
     'psy-program.h',
@@ -60,14 +57,6 @@ libpsy_header_private = files(
 libpsyfiles = files (
     'psy-clock.c',
     'psy-duration.c',
-    'psy-gl-error.c',
-    'psy-gl-fragment-shader.c',
-    'psy-gl-program.c',
-    'psy-gl-shader.c',
-    'psy-gl-texture.c',
-    'psy-gl-vbuffer.c',
-    'psy-gl-vertex-shader.c',
-    'psy-gl-vertex-shader.h',
     'psy-loop.c',
     'psy-matrix4.cpp',
     'psy-program.c',
@@ -85,6 +74,8 @@ libpsyfiles = files (
     'psy-widget.c',
     'psy-window.c',
 )
+
+subdir('gl')
 
 enum_files = gnome.mkenums_simple('enum-types', sources : libpsy_headers)
 
@@ -112,7 +103,8 @@ libpsy = library (
     libpsyfiles + enum_files,
     dependencies : [gtk_dep, epoxy_dep, m_dep],
     include_directories : [libpsy_incdirs, config_incdirs],
-    c_args : '-DG_LOG_DOMAIN="Psy"'
+    c_args : '-DG_LOG_DOMAIN="Psy"',
+    install: true
 )
 
 
