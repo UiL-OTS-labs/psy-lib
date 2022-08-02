@@ -1,11 +1,13 @@
-project('libpsy', ['c', 'cpp'],
+project('libpsy',
+    ['c', 'cpp'],
     version : '0.1',
     default_options : [
         'warning_level=3',
         'werror=true',
         'buildtype=debugoptimized',
         'c_std=c11'
-    ]
+    ],
+    license : 'MIT'
 )
 
 cc = meson.get_compiler('c')
