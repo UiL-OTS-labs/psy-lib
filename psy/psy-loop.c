@@ -234,6 +234,7 @@ psy_loop_class_init(PsyLoopClass* klass)
 
     /**
      * PsyLoop::iteration
+     * @loop: The loop that received the signal
      * @index:The current index for this iteration.
      * @timestamp:The timestamp of the leave event when previous step/iteration/
      *            event stopped.
@@ -299,14 +300,14 @@ psy_loop_new_full(gint64 index,
 }
 
 /**
- * psy_loop_destroy:(destructor):
+ * psy_loop_destroy:
  * @self:The loop to destroy
  */
 void
-psy_loop_destroy(PsyLoop* self)
+psy_loop_destroy(PsyLoop* loop)
 {
-    g_return_if_fail(PSY_IS_LOOP(self));
-    g_object_unref(self);
+    g_return_if_fail(PSY_IS_LOOP(loop));
+    g_object_unref(loop);
 }
 
 /**
@@ -432,18 +433,18 @@ psy_loop_get_increment(PsyLoop* self)
 /**
  * psy_loop_set_condition:
  * @self:The #PsyLoop to give a new loop condition.
- * @cond:The PsyLoopCondition to use for testing if @self should continue
+ * @condition:The PsyLoopCondition to use for testing if @self should continue
  *       to iterate.
  *
  * Set the loop condition.
  */
 void
-psy_loop_set_condition(PsyLoop* self, PsyLoopCondition cond)
+psy_loop_set_condition(PsyLoop* self, PsyLoopCondition condition)
 {
     g_return_if_fail(PSY_IS_LOOP(self));
     PsyLoopPrivate *priv = psy_loop_get_instance_private(self);
 
-    priv->condition = cond;
+    priv->condition = condition;
 }
 
 /**

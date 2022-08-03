@@ -161,7 +161,7 @@ psy_texture_class_init(PsyTextureClass* klass)
     object_class->dispose       = psy_texture_dispose;
 
     /**
-     * PsyTexture:file
+     * PsyTexture:path
      *
      * Setting a value to the path, means a file will be opened at that path,
      * from disc and decoded.

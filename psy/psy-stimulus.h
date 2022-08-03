@@ -12,8 +12,8 @@ G_DECLARE_DERIVABLE_TYPE(PsyStimulus, psy_stimulus, PSY, STIMULUS, GObject)
 
 typedef struct _PsyStimulusClass {
     GObjectClass parent;
-    void (*play) (PsyStimulus* self, PsyTimePoint *desired_start_time);
-    void (*stop) (PsyStimulus* self, PsyTimePoint *desired_stop_time);
+    void (*play) (PsyStimulus* self, PsyTimePoint *start_time);
+    void (*stop) (PsyStimulus* self, PsyTimePoint *stop_time);
     void (*started) (PsyStimulus* self, PsyTimePoint *start_time);
     void (*stopped) (PsyStimulus* self, PsyTimePoint *stop_time);
 } PsyStimulusClass;

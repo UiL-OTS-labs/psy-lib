@@ -242,10 +242,13 @@ psy_stepping_stones_activate_next_by_index(PsySteppingStones  *self,
 }
 
 /**
+ * psy_stepping_stones_activate_next_by_name:
  *
- * @param self
- * @param name
- * @param error
+ * Allows for activating the next step.
+ *
+ * self: an `PsySteppingStones` instance
+ * name: A name of another other `PsyStep` in PsySteppingStones:steps
+ * error: An error may be returned here
  */
 void
 psy_stepping_stones_activate_next_by_name(PsySteppingStones *self,
@@ -279,9 +282,10 @@ psy_stepping_stones_activate_next_by_name(PsySteppingStones *self,
 
 /**
  * psy_stepping_stones_get_num_steps:
- * @self::The instance self
  *
- * @returns::The number of steps in the stepping stones.
+ * self: An `PsySteppingStones` instance self
+ *
+ * Returns::The number of steps in the stepping stones.
  */
 guint
 psy_stepping_stones_get_num_steps(PsySteppingStones* self)

@@ -9,7 +9,13 @@ G_BEGIN_DECLS
 
 #define PSY_GL_ERROR psy_gl_error_quark()
 
-typedef enum psy_gl_error {
+/**
+ * PsyGlError:
+ * @PSY_GL_ERROR_SHADER_COMPILE: Unable to compile shader
+ * @PSY_GL_ERROR_PROGRAM_LINK: Unable to link program,
+ *
+ */
+typedef enum  {
 
     PSY_GL_ERROR_SHADER_COMPILE,
     PSY_GL_ERROR_PROGRAM_LINK,
@@ -22,7 +28,7 @@ typedef enum psy_gl_error {
     PSY_GL_ERROR_STACK_UNDERFLOW,
     PSY_GL_ERROR_STACK_OVERFLOW
 
-} psy_gl_error;
+} PsyGlError;
 
 G_MODULE_EXPORT GQuark
 psy_gl_error_quark();
