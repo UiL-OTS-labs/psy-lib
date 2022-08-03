@@ -267,7 +267,7 @@ step_out_cb(gpointer data)
 /**
  * psy_step_enter:
  * @self::A PsyStep object
- * @timestamp::
+ * @tstamp: The timestamp at which the step is entered
  *
  * To enter a step, means to activate the current object. The timestamp
  * given is a timestamp on which previously a trial ended or the start
@@ -294,7 +294,7 @@ psy_step_enter (PsyStep* self, gint64 tstamp)
 /**
  * psy_step_leave:
  * @self::A PsyStep object
- * @timestamp::The reference time to pass along to a new step.
+ * @tstamp::The reference time to pass along to a new step.
  *
  * To step out of a step, means to deactivate the current object. The timestamp
  * given is a timestamp on which e.g. a trial ends and serves as a reference
@@ -325,8 +325,9 @@ psy_step_leave(PsyStep* self, gint64 tstamp)
 
 /**
  * psy_step_set_parent:
- * @self:: a `PsyStep`
- * @parent:(transfer full)The parent that gets signalled when this step is done.
+ *
+ * self: a `PsyStep`
+ * parent:(transfer full)The parent that gets signalled when this step is done.
  *
  * Sets the parent of the current `PsyStep` object This parent is signalled
  * when we step out of the current step, causing an interation of a loop part
@@ -371,15 +372,17 @@ psy_step_get_parent(PsyStep*self)
 }
 
 /**
- * psy_step_get_main_context:Obtain the context in which the steps will queue
- * their events
- * @self:: a PsyStep instance
+ * psy_step_get_main_context:
+ *
+ * Obtain the context in which the steps will queue their events
  *
  * Especially for deriving instance it might be handy to obtain the maincontext
  * so that the deriving classes can queue there events in the same context where
  * they were instantiated.
  *
- * Returns :(transfer none): `GMainContext*` which was the thread default context
+ * self: a `PsyStep` instance
+ *
+ * Returns:(transfer none): `GMainContext` which was the thread default context
  *                           when this step was instantiated.
  */
 GMainContext*

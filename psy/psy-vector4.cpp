@@ -189,13 +189,14 @@ psy_vector4_new()
 }
 
 /**
- * Set a new vector from data points
- *
+ * psy_vector4_new_data:
  * @n:      length of @values
  * @values: (array length=n): list of values
  *
+ * Set a new vector from data points
+ *
  * Returns::A vector initialized with values, if n < 4, the remaining elements
- * will be
+ * will be set to 0.0.
  */
 PsyVector4*
 psy_vector4_new_data(gsize n, gdouble* values)

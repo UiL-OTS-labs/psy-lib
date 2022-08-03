@@ -39,7 +39,7 @@ psy_loop_new_full(gint64 index,
                   );
 
 void
-psy_loop_destroy(PsyLoop* loop);
+psy_loop_destroy(PsyLoop* self);
 
 void
 psy_loop_iterate(PsyLoop* self, gint64 timestamp);
@@ -51,13 +51,13 @@ gint64
 psy_loop_get_index(PsyLoop* self);
 
 void
-psy_loop_set_stop(PsyLoop* self, gint64 index);
+psy_loop_set_stop(PsyLoop* self, gint64 stop);
 
 gint64
 psy_loop_get_stop(PsyLoop* self);
 
 void
-psy_loop_set_increment(PsyLoop* self, gint64 index);
+psy_loop_set_increment(PsyLoop* self, gint64 increment);
 
 gint64
 psy_loop_get_increment(PsyLoop* self);
