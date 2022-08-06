@@ -4,17 +4,17 @@
 #include <psy-trial.h>
 #include <psy-loop.h>
 #include <psy-stepping-stones.h>
+#include <psy-clock.h>
 
 void
-on_trial_enter(PsyStep* self, gint64 tstamp, gpointer data)
+on_trial_enter(PsyStep* self, PsyTimePoint *tstamp, gpointer data)
 {
-    gint64 *in_cb = data;
-    *in_cb = tstamp;
+    (void) data;
     psy_step_leave(self, tstamp);
 }
 
 void
-on_final_step_leave(PsyStep* self, gint64 tstamp, gpointer data)
+on_final_step_leave(PsyStep* self, PsyTimePoint *tstamp, gpointer data)
 {
     (void) self;
     (void) tstamp;
@@ -26,9 +26,11 @@ static void
 on_basic_step_activate(GApplication* app,
             gpointer      data)
 {
+    PsyClock *clk = psy_clock_new();
     (void) data;
-    gint64 now, in_cb;
+    PsyTimePoint *now, *in_cb;
     (void) in_cb;
+
     g_assert(g_application_get_is_registered(G_APPLICATION(app)));
 
     g_application_hold(app);
@@ -45,8 +47,11 @@ on_basic_step_activate(GApplication* app,
             G_CALLBACK(on_final_step_leave),
             app);
 
-    now = g_get_monotonic_time();
+    now = psy_clock_now(clk);
     psy_step_enter(PSY_STEP(trial), now);
+
+    g_object_unref(clk);
+    g_object_unref(now);
 }
 
 static int
@@ -84,10 +89,10 @@ typedef struct LoopParams {
 } LoopParams;
 
 static void
-on_loop_iter(PsyLoop*   loop,
-             gint64     index,
-             gint64     timestamp,
-             gpointer   data
+on_loop_iter(PsyLoop       *loop,
+             gint64         index,
+             PsyTimePoint  *timestamp,
+             gpointer       data
              )
 {
     LoopStats *stats = data;
@@ -98,7 +103,6 @@ on_loop_iter(PsyLoop*   loop,
 
     g_assert_true(index == psy_loop_get_index(loop));
 
-    timestamp = g_get_monotonic_time();
     psy_step_activate(PSY_STEP(loop), timestamp);
 }
 
@@ -106,6 +110,7 @@ static void
 on_basic_loop_activate(GApplication* app,
                        gpointer      data)
 {
+    PsyClock *clk = psy_clock_new();
     g_application_hold(app);
     LoopParams* params = data;
     PsyLoop* loop = g_object_new(PSY_TYPE_LOOP,
@@ -119,9 +124,11 @@ on_basic_loop_activate(GApplication* app,
     g_signal_connect(loop, "iteration", G_CALLBACK(on_loop_iter), &params->stats);
     g_signal_connect(loop, "leave", G_CALLBACK(on_final_step_leave), app);
 
-    gint64 timestamp = g_get_monotonic_time();
-
+    PsyTimePoint *timestamp = psy_clock_now(clk);
     psy_step_enter(PSY_STEP(loop), timestamp);
+
+    g_object_unref(clk);
+    g_object_unref(timestamp);
 }
 
 static int
@@ -317,8 +324,14 @@ on_stones_trial_enter(PsyStep* step, gint64 timestamp, gpointer data)
     //g_print("%s\n", __func__);
     (void) timestamp;
     StoneParams *pars = data;
-    psy_step_leave(step, g_get_monotonic_time());
+    PsyClock *clk = psy_clock_new();
+
+    PsyTimePoint *stamp = psy_clock_now(clk);
+    psy_step_leave(step, stamp);
     pars->trial_activated++;
+
+    g_object_unref(clk);
+    g_object_unref(stamp);
 }
 
 static void
@@ -333,7 +346,11 @@ on_stones_loop_iterate(PsyLoop* loop,
     (void) timestamp;
 
     pars->loop_iterations++;
-    psy_loop_iterate(loop, g_get_monotonic_time());
+    PsyClock *clk = psy_clock_new();
+    PsyTimePoint *now = psy_clock_now(clk);
+    psy_loop_iterate(loop, now);
+    g_object_unref(clk);
+    g_object_unref(now);
 }
 
 static void
@@ -343,6 +360,8 @@ on_basic_stepping_stones_activate(GApplication* app, gpointer data)
     g_application_hold(app);
     GError* error = NULL;
     StoneParams* pars = data;
+    PsyClock *clk = psy_clock_new();
+    PsyTimePoint *now = NULL;
 
     PsySteppingStones* stones = psy_stepping_stones_new();
     PsyTrial *trial = psy_trial_new();
@@ -379,7 +398,10 @@ on_basic_stepping_stones_activate(GApplication* app, gpointer data)
     psy_stepping_stones_add_step(rolling_stones, PSY_STEP(inner_trial));
     psy_stepping_stones_add_step(rolling_stones, PSY_STEP(empty));
 
-    psy_step_enter(PSY_STEP(stones), g_get_monotonic_time());
+    now = psy_clock_now(clk);
+    psy_step_enter(PSY_STEP(stones), now);
+    g_object_unref(now);
+    g_object_unref(clk);
 }
 
 

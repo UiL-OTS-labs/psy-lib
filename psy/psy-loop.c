@@ -10,8 +10,8 @@ typedef struct PsyLoopPrivate {
 } PsyLoopPrivate;
 
 typedef struct Iteration {
-    PsyLoop* loop;
-    gint64   timestamp;
+    PsyLoop        *loop;
+    PsyTimePoint   *timestamp;
 }Iteration;
 
 static void
@@ -19,6 +19,7 @@ iteration_free(gpointer iteration)
 {
     Iteration *iter = iteration;
     g_clear_object(&iter->loop);
+    g_clear_object(&iter->timestamp);
     g_free(iter);
 }
 
@@ -123,7 +124,7 @@ iter_cb(gpointer data)
 }
 
 static void
-psy_loop_activate(PsyStep* step, gint64 timestamp)
+psy_loop_activate(PsyStep* step, PsyTimePoint *timestamp)
 {
     PsyLoop *self = PSY_LOOP(step);
 
@@ -320,13 +321,13 @@ psy_loop_destroy(PsyLoop* loop)
  * reached, we will step out of the loop and continue the steps of the parent.
  */
 void
-psy_loop_iterate(PsyLoop* self, gint64 timestamp)
+psy_loop_iterate(PsyLoop* self, PsyTimePoint *timestamp)
 {
     GSource *source;
     Iteration *iter = g_new(Iteration, 1);
 
     iter->loop = g_object_ref(self);
-    iter->timestamp = timestamp;
+    iter->timestamp = g_object_ref(timestamp);
 
     /*
      * g_main_context_invoke and friends might recurse into stackoverflow, when
