@@ -1,6 +1,14 @@
 
 #include "psy-stepping-stones.h"
 
+/**
+ * PsySteppingStones:
+ *
+ * The `PsySteppingStones` object is a `PsyStep` instance that may
+ * be used to contain substeps. The contained steps may be processed in
+ * order, by index or by the name of the steps.
+ */
+
 typedef struct _PsySteppingStonesPrivate {
     GPtrArray  *steps;
     GHashTable *step_table;
@@ -115,7 +123,7 @@ psy_stepping_stones_init(PsySteppingStones* self)
 }
 
 static void
-stepping_stones_activate(PsyStep* step, gint64 timestamp)
+stepping_stones_activate(PsyStep* step, PsyTimePoint *timestamp)
 {
     PsySteppingStones *self = PSY_STEPPING_STONES(step);
     PsySteppingStonesPrivate* priv = psy_stepping_stones_get_instance_private(
@@ -163,7 +171,12 @@ psy_stepping_stones_class_init(PsySteppingStonesClass* klass)
 }
 
 /* ************** public functions *********************/
-
+/**
+ * psy_stepping_stones_new:(constructor)
+ *
+ * Creates a new `PsySteppingStones` object
+ * Returns: a new `PsySteppingStones` instance
+ */
 PsySteppingStones*
 psy_stepping_stones_new()
 {
@@ -177,6 +190,15 @@ psy_stepping_stones_destroy(PsySteppingStones* self)
     g_object_unref(self);
 }
 
+/**
+ * psy_stepping_stones_add_step:(constructor)
+ * @self: The `PsySteppingStones` instance to which a `PsyStep` @step
+ * @step: The `PsyStep` to add to @self
+ *
+ * To a `PsySteppingStones` multiple steps/stones may be added when
+ * added like this, this allows to step through them in the order
+ * in which the are added.
+ */
 void
 psy_stepping_stones_add_step(PsySteppingStones* self, PsyStep* step)
 {
@@ -190,6 +212,14 @@ psy_stepping_stones_add_step(PsySteppingStones* self, PsyStep* step)
     psy_step_set_parent(step, PSY_STEP(self));
 }
 
+/**
+ * psy_stepping_stones_add_step_by_name:
+ * @self: The instance self
+ * @name: The name for the step to add this name may be used to jump back
+ * or skip subsequent steps. The name should be unique.
+ * @step: The step to add
+ * @error: optional errors may be returned here.
+ */
 void
 psy_stepping_stones_add_step_by_name(PsySteppingStones *self,
                                      const gchar       *name,
@@ -218,6 +248,13 @@ psy_stepping_stones_add_step_by_name(PsySteppingStones *self,
     psy_stepping_stones_add_step(self, step);
 }
 
+/**
+ * psy_stepping_stones_activate_next_by_index:
+ * @self:
+ * @index: The index of the next step to be activated. It should be
+ *         less than the number of steps added to this step.
+ * @error:(out): An optional error may be returned here.
+ */
 void
 psy_stepping_stones_activate_next_by_index(PsySteppingStones  *self,
                                            guint               index,
@@ -243,12 +280,11 @@ psy_stepping_stones_activate_next_by_index(PsySteppingStones  *self,
 
 /**
  * psy_stepping_stones_activate_next_by_name:
+ * @self: an `PsySteppingStones` instance
+ * @name: A name of another other `PsyStep` in PsySteppingStones:steps
+ * @error: An error may be returned here
  *
  * Allows for activating the next step.
- *
- * self: an `PsySteppingStones` instance
- * name: A name of another other `PsyStep` in PsySteppingStones:steps
- * error: An error may be returned here
  */
 void
 psy_stepping_stones_activate_next_by_name(PsySteppingStones *self,
@@ -282,8 +318,7 @@ psy_stepping_stones_activate_next_by_name(PsySteppingStones *self,
 
 /**
  * psy_stepping_stones_get_num_steps:
- *
- * self: An `PsySteppingStones` instance self
+ * @self: An `PsySteppingStones` instance self
  *
  * Returns::The number of steps in the stepping stones.
  */

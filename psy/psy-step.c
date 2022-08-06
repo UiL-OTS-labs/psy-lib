@@ -1,6 +1,18 @@
 
 #include "psy-step.h"
 
+/**
+ * PsyStep:
+ *
+ * Instances of `PsyStep` allow control flow in the context
+ * of an event loop. When an instance of `PsyStep` is created it
+ * will be hooked to a GMainContext. Via this context entering
+ * and leaving step happens using events. This events are typically
+ * accompanied by a `PsyTimePoint` that indicates when this part of
+ * teh
+ *
+ */
+
 typedef struct _PsyStepPrivate {
     PsyStep* parent;
     GMainContext *context;
@@ -8,7 +20,7 @@ typedef struct _PsyStepPrivate {
 
 typedef struct {
     PsyStep        *step;
-    gint64          timestamp;
+    PsyTimePoint   *timestamp;
 } InternalTimestamp;
 
 static void
@@ -16,6 +28,7 @@ internal_timestamp_free(gpointer timestamp)
 {
     InternalTimestamp *tstamp = timestamp;
     g_clear_object(&tstamp->step);
+    g_clear_object(&tstamp->timestamp);
     g_free(timestamp);
 }
 
@@ -111,14 +124,14 @@ psy_step_init(PsyStep* self)
 }
 
 static void
-step_activate(PsyStep* self, gint64 timestamp)
+step_activate(PsyStep* self, PsyTimePoint* timestamp)
 {
     (void) self;
     (void) timestamp;
 }
 
 static void
-step_deactivate(PsyStep* self, gint64 timestamp)
+step_deactivate(PsyStep* self, PsyTimePoint* timestamp)
 {
     PsyStepPrivate *priv = psy_step_get_instance_private(self);
     if (priv->parent) {
@@ -132,14 +145,14 @@ step_deactivate(PsyStep* self, gint64 timestamp)
 }
 
 static void
-step_on_enter(PsyStep* self, gint64 timestamp)
+step_on_enter(PsyStep* self, PsyTimePoint* timestamp)
 {
     PsyStepClass *klass = PSY_STEP_GET_CLASS(self);
     klass->activate(self, timestamp);
 }
 
 static void
-step_on_leave(PsyStep* self, gint64 timestamp)
+step_on_leave(PsyStep* self, PsyTimePoint* timestamp)
 {
     PsyStepClass *klass = PSY_STEP_GET_CLASS(self);
     klass->deactivate(self, timestamp);
@@ -212,7 +225,7 @@ psy_step_class_init(PsyStepClass* klass)
             NULL,
             G_TYPE_NONE,
             1,
-            G_TYPE_INT64
+            PSY_TYPE_TIME_POINT
             );
 
     /**
@@ -234,7 +247,7 @@ psy_step_class_init(PsyStepClass* klass)
             NULL,
             G_TYPE_NONE,
             1,
-            G_TYPE_INT64
+            PSY_TYPE_TIME_POINT
             );
 }
 
@@ -274,14 +287,14 @@ step_out_cb(gpointer data)
  * of an experiment.
  */
 void
-psy_step_enter (PsyStep* self, gint64 tstamp)
+psy_step_enter (PsyStep* self, PsyTimePoint* tstamp)
 {
     g_return_if_fail(PSY_IS_STEP(self));
     PsyStepPrivate *priv = psy_step_get_instance_private(self);
     GSource *source;
 
     InternalTimestamp *data = g_new(InternalTimestamp, 1);
-    data->timestamp         = tstamp;
+    data->timestamp         = g_object_ref(tstamp);
     data->step              = g_object_ref(self);
 
     source = g_idle_source_new();
@@ -303,14 +316,14 @@ psy_step_enter (PsyStep* self, gint64 tstamp)
  * next iteration or a partlist starts the next part.
  */
 void
-psy_step_leave(PsyStep* self, gint64 tstamp)
+psy_step_leave(PsyStep* self, PsyTimePoint* tstamp)
 {
     g_return_if_fail(PSY_IS_STEP(self));
     PsyStepPrivate *priv = psy_step_get_instance_private(self);
     GSource* source;
 
     InternalTimestamp *data = g_new(InternalTimestamp, 1);
-    data->timestamp         = tstamp;
+    data->timestamp         = g_object_ref(tstamp);
     data->step              = g_object_ref(self);
 
     source = g_idle_source_new();
@@ -363,7 +376,7 @@ psy_step_get_parent(PsyStep*self)
  * @self:: a PsyStep instance
  */
  void
- psy_step_activate(PsyStep* step, gint64 timestamp)
+ psy_step_activate(PsyStep* step, PsyTimePoint* timestamp)
 {
      g_return_if_fail(PSY_IS_STEP(step));
      PsyStepClass *klass = PSY_STEP_GET_CLASS(step);
@@ -373,14 +386,13 @@ psy_step_get_parent(PsyStep*self)
 
 /**
  * psy_step_get_main_context:
+ * self: a `PsyStep` instance
  *
  * Obtain the context in which the steps will queue their events
  *
  * Especially for deriving instance it might be handy to obtain the maincontext
  * so that the deriving classes can queue there events in the same context where
  * they were instantiated.
- *
- * self: a `PsyStep` instance
  *
  * Returns:(transfer none): `GMainContext` which was the thread default context
  *                           when this step was instantiated.

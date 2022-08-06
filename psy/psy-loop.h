@@ -28,47 +28,47 @@ struct _PsyLoopClass {
     gpointer padding[12];
 };
 
-PsyLoop*
-psy_loop_new();
+G_MODULE_EXPORT PsyLoop *
+psy_loop_new(void);
 
-PsyLoop*
+G_MODULE_EXPORT PsyLoop*
 psy_loop_new_full(gint64 index,
                   gint64 stop,
                   gint64 increment,
                   PsyLoopCondition condition
                   );
 
-void
+G_MODULE_EXPORT void
 psy_loop_destroy(PsyLoop* self);
 
-void
-psy_loop_iterate(PsyLoop* self, gint64 timestamp);
+G_MODULE_EXPORT void
+psy_loop_iterate(PsyLoop* self, PsyTimePoint *timestamp);
 
-void
+G_MODULE_EXPORT void
 psy_loop_set_index(PsyLoop* self, gint64 index);
 
-gint64
+G_MODULE_EXPORT gint64
 psy_loop_get_index(PsyLoop* self);
 
-void
+G_MODULE_EXPORT void
 psy_loop_set_stop(PsyLoop* self, gint64 stop);
 
-gint64
+G_MODULE_EXPORT gint64
 psy_loop_get_stop(PsyLoop* self);
 
-void
+G_MODULE_EXPORT void
 psy_loop_set_increment(PsyLoop* self, gint64 increment);
 
-gint64
+G_MODULE_EXPORT gint64
 psy_loop_get_increment(PsyLoop* self);
 
-void
+G_MODULE_EXPORT void
 psy_loop_set_condition(PsyLoop* self, PsyLoopCondition condition);
 
-PsyLoopCondition
+G_MODULE_EXPORT PsyLoopCondition
 psy_loop_get_condition(PsyLoop* self);
 
-gboolean
+G_MODULE_EXPORT gboolean
 psy_loop_test(PsyLoop* self);
 
 G_END_DECLS
