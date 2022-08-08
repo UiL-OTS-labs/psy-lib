@@ -1,6 +1,22 @@
 
 #include "psy-clock.h"
-
+/**
+ * PsyClock:
+ *
+ * This is a way to get the time in an experiment. The `PsyClock`
+ * returns monotonic time in microsecond resolution, that means that
+ * this time will not be affected by changes to time as a "realtime"
+ * clock might be. This is also the clock that will be used internally.
+ *
+ * This means if you want to start a stimulus 1 second from psy_clock_now()
+ * psylib will do its best to schedule and play the stimulus at that time.
+ *
+ * other clocks might have an offset, or drift a little apart from this clock.
+ *
+ * All timestamps are compared to a "zero" time, that is the time that
+ * This class is being defined, when psylib loads or the first PsyClock
+ * is instantiated.
+ */
 typedef struct _PsyClock {
     GObject parent;
     gint64  zero_time;
@@ -82,6 +98,13 @@ psy_clock_class_init(PsyClockClass* klass)
     g_object_class_install_properties(obj_class, NUM_PROPERTIES, obj_properties);
 }
 
+/**
+ * psy_clock_new:(constructor)
+ *
+ * Creates a clock for retrieving the current time.
+ *
+ * Returns: A new `PsyClock` instance.
+ */
 PsyClock*
 psy_clock_new()
 {
@@ -89,6 +112,13 @@ psy_clock_new()
     return clock;
 }
 
+/**
+ * psy_clock_now:
+ * @self: An instance of a `PsyClock`
+ *
+ *
+ * Returns:(transfer full): A `PsyTimePoint` instance.
+ */
 PsyTimePoint*
 psy_clock_now(PsyClock* self)
 {

@@ -3,6 +3,18 @@
 #include "psy-duration.h"
 #include "psy-safe-int-private.h"
 
+/**
+ * PsyTimePoint:
+ *
+ * Instances of PsyTimePoint are generally obtained by
+ * `psy_clock_now`, which returns the current time as the
+ * number of microseconds since the first `PsyClock` is instantiated.
+ * common other ways of obtaining PsyTimePoints is the result of
+ * a computation between timepoints and durations. One can create a
+ * timepoint with the constructor, but than the timepoint isn't really
+ * meaning full.
+ */
+
 typedef struct _PsyTimePoint {
     GObject parent;
     gint64  ticks_since_start;
@@ -72,6 +84,12 @@ psy_time_point_class_init(PsyTimePointClass *klass)
     obj_class->set_property = psy_time_point_set_property;
     obj_class->get_property = psy_time_point_get_property;
 
+    /**
+     * PsyTimePoint:num-ticks:
+     *
+     * This value represents the number of ticks since the firs PsyClock
+     * is created/since the type PsyClock is registered.
+     */
     obj_properties[PROP_NUM_TICKS] = g_param_spec_int64(
             "num-ticks",
             "num_ticks",
@@ -84,6 +102,16 @@ psy_time_point_class_init(PsyTimePointClass *klass)
     g_object_class_install_properties(obj_class, NUM_PROPERTIES, obj_properties);
 }
 
+/**
+ * psy_time_point_subtract:
+ * @self: An instance of `PsyTimePoint`
+ * @other: An instance of `PsyTimePoint`
+ *
+ * Computes the difference/duration between two timepoints
+ *
+ * Returns:(transfer full): The `PsyDuration` between two `PsyTimePoints`
+ *                          Or NULL when the operation overflows.
+ */
 PsyDuration*
 psy_time_point_subtract(PsyTimePoint* self, PsyTimePoint* other)
 {
@@ -101,6 +129,16 @@ psy_time_point_subtract(PsyTimePoint* self, PsyTimePoint* other)
     return psy_duration_new_us(us_result);
 }
 
+/**
+ * psy_time_point_subtract_dur:
+ * @self: An instance of `PsyTimePoint`
+ * @dur: An instance of `PsyDuration`
+ *
+ * Computes the the new PsyTimePoint by subtracting a duration from @self
+ *
+ * Returns:(transfer full)(nullable): The `PsyTimePoint` that is the result of
+ *                           @self - @dur. Or NULL when the operation overflows.
+ */
 PsyTimePoint*
 psy_time_point_subtract_dur(PsyTimePoint* self, PsyDuration* dur)
 {
@@ -121,6 +159,17 @@ psy_time_point_subtract_dur(PsyTimePoint* self, PsyDuration* dur)
     return tret;
 }
 
+/**
+ * psy_time_point_add_dur:
+ * @self: An instance of `PsyTimePoint`
+ * @dur: An instance of `PsyDuration`
+ *
+ * Computes the the new PsyTimePoint by adding a duration to @self.
+ *
+ * Returns:(transfer full)(nullable): The `PsyTimePoint` that is the result of
+ *                                    @self + @dur Or NULL when the operation
+ *                                    overflows.
+ */
 PsyTimePoint*
 psy_time_point_add(PsyTimePoint* self, PsyDuration* dur)
 {
@@ -142,6 +191,16 @@ psy_time_point_add(PsyTimePoint* self, PsyDuration* dur)
     return tp;
 }
 
+/**
+ * psy_time_point_duration_since_start:
+ * @self: An instance of `PsyTimePoint`
+ *
+ * A timepoint should refect the time between the timepoint and the start
+ * of the PsyClock. The PsyClock start is roughly 0 the PsyClock type is
+ * initialized.
+ *
+ * Returns: a PsyDuration that reflects the time when the first clock is loaded.
+ */
 PsyDuration*
 psy_time_point_duration_since_start(PsyTimePoint* self)
 {
@@ -154,6 +213,13 @@ psy_time_point_duration_since_start(PsyTimePoint* self)
     return dur;
 }
 
+/**
+ * psy_time_point_less:
+ * @self: An instance of #PsyTimePoint.
+ * @other: An instance of #PsyTimePoint.
+ *
+ * Returns: TRUE when @self < @other, FALSE otherwise
+ */
 gboolean
 psy_time_point_less(PsyTimePoint* self, PsyTimePoint* other)
 {
@@ -161,12 +227,26 @@ psy_time_point_less(PsyTimePoint* self, PsyTimePoint* other)
     return self->ticks_since_start < other->ticks_since_start;
 }
 
+/**
+ * psy_time_point_less_equal:
+ * @self: An instance of #PsyTimePoint.
+ * @other: An instance of #PsyTimePoint.
+ *
+ * Returns: TRUE when @self <= @other, FALSE otherwise
+ */
 gboolean
 psy_time_point_less_equal(PsyTimePoint* self, PsyTimePoint* other)
 {
     return psy_time_point_less(self, other) || psy_time_point_equal(self, other);
 }
 
+/**
+ * psy_time_point_equal:
+ * @self: An instance of #PsyTimePoint.
+ * @other: An instance of #PsyTimePoint.
+ *
+ * Returns: TRUE when @self == @other, FALSE otherwise
+ */
 gboolean
 psy_time_point_equal(PsyTimePoint* self, PsyTimePoint* other)
 {
@@ -174,18 +254,39 @@ psy_time_point_equal(PsyTimePoint* self, PsyTimePoint* other)
     return self->ticks_since_start == other->ticks_since_start;
 }
 
+/**
+ * psy_time_point_not_equal:
+ * @self: An instance of #PsyTimePoint.
+ * @other: An instance of #PsyTimePoint.
+ *
+ * Returns: TRUE when @self != @other, FALSE otherwise
+ */
 gboolean
 psy_time_point_not_equal(PsyTimePoint* self, PsyTimePoint* other)
 {
     return !psy_time_point_equal(self, other);
 }
 
+/**
+ * psy_time_point_greater_equal:
+ * @self: An instance of #PsyTimePoint.
+ * @other: An instance of #PsyTimePoint.
+ *
+ * Returns: TRUE when @self >= @other, FALSE otherwise
+ */
 gboolean
 psy_time_point_greater_equal(PsyTimePoint* self, PsyTimePoint* other)
 {
     return psy_time_point_equal(self, other) || !psy_time_point_less(self, other);
 }
 
+/**
+ * psy_time_point_greater:
+ * @self: An instance of #PsyTimePoint.
+ * @other: An instance of #PsyTimePoint.
+ *
+ * Returns: TRUE when @self > @other, FALSE otherwise
+ */
 gboolean
 psy_time_point_greater(PsyTimePoint *self, PsyTimePoint* other)
 {
