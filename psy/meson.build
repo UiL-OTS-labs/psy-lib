@@ -110,7 +110,7 @@ libpsy = library (
 libpsy_dep = declare_dependency(
     link_with : libpsy,
     include_directories : [libpsy_incdirs, config_incdirs],
-    dependencies : [gtk_dep, epoxy_dep, m_dep]
+    dependencies : [glib_dep, gobject_dep, gtk_dep, epoxy_dep, m_dep]
 )
 
 gir = gnome.generate_gir(
