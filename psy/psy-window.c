@@ -45,7 +45,7 @@ tick_callback(GtkWidget       *widget,
 
     gfloat *color = win3d->clear_color;
     gint64 us = gdk_frame_clock_get_frame_time(clock);
-    gfloat seconds = (gfloat) (us / 1e6);
+    gfloat seconds = (gfloat)us / 1e6;
 
 //    color[0] = (float) sin(seconds * 1.00) / 2 + .5;
 //    color[1] = (float) sin(seconds * 0.50) / 2 + .5;
@@ -109,8 +109,13 @@ on_darea_resize(GtkDrawingArea* darea, gint width, gint height, gpointer data)
     PsyWindow *self = data;
     (void) self;
     gtk_gl_area_make_current(GTK_GL_AREA(darea));
+    glViewport(
+            0,
+            0,
+            width > 0 ? (GLsizei) width : 0,
+            height > 0 ? (GLsizei) height : 0
+            );
     g_print("width %d, height %d, data %p\n", width, height, data);
-    (void) width; (void) height;    //glViewport(-width/2, -height/2, width, height);
 }
 
 static void
@@ -420,6 +425,12 @@ psy_window_class_init(PsyWindowClass* klass)
     object_class->dispose       = psy_window_dispose;
     object_class->finalize      = psy_window_finalize;
 
+    /**
+     * PsyWindow:n-monitor:
+     *
+     * The number of the monitor on which the PsyWindow should be
+     * presented.
+     */
     obj_properties[N_MONITOR] =
         g_param_spec_uint("n-monitor",
                           "nmonitor",
@@ -433,6 +444,12 @@ psy_window_class_init(PsyWindowClass* klass)
     g_object_class_install_properties(object_class, N_PROPS, obj_properties);    
 }
 
+/**
+ * psy_window_new:(constructor):
+ *
+ * Returns a new #PsyWindow instance on the first monitor.
+ * @return
+ */
 PsyWindow*
 psy_window_new(void)
 {
@@ -440,6 +457,18 @@ psy_window_new(void)
     return window;
 }
 
+/**
+ * psy_window_new_for_montitor:(constructor):
+ * @n: the number of the monitor on which you want to display
+ *     the newly created window. n will be clipped to the available
+ *     range which is [0, n) where n is the number of monitors connected.
+ *
+ * Creates a new window, it should appear on the window that is specified
+ * by @n. If a number larger than n is chosen it will appear on n minus one
+ * where n is the number of connected monitors.
+ *
+ * Returns: a newly initialized window
+ */
 PsyWindow*
 psy_window_new_for_monitor(guint n)
 {
@@ -458,6 +487,14 @@ psy_window_new_for_monitor(guint n)
     return window;
 }
 
+/**
+ * psy_window_set_monitor:
+ * @self:A #PsyWindow instance
+ * @monitor_num: A number between 0 and n - 1 where n is the number
+ *               of available monitors.
+ *
+ * Display the the window on monitor monitor_num
+ */
 void
 psy_window_set_monitor(PsyWindow* self, guint monitor_num)
 {
@@ -473,6 +510,17 @@ psy_window_set_monitor(PsyWindow* self, guint monitor_num)
     self->monitor = monitor_num;
 }
 
+/**
+ * psy_window_get_monitor:
+ * @self: a #PsyWindow instance
+ *
+ * Returns the number of the monitor this window is being presented.
+ * The result should b 0 for the first monitor to n - 1 for the last
+ * where n is the number of monitors available to psy-lib.
+ *
+ * Returns: 0 to n - 1 where n is the number of monitors connected or
+ *          -1 when self is not a valid monitor.
+ */
 guint
 psy_window_get_monitor(PsyWindow* self)
 {
