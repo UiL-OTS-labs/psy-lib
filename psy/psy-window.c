@@ -116,7 +116,6 @@ on_darea_resize(GtkDrawingArea* darea, gint width, gint height, gpointer data)
             height > 0 ? (GLsizei) height : 0
             );
     g_print("width %d, height %d, data %p\n", width, height, data);
-    (void) width; (void) height;
 }
 
 static void
