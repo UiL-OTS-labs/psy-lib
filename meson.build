@@ -60,6 +60,8 @@ gtk_dep = dependency(
 
 epoxy_dep = dependency('epoxy', version : '>1.0')
 
+sdl_dep = dependency('sdl2', version : '>=2.0.10')
+
 exe = executable(
     'gtk_hello',
     files('gtk-hello.c'),

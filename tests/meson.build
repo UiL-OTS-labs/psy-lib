@@ -5,6 +5,13 @@ window_prog = executable (
     dependencies : [psy_dep]
 )
 
+sdl_window = executable (
+    'sdl-window',
+    files('sdl-window.c'),
+    dependencies : [psy_dep, sdl_dep]
+)
+
+
 vector_test=executable(
     'vector-test',
     'vector-test.c',
