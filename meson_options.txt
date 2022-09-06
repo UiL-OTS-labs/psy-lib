@@ -1,0 +1,17 @@
+
+# Documentation and introspection
+
+option (
+    'introspection',
+    type : 'boolean',
+    value : true,
+    description : 'Build gobject introspection for requires \'gobject-introspection\''
+)
+option(
+    'documentation',
+    type : 'boolean',
+    value : true,
+    description : 'build documentation requires gi_docgen (via pip e.g.) and intropection of libpsy'
+)
+
+

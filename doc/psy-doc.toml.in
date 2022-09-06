@@ -1,0 +1,45 @@
+[library]
+version="@version@"
+browse_url = ""
+repository_url = "git@github.com:UiL-OTS-labs/psy-lib.git"
+website_url = ""
+docs_url = ""
+authors = "The UiL-OTS labs"
+logo_url = ""
+license = "MIT"
+description = "The Psy Programming library"
+devhelp=true
+search_index = true
+
+[theme]
+name = "basic"
+show_index_summary = true
+show_class_hierarchy = true
+
+dependencies = [
+]
+
+
+
+[extra]
+# A list of Markdown files; they will be parsed using the
+# same rules as the documentation coming from the introspection
+# data. The path of each file is relative to the content
+# directory specified on the command line.
+#
+# The order in which they are included will be used when
+# generating the index.
+#
+# The generated files will be placed in the root output directory
+content_files = [
+    "getting_started.md"
+]
+# Additional images referenced by the documentation; their path
+# is relative to the content directory specified on the command
+# line.
+#
+# The image files will be copied into the root documentation,
+# without replicating the directory structure in which they
+# are listed.
+content_images = [
+]

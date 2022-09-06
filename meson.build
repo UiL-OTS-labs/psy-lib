@@ -81,5 +81,9 @@ psy_dep = declare_dependency(
 
 subdir('tests')
 
+if get_option('documentation')
+    subdir('doc')
+endif
+
 test('basic', exe)
 
