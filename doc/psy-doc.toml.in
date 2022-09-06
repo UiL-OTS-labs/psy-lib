@@ -17,8 +17,24 @@ show_index_summary = true
 show_class_hierarchy = true
 
 dependencies = [
+    "GLib-2.0",
+    "GObject-2.0",
+    "Gtk-4.0"
 ]
 
+[dependencies."GLib-2.0"]
+name = "GLib"
+description = "The base utility library"
+doc_url = "https://docs.gtk.org/glib/"
+
+[dependencies."GObject-2.0"]
+name = "GObject"
+description = "The base type system library"
+doc_url = "https://docs.gtk.org/gobject/"
+[dependencies."Gtk-4.0"]
+name = "Gtk"
+description = "The Gtk toolkit"
+doc_url = "https://docs.gtk.org/gtk4/"
 
 
 [extra]
@@ -32,7 +48,7 @@ dependencies = [
 #
 # The generated files will be placed in the root output directory
 content_files = [
-    "getting_started.md"
+    "introduction.md"
 ]
 # Additional images referenced by the documentation; their path
 # is relative to the content directory specified on the command
@@ -43,3 +59,5 @@ content_files = [
 # are listed.
 content_images = [
 ]
+
+urlmap_file = "urlmap.js"

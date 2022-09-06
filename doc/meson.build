@@ -1,5 +1,5 @@
 md_files = files(
-    'getting_started.md'
+    'introduction.md'
 )
 
 if get_option('documentation')
