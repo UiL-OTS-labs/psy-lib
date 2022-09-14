@@ -46,6 +46,7 @@ libpsy_headers = files(
     'psy-vbuffer.h',
     'psy-vector.h',
     'psy-vector4.h',
+    'psy-visual-stimulus.h',
     'psy-widget.h',
     'psy-window.h',
 )
@@ -71,6 +72,7 @@ libpsyfiles = files (
     'psy-vbuffer.c',
     'psy-vector.c',
     'psy-vector4.cpp',
+    'psy-visual-stimulus.c',
     'psy-widget.c',
     'psy-window.c',
 )
