@@ -49,6 +49,7 @@ libpsy_headers = files(
     'psy-visual-stimulus.h',
     'psy-widget.h',
     'psy-window.h',
+    'psy-window-toy.h',
 )
 
 libpsy_header_private = files(
@@ -75,6 +76,7 @@ libpsyfiles = files (
     'psy-visual-stimulus.c',
     'psy-widget.c',
     'psy-window.c',
+    'psy-window-toy.c',
 )
 
 subdir('gl')

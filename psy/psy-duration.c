@@ -261,7 +261,7 @@ psy_duration_new_s(gint64 s)
 }
 
 /**
- * psy_duration_get_us:(
+ * psy_duration_get_us:
  * @self: a `PsyDuration` instance
  *
  * Returns: The number of microseconds this duration represents
@@ -274,7 +274,7 @@ psy_duration_get_us(PsyDuration* self)
 }
 
 /**
- * psy_duration_get_ms:(
+ * psy_duration_get_ms:
  * @self: a `PsyDuration` instance
  *
  * Returns: The number of milliseconds this duration represents
@@ -304,10 +304,11 @@ psy_duration_get_s(PsyDuration* self)
 }
 
 /**
- * psy_duration_get_s:(
+ * psy_duration_get_seconds:
  * @self: a `PsyDuration` instance
  *
- * Returns: The number of milliseconds this duration represents
+ * Returns: The number of seconds this duration represents in 
+ * a floating point format
  */
 gdouble
 psy_duration_get_seconds(PsyDuration* self)
@@ -376,7 +377,7 @@ psy_duration_multiply_scalar(PsyDuration* self, gint64 scalar)
  * @self: A `PsyDuration` instance
  * @other: A `PsyDuration` instance
  *
- * @return:(transfer full): a new `PsyDuration` that is the result of
+ * Returns:(transfer full): a new `PsyDuration` that is the result of
  *         @self + @other
  */
 PsyDuration*
@@ -397,7 +398,7 @@ psy_duration_add(PsyDuration* self, PsyDuration* other)
  * @self: A `PsyDuration` instance
  * @other: A `PsyDuration` instance
  *
- * @return:(transfer full): a new `PsyDuration` that is the result of
+ * Returns:(transfer full): a new `PsyDuration` that is the result of
  *         @self - @other
  */
 PsyDuration*
@@ -418,7 +419,7 @@ psy_duration_subtract(PsyDuration* self, PsyDuration* other)
  * @self: A `PsyDuration` instance
  * @other: A `PsyDuration` instance
  *
- * @return:TRUE if @self < @other, FALSE otherwise.
+ * Returns:TRUE if @self < @other, FALSE otherwise.
  */
 gboolean
 psy_duration_less(PsyDuration* self, PsyDuration* other)
@@ -432,7 +433,7 @@ psy_duration_less(PsyDuration* self, PsyDuration* other)
  * @self: A `PsyDuration` instance
  * @other: A `PsyDuration` instance
  *
- * @return:TRUE if @self <= @other, FALSE otherwise.
+ * Returns: TRUE if @self <= @other, FALSE otherwise.
  */
 gboolean
 psy_duration_less_equal(PsyDuration* self, PsyDuration* other)
@@ -445,7 +446,7 @@ psy_duration_less_equal(PsyDuration* self, PsyDuration* other)
  * @self: A `PsyDuration` instance
  * @other: A `PsyDuration` instance
  *
- * @return:TRUE if @self == @other, FALSE otherwise.
+ * Returns: TRUE if @self == @other, FALSE otherwise.
  */
 gboolean
 psy_duration_equal(PsyDuration* self, PsyDuration* other)
@@ -459,7 +460,7 @@ psy_duration_equal(PsyDuration* self, PsyDuration* other)
  * @self: A `PsyDuration` instance
  * @other: A `PsyDuration` instance
  *
- * @return:TRUE if @self != @other, FALSE otherwise.
+ * Returns: TRUE if @self != @other, FALSE otherwise.
  */
 gboolean
 psy_duration_not_equal(PsyDuration *self, PsyDuration *other)
@@ -472,7 +473,7 @@ psy_duration_not_equal(PsyDuration *self, PsyDuration *other)
  * @self: A `PsyDuration` instance
  * @other: A `PsyDuration` instance
  *
- * @return:TRUE if @self >= @other, FALSE otherwise.
+ * Returns: TRUE if @self >= @other, FALSE otherwise.
  */
 gboolean
 psy_duration_greater_equal(PsyDuration* self, PsyDuration* other)
@@ -485,10 +486,11 @@ psy_duration_greater_equal(PsyDuration* self, PsyDuration* other)
  * @self: A `PsyDuration` instance
  * @other: A `PsyDuration` instance
  *
- * @return:TRUE if @self > @other, FALSE otherwise.
+ * Returns: TRUE if @self > @other, FALSE otherwise.
  */
 gboolean
 psy_duration_greater(PsyDuration *self, PsyDuration* other)
 {
     return !psy_duration_equal(self, other) && !psy_duration_less(self, other);
 }
+

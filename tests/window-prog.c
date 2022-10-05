@@ -1,5 +1,5 @@
 
-#include "psy-window.h"
+#include "psy-window-toy.h"
 #include <stdlib.h>
 
 static gint         n_monitor       = 0;
@@ -24,17 +24,17 @@ static void
 on_activate(GtkApplication* app, gpointer data)
 {
     (void) data;
-    PsyWindow* window = NULL;
+    PsyWindowToy* window = NULL;
     if (all_monitors) {
         GdkDisplay* display = gdk_display_get_default();
         guint num_monitors = g_list_model_get_n_items(gdk_display_get_monitors(display));
         for (guint n = 0; n < num_monitors; n++) {
-            window = psy_window_new_for_monitor(n);
+            window = psy_window_toy_new_for_monitor(n);
             gtk_application_add_window(app, GTK_WINDOW(window));
         }
     }
     else {
-        window = psy_window_new_for_monitor(n_monitor);
+        window = psy_window_toy_new_for_monitor(n_monitor);
         gtk_application_add_window(app, GTK_WINDOW(window));
     }
 
@@ -57,7 +57,7 @@ int main(int argc, char**argv) {
         goto fail;
     }
 
-    app = gtk_application_new(NULL, G_APPLICATION_FLAGS_NONE);
+    app = gtk_application_new(NULL, G_APPLICATION_DEFAULT_FLAGS);
     g_signal_connect(app, "activate", G_CALLBACK(on_activate), NULL);
 
 
