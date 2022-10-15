@@ -1,5 +1,6 @@
 
 #include <epoxy/gl.h>
+#include <epoxy/gl_generated.h>
 #include <epoxy/glx.h>
 #include "psy-window-toy.h"
 
@@ -19,6 +20,7 @@ struct _PsyWindowToy {
     PsyTexture     *gl_texture;
     guint           n_frames;
     guint           fps_timeout;
+    guint           tick_id; // In order to remove the tick callback
 };
 
 G_DEFINE_TYPE(PsyWindowToy, psy_window_toy, GTK_TYPE_WINDOW)
@@ -29,15 +31,15 @@ typedef enum {
 } PsyWindowToyProperty;
 
 static gboolean
-tick_callback(GtkWidget       *widget,
+tick_callback(GtkWidget       *darea,
               GdkFrameClock   *clock,
               gpointer         data)
 {
     (void) data;
-    PsyWindowToy* win3d = PSY_WINDOW_TOY(widget);
-    gtk_gl_area_make_current(GTK_GL_AREA(win3d->darea));
+    PsyWindowToy* win3d = PSY_WINDOW_TOY(data);
+    gtk_gl_area_make_current(GTK_GL_AREA(darea));
     //glViewport(0, 0, 600, 600);
-    GError* error = gtk_gl_area_get_error(GTK_GL_AREA(win3d->darea));
+    GError* error = gtk_gl_area_get_error(GTK_GL_AREA(darea));
     if (error) {
         g_critical("An OpenGL error occurred: %s", error->message);
         return G_SOURCE_REMOVE;
@@ -47,13 +49,16 @@ tick_callback(GtkWidget       *widget,
     gint64 us = gdk_frame_clock_get_frame_time(clock);
     gfloat seconds = (gfloat)us / 1e6;
 
-//    color[0] = (float) sin(seconds * 1.00) / 2 + .5;
-//    color[1] = (float) sin(seconds * 0.50) / 2 + .5;
-//    color[2] = (float) sin(seconds * 0.25) / 2 + .5;
-//    color[3] = 1.0;
+    color[0] = (float) sin(seconds * 1.00) / 2 + .5;
+    color[1] = (float) sin(seconds * 0.50) / 2 + .5;
+    color[2] = (float) sin(seconds * 0.25) / 2 + .5;
+    color[3] = 1.0;
 
     glClearColor(color[0], color[1], color[2], color[3]);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    GLenum gl_error = glGetError();
+    if (gl_error != GL_NO_ERROR)
+        return G_SOURCE_CONTINUE;
 
     gint color_id = glGetUniformLocation(
             psy_gl_program_get_object_id(PSY_GL_PROGRAM(win3d->gl_program)),
@@ -62,7 +67,7 @@ tick_callback(GtkWidget       *widget,
 
     psy_program_use(win3d->gl_program, &error);
     if (error) {
-        gtk_gl_area_set_error(GTK_GL_AREA(win3d->darea), error);
+        gtk_gl_area_set_error(GTK_GL_AREA(darea), error);
         return G_SOURCE_REMOVE;
     }
     float tc;
@@ -72,31 +77,31 @@ tick_callback(GtkWidget       *widget,
 
     psy_vbuffer_draw_triangles(win3d->vertices, &error);
     if (error) {
-        gtk_gl_area_set_error(GTK_GL_AREA(win3d->darea), error);
+        gtk_gl_area_set_error(GTK_GL_AREA(darea), error);
         return G_SOURCE_REMOVE;
     }
 
     psy_program_use(win3d->gl_picture_program, &error);
     if (error) {
-        gtk_gl_area_set_error(GTK_GL_AREA(win3d->darea), error);
+        gtk_gl_area_set_error(GTK_GL_AREA(darea), error);
         return G_SOURCE_REMOVE;
     }
 
     psy_texture_bind(win3d->gl_texture, &error);
     if (error) {
-        gtk_gl_area_set_error(GTK_GL_AREA(win3d->darea), error);
+        gtk_gl_area_set_error(GTK_GL_AREA(darea), error);
         return G_SOURCE_REMOVE;
     }
 
     psy_vbuffer_draw_triangle_fan(win3d->picture_vertices, &error);
     if (error) {
-        gtk_gl_area_set_error(GTK_GL_AREA(win3d->darea), error);
+        gtk_gl_area_set_error(GTK_GL_AREA(darea), error);
         return G_SOURCE_REMOVE;
     }
 
     glFlush();
 
-    gtk_widget_queue_draw(win3d->darea);
+    gtk_widget_queue_draw(darea);
 
     win3d->n_frames++;
 
@@ -292,6 +297,10 @@ on_darea_realize(GtkGLArea* darea, PsyWindowToy* window)
         gtk_gl_area_set_error(darea, error);
         return;
     }
+    
+    window->tick_id = gtk_widget_add_tick_callback(
+		    GTK_WIDGET(darea), tick_callback, window, NULL
+		    );
 }
 
 static void
@@ -304,6 +313,8 @@ on_darea_unrealize(GtkGLArea* area, PsyWindowToy* self)
     g_clear_object(&self->vertices);
     g_clear_object(&self->picture_vertices);
     g_clear_object(&self->gl_texture);
+    
+    gtk_widget_remove_tick_callback(GTK_WIDGET(self), self->tick_id);
 }
 
 static void
@@ -365,7 +376,6 @@ psy_window_toy_init(PsyWindowToy* self)
 
     gtk_window_set_child (GTK_WINDOW(self), self->darea);
 
-    gtk_widget_add_tick_callback(GTK_WIDGET(self), tick_callback, NULL, NULL);
 
     g_signal_connect(
             self->darea,

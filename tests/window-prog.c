@@ -56,8 +56,11 @@ int main(int argc, char**argv) {
         ret = EXIT_FAILURE;
         goto fail;
     }
-
+#if GLIB_CHECK_VERSION(2, 74, 0)
     app = gtk_application_new(NULL, G_APPLICATION_DEFAULT_FLAGS);
+#else
+    app = gtk_application_new(NULL, G_APPLICATION_FLAGS_NONE);
+#endif
     g_signal_connect(app, "activate", G_CALLBACK(on_activate), NULL);
 
 
