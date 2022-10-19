@@ -21,6 +21,10 @@ typedef struct _PsyWindowClass {
     void (*clear)(PsyWindow* self);
     void (*draw_stimuli)(PsyWindow* self, guint64 frame_num, PsyTimePoint* tp);
 
+    void (*set_monitor_size_mm)(PsyWindow* monitor,
+                                gint width_mm,
+                                gint height_mm);
+
     void (*schedule_stimulus) (PsyWindow* self, PsyVisualStimulus* stimulus);
 
     gpointer padding[12];
@@ -38,6 +42,21 @@ psy_window_set_background_color_values(PsyWindow* window, gfloat* color);
 
 G_MODULE_EXPORT void
 psy_window_get_background_color_values(PsyWindow* window, gfloat* color);
+
+G_MODULE_EXPORT void 
+psy_window_get_width_height_mm(PsyWindow* window, gint* width, gint* height);
+
+G_MODULE_EXPORT gint 
+psy_window_get_width_mm(PsyWindow* window);
+
+G_MODULE_EXPORT gint 
+psy_window_get_height_mm(PsyWindow* window);
+
+G_MODULE_EXPORT void
+psy_window_set_width_mm(PsyWindow* window, gint width_mm);
+
+G_MODULE_EXPORT void
+psy_window_set_height_mm(PsyWindow* window, gint height_mm);
 
 
 G_END_DECLS

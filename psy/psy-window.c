@@ -22,6 +22,7 @@
 typedef struct PsyWindowPrivate {
     gint            monitor;
     guint           n_frames;
+    gint            width_mm, height_mm;
     gfloat          back_ground_color[4];
 } PsyWindowPrivate;
 
@@ -36,6 +37,8 @@ typedef enum {
 typedef enum {
     N_MONITOR = 1,
     BACKGROUND_COLOR_VALUES,
+    WIDTH_MM,
+    HEIGHT_MM,
     N_PROPS
 } PsyWindowProperty;
 
@@ -57,6 +60,12 @@ psy_window_set_property(GObject        *object,
                     self,
                     g_value_get_pointer(value));
             break;
+        case WIDTH_MM:
+            psy_window_set_width_mm(self, g_value_get_int(value));
+            break;
+        case HEIGHT_MM:
+            psy_window_set_height_mm(self, g_value_get_int(value));
+            break;
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, spec);
     }
@@ -74,6 +83,12 @@ psy_window_get_property(GObject        *object,
         case N_MONITOR:
             g_value_set_int(value, psy_window_get_monitor(self));
             break;
+        case WIDTH_MM:
+            g_value_set_int(value, psy_window_get_width_mm(self));
+            break;
+        case HEIGHT_MM:
+            g_value_set_int(value, psy_window_get_height_mm(self));
+            break;
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, spec);
     }
@@ -89,7 +104,6 @@ psy_window_init(PsyWindow* self)
 
     memcpy(priv->back_ground_color, default_bg, sizeof(default_bg));
 }
-
 
 static void
 psy_window_dispose(GObject* gobject)
@@ -141,6 +155,14 @@ draw(PsyWindow* self, PsyTimePoint* tp)
 }
 
 static void
+set_monitor_size_mm(PsyWindow* self, gint width_mm, gint height_mm)
+{
+    PsyWindowPrivate* priv = psy_window_get_instance_private(self);
+    priv->width_mm = width_mm;
+    priv->height_mm = height_mm;
+}
+
+static void
 psy_window_class_init(PsyWindowClass* klass)
 {
     GObjectClass *object_class = G_OBJECT_CLASS(klass);
@@ -154,6 +176,7 @@ psy_window_class_init(PsyWindowClass* klass)
     klass->set_monitor          = set_monitor;
 
     klass->draw                 = draw;
+    klass->set_monitor_size_mm  = set_monitor_size_mm;
 
     /**
      * PsyWindow:n-monitor:
@@ -184,6 +207,48 @@ psy_window_class_init(PsyWindowClass* klass)
                 "BackgroundColorValues",
                 "An array with 4 floats representing RGBA color of the background",
                 G_PARAM_READWRITE);
+
+    /**
+     * PsyWindow:width-mm:
+     *
+     * The width of the monitor of the window in mm may be -1, it's
+     * uninitialized, 0 we don't know, or > 0 the width in mm, one should always
+     * check with a ruler to verify, as we try to determine it from the
+     * backend.
+     * If one knows better than the os/backend, one could set it self, don't
+     * worry it's unlikely that the physical size of your monitor will change.
+     */
+    obj_properties [WIDTH_MM] = 
+        g_param_spec_int(
+                "width-mm",
+                "WidthMM",
+                "The width of the window in mm, assuming a full screen window",
+                -1,
+                G_MAXINT32,
+                -1,
+                G_PARAM_READWRITE
+                );
+    
+    /**
+     * PsyWindow:height-mm:
+     *
+     * The height of the monitor of the window in mm may be -1, it's
+     * uninitialized, 0 we don't know, or > 0 the height in mm, one should always
+     * check with a ruler to verify, as we try to determine it from the
+     * backend/os.
+     * If one knows better than the os/backend, one could set it self, don't
+     * worry it's unlikely that the physical size of your monitor will change.
+     */
+    obj_properties [HEIGHT_MM] = 
+        g_param_spec_int(
+                "height-mm",
+                "HeightMM",
+                "The height of the window in mm, assuming a full screen window",
+                -1,
+                G_MAXINT32,
+                -1,
+                G_PARAM_READWRITE 
+                );
    
 
     g_object_class_install_properties(object_class, N_PROPS, obj_properties);
@@ -316,4 +381,79 @@ psy_window_get_background_color_values(PsyWindow* self, gfloat* color)
            sizeof(priv->back_ground_color));
 }
 
+/**
+ * psy_window_get_width_height_mm:
+ * @window: a #PsyWindow instance
+ * @width_mm:(out nullable): The width in mm.
+ * @height_mm:(out nullable): The height in mm.
+ *
+ * Obtain the width and height of the window. A negative (or 0) return value
+ * indicates that we were not able to establish the width and/or height.
+ */
+void
+psy_window_get_width_height_mm(PsyWindow* window, gint* width_mm, gint* height_mm)
+{
+    g_return_if_fail(PSY_IS_WINDOW(window));
+    PsyWindowPrivate* private = psy_window_get_instance_private(window);
+    if (width_mm)
+        *width_mm = private->width_mm;
+    if (height_mm)
+        *height_mm = private->height_mm;
+}
+
+/**
+ * psy_window_get_width_mm:
+ * @window:A #PsyWindow instance
+ *
+ * Returns: the width in mm of the window
+ */
+gint
+psy_window_get_width_mm(PsyWindow* window)
+{
+    g_return_val_if_fail(PSY_IS_WINDOW(window), -1);
+    PsyWindowPrivate* private = psy_window_get_instance_private(window);
+    return private->width_mm;
+}
+
+/**
+ * psy_window_get_height_mm:
+ * @window:A #PsyWindow instance
+ *
+ * Returns: the height in mm of the window
+ */
+gint
+psy_window_get_height_mm(PsyWindow* window)
+{
+    g_return_val_if_fail(PSY_IS_WINDOW(window), -1);
+    PsyWindowPrivate* private = psy_window_get_instance_private(window);
+    return private->height_mm;
+}
+
+/**
+ * psy_window_set_width_mm:
+ * @window:A #PsyWindow instance
+ * @width_mm: the width of the window/monitor
+ *
+ * Set the width of the window. Override the settings as found by the os/backend
+ */
+void psy_window_set_width_mm(PsyWindow* window, gint width_mm)
+{
+    g_return_if_fail(PSY_IS_WINDOW(window));
+    PsyWindowPrivate* private = psy_window_get_instance_private(window);
+    private->width_mm = width_mm;
+}
+
+/**
+ * psy_window_set_height_mm:
+ * @window:A #PsyWindow instance
+ * @height_mm: the height of the window/monitor
+ *
+ * Set the height of the window. Override the settings as found by the os/backend
+ */
+void psy_window_set_height_mm(PsyWindow* window, gint height_mm)
+{
+    g_return_if_fail(PSY_IS_WINDOW(window));
+    PsyWindowPrivate* private = psy_window_get_instance_private(window);
+    private->height_mm = height_mm;
+}
 

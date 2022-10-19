@@ -241,6 +241,8 @@ psy_gtk_window_finalize(GObject* gobject)
 static void
 set_monitor(PsyWindow* self, gint nth_monitor) {
 
+    gint width_mm, height_mm;
+
     g_return_if_fail(PSY_IS_GTK_WINDOW(self));
     PsyGtkWindow* psywindow = PSY_GTK_WINDOW(self);
 
@@ -254,7 +256,13 @@ set_monitor(PsyWindow* self, gint nth_monitor) {
     GListModel* monitors = gdk_display_get_monitors(display);
     GdkMonitor* monitor = g_list_model_get_item(monitors, (guint) nth_monitor);
 
+    width_mm = gdk_monitor_get_width_mm(monitor);
+    height_mm= gdk_monitor_get_height_mm(monitor);
+    g_print("%s: %d %d\n", __PRETTY_FUNCTION__, width_mm, height_mm);
+
     gtk_window_fullscreen_on_monitor(GTK_WINDOW(psywindow->window),  monitor);
+    psy_window_set_width_mm(self, width_mm);
+    psy_window_set_height_mm(self, height_mm);
     PSY_WINDOW_CLASS(psy_gtk_window_parent_class)->set_monitor(
             self, nth_monitor
             );
@@ -311,7 +319,7 @@ psy_gtk_window_class_init(PsyGtkWindowClass* klass)
 PsyGtkWindow*
 psy_gtk_window_new(void)
 {
-    PsyGtkWindow* window = g_object_new(PSY_TYPE_GTK_WINDOW, NULL);
+    PsyGtkWindow* window = psy_gtk_window_new_for_monitor(0);
     return window;
 }
 
