@@ -1,8 +1,9 @@
 
 #include <gtk/gtk.h>
-
 #include <epoxy/gl.h>
 
+#include "psy-clock.h"
+#include "psy-duration.h"
 #include "psy-gtk-window.h"
 #include "../gl/psy-gl-program.h"
 #include "psy-window.h"
@@ -21,7 +22,6 @@ G_DEFINE_TYPE_WITH_CODE(
         PSY_TYPE_WINDOW,
         {
             // Initialize GTK when creating the first Gtk window
-            g_print("initializing gtk\n");
             gtk_init();
         }
     )
@@ -46,6 +46,11 @@ tick_callback(GtkWidget       *d_area,
         g_critical("An OpenGL error occurred: %s", error->message);
         return G_SOURCE_REMOVE;
     }
+
+    PsyWindowClass* window_class = PSY_WINDOW_GET_CLASS(window);
+
+    PsyTimePoint* tp = psy_time_point_new(gdk_frame_clock_get_frame_time(clock));
+    window_class->draw(PSY_WINDOW(window), tp);
 
     // Queues a new frame.
     gtk_widget_queue_draw(GTK_WIDGET(canvas));
@@ -140,7 +145,6 @@ static void
 on_canvas_unrealize(GtkGLArea* area, PsyGtkWindow* self)
 {
     gtk_gl_area_make_current(area);
-    g_print("%s\n", __PRETTY_FUNCTION__);
 
     g_clear_object(&self->uniform_color_program);
     g_clear_object(&self->picture_program);
@@ -257,17 +261,43 @@ set_monitor(PsyWindow* self, gint nth_monitor) {
 }
 
 static void
+clear(PsyWindow* self)
+{
+    gfloat bg_color[4];
+    psy_window_get_background_color_values(self, bg_color);
+
+    glClearColor(bg_color[0], bg_color[1], bg_color[2], bg_color[3]);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+}
+
+static void
+draw_stimuli(PsyWindow* self, guint64 nth_frame, PsyTimePoint* tp)
+{
+    PsyClock* clk = psy_clock_new();
+    PsyTimePoint* tref = psy_clock_now(clk);
+    PsyDuration* dur = psy_time_point_subtract(tp, tref);
+    gdouble dsec = psy_duration_get_seconds(dur);
+
+    g_print("Difference between tp and tref = %lf seconds\n", dsec);
+    g_object_unref(clk);
+    g_object_unref(tref);
+    g_object_unref(dur);
+}
+
+static void
 psy_gtk_window_class_init(PsyGtkWindowClass* klass)
 {
     GObjectClass *object_class = G_OBJECT_CLASS(klass);
 
 //    object_class->set_property  = psy_gtk_window_set_property;
 //    object_class->get_property  = psy_gtk_window_get_property;
-    object_class->dispose       = psy_gtk_window_dispose;
-    object_class->finalize      = psy_gtk_window_finalize;
+    object_class->dispose           = psy_gtk_window_dispose;
+    object_class->finalize          = psy_gtk_window_finalize;
 
     PsyWindowClass* psy_window_class = PSY_WINDOW_CLASS(klass);
-    psy_window_class->set_monitor = set_monitor;
+    psy_window_class->set_monitor   = set_monitor;
+    psy_window_class->clear         = clear;
+    psy_window_class->draw_stimuli  = draw_stimuli;
 
 //    g_object_class_install_properties(object_class, N_PROPS, obj_properties);    
 }

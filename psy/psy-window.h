@@ -2,6 +2,7 @@
 #ifndef PSY_WINDOW_H
 #define PSY_WINDOW_H
 
+#include "psy-time-point.h"
 #include <glib-object.h>
 #include <psy-visual-stimulus.h>
 
@@ -15,6 +16,10 @@ typedef struct _PsyWindowClass {
 
     void (*set_monitor)(PsyWindow* self, gint nth_monitor);
     int  (*get_monitor)(PsyWindow* self);
+
+    void (*draw) (PsyWindow* self, PsyTimePoint* frame_time);
+    void (*clear)(PsyWindow* self);
+    void (*draw_stimuli)(PsyWindow* self, guint64 frame_num, PsyTimePoint* tp);
 
     void (*schedule_stimulus) (PsyWindow* self, PsyVisualStimulus* stimulus);
 
