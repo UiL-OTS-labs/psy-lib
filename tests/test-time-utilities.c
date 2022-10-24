@@ -1,4 +1,5 @@
 
+#include "psy-duration.h"
 #include <psy-clock.h>
 
 static void
@@ -177,6 +178,21 @@ check_duration_arithmetics(void)
 }
 
 static void
+check_duration_rounded_division(void)
+{
+    PsyDuration* ten =  psy_duration_new(10);
+    PsyDuration* eight =  psy_duration_new(8);
+    PsyDuration* six =  psy_duration_new(6);
+
+    gint64 r1 = psy_duration_divide_rounded(ten, eight);
+    gint64 r2 = psy_duration_divide_rounded(ten, six);
+
+    g_assert_true(r1 == 1); // 10 / 8 = 1.25
+    g_assert_true(r2 == 2); // 10 / 6 = 1.6667
+}
+
+
+static void
 check_duration_comparisons(void)
 {
     PsyDuration *one_s;
@@ -217,6 +233,7 @@ main(int argc, char **argv)
     check_time_point_overflow();
 
     check_duration_arithmetics();
+    check_duration_rounded_division();
     check_duration_comparisons();
 
     return EXIT_SUCCESS;

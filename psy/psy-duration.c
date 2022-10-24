@@ -336,6 +336,20 @@ psy_duration_divide(PsyDuration* self, PsyDuration *other)
     return self->us / other->us;
 }
 
+gint64
+psy_duration_divide_rounded(PsyDuration *self, PsyDuration* other)
+{
+    g_return_val_if_fail(PSY_IS_DURATION(self) && PSY_IS_DURATION(other), 0);
+
+    /**
+     * Thanks to:  https://stackoverflow.com/a/18067292/2082884
+     */
+    gint64 n = self->us;
+    gint64 d = other->us;
+
+    return ((n < 0) ^ (d < 0)) ? ((n - d/2) / d) : ((n + d/2) / d);
+}
+
 /**
  * psy_duration_divide_scalar:
  * @self: A `PsyDuration` instance
