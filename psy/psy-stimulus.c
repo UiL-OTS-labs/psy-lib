@@ -1,5 +1,6 @@
 
 #include "psy-stimulus.h"
+#include "psy-time-point.h"
 
 typedef struct PsyStimulusPrivate {
     PsyTimePoint *start_time;
@@ -92,12 +93,31 @@ psy_stimulus_init(PsyStimulus* self)
 }
 
 static void
+stimulus_play(PsyStimulus* stim, PsyTimePoint* tp)
+{
+    PsyStimulusPrivate* priv = psy_stimulus_get_instance_private(stim);
+    g_clear_object(&priv->start_time);
+    priv->start_time = psy_time_point_new_copy(tp);
+}
+
+static void
+stimulus_stop(PsyStimulus* stim, PsyTimePoint* tp)
+{
+    PsyStimulusPrivate* priv = psy_stimulus_get_instance_private(stim);
+    g_clear_object(&priv->stop_time);
+    priv->stop_time = psy_time_point_new_copy(tp);
+}
+
+static void
 psy_stimulus_class_init(PsyStimulusClass* klass)
 {
     GObjectClass *object_class = G_OBJECT_CLASS(klass);
 
     object_class->set_property = psy_stimulus_set_property;
     object_class->get_property = psy_stimulus_get_property;
+
+    klass->play = stimulus_play;
+    klass->stop = stimulus_stop;
 
     /**
      * Stimulus:start-time:
@@ -287,7 +307,7 @@ psy_stimulus_stop(PsyStimulus *self, PsyTimePoint *stop_time)
 
     PsyStimulusClass *klass = PSY_STIMULUS_GET_CLASS(self);
 
-    g_return_if_fail(klass->play);
+    g_return_if_fail(klass->stop);
 
     klass->stop(self, stop_time);
 }

@@ -1,5 +1,6 @@
 
 #include "psy-visual-stimulus.h"
+#include "psy-stimulus.h"
 #include "psy-window.h"
 
 typedef struct PsyVisualStimulusPrivate {
@@ -36,12 +37,10 @@ psy_visual_stimulus_set_property(GObject       *object,
                                  )
 {
     PsyVisualStimulus* self = PSY_VISUAL_STIMULUS(object);
-    PsyVisualStimulusPrivate* priv = psy_visual_stimulus_get_instance_private(self);
 
     switch((VisualStimulusProperty) property_id) {
         case PROP_WINDOW:
-            g_clear_object(&priv->window);
-            priv->window = g_value_get_object(value);
+            psy_visual_stimulus_set_window(self, g_value_get_object(value));
             break;
         case PROP_NUM_FRAMES: // gettable only
         case PROP_NTH_FRAME:  // gettable only
@@ -68,6 +67,8 @@ psy_visual_stimulus_get_property(GObject       *object,
             g_value_set_int64(value, priv->nth_frame);
             break;
         case PROP_WINDOW:
+            g_value_set_object(value, priv->window);
+            break;
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
     }
@@ -91,11 +92,29 @@ visual_stimulus_update(PsyVisualStimulus* self, PsyTimePoint* frame_time, gint64
 }
 
 static void
+visual_stimulus_play(PsyStimulus* stimulus, PsyTimePoint* start_time)
+{
+    PsyVisualStimulus* vstim = PSY_VISUAL_STIMULUS(stimulus);
+
+    PsyWindow* window = psy_visual_stimulus_get_window(vstim);
+
+    psy_window_schedule_stimulus(window, PSY_VISUAL_STIMULUS(stimulus));
+
+    PSY_STIMULUS_CLASS(psy_visual_stimulus_parent_class)->play(
+            stimulus, start_time
+            );
+}
+
+
+static void
 psy_visual_stimulus_class_init(PsyVisualStimulusClass* klass)
 {
     GObjectClass *object_class = G_OBJECT_CLASS(klass);
     object_class->get_property = psy_visual_stimulus_get_property;
     object_class->set_property = psy_visual_stimulus_set_property;
+
+    PsyStimulusClass* stimulus_class = PSY_STIMULUS_CLASS(klass);
+    stimulus_class->play        = visual_stimulus_play;
 
     klass->update = visual_stimulus_update;
 
@@ -179,6 +198,45 @@ psy_visual_stimulus_class_init(PsyVisualStimulusClass* klass)
 }
 
 /**
+ * psy_visual_stimulus_get_window:
+ * @stimulus: a `PsyVisualStimulus`
+ *
+ * Get the window on which this stimulus should be drawn.
+ *
+ * Returns: (nullable) (transfer none): The `PsyWindow` on which this stimulus
+ *                                      should be drawn.
+ */
+PsyWindow*
+psy_visual_stimulus_get_window(PsyVisualStimulus* stimulus)
+{
+    PsyVisualStimulusPrivate* priv = psy_visual_stimulus_get_instance_private(stimulus);
+
+    g_return_val_if_fail(PSY_IS_VISUAL_STIMULUS(stimulus), NULL);
+
+    return priv->window;
+}
+
+/**
+ * psy_visual_stimulus_set_window:
+ * @stimulus: a `PsyVisualStimulus`
+ * @window: a `PsyWindow` to draw this stimulus on.
+ *
+ * Set the window on which this stimulus should be drawn.
+ */
+void
+psy_visual_stimulus_set_window(PsyVisualStimulus* stimulus,
+                               PsyWindow* window)
+{
+    PsyVisualStimulusPrivate* priv = psy_visual_stimulus_get_instance_private(stimulus);
+    
+    g_return_if_fail(PSY_IS_VISUAL_STIMULUS(stimulus));
+    g_return_if_fail(PSY_IS_WINDOW(window));
+
+    g_clear_object(&priv->window);
+    priv->window = window;
+}
+
+/**
  * psy_visual_stimulus_update:
  * @self the #PsyVisualStimulus instance in need of an update for a comming frame.
  * @frame_time:(transfer none): The time at which the next frame when the new
@@ -213,4 +271,6 @@ psy_visual_stimulus_update (
             nth_frame
             );
 }
+
+
 

@@ -17,6 +17,8 @@
  * 2. It will call the draw_stimuli function. The base class doesn't know 
  * how to do this, hence they need to be implemented in deriving classes.
  */
+#include "psy-time-point.h"
+#include "psy-visual-stimulus.h"
 #include "psy-window.h"
 
 typedef struct PsyWindowPrivate {
@@ -24,6 +26,10 @@ typedef struct PsyWindowPrivate {
     guint           n_frames;
     gint            width_mm, height_mm;
     gfloat          back_ground_color[4];
+
+    GHashTable*     stimuli;
+    GTree*          sorted_stimuli;
+    PsyDuration*    frame_dur;
 } PsyWindowPrivate;
 
 G_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE(PsyWindow, psy_window, G_TYPE_OBJECT)
@@ -39,6 +45,7 @@ typedef enum {
     BACKGROUND_COLOR_VALUES,
     WIDTH_MM,
     HEIGHT_MM,
+    FRAME_DUR,
     N_PROPS
 } PsyWindowProperty;
 
@@ -66,6 +73,7 @@ psy_window_set_property(GObject        *object,
         case HEIGHT_MM:
             psy_window_set_height_mm(self, g_value_get_int(value));
             break;
+        case FRAME_DUR:
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, spec);
     }
@@ -89,9 +97,37 @@ psy_window_get_property(GObject        *object,
         case HEIGHT_MM:
             g_value_set_int(value, psy_window_get_height_mm(self));
             break;
+        case FRAME_DUR:
+            g_value_set_object(value, psy_window_get_frame_dur(self));
+            break;
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, spec);
     }
+}
+
+static gint
+stimulus_cmp(gconstpointer s1, gconstpointer s2, gpointer data)
+{
+    (void) data;
+    PsyStimulus *stim1 = PSY_STIMULUS((gpointer)s1);
+    PsyStimulus *stim2 = PSY_STIMULUS((gpointer)s2);
+
+    PsyTimePoint *t1 = psy_stimulus_get_start_time(stim1);
+    PsyTimePoint *t2 = psy_stimulus_get_start_time(stim2);
+
+    // This way the stimuli are sorted on start time
+    if (psy_time_point_less(t1, t2))
+        return -1;
+    else if(psy_time_point_greater(t1, t2))
+        return 1;
+
+    // Allow multiple stimuli with same start time
+    if (s1 == s2)
+        return 0;
+    else if (s1 < s2)
+        return -2;
+    else
+        return 2;
 }
 
 static void
@@ -102,6 +138,20 @@ psy_window_init(PsyWindow* self)
         0.5, 0.5, 0.5, 1.0
     };
 
+//
+//    priv->stimuli = g_hash_table_new_full(
+//            g_direct_hash,
+//            g_direct_equal,
+//            g_object_unref,
+//            NULL
+//            );
+
+    priv->sorted_stimuli = g_tree_new_full(
+            stimulus_cmp,
+            NULL,
+            g_object_unref,
+            NULL);
+
     memcpy(priv->back_ground_color, default_bg, sizeof(default_bg));
 }
 
@@ -111,7 +161,16 @@ psy_window_dispose(GObject* gobject)
     PsyWindowPrivate* priv = psy_window_get_instance_private(
             PSY_WINDOW(gobject)
             );
-    (void) priv;
+
+    if (priv->sorted_stimuli) {
+        g_tree_destroy(priv->sorted_stimuli);
+        priv->sorted_stimuli = NULL;
+    }
+
+    if (priv->stimuli) {
+        g_hash_table_destroy(priv->stimuli);
+        priv->stimuli = NULL;
+    }
 
     G_OBJECT_CLASS(psy_window_parent_class)->dispose(gobject);
 }
@@ -128,7 +187,7 @@ psy_window_finalize(GObject* gobject)
 }
 
 static GParamSpec* obj_properties[N_PROPS];
-static guint window_signals[LAST_SIGNAL];
+//static guint window_signals[LAST_SIGNAL];
 
 static gint
 get_monitor(PsyWindow* self) {
@@ -140,6 +199,13 @@ static void
 set_monitor(PsyWindow* self, gint nth_monitor) {
     PsyWindowPrivate* priv = psy_window_get_instance_private(self);
     priv->monitor = nth_monitor;
+}
+
+static void
+set_frame_dur(PsyWindow* self, PsyDuration* dur)
+{
+    PsyWindowPrivate* priv = psy_window_get_instance_private(self);
+    priv->frame_dur = dur;
 }
 
 static void
@@ -177,6 +243,8 @@ psy_window_class_init(PsyWindowClass* klass)
 
     klass->draw                 = draw;
     klass->set_monitor_size_mm  = set_monitor_size_mm;
+
+    klass->set_frame_dur        = set_frame_dur;
 
     /**
      * PsyWindow:n-monitor:
@@ -249,7 +317,20 @@ psy_window_class_init(PsyWindowClass* klass)
                 -1,
                 G_PARAM_READWRITE 
                 );
-   
+
+    /**
+     * PsyWindow:frame-dur:
+     *
+     * The duration of one frame, this will be the reciprocal of the framerate
+     * of the monitor on which this window is presented.
+     */
+    obj_properties[FRAME_DUR] = g_param_spec_object(
+            "frame-dur",
+            "FrameDur",
+            "The duration of one frame.",
+            PSY_TYPE_DURATION,
+            G_PARAM_READABLE
+            );
 
     g_object_class_install_properties(object_class, N_PROPS, obj_properties);
 
@@ -416,6 +497,21 @@ psy_window_get_width_mm(PsyWindow* window)
 }
 
 /**
+ * psy_window_set_width_mm:
+ * @window:A #PsyWindow instance
+ * @width_mm: the width of the window/monitor
+ *
+ * Set the width of the window. Override the settings as found by the os/backend
+ */
+void
+psy_window_set_width_mm(PsyWindow* window, gint width_mm)
+{
+    g_return_if_fail(PSY_IS_WINDOW(window));
+    PsyWindowPrivate* private = psy_window_get_instance_private(window);
+    private->width_mm = width_mm;
+}
+
+/**
  * psy_window_get_height_mm:
  * @window:A #PsyWindow instance
  *
@@ -430,30 +526,50 @@ psy_window_get_height_mm(PsyWindow* window)
 }
 
 /**
- * psy_window_set_width_mm:
- * @window:A #PsyWindow instance
- * @width_mm: the width of the window/monitor
- *
- * Set the width of the window. Override the settings as found by the os/backend
- */
-void psy_window_set_width_mm(PsyWindow* window, gint width_mm)
-{
-    g_return_if_fail(PSY_IS_WINDOW(window));
-    PsyWindowPrivate* private = psy_window_get_instance_private(window);
-    private->width_mm = width_mm;
-}
-
-/**
  * psy_window_set_height_mm:
  * @window:A #PsyWindow instance
  * @height_mm: the height of the window/monitor
  *
  * Set the height of the window. Override the settings as found by the os/backend
  */
-void psy_window_set_height_mm(PsyWindow* window, gint height_mm)
+void
+psy_window_set_height_mm(PsyWindow* window, gint height_mm)
 {
     g_return_if_fail(PSY_IS_WINDOW(window));
     PsyWindowPrivate* private = psy_window_get_instance_private(window);
     private->height_mm = height_mm;
+}
+
+/**
+ * psy_window_schedule_stimulus:
+ * @window: a PsyWindow instance
+ * @stimulus: a `PsyVisualStimulus` instance that should be draw on this window
+ *
+ * Notifies the window about a stimulus that should be drawn on it, if the
+ * stimulus was already present, it is ignored.
+ */
+void
+psy_window_schedule_stimulus(PsyWindow* window, PsyVisualStimulus* stimulus)
+{
+    PsyWindowPrivate* priv = psy_window_get_instance_private(window);
+
+    g_return_if_fail(PSY_IS_WINDOW(window));
+    g_return_if_fail(PSY_IS_VISUAL_STIMULUS(stimulus));
+
+    if (g_tree_lookup(priv->sorted_stimuli, stimulus) != NULL)
+        return;
+
+    g_object_ref(stimulus);
+    g_tree_insert_node(priv->sorted_stimuli, stimulus, NULL);
+}
+
+
+PsyDuration*
+psy_window_get_frame_dur(PsyWindow* window)
+{
+    PsyWindowPrivate *priv = psy_window_get_instance_private(window);
+
+    g_return_val_if_fail(PSY_IS_WINDOW(window), NULL);
+    return priv->frame_dur;
 }
 

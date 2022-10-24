@@ -3,6 +3,7 @@
 
 #include "psy-stimulus.h"
 #include "psy-time-point.h"
+#include "psy-window.h"
 
 G_BEGIN_DECLS
 
@@ -20,6 +21,11 @@ typedef struct _PsyVisualStimulusClass {
     void (*update) (PsyVisualStimulus* stim, PsyTimePoint* frame_time, gint64 nth_frame);
 } PsyVisualStimulusClass;
 
+G_MODULE_EXPORT PsyWindow*
+psy_visual_stimulus_get_window(PsyVisualStimulus* stimulus);
+
+G_MODULE_EXPORT void 
+psy_visual_stimulus_set_window(PsyVisualStimulus* stimulus, PsyWindow* window);
 
 G_MODULE_EXPORT
 void psy_visual_stimulus_update (

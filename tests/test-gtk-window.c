@@ -1,6 +1,12 @@
 
-#include "psy-window.h"
+#include "psy-visual-stimulus.h"
+#include <psy-duration.h>
+#include <psy-time-point.h>
+#include <psy-stimulus.h>
+#include <psy-clock.h>
+#include <psy-window.h>
 #include <backend_gtk/psy-gtk-window.h>
+#include <psy-circle.h>
 #include <stdlib.h>
 
 gboolean stop_loop(gpointer data) {
@@ -10,12 +16,24 @@ gboolean stop_loop(gpointer data) {
 }
 
 int main() {
+    
+    PsyClock* clk = psy_clock_new();
+    PsyTimePoint* tp, *start;
+    PsyDuration* dur = psy_duration_new_ms(500);
 
     GMainLoop*    loop = g_main_loop_new(NULL, FALSE);
 
     PsyGtkWindow* window = psy_gtk_window_new_for_monitor(1);
 
-    g_timeout_add_seconds(1, stop_loop, loop);
+    PsyCircle* circle = psy_circle_new(window);
+
+    g_timeout_add(250, stop_loop, loop);
+
+    tp = psy_clock_now(clk);
+    start = psy_time_point_add(tp, dur);
+
+    psy_stimulus_play_for(PSY_STIMULUS(circle), start, dur);
+
     g_main_loop_run(loop);
 
     g_print("The width = %d mm and height = %d mm\n",

@@ -258,11 +258,17 @@ set_monitor(PsyWindow* self, gint nth_monitor) {
 
     width_mm = gdk_monitor_get_width_mm(monitor);
     height_mm= gdk_monitor_get_height_mm(monitor);
-    g_print("%s: %d %d\n", __PRETTY_FUNCTION__, width_mm, height_mm);
+    gdouble mHz = gdk_monitor_get_refresh_rate(monitor);
+    gdouble Hz = mHz / 1000;
+    PsyDuration* frame_duration = psy_duration_new(1/Hz);
 
     gtk_window_fullscreen_on_monitor(GTK_WINDOW(psywindow->window),  monitor);
     psy_window_set_width_mm(self, width_mm);
     psy_window_set_height_mm(self, height_mm);
+
+    PSY_WINDOW_CLASS(psy_gtk_window_parent_class)->set_frame_dur(self, frame_duration);
+    g_object_unref(frame_duration);
+
     PSY_WINDOW_CLASS(psy_gtk_window_parent_class)->set_monitor(
             self, nth_monitor
             );

@@ -32,6 +32,7 @@ libpsy_incdirs = include_directories(
 
 
 libpsy_headers = files(
+    'psy-circle.h',
     'psy-clock.h',
     'psy-duration.h',
     'psy-loop.h',
@@ -58,6 +59,7 @@ libpsy_header_private = files(
 )
 
 libpsyfiles = files (
+    'psy-circle.c',
     'psy-clock.c',
     'psy-duration.c',
     'psy-loop.c',

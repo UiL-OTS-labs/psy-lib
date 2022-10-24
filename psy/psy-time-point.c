@@ -121,6 +121,22 @@ psy_time_point_new(gint64 monotonic_time)
 }
 
 /**
+ * psy_time_point_new_copy:(constructor)
+ * @other:(transfer none): the `PsyTimePoint` instance of which to make a copy
+ *
+ * Make a deep copy of a PsyTimePoint instance
+ *
+ * Returns: a new instance of `PsyTimePoint`
+ */
+PsyTimePoint*
+psy_time_point_new_copy(PsyTimePoint* other)
+{
+    PsyTimePoint* tp = g_object_new(PSY_TYPE_TIME_POINT, NULL);
+    tp->ticks_since_start = other->ticks_since_start;
+    return tp;
+}
+
+/**
  * psy_time_point_subtract:
  * @self: An instance of `PsyTimePoint`
  * @other: An instance of `PsyTimePoint`
