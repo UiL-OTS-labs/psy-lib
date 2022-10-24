@@ -336,6 +336,17 @@ psy_duration_divide(PsyDuration* self, PsyDuration *other)
     return self->us / other->us;
 }
 
+/**
+ * psy_duration_divide_rounded:
+ * @self: a `PsyDuration` instance
+ * @other: another `PsyDuration` instance
+ *
+ * Since durations are based on `gint64` µs standard division is truncating.
+ * This method returns the result rounded to the nearest `gint64`.
+ *
+ * Returns: a division of durations that returns the result of the
+ *          division rounded to the nearest integer.
+ */         
 gint64
 psy_duration_divide_rounded(PsyDuration *self, PsyDuration* other)
 {
