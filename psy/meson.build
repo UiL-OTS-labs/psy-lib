@@ -26,11 +26,13 @@ configure_file (
 config_incdirs = include_directories('.')
 libpsy_incdirs = include_directories(
     'external_libs',
-    'gl'
+    'gl',
+    'backend_gtk',
 )
 
 
 libpsy_headers = files(
+    'psy-circle.h',
     'psy-clock.h',
     'psy-duration.h',
     'psy-loop.h',
@@ -46,8 +48,10 @@ libpsy_headers = files(
     'psy-vbuffer.h',
     'psy-vector.h',
     'psy-vector4.h',
+    'psy-visual-stimulus.h',
     'psy-widget.h',
     'psy-window.h',
+    'psy-window-toy.h',
 )
 
 libpsy_header_private = files(
@@ -55,6 +59,7 @@ libpsy_header_private = files(
 )
 
 libpsyfiles = files (
+    'psy-circle.c',
     'psy-clock.c',
     'psy-duration.c',
     'psy-loop.c',
@@ -71,12 +76,14 @@ libpsyfiles = files (
     'psy-vbuffer.c',
     'psy-vector.c',
     'psy-vector4.cpp',
+    'psy-visual-stimulus.c',
     'psy-widget.c',
     'psy-window.c',
+    'psy-window-toy.c',
 )
 
 subdir('gl')
-
+subdir('backend_gtk')
 enum_files = gnome.mkenums_simple('enum-types', sources : libpsy_headers)
 
 configure_file(input : 'v-shader.vert',

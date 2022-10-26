@@ -29,6 +29,12 @@ test_time_utilities = executable(
     dependencies : [psy_dep]
 )
 
+test_gtk_window = executable(
+    'test-gtk-window',
+    'test-gtk-window.c',
+    dependencies : [psy_dep]
+)
+
 test('vector test', vector_test)
 test('vector4_test', vector4_test)
 test('test-stepping', test_stepping)

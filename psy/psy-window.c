@@ -1,310 +1,62 @@
-
-#include <epoxy/gl.h>
-#include <epoxy/glx.h>
+/**
+ * PsyWindow:
+ *
+ * PsyWindow is an abstract class. It provides an base class for platform or
+ * toolkit specific backends. A window in PsyLib is typically a fullscreen 
+ * window that is placed on a specific monitor.
+ *
+ * From the point of a psychological experiment tool-kit it doesn't make
+ * sense to allow window that are not fullscreen, hence every window will
+ * be created at full screen resolution.
+ *
+ * A derived window will know when it is ready to draw the window, as such
+ * it will call the PsyWindow.draw method. The draw method will call two
+ * functions.
+ *
+ * * It will call the PsyWindowClass::clear function to clear the background
+ * to the default color.
+ * * It will call the draw_stimuli function.
+ * 
+ * The draw stimuli function does two things:
+ *
+ * 1. It will check the scheduled stimuli, to see whether there is
+ *    a stimulus ready to present.
+ * 2. It will update the stimuli that should be presented and make
+ *    sure that the deriving window will actually draw every stimulus.
+ */
+#include "psy-duration.h"
+#include "psy-time-point.h"
+#include "psy-visual-stimulus.h"
 #include "psy-window.h"
 
-#include "gl/psy-gl-program.h"
-#include "gl/psy-gl-vbuffer.h"
-#include "gl/psy-gl-texture.h"
-
-struct _PsyWindow {
-    GtkWindow       parent;
-    GtkWidget      *darea;
-    gfloat          clear_color[4];
-    guint           monitor;
-    PsyProgram     *gl_program;
-    PsyProgram     *gl_picture_program;
-    PsyVBuffer     *vertices;
-    PsyVBuffer     *picture_vertices;
-    PsyTexture     *gl_texture;
+typedef struct PsyWindowPrivate {
+    gint            monitor;
     guint           n_frames;
-    guint           fps_timeout;
-};
+    gint            width_mm, height_mm;
+    gfloat          back_ground_color[4];
 
-G_DEFINE_TYPE(PsyWindow, psy_window, GTK_TYPE_WINDOW)
+    GHashTable*     stimuli;
+    GTree*          sorted_stimuli;
+    PsyDuration*    frame_dur;
+} PsyWindowPrivate;
+
+G_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE(PsyWindow, psy_window, G_TYPE_OBJECT)
+
+typedef enum {
+    CLEAR,
+    DRAW_STIMULI,
+    LAST_SIGNAL,
+} PsyWindowSignal;
 
 typedef enum {
     N_MONITOR = 1,
+    BACKGROUND_COLOR_VALUES,
+    WIDTH_MM,
+    HEIGHT_MM,
+    FRAME_DUR,
     N_PROPS
 } PsyWindowProperty;
 
-static gboolean
-tick_callback(GtkWidget       *widget,
-              GdkFrameClock   *clock,
-              gpointer         data)
-{
-    (void) data;
-    PsyWindow* win3d = PSY_WINDOW(widget);
-    gtk_gl_area_make_current(GTK_GL_AREA(win3d->darea));
-    //glViewport(0, 0, 600, 600);
-    GError* error = gtk_gl_area_get_error(GTK_GL_AREA(win3d->darea));
-    if (error) {
-        g_critical("An OpenGL error occurred: %s", error->message);
-        return G_SOURCE_REMOVE;
-    }
-
-    gfloat *color = win3d->clear_color;
-    gint64 us = gdk_frame_clock_get_frame_time(clock);
-    gfloat seconds = (gfloat)us / 1e6;
-
-//    color[0] = (float) sin(seconds * 1.00) / 2 + .5;
-//    color[1] = (float) sin(seconds * 0.50) / 2 + .5;
-//    color[2] = (float) sin(seconds * 0.25) / 2 + .5;
-//    color[3] = 1.0;
-
-    glClearColor(color[0], color[1], color[2], color[3]);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    gint color_id = glGetUniformLocation(
-            psy_gl_program_get_object_id(PSY_GL_PROGRAM(win3d->gl_program)),
-            "ourColor"
-            );
-
-    psy_program_use(win3d->gl_program, &error);
-    if (error) {
-        gtk_gl_area_set_error(GTK_GL_AREA(win3d->darea), error);
-        return G_SOURCE_REMOVE;
-    }
-    float tc;
-    //tc = sinf(seconds * 2.0f * 3.141592654f) / 2.0 + .5f;
-    tc = sinf(seconds) * .25 / 2.0 + .5f;
-    glUniform4f(color_id, tc, tc, tc, 1.0f);
-
-    psy_vbuffer_draw_triangles(win3d->vertices, &error);
-    if (error) {
-        gtk_gl_area_set_error(GTK_GL_AREA(win3d->darea), error);
-        return G_SOURCE_REMOVE;
-    }
-
-    psy_program_use(win3d->gl_picture_program, &error);
-    if (error) {
-        gtk_gl_area_set_error(GTK_GL_AREA(win3d->darea), error);
-        return G_SOURCE_REMOVE;
-    }
-
-    psy_texture_bind(win3d->gl_texture, &error);
-    if (error) {
-        gtk_gl_area_set_error(GTK_GL_AREA(win3d->darea), error);
-        return G_SOURCE_REMOVE;
-    }
-
-    psy_vbuffer_draw_triangle_fan(win3d->picture_vertices, &error);
-    if (error) {
-        gtk_gl_area_set_error(GTK_GL_AREA(win3d->darea), error);
-        return G_SOURCE_REMOVE;
-    }
-
-    glFlush();
-
-    gtk_widget_queue_draw(win3d->darea);
-
-    win3d->n_frames++;
-
-    return G_SOURCE_CONTINUE;
-}
-
-static void
-on_darea_resize(GtkDrawingArea* darea, gint width, gint height, gpointer data)
-{
-    PsyWindow *self = data;
-    (void) self;
-    gtk_gl_area_make_current(GTK_GL_AREA(darea));
-    glViewport(
-            0,
-            0,
-            width > 0 ? (GLsizei) width : 0,
-            height > 0 ? (GLsizei) height : 0
-            );
-    g_print("width %d, height %d, data %p\n", width, height, data);
-}
-
-static void
-init_textures(PsyWindow* self, GError **error)
-{
-    gtk_gl_area_make_current(GTK_GL_AREA(self->darea));
-    PsyGlTexture  *texture  = psy_gl_texture_new();
-    const gchar   *path     = "./share/Itálica_Owl.jpg";
-    psy_texture_set_num_channels(PSY_TEXTURE(texture), 3);
-    psy_texture_set_path(PSY_TEXTURE(texture), path);
-    psy_texture_upload(PSY_TEXTURE(texture), error);
-
-    self->gl_texture = PSY_TEXTURE(texture);
-}
-
-static void
-init_shaders(PsyWindow* self, GError **error)
-{
-    // Uniform color program
-    PsyGlProgram *program = psy_gl_program_new();
-    self->gl_program = PSY_PROGRAM(program);
-
-    psy_program_set_vertex_shader_from_path(
-            self->gl_program, "./psy/uniform-color.vert", error
-            );
-    if (*error)
-        goto fail;
-    psy_program_set_fragment_shader_from_path(
-            self->gl_program, "./psy/uniform-color.frag", error);
-    if (*error)
-        goto fail;
-
-    psy_program_link(self->gl_program, error);
-    if (*error)
-        goto fail;
-
-    // Picture program
-    program = psy_gl_program_new();
-    self->gl_picture_program = PSY_PROGRAM(program);
-
-    psy_program_set_vertex_shader_from_path(
-            self->gl_picture_program, "./psy/picture.vert", error
-            );
-    if (*error)
-        goto fail;
-
-    psy_program_set_fragment_shader_from_path(
-            self->gl_picture_program, "./psy/picture.frag", error
-            );
-    if (*error)
-        goto fail;
-
-    psy_program_link(self->gl_picture_program, error);
-    if (*error)
-        goto fail;
-
-    return;
-
-    fail:
-    g_object_unref(program);
-}
-
-static void
-init_vertices(PsyWindow *self, GError **error)
-{
-    self->vertices = PSY_VBUFFER(psy_gl_vbuffer_new());
-    g_assert(self->vertices);
-
-    self->picture_vertices = PSY_VBUFFER(psy_gl_vbuffer_new());
-    g_assert(self->picture_vertices);
-
-    PsyVertex array[] = {
-        {
-            .pos = {-0.5f, -0.5f, 0.0f}, // left
-            .color = {0},
-            .texture_pos ={0}
-        },
-        {
-            {0.5f, -0.5f, 0.0f}, // right
-            {0, 0, 0, 0},
-            {0, 0}
-        },
-        {
-            {0.0f,  0.5f, 0.0f}, // top
-            {0, 0 , 0, 0},
-            {0, 0}
-        }
-    };
-
-    PsyVertex pic_verts[] = {
-        {
-            .pos = {-0.6f,  0.6f, 0.001f}, // left top
-            .color = {1.0f, 0.0f, 0.0f, 1.0f},
-            .texture_pos = {0.0f, 0.0f}
-        },
-        {
-            .pos = {-0.6f, -0.6f, 0}, // left bottom
-            .color = {0.0f, 1.0f, 0.0f, 1.0f},
-            .texture_pos = {0.0f, 2.0f}
-        },
-        {
-            .pos = {0.6f, -0.6f, 0.0f}, // right bottom
-            .color = {0.0f, 0.0f, 1.0f, 1.0f},
-            .texture_pos = {1.0f, 2.0f}
-        },
-        {
-            .pos = {0.6f, 0.6f, 0.0f}, // right top
-            .color = {1.0f, 1.0f, 0.0f, 1.0f},
-            .texture_pos = {1.0f, 0.0f}
-        }
-    };
-
-    psy_vbuffer_set_from_data(self->vertices, array, 3);
-
-    psy_vbuffer_set_from_data(self->picture_vertices,
-                              pic_verts,
-                              sizeof(pic_verts)/sizeof(pic_verts[0])
-                              );
-    g_assert(sizeof(pic_verts) == psy_vbuffer_get_size(self->picture_vertices));
-
-    for (gsize i = 0; i < sizeof(pic_verts)/sizeof(pic_verts[0]); i++) {
-        PsyVertexPos pos;
-        PsyVertexColor color;
-        PsyVertexTexPos tpos;
-        psy_vbuffer_get_pos(self->picture_vertices, i, &pos);
-        psy_vbuffer_get_color(self->picture_vertices, i, &color);
-        psy_vbuffer_get_texture_pos(self->picture_vertices, i, &tpos);
-
-        g_print("%f %f %f\t%f %f %f %f\t%f %f\n",
-                pos.x, pos.y, pos.z,
-                color.r, color.b, color.g, color.a,
-                tpos.s, tpos.t);
-    }
-
-    gtk_gl_area_make_current(GTK_GL_AREA(self->darea));
-
-    psy_vbuffer_upload(self->vertices, error);
-    if (*error) {
-        return;
-    }
-    psy_vbuffer_upload(self->picture_vertices, error);
-    if (*error) {
-        return;
-    }
-
-    g_assert(psy_vbuffer_is_uploaded(self->vertices));
-    g_assert(psy_vbuffer_is_uploaded(self->picture_vertices));
-}
-
-static void
-on_darea_realize(GtkGLArea* darea, PsyWindow* window)
-{
-    GError* error = NULL;
-    gtk_gl_area_make_current(darea);
-
-    if (gtk_gl_area_get_error(darea) != NULL)
-        return;
-
-    init_shaders(window, &error);
-
-    if (error) {
-        gtk_gl_area_set_error(darea, error);
-        return;
-    }
-
-    init_vertices(window, &error);
-    if (error) {
-        gtk_gl_area_set_error(darea, error);
-        return;
-    }
-
-    init_textures(window, &error);
-    if(error) {
-        gtk_gl_area_set_error(darea, error);
-        return;
-    }
-}
-
-static void
-on_darea_unrealize(GtkGLArea* area, PsyWindow* self)
-{
-    gtk_gl_area_make_current(area);
-
-    g_clear_object(&self->gl_program);
-    g_clear_object(&self->gl_picture_program);
-    g_clear_object(&self->vertices);
-    g_clear_object(&self->picture_vertices);
-    g_clear_object(&self->gl_texture);
-}
 
 static void
 psy_window_set_property(GObject        *object,
@@ -316,8 +68,20 @@ psy_window_set_property(GObject        *object,
 
     switch((PsyWindowProperty) property_id) {
         case N_MONITOR:
-            psy_window_set_monitor(self, g_value_get_uint(value));
+            psy_window_set_monitor(self, g_value_get_int(value));
             break;
+        case BACKGROUND_COLOR_VALUES:
+            psy_window_set_background_color_values(
+                    self,
+                    g_value_get_pointer(value));
+            break;
+        case WIDTH_MM:
+            psy_window_set_width_mm(self, g_value_get_int(value));
+            break;
+        case HEIGHT_MM:
+            psy_window_set_height_mm(self, g_value_get_int(value));
+            break;
+        case FRAME_DUR:
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, spec);
     }
@@ -333,72 +97,87 @@ psy_window_get_property(GObject        *object,
 
     switch((PsyWindowProperty) property_id) {
         case N_MONITOR:
-            g_value_set_uint(value, psy_window_get_monitor(self));
+            g_value_set_int(value, psy_window_get_monitor(self));
+            break;
+        case WIDTH_MM:
+            g_value_set_int(value, psy_window_get_width_mm(self));
+            break;
+        case HEIGHT_MM:
+            g_value_set_int(value, psy_window_get_height_mm(self));
+            break;
+        case FRAME_DUR:
+            g_value_set_object(value, psy_window_get_frame_dur(self));
             break;
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, spec);
     }
 }
 
-static gboolean
-print_fps(PsyWindow* self)
+static gint
+stimulus_cmp(gconstpointer s1, gconstpointer s2, gpointer data)
 {
-    g_print("fps = %d\n", self->n_frames);
-    self->n_frames = 0;
-    return G_SOURCE_CONTINUE;
+    (void) data;
+    PsyStimulus *stim1 = PSY_STIMULUS((gpointer)s1);
+    PsyStimulus *stim2 = PSY_STIMULUS((gpointer)s2);
+
+    PsyTimePoint *t1 = psy_stimulus_get_start_time(stim1);
+    PsyTimePoint *t2 = psy_stimulus_get_start_time(stim2);
+
+    // This way the stimuli are sorted on start time
+    if (psy_time_point_less(t1, t2))
+        return -1;
+    else if(psy_time_point_greater(t1, t2))
+        return 1;
+
+    // Allow multiple stimuli with same start time
+    if (s1 == s2)
+        return 0;
+    else if (s1 < s2)
+        return -2;
+    else
+        return 2;
 }
 
 static void
 psy_window_init(PsyWindow* self)
 {
-    gfloat clearcolor[] = { 0.5, 0.5, 0.5, 1.0};
-    memcpy(self->clear_color, clearcolor, sizeof(clearcolor));
-    self->darea = gtk_gl_area_new();
+    PsyWindowPrivate* priv = psy_window_get_instance_private(self);
+    gfloat default_bg[4] = {
+        0.5, 0.5, 0.5, 1.0
+    };
 
-    // Prepare common OpenGL setup prior to realization.
-    gtk_gl_area_set_required_version(GTK_GL_AREA(self->darea), 4, 4);
-    // gtk_gl_area_set_has_alpha(GTK_GL_AREA(self->darea), TRUE);
-    gtk_gl_area_set_has_depth_buffer(GTK_GL_AREA(self->darea), TRUE);
-    gtk_gl_area_set_has_stencil_buffer(GTK_GL_AREA(self->darea), FALSE);
+//
+//    priv->stimuli = g_hash_table_new_full(
+//            g_direct_hash,
+//            g_direct_equal,
+//            g_object_unref,
+//            NULL
+//            );
 
-    gtk_window_set_decorated(GTK_WINDOW(self), FALSE);
+    priv->sorted_stimuli = g_tree_new_full(
+            stimulus_cmp,
+            NULL,
+            g_object_unref,
+            NULL);
 
-    gtk_window_set_child (GTK_WINDOW(self), self->darea);
-
-    gtk_widget_add_tick_callback(GTK_WIDGET(self), tick_callback, NULL, NULL);
-
-    g_signal_connect(
-            self->darea,
-            "realize",
-            G_CALLBACK(on_darea_realize),
-            self);
-    g_signal_connect(
-            self->darea,
-            "unrealize",
-            G_CALLBACK(on_darea_unrealize),
-            self);
-
-    g_signal_connect(
-            self->darea,
-            "resize",
-            G_CALLBACK(on_darea_resize),
-            self
-            );
-
-    self->fps_timeout = g_timeout_add(1000, G_SOURCE_FUNC(print_fps), self);
-
-    gtk_widget_show(GTK_WIDGET(self));
+    memcpy(priv->back_ground_color, default_bg, sizeof(default_bg));
 }
 
 static void
 psy_window_dispose(GObject* gobject)
 {
-    PsyWindow* self = PSY_WINDOW(gobject);
-    (void) self;
+    PsyWindowPrivate* priv = psy_window_get_instance_private(
+            PSY_WINDOW(gobject)
+            );
 
-    if (self->fps_timeout) {
-        g_source_remove(self->fps_timeout);
-        self->fps_timeout = 0;
+    if (priv->sorted_stimuli) {
+        g_tree_destroy(priv->sorted_stimuli);
+        priv->sorted_stimuli = NULL;
+    }
+
+    if (priv->stimuli) {
+        g_hash_table_destroy(priv->stimuli);
+        priv->stimuli = NULL;
     }
 
     G_OBJECT_CLASS(psy_window_parent_class)->dispose(gobject);
@@ -407,13 +186,117 @@ psy_window_dispose(GObject* gobject)
 static void
 psy_window_finalize(GObject* gobject)
 {
-    PsyWindow* self = PSY_WINDOW(gobject);
-    (void) self;
+    PsyWindowPrivate* priv = psy_window_get_instance_private(
+            PSY_WINDOW(gobject)
+            );
+    (void) priv;
 
     G_OBJECT_CLASS(psy_window_parent_class)->finalize(gobject);
 }
 
 static GParamSpec* obj_properties[N_PROPS];
+//static guint window_signals[LAST_SIGNAL];
+
+static gint
+get_monitor(PsyWindow* self) {
+    PsyWindowPrivate* priv = psy_window_get_instance_private(self);
+    return priv->monitor;
+}
+
+static void
+set_monitor(PsyWindow* self, gint nth_monitor) {
+    PsyWindowPrivate* priv = psy_window_get_instance_private(self);
+    priv->monitor = nth_monitor;
+}
+
+static void
+set_frame_dur(PsyWindow* self, PsyDuration* dur)
+{
+    PsyWindowPrivate* priv = psy_window_get_instance_private(self);
+    priv->frame_dur = dur;
+}
+
+static void
+remove_stimulus(PsyWindow* self, PsyVisualStimulus* stimulus)
+{
+    PsyWindowPrivate* priv = psy_window_get_instance_private(self);
+    g_tree_remove(priv->sorted_stimuli, stimulus);
+}
+
+static void
+draw(PsyWindow* self, guint64 frame_num, PsyTimePoint* tp)
+{
+    PsyWindowClass* cls = PSY_WINDOW_GET_CLASS(self);
+    g_return_if_fail(cls->clear);
+    g_return_if_fail(cls->draw_stimuli);
+
+    cls->clear(self);
+    cls->draw_stimuli(self, frame_num, tp);
+}
+
+static void
+draw_stimuli(PsyWindow* self, guint64 frame_num, PsyTimePoint* tp)
+{
+    PsyWindowPrivate* priv = psy_window_get_instance_private(self);
+    PsyWindowClass* klass = PSY_WINDOW_GET_CLASS(self);
+    GTreeNode* node;
+
+    for ( node = g_tree_node_first(priv->sorted_stimuli);
+          node;
+          node = g_tree_node_next(node) ) {
+        
+        PsyStimulus* stim = g_tree_node_key(node);
+        PsyVisualStimulus* vstim = PSY_VISUAL_STIMULUS(stim);
+        gint64 start_frame, nth_frame, num_frames;
+
+        /* Schedule if necessary*/
+        if (!psy_visual_stimulus_is_scheduled(vstim) ) {
+            PsyTimePoint *start = psy_stimulus_get_start_time(stim);
+            PsyDuration *wait = psy_time_point_subtract(start, tp);
+            gint64 num_frames_away = psy_duration_divide_rounded(
+                    wait, priv->frame_dur
+                    );
+            if (num_frames_away < 0) {
+                g_warning(
+                        "Scheduling a stimulus that should have been presented "
+                        "in the past, the stimulus will be presented as "
+                        "quickly as possible.");
+                num_frames_away = 0;
+            }
+
+            psy_visual_stimulus_set_start_frame (
+                    vstim,
+                    frame_num + num_frames_away
+                    );
+        }
+
+        start_frame = psy_visual_stimulus_get_start_frame(vstim);
+        nth_frame = psy_visual_stimulus_get_nth_frame(vstim);
+        num_frames = psy_visual_stimulus_get_num_frames(vstim);
+        if (start_frame <= (gint64) frame_num) {
+            psy_visual_stimulus_update(vstim, tp, nth_frame);
+            klass->draw_stimulus(self, vstim);
+        }
+        nth_frame = psy_visual_stimulus_get_nth_frame(vstim);
+        if (nth_frame == 1) {
+            psy_stimulus_set_is_started(PSY_STIMULUS(stim), tp);
+        }
+
+        if (nth_frame >= num_frames) {
+            PsyTimePoint* tend = psy_time_point_add(tp, priv->frame_dur);
+            psy_stimulus_set_is_finished(PSY_STIMULUS(stim), tend);
+            psy_window_remove_stimulus(self, stim);
+        }
+    }
+}
+
+static void
+set_monitor_size_mm(PsyWindow* self, gint width_mm, gint height_mm)
+{
+    PsyWindowPrivate* priv = psy_window_get_instance_private(self);
+    priv->width_mm = width_mm;
+    priv->height_mm = height_mm;
+}
 
 static void
 psy_window_class_init(PsyWindowClass* klass)
@@ -425,6 +308,17 @@ psy_window_class_init(PsyWindowClass* klass)
     object_class->dispose       = psy_window_dispose;
     object_class->finalize      = psy_window_finalize;
 
+    klass->get_monitor          = get_monitor;
+    klass->set_monitor          = set_monitor;
+
+    klass->draw                 = draw;
+    klass->draw_stimuli         = draw_stimuli;
+    klass->set_monitor_size_mm  = set_monitor_size_mm;
+
+    klass->set_frame_dur        = set_frame_dur;
+
+    klass->remove_stimulus      = remove_stimulus;
+
     /**
      * PsyWindow:n-monitor:
      *
@@ -432,82 +326,126 @@ psy_window_class_init(PsyWindowClass* klass)
      * presented.
      */
     obj_properties[N_MONITOR] =
-        g_param_spec_uint("n-monitor",
-                          "nmonitor",
-                          "The number of the monitor to use for this window",
-                          0,
-                          G_MAXINT32,
-                          0,
-                          G_PARAM_CONSTRUCT | G_PARAM_READWRITE
-                          );
+        g_param_spec_int("n-monitor",
+                         "nmonitor",
+                         "The number of the monitor to use for this window",
+                         -1,
+                         G_MAXINT32,
+                         0,
+                         G_PARAM_CONSTRUCT | G_PARAM_READWRITE
+                         );
 
-    g_object_class_install_properties(object_class, N_PROPS, obj_properties);    
-}
+    /**
+     * PsyWindow:bg-color-values
+     *
+     * The color of the background, you can use this property to get/set
+     * the background color of the window. It is basically, an array of 4 floats
+     * in RGBA format where the color values range between 0.0 and 1.0.
+     */
+    obj_properties [BACKGROUND_COLOR_VALUES] = 
+        g_param_spec_pointer(
+                "bg-color-values",
+                "BackgroundColorValues",
+                "An array with 4 floats representing RGBA color of the background",
+                G_PARAM_READWRITE);
 
-/**
- * psy_window_new:(constructor):
- *
- * Returns a new #PsyWindow instance on the first monitor.
- * @return
- */
-PsyWindow*
-psy_window_new(void)
-{
-    PsyWindow* window = g_object_new(PSY_TYPE_WINDOW, NULL);
-    return window;
-}
-
-/**
- * psy_window_new_for_montitor:(constructor):
- * @n: the number of the monitor on which you want to display
- *     the newly created window. n will be clipped to the available
- *     range which is [0, n) where n is the number of monitors connected.
- *
- * Creates a new window, it should appear on the window that is specified
- * by @n. If a number larger than n is chosen it will appear on n minus one
- * where n is the number of connected monitors.
- *
- * Returns: a newly initialized window
- */
-PsyWindow*
-psy_window_new_for_monitor(guint n)
-{
-    GdkDisplay* disp = gdk_display_get_default();
-    GListModel* monitors = gdk_display_get_monitors(disp);
-    guint max = g_list_model_get_n_items(monitors);
-
-    if (n >= max)
-        n = max - 1;
+    /**
+     * PsyWindow:width-mm:
+     *
+     * The width of the monitor of the window in mm may be -1, it's
+     * uninitialized, 0 we don't know, or > 0 the width in mm, one should always
+     * check with a ruler to verify, as we try to determine it from the
+     * backend.
+     * If one knows better than the os/backend, one could set it self, don't
+     * worry it's unlikely that the physical size of your monitor will change.
+     */
+    obj_properties [WIDTH_MM] = 
+        g_param_spec_int(
+                "width-mm",
+                "WidthMM",
+                "The width of the window in mm, assuming a full screen window",
+                -1,
+                G_MAXINT32,
+                -1,
+                G_PARAM_READWRITE
+                );
     
-    PsyWindow* window = g_object_new(
-            PSY_TYPE_WINDOW,
-            "n-monitor", n,
-            NULL);
+    /**
+     * PsyWindow:height-mm:
+     *
+     * The height of the monitor of the window in mm may be -1, it's
+     * uninitialized, 0 we don't know, or > 0 the height in mm, one should always
+     * check with a ruler to verify, as we try to determine it from the
+     * backend/os.
+     * If one knows better than the os/backend, one could set it self, don't
+     * worry it's unlikely that the physical size of your monitor will change.
+     */
+    obj_properties [HEIGHT_MM] = 
+        g_param_spec_int(
+                "height-mm",
+                "HeightMM",
+                "The height of the window in mm, assuming a full screen window",
+                -1,
+                G_MAXINT32,
+                -1,
+                G_PARAM_READWRITE 
+                );
 
-    return window;
-}
+    /**
+     * PsyWindow:frame-dur:
+     *
+     * The duration of one frame, this will be the reciprocal of the framerate
+     * of the monitor on which this window is presented.
+     */
+    obj_properties[FRAME_DUR] = g_param_spec_object(
+            "frame-dur",
+            "FrameDur",
+            "The duration of one frame.",
+            PSY_TYPE_DURATION,
+            G_PARAM_READABLE
+            );
 
-/**
- * psy_window_set_monitor:
- * @self:A #PsyWindow instance
- * @monitor_num: A number between 0 and n - 1 where n is the number
- *               of available monitors.
- *
- * Display the the window on monitor monitor_num
- */
-void
-psy_window_set_monitor(PsyWindow* self, guint monitor_num)
-{
-    g_return_if_fail(PSY_IS_WINDOW(self));
-    GdkDisplay* display = gdk_display_get_default();
-    guint num_monitors = g_list_model_get_n_items(gdk_display_get_monitors(display));
-    g_return_if_fail(monitor_num < num_monitors);
+    g_object_class_install_properties(object_class, N_PROPS, obj_properties);
 
-    GListModel* monitors = gdk_display_get_monitors(display);
-    GdkMonitor* monitor = g_list_model_get_item(monitors, monitor_num);
+//    /**
+//     * PsyWindow::clear
+//     *
+//     * This is the first action that is run when a new frame should be
+//     * presented. The default handler calls the private/protected clear function
+//     * that clears the window.
+//     */
+//    window_signals[CLEAR] = g_signal_new(
+//            "clear",
+//            G_TYPE_FROM_CLASS(object_class),
+//            G_SIGNAL_RUN_FIRST,
+//            G_STRUCT_OFFSET(PsyWindowClass, clear),
+//            NULL,
+//            NULL,
+//            NULL,
+//            G_TYPE_NONE,
+//            0);
+//    
+//    /**
+//     * PsyWindow::draw-stimuli
+//     *
+//     * This is the first action that is run when a new frame should be
+//     * presented. The default handler calls the private/protected clear function
+//     * that clears the window.
+//     */
+//    window_signals[DRAW_STIMULI] = g_signal_new(
+//            "draw-stimuli",
+//            G_TYPE_FROM_CLASS(object_class),
+//            G_SIGNAL_RUN_FIRST | G_SIGNAL_NO_RECURSE,
+//            G_STRUCT_OFFSET(PsyWindowClass, clear),
+//            NULL,
+//            NULL,
+//            NULL,
+//            G_TYPE_NONE,
+//            2,
+//            G_TYPE_UINT64,
+//            PSY_TYPE_TIME_POINT
+//            );
 
-    gtk_window_fullscreen_on_monitor(GTK_WINDOW(self),  monitor);
-    self->monitor = monitor_num;
 }
 
 /**
@@ -517,13 +455,214 @@ psy_window_set_monitor(PsyWindow* self, guint monitor_num)
  * Returns the number of the monitor this window is being presented.
  * The result should b 0 for the first monitor to n - 1 for the last
  * where n is the number of monitors available to psy-lib.
+ * Once there are multiple backends, it could be the case that that
+ * the number is specific for this backend, and the number represents another
+ * monitor for another backend.
  *
  * Returns: 0 to n - 1 where n is the number of monitors connected or
- *          -1 when self is not a valid monitor.
+ *          -1 in case of an error.
  */
-guint
+gint
 psy_window_get_monitor(PsyWindow* self)
 {
     g_return_val_if_fail(PSY_IS_WINDOW(self), -1);
-    return self->monitor;
+
+    PsyWindowClass* class = PSY_WINDOW_GET_CLASS(self);
+    g_return_val_if_fail(class->get_monitor, -1);
+
+    return class->get_monitor(self);
 }
+
+/**
+ * psy_window_set_monitor:
+ * @self: a #PsyWindow instance
+ * @n: the number of the monitor on which to display the window
+ *
+ * Returns the number of the monitor this window is being presented.
+ * The result should b 0 for the first monitor to n - 1 for the last
+ * where n is the number of monitors available to psy-lib.
+ * Once there are multiple backends, it could be the case that that
+ * the number is specific for this backend, and the number represents another
+ * monitor for another backend.
+ *
+ */
+void
+psy_window_set_monitor(PsyWindow* self, gint nth_monitor)
+{
+    g_return_if_fail(PSY_IS_WINDOW(self));
+
+    PsyWindowClass* class = PSY_WINDOW_GET_CLASS(self);
+    g_return_if_fail(class->set_monitor);
+
+    class->set_monitor(self, nth_monitor);
+}
+
+/**
+ * psy_window_set_background_color_values:
+ * @self: a #PsyWindow instance
+ * @color:(in)(array fixed-size=4)(element-type gfloat): the desired
+ *          color values in RGBA format.
+ *
+ * set the background color of this window.
+ */
+void
+psy_window_set_background_color_values(PsyWindow* self, gfloat* color)
+{
+    g_return_if_fail(PSY_IS_WINDOW(self));
+    PsyWindowPrivate* priv = psy_window_get_instance_private(self);
+
+    memcpy(priv->back_ground_color,
+           color,
+           sizeof(priv->back_ground_color));
+}
+
+/**
+ * psy_window_get_background_color_values:
+ * @self: a #PsyWindow instance
+ * @color:(out callee-allocates)(array fixed-size=4)(element-type gfloat): the desired
+ *          color values in RGBA format.
+ *
+ * Get the background color of this window.
+ */
+void
+psy_window_get_background_color_values(PsyWindow* self, gfloat* color)
+{
+    g_return_if_fail(PSY_IS_WINDOW(self));
+    PsyWindowPrivate* priv = psy_window_get_instance_private(self);
+
+    memcpy(color,
+           priv->back_ground_color,
+           sizeof(priv->back_ground_color));
+}
+
+/**
+ * psy_window_get_width_height_mm:
+ * @window: a #PsyWindow instance
+ * @width_mm:(out)(nullable): The width in mm.
+ * @height_mm:(out)(nullable): The height in mm.
+ *
+ * Obtain the width and height of the window. A negative (or 0) return value
+ * indicates that we were not able to establish the width and/or height.
+ */
+void
+psy_window_get_width_height_mm(PsyWindow* window, gint* width_mm, gint* height_mm)
+{
+    g_return_if_fail(PSY_IS_WINDOW(window));
+    PsyWindowPrivate* private = psy_window_get_instance_private(window);
+    if (width_mm)
+        *width_mm = private->width_mm;
+    if (height_mm)
+        *height_mm = private->height_mm;
+}
+
+/**
+ * psy_window_get_width_mm:
+ * @window:A #PsyWindow instance
+ *
+ * Returns: the width in mm of the window
+ */
+gint
+psy_window_get_width_mm(PsyWindow* window)
+{
+    g_return_val_if_fail(PSY_IS_WINDOW(window), -1);
+    PsyWindowPrivate* private = psy_window_get_instance_private(window);
+    return private->width_mm;
+}
+
+/**
+ * psy_window_set_width_mm:
+ * @window:A #PsyWindow instance
+ * @width_mm: the width of the window/monitor
+ *
+ * Set the width of the window. Override the settings as found by the os/backend
+ */
+void
+psy_window_set_width_mm(PsyWindow* window, gint width_mm)
+{
+    g_return_if_fail(PSY_IS_WINDOW(window));
+    PsyWindowPrivate* private = psy_window_get_instance_private(window);
+    private->width_mm = width_mm;
+}
+
+/**
+ * psy_window_get_height_mm:
+ * @window:A #PsyWindow instance
+ *
+ * Returns: the height in mm of the window
+ */
+gint
+psy_window_get_height_mm(PsyWindow* window)
+{
+    g_return_val_if_fail(PSY_IS_WINDOW(window), -1);
+    PsyWindowPrivate* private = psy_window_get_instance_private(window);
+    return private->height_mm;
+}
+
+/**
+ * psy_window_set_height_mm:
+ * @window:A #PsyWindow instance
+ * @height_mm: the height of the window/monitor
+ *
+ * Set the height of the window. Override the settings as found by the os/backend
+ */
+void
+psy_window_set_height_mm(PsyWindow* window, gint height_mm)
+{
+    g_return_if_fail(PSY_IS_WINDOW(window));
+    PsyWindowPrivate* private = psy_window_get_instance_private(window);
+    private->height_mm = height_mm;
+}
+
+/**
+ * psy_window_schedule_stimulus:
+ * @window: a PsyWindow instance
+ * @stimulus: a `PsyVisualStimulus` instance that should be drawn on this window
+ *
+ * Notifies the window about a stimulus that should be drawn on it, if the
+ * stimulus was already present, it is ignored.
+ */
+void
+psy_window_schedule_stimulus(PsyWindow* window, PsyVisualStimulus* stimulus)
+{
+    PsyWindowPrivate* priv = psy_window_get_instance_private(window);
+
+    g_return_if_fail(PSY_IS_WINDOW(window));
+    g_return_if_fail(PSY_IS_VISUAL_STIMULUS(stimulus));
+
+    // Check if the stimulus is already scheduled
+    if (g_tree_lookup(priv->sorted_stimuli, stimulus) != NULL)
+        return;
+
+    g_object_ref(stimulus);
+    g_tree_insert_node(priv->sorted_stimuli, stimulus, NULL);
+}
+
+
+PsyDuration*
+psy_window_get_frame_dur(PsyWindow* window)
+{
+    PsyWindowPrivate *priv = psy_window_get_instance_private(window);
+
+    g_return_val_if_fail(PSY_IS_WINDOW(window), NULL);
+    return priv->frame_dur;
+}
+
+/**
+ * psy_window_remove_stimulus:
+ * @self: A `PsyWindow` instance.
+ * @stimulus: A `PsyVisualStimulus` instance to be removed from the window
+ *
+ * In psy-lib, it's the window that initiates the drawing of stimuli. So
+ * removing the stimulus from the window, means, it won't be scheduled anymore
+ * Additionally this means that the `PsyStimulus::stopped` won't be scheduled
+ * anymore.
+ */
+void
+psy_window_remove_stimulus(PsyWindow* self, PsyVisualStimulus* stimulus)
+{
+    g_return_if_fail(PSY_IS_WINDOW(self));
+
+    PsyWindowClass* klass = PSY_WINDOW_GET_CLASS(self);
+    klass->remove_stimulus(self, stimulus);
+}
+

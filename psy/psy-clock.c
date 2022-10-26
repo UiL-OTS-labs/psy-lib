@@ -17,6 +17,7 @@
  * This class is being defined, when psylib loads or the first PsyClock
  * is instantiated.
  */
+
 typedef struct _PsyClock {
     GObject parent;
     gint64  zero_time;
@@ -106,7 +107,7 @@ psy_clock_class_init(PsyClockClass* klass)
  * Returns: A new `PsyClock` instance.
  */
 PsyClock*
-psy_clock_new()
+psy_clock_new(void)
 {
     PsyClock *clock = g_object_new(PSY_TYPE_CLOCK, NULL);
     return clock;
@@ -131,3 +132,25 @@ psy_clock_now(PsyClock* self)
             );
     return tp;
 }
+
+/**
+ * psy_clock_get_zero_time:(method)
+ *
+ * Returns the global zero_time, if no clock has been created, it will create and
+ * destroy one in order to get a valid zero time. This function is used to create
+ * instances of #PsyTimePoint from the result of from the monotonic clock.
+ *
+ * Returns: the zero_time, this is the result of g_get_monotonic_time() at which
+ *          the first clock was created.
+ */
+gint64
+psy_clock_get_zero_time(void)
+{
+    if (!g_zero_time) {
+        PsyClock* temp_clk = psy_clock_new();
+        g_object_unref(temp_clk);
+    }
+    return g_zero_time;
+}
+
+

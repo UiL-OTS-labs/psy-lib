@@ -36,6 +36,9 @@ psy_duration_get_seconds(PsyDuration* self);
 G_MODULE_EXPORT gint64
 psy_duration_divide(PsyDuration* self, PsyDuration* other);
 
+G_MODULE_EXPORT gint64
+psy_duration_divide_rounded(PsyDuration* self, PsyDuration* other);
+
 G_MODULE_EXPORT PsyDuration*
 psy_duration_divide_scalar(PsyDuration* self, gint64 scalar);
 

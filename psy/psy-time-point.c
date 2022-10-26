@@ -1,6 +1,7 @@
 
 #include "psy-time-point.h"
 #include "psy-duration.h"
+#include "psy-clock.h"
 #include "psy-safe-int-private.h"
 
 /**
@@ -87,7 +88,7 @@ psy_time_point_class_init(PsyTimePointClass *klass)
     /**
      * PsyTimePoint:num-ticks:
      *
-     * This value represents the number of ticks since the firs PsyClock
+     * This value represents the number of ticks since the first PsyClock
      * is created/since the type PsyClock is registered.
      */
     obj_properties[PROP_NUM_TICKS] = g_param_spec_int64(
@@ -100,6 +101,39 @@ psy_time_point_class_init(PsyTimePointClass *klass)
             G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY
             );
     g_object_class_install_properties(obj_class, NUM_PROPERTIES, obj_properties);
+}
+
+/**
+ * psy_time_point_new:
+ * @monotonic_time:(in): A timevalue obtained with g_get_monotonic_time() or
+ *                       some method that in synchronous to that function.
+ *
+ * Returns: a `PsyTimePoint` obtained from the monotonic clock of glib.
+ */
+PsyTimePoint*
+psy_time_point_new(gint64 monotonic_time)
+{
+    gint zero_time = psy_clock_get_zero_time();
+    gint num_ticks = monotonic_time - zero_time;
+    return g_object_new(PSY_TYPE_TIME_POINT,
+            "num_ticks", num_ticks,
+            NULL);
+}
+
+/**
+ * psy_time_point_new_copy:(constructor)
+ * @other:(transfer none): the `PsyTimePoint` instance of which to make a copy
+ *
+ * Make a deep copy of a PsyTimePoint instance
+ *
+ * Returns: a new instance of `PsyTimePoint`
+ */
+PsyTimePoint*
+psy_time_point_new_copy(PsyTimePoint* other)
+{
+    PsyTimePoint* tp = g_object_new(PSY_TYPE_TIME_POINT, NULL);
+    tp->ticks_since_start = other->ticks_since_start;
+    return tp;
 }
 
 /**
@@ -136,8 +170,8 @@ psy_time_point_subtract(PsyTimePoint* self, PsyTimePoint* other)
  *
  * Computes the the new PsyTimePoint by subtracting a duration from @self
  *
- * Returns:(transfer full)(nullable): The `PsyTimePoint` that is the result of
- *                           @self - @dur. Or NULL when the operation overflows.
+ * Returns:(transfer full): The `PsyTimePoint` that is the result of
+ *                          @self - @dur. Or NULL when the operation overflows.
  */
 PsyTimePoint*
 psy_time_point_subtract_dur(PsyTimePoint* self, PsyDuration* dur)
@@ -160,15 +194,15 @@ psy_time_point_subtract_dur(PsyTimePoint* self, PsyDuration* dur)
 }
 
 /**
- * psy_time_point_add_dur:
+ * psy_time_point_add:
  * @self: An instance of `PsyTimePoint`
  * @dur: An instance of `PsyDuration`
  *
  * Computes the the new PsyTimePoint by adding a duration to @self.
  *
- * Returns:(transfer full)(nullable): The `PsyTimePoint` that is the result of
- *                                    @self + @dur Or NULL when the operation
- *                                    overflows.
+ * Returns:(transfer full): The `PsyTimePoint` that is the result of
+ *                          @self + @dur Or NULL when the operation
+ *                          overflows.
  */
 PsyTimePoint*
 psy_time_point_add(PsyTimePoint* self, PsyDuration* dur)
