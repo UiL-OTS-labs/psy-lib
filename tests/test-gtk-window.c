@@ -8,7 +8,13 @@
 #include <backend_gtk/psy-gtk-window.h>
 #include <psy-circle.h>
 #include <stdlib.h>
-#include <stdio.h>
+
+gint n_monitor;
+
+static GOptionEntry entries[] = {
+    {"monitor-number", 'n', 0, G_OPTION_ARG_INT, &n_monitor, "The number of the desired monitor", "N"},
+    {NULL}
+};
 
 PsyClock* clk; 
 PsyTimePoint* g_tstart = NULL;
@@ -30,7 +36,7 @@ void update_circle(
     (void) tp;
     PsyCircle* circle = PSY_CIRCLE(stim);
     gfloat radius = psy_circle_get_radius(circle);
-    printf("Circle frame %ld radius = %f\n", nth_frame, radius);
+    g_print("Circle frame %ld radius = %f\n", nth_frame, radius);
     psy_circle_set_radius(circle, radius + 1);
 }
 
@@ -39,7 +45,7 @@ void circle_started(PsyCircle* circle, PsyTimePoint* tstart, gpointer data)
     (void) circle;
     PsyTimePoint* tzero = data;
     PsyDuration* dur = psy_time_point_subtract(tstart, tzero);
-    printf("Circle started after %lf seconds\n", psy_duration_get_seconds(dur));
+    g_print("Circle started after %lf seconds\n", psy_duration_get_seconds(dur));
     g_tstart = psy_time_point_new_copy(tstart);
     g_object_unref(dur);
 }
@@ -55,9 +61,21 @@ void circle_stopped(PsyCircle* circle, PsyTimePoint* tstop, gpointer data)
 }
 
 
-int main(void) {
-    
+int main(int argc, char**argv) {
+
+    int ret = EXIT_SUCCESS;
     PsyTimePoint* tp, *start;
+    GError* error = NULL;
+    
+    GOptionContext* context = g_option_context_new("");
+    g_option_context_add_main_entries(context, entries, NULL); 
+
+    if (!g_option_context_parse(context, &argc, &argv, &error)) {
+        g_printerr("Unable to parse options: %s\n", error->message);
+        g_option_context_free(context);
+        return EXIT_FAILURE;
+    }
+    
     clk = psy_clock_new();
     tp = psy_clock_now(clk);
 
@@ -66,7 +84,7 @@ int main(void) {
 
     GMainLoop*    loop = g_main_loop_new(NULL, FALSE);
 
-    PsyGtkWindow* window = psy_gtk_window_new_for_monitor(0);
+    PsyGtkWindow* window = psy_gtk_window_new_for_monitor(n_monitor);
 
     PsyCircle* circle = psy_circle_new(PSY_WINDOW(window));
     g_signal_connect(circle, "update", G_CALLBACK(update_circle), tp);
@@ -91,12 +109,13 @@ int main(void) {
     g_print("circle->num_frames = %ld\n",
             psy_visual_stimulus_get_num_frames(PSY_VISUAL_STIMULUS(circle)));
 
-    g_print("Differnence between start and stop = %lf\n", psy_duration_get_seconds(diff));
+    g_print("Difference between start and stop = %lf\n", psy_duration_get_seconds(diff));
+
 
     g_main_loop_unref(loop);
     g_object_unref(window);
     g_object_unref(clk);
     g_object_unref(dur);
 
-    return EXIT_SUCCESS;
+    return ret;
 }
