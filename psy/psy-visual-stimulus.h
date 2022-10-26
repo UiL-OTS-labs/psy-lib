@@ -27,11 +27,28 @@ psy_visual_stimulus_get_window(PsyVisualStimulus* stimulus);
 G_MODULE_EXPORT void 
 psy_visual_stimulus_set_window(PsyVisualStimulus* stimulus, PsyWindow* window);
 
-G_MODULE_EXPORT
-void psy_visual_stimulus_update (
+G_MODULE_EXPORT gint64
+psy_visual_stimulus_get_num_frames(PsyVisualStimulus* stimulus);
+
+G_MODULE_EXPORT gint64
+psy_visual_stimulus_get_nth_frame(PsyVisualStimulus* stimulus);
+
+G_MODULE_EXPORT void
+psy_visual_stimulus_update (
         PsyVisualStimulus  *stim,
         PsyTimePoint       *frame_time,
         gint64              nth_frame
         );
+
+G_MODULE_EXPORT gboolean
+psy_visual_stimulus_is_scheduled(PsyVisualStimulus* stimulus);
+
+G_MODULE_EXPORT void
+psy_visual_stimulus_set_start_frame(
+        PsyVisualStimulus* stimulus, gint64 frame_num
+        );
+
+G_MODULE_EXPORT gint64
+psy_visual_stimulus_get_start_frame(PsyVisualStimulus* stimulus);
 
 G_END_DECLS

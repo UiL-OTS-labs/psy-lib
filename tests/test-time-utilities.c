@@ -189,6 +189,10 @@ check_duration_rounded_division(void)
 
     g_assert_true(r1 == 1); // 10 / 8 = 1.25
     g_assert_true(r2 == 2); // 10 / 6 = 1.6667
+
+    g_object_unref(ten);
+    g_object_unref(eight);
+    g_object_unref(six);
 }
 
 

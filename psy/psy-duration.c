@@ -352,9 +352,8 @@ psy_duration_divide_rounded(PsyDuration *self, PsyDuration* other)
 {
     g_return_val_if_fail(PSY_IS_DURATION(self) && PSY_IS_DURATION(other), 0);
 
-    /**
-     * Thanks to:  https://stackoverflow.com/a/18067292/2082884
-     */
+    //Thanks to:  https://stackoverflow.com/a/18067292/2082884
+
     gint64 n = self->us;
     gint64 d = other->us;
 
@@ -440,7 +439,7 @@ psy_duration_subtract(PsyDuration* self, PsyDuration* other)
 }
 
 /**
- * psy_duration_less:
+ * psy_duration_lless:
  * @self: A `PsyDuration` instance
  * @other: A `PsyDuration` instance
  *

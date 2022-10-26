@@ -49,10 +49,18 @@ tick_callback(GtkWidget       *d_area,
 
     PsyWindowClass* window_class = PSY_WINDOW_GET_CLASS(window);
 
-    PsyTimePoint* tp = psy_time_point_new(gdk_frame_clock_get_frame_time(clock));
-    window_class->draw(PSY_WINDOW(window), tp);
+    GdkFrameTimings* timings = gdk_frame_clock_get_current_timings(clock);
+    gint64 predicted = gdk_frame_timings_get_predicted_presentation_time(timings);
+    gint64 frame_count = gdk_frame_timings_get_frame_counter(timings);
 
-    // Queues a new frame.
+    PsyTimePoint* tp = psy_time_point_new(predicted);
+
+    window_class->draw(
+            PSY_WINDOW(window),
+            frame_count,
+            tp);
+
+//    // Queues a new frame. Otherwise the frame clock doesn't update
     gtk_widget_queue_draw(GTK_WIDGET(canvas));
 
     return G_SOURCE_CONTINUE;
@@ -267,7 +275,6 @@ set_monitor(PsyWindow* self, gint nth_monitor) {
     psy_window_set_height_mm(self, height_mm);
 
     PSY_WINDOW_CLASS(psy_gtk_window_parent_class)->set_frame_dur(self, frame_duration);
-    g_object_unref(frame_duration);
 
     PSY_WINDOW_CLASS(psy_gtk_window_parent_class)->set_monitor(
             self, nth_monitor
@@ -287,15 +294,30 @@ clear(PsyWindow* self)
 static void
 draw_stimuli(PsyWindow* self, guint64 nth_frame, PsyTimePoint* tp)
 {
-    PsyClock* clk = psy_clock_new();
-    PsyTimePoint* tref = psy_clock_now(clk);
-    PsyDuration* dur = psy_time_point_subtract(tp, tref);
-    gdouble dsec = psy_duration_get_seconds(dur);
+    PSY_WINDOW_CLASS(psy_gtk_window_parent_class)->draw_stimuli(
+            self, nth_frame, tp
+            );
+}
 
-    g_print("Difference between tp and tref = %lf seconds\n", dsec);
-    g_object_unref(clk);
-    g_object_unref(tref);
-    g_object_unref(dur);
+static void
+draw_stimulus(PsyWindow* self, PsyVisualStimulus* stimulus)
+{
+    static int once = 0;
+    if (!once) {
+        g_print("TODO: PsyGtkWindow %p is drawing %p\n", (void*) self, (void*) stimulus);
+        once++;
+    }
+}
+
+static void
+remove_stimulus(PsyWindow* self, PsyVisualStimulus* stimulus)
+{
+    g_debug("TODO Remove stimulus from PsyGtkWindow");
+
+    PSY_WINDOW_CLASS(psy_gtk_window_parent_class)->remove_stimulus(
+            self,
+            stimulus
+            );
 }
 
 static void
@@ -312,6 +334,7 @@ psy_gtk_window_class_init(PsyGtkWindowClass* klass)
     psy_window_class->set_monitor   = set_monitor;
     psy_window_class->clear         = clear;
     psy_window_class->draw_stimuli  = draw_stimuli;
+    psy_window_class->draw_stimulus = draw_stimulus;
 
 //    g_object_class_install_properties(object_class, N_PROPS, obj_properties);    
 }

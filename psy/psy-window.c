@@ -7,16 +7,24 @@
  *
  * From the point of a psychological experiment tool-kit it doesn't make
  * sense to allow window that are not fullscreen, hence every window will
- * be created resolution.
+ * be created at full screen resolution.
  *
  * A derived window will know when it is ready to draw the window, as such
  * it will call the PsyWindow.draw method. The draw method will call two
  * functions.
  *
- * 1. It will call the PsyWindowClass::clear function to clear the background to the default color
- * 2. It will call the draw_stimuli function. The base class doesn't know 
- * how to do this, hence they need to be implemented in deriving classes.
+ * * It will call the PsyWindowClass::clear function to clear the background
+ * to the default color.
+ * * It will call the draw_stimuli function.
+ * 
+ * The draw stimuli function does two things:
+ *
+ * 1. It will check the scheduled stimuli, to see whether there is
+ *    a stimulus ready to present.
+ * 2. It will update the stimuli that should be presented and make
+ *    sure that the deriving window will actually draw every stimulus.
  */
+#include "psy-duration.h"
 #include "psy-time-point.h"
 #include "psy-visual-stimulus.h"
 #include "psy-window.h"
@@ -209,15 +217,77 @@ set_frame_dur(PsyWindow* self, PsyDuration* dur)
 }
 
 static void
-draw(PsyWindow* self, PsyTimePoint* tp)
+remove_stimulus(PsyWindow* self, PsyVisualStimulus* stimulus)
+{
+    PsyWindowPrivate* priv = psy_window_get_instance_private(self);
+    g_tree_remove(priv->sorted_stimuli, stimulus);
+}
+
+static void
+draw(PsyWindow* self, guint64 frame_num, PsyTimePoint* tp)
 {
     PsyWindowClass* cls = PSY_WINDOW_GET_CLASS(self);
     g_return_if_fail(cls->clear);
     g_return_if_fail(cls->draw_stimuli);
-    PsyWindowPrivate* priv = psy_window_get_instance_private(self);
 
     cls->clear(self);
-    cls->draw_stimuli(self, priv->n_frames++, tp);
+    cls->draw_stimuli(self, frame_num, tp);
+}
+
+static void
+draw_stimuli(PsyWindow* self, guint64 frame_num, PsyTimePoint* tp)
+{
+    PsyWindowPrivate* priv = psy_window_get_instance_private(self);
+    PsyWindowClass* klass = PSY_WINDOW_GET_CLASS(self);
+    GTreeNode* node;
+
+    for ( node = g_tree_node_first(priv->sorted_stimuli);
+          node;
+          node = g_tree_node_next(node) ) {
+        
+        PsyStimulus* stim = g_tree_node_key(node);
+        PsyVisualStimulus* vstim = PSY_VISUAL_STIMULUS(stim);
+        gint64 start_frame, nth_frame, num_frames;
+
+        /* Schedule if necessary*/
+        if (!psy_visual_stimulus_is_scheduled(vstim) ) {
+            PsyTimePoint *start = psy_stimulus_get_start_time(stim);
+            PsyDuration *wait = psy_time_point_subtract(start, tp);
+            gint64 num_frames_away = psy_duration_divide_rounded(
+                    wait, priv->frame_dur
+                    );
+            if (num_frames_away < 0) {
+                g_warning(
+                        "Scheduling a stimulus that should have been presented "
+                        "in the past, the stimulus will be presented as "
+                        "quickly as possible.");
+                num_frames_away = 0;
+            }
+
+            psy_visual_stimulus_set_start_frame (
+                    vstim,
+                    frame_num + num_frames_away
+                    );
+        }
+
+        start_frame = psy_visual_stimulus_get_start_frame(vstim);
+        nth_frame = psy_visual_stimulus_get_nth_frame(vstim);
+        num_frames = psy_visual_stimulus_get_num_frames(vstim);
+        if (start_frame <= (gint64) frame_num) {
+            psy_visual_stimulus_update(vstim, tp, nth_frame);
+            klass->draw_stimulus(self, vstim);
+        }
+        nth_frame = psy_visual_stimulus_get_nth_frame(vstim);
+        if (nth_frame == 1) {
+            psy_stimulus_set_is_started(PSY_STIMULUS(stim), tp);
+        }
+
+        if (nth_frame >= num_frames) {
+            PsyTimePoint* tend = psy_time_point_add(tp, priv->frame_dur);
+            psy_stimulus_set_is_finished(PSY_STIMULUS(stim), tend);
+            psy_window_remove_stimulus(self, stim);
+        }
+    }
 }
 
 static void
@@ -242,9 +312,12 @@ psy_window_class_init(PsyWindowClass* klass)
     klass->set_monitor          = set_monitor;
 
     klass->draw                 = draw;
+    klass->draw_stimuli         = draw_stimuli;
     klass->set_monitor_size_mm  = set_monitor_size_mm;
 
     klass->set_frame_dur        = set_frame_dur;
+
+    klass->remove_stimulus      = remove_stimulus;
 
     /**
      * PsyWindow:n-monitor:
@@ -465,8 +538,8 @@ psy_window_get_background_color_values(PsyWindow* self, gfloat* color)
 /**
  * psy_window_get_width_height_mm:
  * @window: a #PsyWindow instance
- * @width_mm:(out nullable): The width in mm.
- * @height_mm:(out nullable): The height in mm.
+ * @width_mm:(out)(nullable): The width in mm.
+ * @height_mm:(out)(nullable): The height in mm.
  *
  * Obtain the width and height of the window. A negative (or 0) return value
  * indicates that we were not able to establish the width and/or height.
@@ -543,7 +616,7 @@ psy_window_set_height_mm(PsyWindow* window, gint height_mm)
 /**
  * psy_window_schedule_stimulus:
  * @window: a PsyWindow instance
- * @stimulus: a `PsyVisualStimulus` instance that should be draw on this window
+ * @stimulus: a `PsyVisualStimulus` instance that should be drawn on this window
  *
  * Notifies the window about a stimulus that should be drawn on it, if the
  * stimulus was already present, it is ignored.
@@ -556,6 +629,7 @@ psy_window_schedule_stimulus(PsyWindow* window, PsyVisualStimulus* stimulus)
     g_return_if_fail(PSY_IS_WINDOW(window));
     g_return_if_fail(PSY_IS_VISUAL_STIMULUS(stimulus));
 
+    // Check if the stimulus is already scheduled
     if (g_tree_lookup(priv->sorted_stimuli, stimulus) != NULL)
         return;
 
@@ -571,5 +645,24 @@ psy_window_get_frame_dur(PsyWindow* window)
 
     g_return_val_if_fail(PSY_IS_WINDOW(window), NULL);
     return priv->frame_dur;
+}
+
+/**
+ * psy_window_remove_stimulus:
+ * @self: A `PsyWindow` instance.
+ * @stimulus: A `PsyVisualStimulus` instance to be removed from the window
+ *
+ * In psy-lib, it's the window that initiates the drawing of stimuli. So
+ * removing the stimulus from the window, means, it won't be scheduled anymore
+ * Additionally this means that the `PsyStimulus::stopped` won't be scheduled
+ * anymore.
+ */
+void
+psy_window_remove_stimulus(PsyWindow* self, PsyVisualStimulus* stimulus)
+{
+    g_return_if_fail(PSY_IS_WINDOW(self));
+
+    PsyWindowClass* klass = PSY_WINDOW_GET_CLASS(self);
+    klass->remove_stimulus(self, stimulus);
 }
 
