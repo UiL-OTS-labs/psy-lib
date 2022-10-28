@@ -9,6 +9,22 @@ G_BEGIN_DECLS
 #define PSY_TYPE_PROGRAM psy_program_get_type()
 G_DECLARE_DERIVABLE_TYPE(PsyProgram, psy_program, PSY, PROGRAM, GObject)
 
+/**
+ * PsyProgramType:
+ * @PSY_PROGRAM_UNIFORM_COLOR: a shader program that uses one color to color fill
+ *                             the shaded pixels.
+ * @PSY_PROGRAM_PICTURE: a shader program that uses uses a texture in order to
+ *                       shade pixels.
+ *
+ * Programs are used to do some drawing operations. Generally you can obtain
+ * these from a canvas/window on which you'd like to draw.
+ * This enumeration is use for `psy_window_get_shader_program`
+ */
+typedef enum {
+    PSY_PROGRAM_UNIFORM_COLOR,
+    PSY_PROGRAM_PICTURE,
+} PsyProgramType;
+
 
 typedef struct _PsyProgramClass {
     GObjectClass parent_class;

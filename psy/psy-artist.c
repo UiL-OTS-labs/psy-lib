@@ -21,9 +21,12 @@
  */
 
 #include "psy-artist.h"
+#include "psy-visual-stimulus.h"
+#include "psy-window.h"
 
 typedef struct _PsyArtistPrivate {
-    PsyVisualStimulus* stimulus;
+    PsyWindow          *window;
+    PsyVisualStimulus  *stimulus;
 } PsyArtistPrivate;
 
 G_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE(
@@ -32,6 +35,7 @@ G_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE(
 
 typedef enum {
     PROP_NULL,          // not used required by GObject
+    PROP_WINDOW,
     PROP_STIMULUS,
     NUM_PROPERTIES
 } ArtistProperty;
@@ -48,6 +52,9 @@ artist_set_property(GObject       *object,
     PsyArtist* self = PSY_ARTIST(object);
 
     switch((ArtistProperty) property_id) {
+        case PROP_WINDOW:
+            psy_artist_set_window(self, g_value_get_object(value));
+            break;
         case PROP_STIMULUS:
             psy_artist_set_stimulus(self, g_value_get_object(value));
             break;
@@ -67,6 +74,9 @@ artist_get_property(GObject       *object,
     PsyArtistPrivate* priv = psy_artist_get_instance_private(self);
 
     switch((ArtistProperty) property_id) {
+        case PROP_WINDOW:
+            g_value_set_object(value, priv->window);
+            break;
         case PROP_STIMULUS:
             g_value_set_object(value, priv->stimulus);
             break;
@@ -101,6 +111,19 @@ psy_artist_class_init(PsyArtistClass* klass)
             PSY_TYPE_VISUAL_STIMULUS,
             G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY
             );
+    /**
+     * Artist:window:
+     *
+     * This is the `PsyWindow` on which this instance of PsyArtist is
+     * drawing.
+     */
+    artist_properties[PROP_WINDOW] = g_param_spec_object(
+            "window",
+            "Window",
+            "The window/canvas on which this artist is going to act",
+            PSY_TYPE_WINDOW,
+            G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY
+            );
 
     g_object_class_install_properties(
             object_class, NUM_PROPERTIES, artist_properties 
@@ -118,6 +141,7 @@ void
 psy_artist_set_stimulus(PsyArtist* self, PsyVisualStimulus* stimulus)
 {
     g_return_if_fail(PSY_IS_ARTIST(self));
+    g_return_if_fail(PSY_IS_VISUAL_STIMULUS(stimulus));
     PsyArtistPrivate* priv = psy_artist_get_instance_private(self);
 
     if (priv->stimulus) {
@@ -131,7 +155,7 @@ psy_artist_set_stimulus(PsyArtist* self, PsyVisualStimulus* stimulus)
  * psy_artist_get_stimulus:
  * @self: An instance of `PsyArtist`
  *
- * Returns:(tranfer none): an instance of `PsyVisualStimulus`
+ * Returns:(transfer none): an instance of `PsyVisualStimulus`
  */
 PsyVisualStimulus*
 psy_artist_get_stimulus(PsyArtist* self)
@@ -141,4 +165,52 @@ psy_artist_get_stimulus(PsyArtist* self)
 
     return priv->stimulus;
 }
+
+/**
+ * psy_artist_set_window:
+ * @self: an instance of `PsyArtist` 
+ * @window: an instance of `PsyWindow`
+ *
+ * set the contained object.
+ */
+void
+psy_artist_set_window(PsyArtist* self, PsyWindow* window)
+{
+    g_return_if_fail(PSY_IS_ARTIST(self));
+    g_return_if_fail(PSY_IS_WINDOW(window));
+    PsyArtistPrivate* priv = psy_artist_get_instance_private(self);
+
+    if (priv->window) {
+        g_object_unref(priv->window);
+    }
+
+    priv->window = g_object_ref(window);
+}
+
+/**
+ * psy_artist_get_window:
+ * @self: An instance of `PsyArtist`
+ *
+ * Returns:(transfer none): an instance of `PsyWindow`
+ */
+PsyWindow*
+psy_artist_get_window(PsyArtist* self)
+{
+    g_return_val_if_fail(PSY_IS_ARTIST(self), NULL);
+    PsyArtistPrivate* priv = psy_artist_get_instance_private(self);
+
+    return priv->window;
+}
+
+void
+psy_artist_draw (PsyArtist* self)
+{
+    g_return_if_fail(PSY_IS_ARTIST(self));
+
+    PsyArtistClass* klass = PSY_ARTIST_GET_CLASS(self);
+    g_return_if_fail(klass->draw);
+
+    klass->draw(self);
+}
+
 

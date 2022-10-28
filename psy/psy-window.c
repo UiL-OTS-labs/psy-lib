@@ -25,6 +25,7 @@
  *    sure that the deriving window will actually draw every stimulus.
  */
 #include "psy-duration.h"
+#include "psy-program.h"
 #include "psy-time-point.h"
 #include "psy-visual-stimulus.h"
 #include "psy-window.h"
@@ -217,6 +218,19 @@ set_frame_dur(PsyWindow* self, PsyDuration* dur)
 }
 
 static void
+schedule_stimulus(PsyWindow* self, PsyVisualStimulus* stimulus) {
+    g_print("%s\n", __PRETTY_FUNCTION__ );
+    PsyWindowPrivate* priv = psy_window_get_instance_private(self);
+
+    // Check if the stimulus is already scheduled
+    if (g_tree_lookup(priv->sorted_stimuli, stimulus) != NULL)
+        return;
+
+    g_object_ref(stimulus);
+    g_tree_insert_node(priv->sorted_stimuli, stimulus, NULL);
+}
+
+static void
 remove_stimulus(PsyWindow* self, PsyVisualStimulus* stimulus)
 {
     PsyWindowPrivate* priv = psy_window_get_instance_private(self);
@@ -285,7 +299,7 @@ draw_stimuli(PsyWindow* self, guint64 frame_num, PsyTimePoint* tp)
         if (nth_frame >= num_frames) {
             PsyTimePoint* tend = psy_time_point_add(tp, priv->frame_dur);
             psy_stimulus_set_is_finished(PSY_STIMULUS(stim), tend);
-            psy_window_remove_stimulus(self, stim);
+            psy_window_remove_stimulus(self, vstim);
         }
     }
 }
@@ -317,6 +331,7 @@ psy_window_class_init(PsyWindowClass* klass)
 
     klass->set_frame_dur        = set_frame_dur;
 
+    klass->schedule_stimulus    = schedule_stimulus;
     klass->remove_stimulus      = remove_stimulus;
 
     /**
@@ -624,17 +639,14 @@ psy_window_set_height_mm(PsyWindow* window, gint height_mm)
 void
 psy_window_schedule_stimulus(PsyWindow* window, PsyVisualStimulus* stimulus)
 {
-    PsyWindowPrivate* priv = psy_window_get_instance_private(window);
-
     g_return_if_fail(PSY_IS_WINDOW(window));
     g_return_if_fail(PSY_IS_VISUAL_STIMULUS(stimulus));
 
-    // Check if the stimulus is already scheduled
-    if (g_tree_lookup(priv->sorted_stimuli, stimulus) != NULL)
-        return;
+    PsyWindowClass* klass = PSY_WINDOW_GET_CLASS(window);
 
-    g_object_ref(stimulus);
-    g_tree_insert_node(priv->sorted_stimuli, stimulus, NULL);
+    g_return_if_fail(klass->schedule_stimulus);
+
+    klass->schedule_stimulus(window, stimulus);
 }
 
 
@@ -663,6 +675,27 @@ psy_window_remove_stimulus(PsyWindow* self, PsyVisualStimulus* stimulus)
     g_return_if_fail(PSY_IS_WINDOW(self));
 
     PsyWindowClass* klass = PSY_WINDOW_GET_CLASS(self);
+    g_return_if_fail(klass->remove_stimulus);
+
     klass->remove_stimulus(self, stimulus);
+}
+
+/**
+ * psy_window_get_shader_program:
+ * @self: A `PsyWindow` instance.
+ * @type: A value from  `PsyProgramType` that describes the kind of program
+ *        you would like to use
+ *
+ * Returns: A `PsyProgram` instance of NULL when it doesn't exist
+ */
+PsyProgram*
+psy_window_get_shader_program(PsyWindow* self, PsyProgramType type)
+{
+    g_return_val_if_fail(PSY_IS_WINDOW(self), NULL);
+
+    PsyWindowClass* klass = PSY_WINDOW_GET_CLASS(self);
+    g_return_val_if_fail(klass->get_shader_program, NULL);
+
+    return klass->get_shader_program(self, type);
 }
 

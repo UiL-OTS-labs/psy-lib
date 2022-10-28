@@ -8,25 +8,25 @@
 #include <backend_gtk/psy-gtk-window.h>
 #include <psy-circle.h>
 #include <stdlib.h>
+#include <math.h>
 
 gint n_monitor;
+gdouble g_duration = 1.0f;
+int g_nvertices = 10;
 
 static GOptionEntry entries[] = {
     {"monitor-number", 'n', 0, G_OPTION_ARG_INT, &n_monitor, "The number of the desired monitor", "N"},
-    {NULL}
+    {"duration", 'd', 1.0, G_OPTION_ARG_DOUBLE, &g_duration, "The duration of the stimulus in seconds", "seconds"},
+    {"vertices", 'v', 10, G_OPTION_ARG_INT, &g_nvertices,   "The number of vertices of the circle", "number"},
+    {0}
 };
 
 PsyClock* clk; 
 PsyTimePoint* g_tstart = NULL;
 PsyTimePoint* g_tstop = NULL;
 
-gboolean stop_loop(gpointer data) {
-    GMainLoop* loop = data;
-    g_main_loop_quit(loop);
-    return G_SOURCE_REMOVE;
-}
-
-void update_circle(
+void
+update_circle(
         PsyVisualStimulus* stim,
         PsyTimePoint* tp,
         gint64 nth_frame,
@@ -36,11 +36,14 @@ void update_circle(
     (void) tp;
     PsyCircle* circle = PSY_CIRCLE(stim);
     gfloat radius = psy_circle_get_radius(circle);
-    g_print("Circle frame %ld radius = %f\n", nth_frame, radius);
-    psy_circle_set_radius(circle, radius + 1);
+    PsyDuration* dur = psy_time_point_subtract(tp, g_tstart);
+    radius = 0.5 + sin(psy_duration_get_seconds(dur) * 2 * M_PI) * 0.4;
+    psy_circle_set_radius(circle, radius);
+    //g_print("Circle frame %ld radius = %f\n", nth_frame, radius);
 }
 
-void circle_started(PsyCircle* circle, PsyTimePoint* tstart, gpointer data)
+void
+circle_started(PsyCircle* circle, PsyTimePoint* tstart, gpointer data)
 {
     (void) circle;
     PsyTimePoint* tzero = data;
@@ -50,7 +53,8 @@ void circle_started(PsyCircle* circle, PsyTimePoint* tstart, gpointer data)
     g_object_unref(dur);
 }
 
-void circle_stopped(PsyCircle* circle, PsyTimePoint* tstop, gpointer data)
+void
+circle_stopped(PsyCircle* circle, PsyTimePoint* tstop, gpointer data)
 {
     (void) circle;
     PsyTimePoint* tzero = data;
@@ -60,6 +64,14 @@ void circle_stopped(PsyCircle* circle, PsyTimePoint* tstop, gpointer data)
     g_object_unref(dur);
 }
 
+void
+stop_loop(PsyCircle* circle, PsyTimePoint* tp, gpointer data)
+{
+    (void) circle;
+    (void) tp;
+    GMainLoop* loop = data;
+    g_main_loop_quit(loop);
+}
 
 int main(int argc, char**argv) {
 
@@ -80,18 +92,17 @@ int main(int argc, char**argv) {
     tp = psy_clock_now(clk);
 
     PsyDuration* start_dur = psy_duration_new_ms(500);
-    PsyDuration* dur = psy_duration_new_ms(100);
+    PsyDuration* dur = psy_duration_new(g_duration);
 
     GMainLoop*    loop = g_main_loop_new(NULL, FALSE);
 
     PsyGtkWindow* window = psy_gtk_window_new_for_monitor(n_monitor);
 
-    PsyCircle* circle = psy_circle_new(PSY_WINDOW(window));
+    PsyCircle* circle = psy_circle_new_full(PSY_WINDOW(window), 0, 0, .5, g_nvertices);
     g_signal_connect(circle, "update", G_CALLBACK(update_circle), tp);
     g_signal_connect(circle, "started", G_CALLBACK(circle_started), tp);
     g_signal_connect(circle, "stopped", G_CALLBACK(circle_stopped), tp);
-
-    g_timeout_add(1000, stop_loop, loop);
+    g_signal_connect(circle, "stopped", G_CALLBACK(stop_loop), loop); // stop the loop
 
     start = psy_time_point_add(tp, start_dur);
 

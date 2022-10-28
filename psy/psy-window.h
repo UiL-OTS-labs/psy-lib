@@ -1,8 +1,9 @@
 
 #pragma once
 
-#include "psy-time-point.h"
 #include <glib-object.h>
+#include "psy-time-point.h"
+#include "psy-program.h"
 
 G_BEGIN_DECLS
 
@@ -53,6 +54,8 @@ typedef struct _PsyWindowClass {
 
     void (*schedule_stimulus) (PsyWindow* self, PsyVisualStimulus* stimulus);
     void (*remove_stimulus) (PsyWindow* self, PsyVisualStimulus* stimulus);
+
+    PsyProgram* (*get_shader_program)(PsyWindow* window, PsyProgramType type);
     
     /*< private >*/
 
@@ -96,6 +99,8 @@ psy_window_get_frame_dur(PsyWindow* window);
 G_MODULE_EXPORT void
 psy_window_remove_stimulus(PsyWindow* window, PsyVisualStimulus* stimulus);
 
+G_MODULE_EXPORT PsyProgram*
+psy_window_get_shader_program(PsyWindow* window, PsyProgramType type);
 
 G_END_DECLS
 

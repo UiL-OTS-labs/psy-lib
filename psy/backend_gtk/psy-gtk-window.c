@@ -2,16 +2,20 @@
 #include <gtk/gtk.h>
 #include <epoxy/gl.h>
 
+#include "psy-circle.h"
 #include "psy-clock.h"
 #include "psy-duration.h"
 #include "psy-gtk-window.h"
 #include "../gl/psy-gl-program.h"
+#include "../gl/psy-gl-circle.h"
+#include "psy-program.h"
 #include "psy-window.h"
 
 struct _PsyGtkWindow {
     PsyWindow       parent;
     GtkWidget      *window;
     GtkWidget      *darea;
+    GHashTable     *artists;
     PsyProgram     *uniform_color_program;
     PsyProgram     *picture_program;
 };
@@ -26,10 +30,6 @@ G_DEFINE_TYPE_WITH_CODE(
         }
     )
 
-typedef enum {
-    // Add props here starting at 1
-    N_PROPS = 1
-} PsyGtkWindowProperty;
 
 static gboolean
 tick_callback(GtkWidget       *d_area,
@@ -158,42 +158,18 @@ on_canvas_unrealize(GtkGLArea* area, PsyGtkWindow* self)
     g_clear_object(&self->picture_program);
 }
 
-// The Gtk backend doesn't have any properties the regular window doesn't have.
-//
-//static void
-//psy_gtk_window_set_property(GObject        *object,
-//                            guint           property_id,
-//                            const GValue   *value,
-//                            GParamSpec     *spec)
-//{
-//    PsyGtkWindow* self = PSY_GTK_WINDOW(object);
-//
-//    switch((PsyGtkWindowProperty) property_id) {
-//        default:
-//            G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, spec);
-//    }
-//}
-//
-//static void
-//psy_gtk_window_get_property(GObject        *object,
-//                            guint           property_id,
-//                            GValue         *value,
-//                            GParamSpec     *spec)
-//{
-//    PsyGtkWindow* self = PSY_GTK_WINDOW(object);
-//
-//    switch((PsyGtkWindowProperty) property_id) {
-//        default:
-//            G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, spec);
-//    }
-//}
-
 static void
 psy_gtk_window_init(PsyGtkWindow* self)
 {
     self->window = gtk_window_new();
     GtkWidget* canvas = gtk_gl_area_new();
     gtk_window_set_child(GTK_WINDOW(self->window), canvas);
+    self->artists = g_hash_table_new_full(
+            g_direct_hash,
+            g_direct_equal,
+            g_object_unref,
+            g_object_unref
+            );
 
     // Prepare common OpenGL setup prior to realization.
     gtk_gl_area_set_required_version(GTK_GL_AREA(canvas), 4, 4);
@@ -228,6 +204,7 @@ static void
 psy_gtk_window_dispose(GObject* gobject)
 {
     PsyGtkWindow* self = PSY_GTK_WINDOW(gobject);
+
     g_clear_object(&self->window);
     g_clear_object(&self->uniform_color_program);
     g_clear_object(&self->picture_program);
@@ -239,7 +216,11 @@ static void
 psy_gtk_window_finalize(GObject* gobject)
 {
     PsyGtkWindow* self = PSY_GTK_WINDOW(gobject);
-    (void) self;
+
+    if (self->artists) {
+        g_hash_table_destroy(self->artists);
+        self->artists = NULL;
+    }
 
     G_OBJECT_CLASS(psy_gtk_window_parent_class)->finalize(gobject);
 }
@@ -302,17 +283,54 @@ draw_stimuli(PsyWindow* self, guint64 nth_frame, PsyTimePoint* tp)
 static void
 draw_stimulus(PsyWindow* self, PsyVisualStimulus* stimulus)
 {
-    static int once = 0;
-    if (!once) {
-        g_print("TODO: PsyGtkWindow %p is drawing %p\n", (void*) self, (void*) stimulus);
-        once++;
+    PsyGtkWindow* window = PSY_GTK_WINDOW(self);
+    PsyArtist* artist = g_hash_table_lookup(window->artists, stimulus);
+
+    psy_artist_draw(artist);
+}
+
+static PsyArtist*
+get_artist_for_stimulus(PsyWindow* window, PsyVisualStimulus* stimulus, GType type) {
+    if (type == PSY_TYPE_CIRCLE) {
+        return PSY_ARTIST(psy_gl_circle_new(window, stimulus));
     }
+    return NULL;
+}
+
+static void
+schedule_stimulus(PsyWindow* self, PsyVisualStimulus* stimulus)
+{
+    g_print("Scheduling stimulus %p on window %p\ns",
+            (void*) stimulus,
+            (gpointer) self);
+
+    PsyGtkWindow* win = PSY_GTK_WINDOW(self);
+
+    PsyArtist* artist = get_artist_for_stimulus( 
+            self,
+            stimulus,
+            G_TYPE_FROM_INSTANCE(stimulus)
+            );
+    if (!artist) {
+        g_critical(
+                "PsyGtkWindow has no artist for instances of: %s",
+                g_type_name(G_TYPE_FROM_INSTANCE(stimulus))
+                );
+        return;
+    }
+    g_object_ref(stimulus);
+    g_hash_table_insert(win->artists, stimulus, artist);
+
+    PSY_WINDOW_CLASS(psy_gtk_window_parent_class)->schedule_stimulus(
+            self, stimulus
+            );
 }
 
 static void
 remove_stimulus(PsyWindow* self, PsyVisualStimulus* stimulus)
 {
-    g_debug("TODO Remove stimulus from PsyGtkWindow");
+    PsyGtkWindow* window = PSY_GTK_WINDOW(self);
+    g_hash_table_remove(window->artists, stimulus);
 
     PSY_WINDOW_CLASS(psy_gtk_window_parent_class)->remove_stimulus(
             self,
@@ -320,23 +338,38 @@ remove_stimulus(PsyWindow* self, PsyVisualStimulus* stimulus)
             );
 }
 
+PsyProgram*
+get_shader_program(PsyWindow* self, PsyProgramType type)
+{
+    PsyGtkWindow* win = PSY_GTK_WINDOW(self);
+
+    switch(type) {
+        case PSY_PROGRAM_UNIFORM_COLOR:
+            return win->uniform_color_program;
+        case PSY_PROGRAM_PICTURE:
+            return win->picture_program;
+        default:
+            g_critical("PsyGtkWindow doens't have a program for type %d", type);
+            return NULL;
+    }
+}
+
 static void
 psy_gtk_window_class_init(PsyGtkWindowClass* klass)
 {
     GObjectClass *object_class = G_OBJECT_CLASS(klass);
 
-//    object_class->set_property  = psy_gtk_window_set_property;
-//    object_class->get_property  = psy_gtk_window_get_property;
-    object_class->dispose           = psy_gtk_window_dispose;
-    object_class->finalize          = psy_gtk_window_finalize;
+    object_class->dispose               = psy_gtk_window_dispose;
+    object_class->finalize              = psy_gtk_window_finalize;
 
-    PsyWindowClass* psy_window_class = PSY_WINDOW_CLASS(klass);
-    psy_window_class->set_monitor   = set_monitor;
-    psy_window_class->clear         = clear;
-    psy_window_class->draw_stimuli  = draw_stimuli;
-    psy_window_class->draw_stimulus = draw_stimulus;
-
-//    g_object_class_install_properties(object_class, N_PROPS, obj_properties);    
+    PsyWindowClass* psy_window_class    = PSY_WINDOW_CLASS(klass);
+    psy_window_class->set_monitor       = set_monitor;
+    psy_window_class->clear             = clear;
+    psy_window_class->draw_stimuli      = draw_stimuli;
+    psy_window_class->draw_stimulus     = draw_stimulus;
+    psy_window_class->schedule_stimulus = schedule_stimulus;
+    psy_window_class->remove_stimulus   = remove_stimulus;
+    psy_window_class->get_shader_program= get_shader_program;
 }
 
 /**
