@@ -108,7 +108,7 @@ visual_stimulus_play(PsyStimulus* stimulus, PsyTimePoint* start_time)
 
     PsyWindow* window = psy_visual_stimulus_get_window(vstim);
 
-    psy_window_schedule_stimulus(window, PSY_VISUAL_STIMULUS(stimulus));
+    psy_window_schedule_stimulus(window, vstim);
 
     PSY_STIMULUS_CLASS(psy_visual_stimulus_parent_class)->play(
             stimulus, start_time
