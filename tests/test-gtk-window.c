@@ -10,20 +10,29 @@
 #include <stdlib.h>
 #include <math.h>
 
-gint n_monitor;
-gdouble g_duration = 1.0f;
-int g_nvertices = 10;
-
-static GOptionEntry entries[] = {
-    {"monitor-number", 'n', 0, G_OPTION_ARG_INT, &n_monitor, "The number of the desired monitor", "N"},
-    {"duration", 'd', 1.0, G_OPTION_ARG_DOUBLE, &g_duration, "The duration of the stimulus in seconds", "seconds"},
-    {"vertices", 'v', 10, G_OPTION_ARG_INT, &g_nvertices,   "The number of vertices of the circle", "number"},
-    {0}
-};
-
+// Globals
 PsyClock* clk; 
 PsyTimePoint* g_tstart = NULL;
 PsyTimePoint* g_tstop = NULL;
+
+// related to option parsing
+gint n_monitor;
+gdouble g_duration = 4.0f;
+int g_nvertices = 10;
+gdouble g_radius = 0.5;
+gdouble g_amplitude = 0.25;
+gdouble g_frequency = 0.5;
+
+static GOptionEntry entries[] = {
+    {"monitor-number", 'n', G_OPTION_FLAG_NONE, G_OPTION_ARG_INT, &n_monitor, "The number of the desired monitor", "N"},
+    {"duration", 'd', G_OPTION_FLAG_NONE, G_OPTION_ARG_DOUBLE, &g_duration, "The duration of the stimulus in seconds", "seconds"},
+    {"radius", 'r', G_OPTION_FLAG_NONE, G_OPTION_ARG_DOUBLE, &g_radius, "The base radius of the circle", "units"},
+    {"amplitude", 'a', G_OPTION_FLAG_NONE, G_OPTION_ARG_DOUBLE, &g_amplitude, "The base amplitude of the pulsing of the circle", "units"},
+    {"frequency", 'f', G_OPTION_FLAG_NONE, G_OPTION_ARG_DOUBLE, &g_frequency, "The base frequency of the pulsing of the circle", "seconds"},
+    {"vertices", 'v', G_OPTION_FLAG_NONE, G_OPTION_ARG_INT, &g_nvertices,   "The number of vertices of the circle", "number"},
+    {0}
+};
+
 
 void
 update_circle(
@@ -34,12 +43,20 @@ update_circle(
 {
     (void) data;
     (void) tp;
+    (void) nth_frame;
     PsyCircle* circle = PSY_CIRCLE(stim);
-    gfloat radius = psy_circle_get_radius(circle);
-    PsyDuration* dur = psy_time_point_subtract(tp, g_tstart);
-    radius = 0.5 + sin(psy_duration_get_seconds(dur) * 2 * M_PI) * 0.4;
+    gfloat radius;
+    PsyDuration* dur;
+    if (g_tstart)
+        dur = psy_time_point_subtract(tp, g_tstart);
+    else 
+        dur = psy_time_point_subtract(tp, tp);
+
+    radius = g_radius + sin(
+            psy_duration_get_seconds(dur) * g_frequency * 2 * M_PI
+            ) * g_amplitude;
+
     psy_circle_set_radius(circle, radius);
-    //g_print("Circle frame %ld radius = %f\n", nth_frame, radius);
 }
 
 void
