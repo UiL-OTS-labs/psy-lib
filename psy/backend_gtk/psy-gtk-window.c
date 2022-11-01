@@ -304,10 +304,6 @@ get_artist_for_stimulus(PsyWindow* window, PsyVisualStimulus* stimulus, GType ty
 static void
 schedule_stimulus(PsyWindow* self, PsyVisualStimulus* stimulus)
 {
-    g_print("Scheduling stimulus %p on window %p\ns",
-            (void*) stimulus,
-            (gpointer) self);
-
     PsyGtkWindow* win = PSY_GTK_WINDOW(self);
 
     PsyArtist* artist = get_artist_for_stimulus( 

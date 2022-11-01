@@ -234,7 +234,6 @@ set_monitor(PsyWindow* self, gint nth_monitor) {
 static void resize(PsyWindow* self, gint width, gint height)
 {
     PsyWindowPrivate* priv = psy_window_get_instance_private(self);
-    g_print ("Resizing window to %d, %d\n", width, height);
     priv->width = width;
     priv->height = height;
 
