@@ -20,42 +20,6 @@ typedef struct _PsyGlCircle {
 
 G_DEFINE_TYPE(PsyGlCircle, psy_gl_circle, PSY_TYPE_ARTIST)
 
-//typedef enum {
-//    PROP_NULL,
-//    NUM_PROPERTIES
-//} PsyGlCircleProperty;
-//
-//static GParamSpec* gl_circle_properties[NUM_PROPERTIES];
-//
-//static void
-//psy_gl_circle_set_property(GObject        *object,
-//                           guint           prop_id,
-//                           const GValue   *value,
-//                           GParamSpec     *pspec)
-//{
-//    PsyGlCircle* self = PSY_GL_CIRCLE(object);
-//    (void) self, (void) value;
-//
-//    switch((PsyGlCircleProperty) prop_id) {
-//        default:
-//            G_OBJECT_WARN_INVALID_PROPERTY_ID(object, prop_id, pspec);
-//    }
-//}
-//
-//static void
-//psy_gl_circle_get_property(GObject    *object,
-//                           guint       prop_id,
-//                           GValue     *value,
-//                           GParamSpec *pspec)
-//{
-//    PsyGlCircle* self = PSY_GL_CIRCLE(object);
-//
-//    switch((PsyGlCircleProperty) prop_id) {
-//        default:
-//            G_OBJECT_WARN_INVALID_PROPERTY_ID(object, prop_id, pspec);
-//    }
-//}
-
 static void
 psy_gl_circle_init(PsyGlCircle *self)
 {
@@ -142,10 +106,6 @@ psy_gl_circle_class_init(PsyGlCircleClass* class)
     gobject_class->dispose      = psy_gl_circle_dispose;
 
     artist_class->draw          = gl_circle_draw;
-
-//    g_object_class_install_properties(gobject_class,
-//                                      NUM_PROPERTIES,
-//                                      gl_circle_properties);
 }
 
 /* ************ public functions ******************** */

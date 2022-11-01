@@ -12,13 +12,17 @@ G_DECLARE_DERIVABLE_TYPE(
         psy_artist,
         PSY,
         ARTIST,
-        PsyVisualStimulus
+        GObject
         )
 
+/**
+ * PsyArtistClass:
+ * @parent:T
+ */
 typedef struct _PsyArtistClass {
-    PsyVisualStimulusClass parent;
+    GObjectClass parent;
 
-    void (*draw)(PsyVisualStimulus* stimulus);
+    void (*draw)(PsyArtist* stimulus);
 
     gpointer reserved[16];
 

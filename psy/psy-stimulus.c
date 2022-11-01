@@ -443,7 +443,6 @@ psy_stimulus_get_is_started(PsyStimulus* self) {
 void
 psy_stimulus_set_is_started(PsyStimulus* self, PsyTimePoint* start_time)
 {
-    PsyStimulusPrivate* priv = psy_stimulus_get_instance_private(self);
     g_return_if_fail(PSY_IS_STIMULUS(self));
 
     g_signal_emit(
@@ -475,7 +474,6 @@ psy_stimulus_get_is_finished(PsyStimulus* self) {
 void
 psy_stimulus_set_is_finished(PsyStimulus* self, PsyTimePoint* stop_time)
 {
-    PsyStimulusPrivate* priv = psy_stimulus_get_instance_private(self);
     g_return_if_fail(PSY_IS_STIMULUS(self));
 
     g_signal_emit(

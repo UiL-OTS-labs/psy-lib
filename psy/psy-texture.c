@@ -291,7 +291,6 @@ read_file(PsyTexture *texture, GFile *file, GError **error)
     if (*error)
         goto on_error;
 
-    gsize picsize = 0;
     while (TRUE) {
         guint8 buffer[1024];
         gsize  nread;
@@ -306,7 +305,6 @@ read_file(PsyTexture *texture, GFile *file, GError **error)
             goto on_error;
 
         g_byte_array_append(bytes, buffer, nread);
-        picsize += nread;
         if (nread < sizeof(buffer))
             break;
     }

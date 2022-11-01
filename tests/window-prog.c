@@ -8,7 +8,7 @@ static gboolean     all_monitors    = FALSE;
 static GOptionEntry entries[] = {
     {"monitor-number", 'n', 0, G_OPTION_ARG_INT, &n_monitor, "The number of the desired monitor", "N"},
     {"all-monitors", 'a', 0, G_OPTION_ARG_NONE, &all_monitors, "Display window on all monitors", NULL},
-    {NULL}
+    {0}
 };
 
 
