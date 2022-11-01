@@ -81,8 +81,6 @@ psy_gl_circle_finalize(GObject* object)
 static void
 gl_circle_draw(PsyArtist* self)
 {
-    //TODO activate a OpenGL program.
-
     PsyGlCircle* artist = PSY_GL_CIRCLE(self);
     PsyCircle* circle = PSY_CIRCLE(psy_artist_get_stimulus(self));
     PsyWindow* window = psy_artist_get_window(self);
