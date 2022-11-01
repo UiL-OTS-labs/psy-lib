@@ -130,7 +130,7 @@ psy_circle_new(PsyWindow* window)
 
 /**
  * psy_circle:(method)
- * @circle: an instance of %PsyCircle
+ * @circle: an instance of `PsyCircle`
  *
  * Returns: a new instance of `PsyCircle` with the provided values.
  */
@@ -142,8 +142,8 @@ psy_circle_new_full(
     return g_object_new(
             PSY_TYPE_CIRCLE,
             "window", window,
-//            "x", x,
-//            "y", y,
+            "x", x,
+            "y", y,
             "radius", radius,
             "num_vertices", num_vertices,
             NULL);
