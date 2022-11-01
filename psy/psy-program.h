@@ -1,6 +1,7 @@
 #ifndef PSY_PROGRAM_H
 #define PSY_PROGRAM_H
 
+#include "psy-matrix4.h"
 #include "psy-shader.h"
 #include <gio/gio.h>
 
@@ -67,6 +68,12 @@ typedef struct _PsyProgramClass {
 
     void (*use_program) (PsyProgram* program, GError ** error);
 
+    void (*set_uniform_matrix4) (PsyProgram     *program,
+                                 const gchar    *name,
+                                 PsyMatrix4     *matrix,
+                                 GError        **error
+                                 );
+
 } PsyProgramClass;
 
 
@@ -109,6 +116,7 @@ psy_program_set_fragment_shader_from_path(PsyProgram    *program,
                                           const gchar   *shader_path,
                                           GError       **error);
 
+
 G_MODULE_EXPORT void
 psy_program_link(PsyProgram *self, GError **error);
 
@@ -117,6 +125,14 @@ psy_program_is_linked(PsyProgram *self);
 
 G_MODULE_EXPORT void
 psy_program_use(PsyProgram* self, GError **error);
+
+G_MODULE_EXPORT void
+psy_program_set_uniform_matrix4(
+        PsyProgram     *program,
+        const gchar    *name,
+        PsyMatrix4     *matrix,
+        GError        **error
+        );
 
 G_END_DECLS
 

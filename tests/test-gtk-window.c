@@ -10,7 +10,7 @@
 #include <stdlib.h>
 #include <math.h>
 
-// Globals
+// Global variable
 PsyClock* clk; 
 PsyTimePoint* g_tstart = NULL;
 PsyTimePoint* g_tstop = NULL;
@@ -19,9 +19,12 @@ PsyTimePoint* g_tstop = NULL;
 gint n_monitor;
 gdouble g_duration = 4.0f;
 int g_nvertices = 10;
-gdouble g_radius = 0.5;
-gdouble g_amplitude = 0.25;
+gdouble g_radius = 50;
+gdouble g_amplitude = 25;
 gdouble g_frequency = 0.5;
+
+char* g_origin = "center";
+char* g_units = "pixels";
 
 static GOptionEntry entries[] = {
     {"monitor-number", 'n', G_OPTION_FLAG_NONE, G_OPTION_ARG_INT, &n_monitor, "The number of the desired monitor", "N"},
@@ -29,7 +32,9 @@ static GOptionEntry entries[] = {
     {"radius", 'r', G_OPTION_FLAG_NONE, G_OPTION_ARG_DOUBLE, &g_radius, "The base radius of the circle", "units"},
     {"amplitude", 'a', G_OPTION_FLAG_NONE, G_OPTION_ARG_DOUBLE, &g_amplitude, "The base amplitude of the pulsing of the circle", "units"},
     {"frequency", 'f', G_OPTION_FLAG_NONE, G_OPTION_ARG_DOUBLE, &g_frequency, "The base frequency of the pulsing of the circle", "seconds"},
-    {"vertices", 'v', G_OPTION_FLAG_NONE, G_OPTION_ARG_INT, &g_nvertices,   "The number of vertices of the circle", "number"},
+    {"vertices", 'v', G_OPTION_FLAG_NONE, G_OPTION_ARG_INT, &g_nvertices, "The number of vertices of the circle", "number"},
+    {"origin", 'o', G_OPTION_FLAG_NONE, G_OPTION_ARG_STRING, &g_origin, "The center C style or center", "c|center"},
+    {"units", 'u', G_OPTION_FLAG_NONE, G_OPTION_ARG_STRING, &g_units, "The units of the coordinate system", "pix|m|mm|visdeg"},
     {0}
 };
 
@@ -90,11 +95,51 @@ stop_loop(PsyCircle* circle, PsyTimePoint* tp, gpointer data)
     g_main_loop_quit(loop);
 }
 
+gint get_window_style(void)
+{
+    const char* center = "center";
+    const char* c = "c";
+
+    const char* pixels = "pixels";
+    const char* m = "m";
+    const char* mm = "mm";
+    const char* visdeg = "visual degrees";
+
+    gint style = 0;
+    if (g_strcmp0(g_origin, center) == 0)
+        style |= PSY_WINDOW_PROJECTION_STYLE_CENTER;
+    else if (g_strcmp0(g_origin, c) == 0)
+        style |= PSY_WINDOW_PROJECTION_STYLE_C;
+    else {
+        g_warning("The origin wasn't %s nor %s, defaulting to %s",
+                center, c, center);
+        style |= PSY_WINDOW_PROJECTION_STYLE_CENTER;
+    }
+    
+    if (g_strcmp0(g_units, pixels) == 0)
+        style |= PSY_WINDOW_PROJECTION_STYLE_PIXELS;
+    else if (g_strcmp0(g_units, m) == 0)
+        style |= PSY_WINDOW_PROJECTION_STYLE_METER;
+    else if (g_strcmp0(g_units, mm) == 0)
+        style |= PSY_WINDOW_PROJECTION_STYLE_MILLIMETER;
+    else if (g_strcmp0(g_units, visdeg) == 0)
+        style |= PSY_WINDOW_PROJECTION_STYLE_VISUAL_DEGREES;
+    else {
+        g_warning("The units wasn't one of: %s, %s or %s, %s, defaulting to %s",
+                pixels, m, mm, visdeg, pixels
+                );
+        style |= PSY_WINDOW_PROJECTION_STYLE_CENTER;
+    }
+
+    return style;
+}
+
 int main(int argc, char**argv) {
 
     int ret = EXIT_SUCCESS;
     PsyTimePoint* tp, *start;
     GError* error = NULL;
+    gint window_style;
     
     GOptionContext* context = g_option_context_new("");
     g_option_context_add_main_entries(context, entries, NULL); 
@@ -114,6 +159,9 @@ int main(int argc, char**argv) {
     GMainLoop*    loop = g_main_loop_new(NULL, FALSE);
 
     PsyGtkWindow* window = psy_gtk_window_new_for_monitor(n_monitor);
+
+    window_style = get_window_style();
+    psy_window_set_projection_style(PSY_WINDOW(window), window_style);
 
     PsyCircle* circle = psy_circle_new_full(PSY_WINDOW(window), 0, 0, .5, g_nvertices);
     g_signal_connect(circle, "update", G_CALLBACK(update_circle), tp);

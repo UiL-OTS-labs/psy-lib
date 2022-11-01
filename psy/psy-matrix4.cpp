@@ -454,3 +454,14 @@ psy_matrix4_ptr(PsyMatrix4* self)
 
     return glm::value_ptr(*self->matrix);
 }
+
+void
+psy_matrix4_get_elements(PsyMatrix4* self, gfloat* elements)
+{
+    g_return_if_fail(PSY_IS_MATRIX4(self));
+    float* out = &elements[0];
+    gdouble* in = glm::value_ptr(*(self->matrix)); 
+    for (; out < &elements[16]; in++, out++)
+        *out = (gfloat) *in;
+}
+
