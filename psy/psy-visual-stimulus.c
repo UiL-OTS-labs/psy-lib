@@ -235,7 +235,7 @@ psy_visual_stimulus_class_init(PsyVisualStimulusClass* klass)
     visual_stimulus_properties[PROP_START_FRAME] = g_param_spec_int64(
             "start-frame",
             "StartFrame",
-            "The number of the frame on which this stimulus should be prensented",
+            "The number of the frame on which this stimulus should be presented",
             0, G_MAXINT64, 0,
             G_PARAM_READABLE
             );
