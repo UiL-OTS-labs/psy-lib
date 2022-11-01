@@ -1,6 +1,7 @@
 
 
 #include "psy-program.h"
+#include "psy-matrix4.h"
 #include "psy-shader.h"
 
 typedef struct _PsyProgramPrivate {
@@ -258,4 +259,25 @@ psy_program_use(PsyProgram* self, GError **error)
 
     klass->use_program(self, error);
 }
+
+void
+psy_program_set_uniform_matrix4(
+        PsyProgram     *self,
+        const gchar    *name,
+        PsyMatrix4     *matrix,
+        GError        **error
+        )
+{
+    g_return_if_fail(PSY_IS_PROGRAM(self));
+    g_return_if_fail(name);
+    g_return_if_fail(PSY_IS_MATRIX4(matrix));
+    g_return_if_fail(error == NULL || *error == NULL);
+
+    PsyProgramClass* class = PSY_PROGRAM_GET_CLASS(self);
+
+    g_return_if_fail(class->set_uniform_matrix4);
+
+    class->set_uniform_matrix4(self, name, matrix, error);
+}
+
 

@@ -8,6 +8,7 @@
 #include "psy-gl-fragment-shader.h"
 
 #include <epoxy/gl.h>
+#include <epoxy/gl_generated.h>
 
 typedef struct _PsyGlProgram {
     PsyProgram           parent;
@@ -317,6 +318,25 @@ psy_gl_program_use_program(PsyProgram* self, GError **error)
 }
 
 static void
+psy_gl_program_set_uniform_matrix_4(
+        PsyProgram     *self,
+        const gchar    *name,
+        PsyMatrix4     *matrix,
+        GError        **error
+        )
+{
+    PsyGlProgram* program = PSY_GL_PROGRAM(self);
+    GLfloat elements[16];
+    psy_matrix4_get_elements(matrix, elements);
+
+    GLint location = glGetUniformLocation(program->object_id, name);
+    if (psy_gl_check_error(error))
+        return;
+
+    glUniformMatrix4fv(location, 1, GL_FALSE, elements);
+}
+
+static void
 psy_gl_program_class_init(PsyGlProgramClass* class)
 {
     GObjectClass       *gobject_class = G_OBJECT_CLASS(class);
@@ -349,6 +369,8 @@ psy_gl_program_class_init(PsyGlProgramClass* class)
     program_class->is_linked    = psy_gl_program_is_linked;
     program_class->use_program  = psy_gl_program_use_program;
 
+    program_class->set_uniform_matrix4 = psy_gl_program_set_uniform_matrix_4;
+
     gl_program_properties[PROP_OBJECT_ID] = g_param_spec_string(
             "object-id",
             "Object ID",
@@ -360,7 +382,7 @@ psy_gl_program_class_init(PsyGlProgramClass* class)
     gl_program_properties[PROP_IS_LINKED] = g_param_spec_boolean(
             "is-linked",
             "Is linked",
-            "Whether the shader program is succesfully linked.",
+            "Whether the shader program is successfully linked.",
             FALSE,
             G_PARAM_READABLE
             );

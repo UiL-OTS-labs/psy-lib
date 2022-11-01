@@ -70,15 +70,16 @@ static void
 on_canvas_resize(GtkDrawingArea* darea, gint width, gint height, gpointer data)
 {
     PsyGtkWindow *self = data;
-    (void) self;
     gtk_gl_area_make_current(GTK_GL_AREA(darea));
+
+    g_signal_emit_by_name(self, "resize", width, height); // allow clients to update
+
     glViewport(
             0,
             0,
             width > 0 ? (GLsizei) width : 0,
             height > 0 ? (GLsizei) height : 0
             );
-    g_print("width %d, height %d, data %p\n", width, height, data);
 }
 
 static void
@@ -161,9 +162,12 @@ on_canvas_unrealize(GtkGLArea* area, PsyGtkWindow* self)
 static void
 psy_gtk_window_init(PsyGtkWindow* self)
 {
+    // Setup a window with a OpenGL canvas as child.
     self->window = gtk_window_new();
     GtkWidget* canvas = gtk_gl_area_new();
     gtk_window_set_child(GTK_WINDOW(self->window), canvas);
+
+    // Create a table to find artist to draw the scene
     self->artists = g_hash_table_new_full(
             g_direct_hash,
             g_direct_equal,
@@ -247,7 +251,7 @@ set_monitor(PsyWindow* self, gint nth_monitor) {
 
     width_mm = gdk_monitor_get_width_mm(monitor);
     height_mm= gdk_monitor_get_height_mm(monitor);
-    gdouble mHz = gdk_monitor_get_refresh_rate(monitor);
+    gdouble mHz = gdk_monitor_get_refresh_rate(monitor); // milli Hertz
     gdouble Hz = mHz / 1000;
     PsyDuration* frame_duration = psy_duration_new(1/Hz);
 
@@ -300,10 +304,6 @@ get_artist_for_stimulus(PsyWindow* window, PsyVisualStimulus* stimulus, GType ty
 static void
 schedule_stimulus(PsyWindow* self, PsyVisualStimulus* stimulus)
 {
-    g_print("Scheduling stimulus %p on window %p\ns",
-            (void*) stimulus,
-            (gpointer) self);
-
     PsyGtkWindow* win = PSY_GTK_WINDOW(self);
 
     PsyArtist* artist = get_artist_for_stimulus( 
@@ -338,7 +338,7 @@ remove_stimulus(PsyWindow* self, PsyVisualStimulus* stimulus)
             );
 }
 
-PsyProgram*
+static PsyProgram*
 get_shader_program(PsyWindow* self, PsyProgramType type)
 {
     PsyGtkWindow* win = PSY_GTK_WINDOW(self);
@@ -351,6 +351,56 @@ get_shader_program(PsyWindow* self, PsyProgramType type)
         default:
             g_critical("PsyGtkWindow doens't have a program for type %d", type);
             return NULL;
+    }
+}
+
+static void
+upload_projection_matrices(PsyWindow* self)
+{
+    PsyGtkWindow* win = PSY_GTK_WINDOW(self);
+    PsyMatrix4* projection = psy_window_get_projection(self);
+    GError* error = NULL;
+
+    if (win->picture_program) {
+        psy_program_use(win->picture_program, &error);
+        if (error) {
+            g_critical("Unable to set picture projection matrix: %s",
+                    error->message
+                    );
+            error = NULL;
+        }
+        psy_program_set_uniform_matrix4(
+                win->picture_program,
+                "projection",
+                projection,
+                &error
+                );
+        if (error) {
+            g_critical("Unable to set picture projection matrix: %s",
+                    error->message
+                    );
+            error = NULL;
+        }
+    }
+    if (win->uniform_color_program) {
+        psy_program_use(win->uniform_color_program, &error);
+        if (error) {
+            g_critical("Unable to set picture projection matrix: %s",
+                    error->message
+                    );
+            error = NULL;
+        }
+        psy_program_set_uniform_matrix4(
+                win->uniform_color_program,
+                "projection",
+                projection,
+                &error
+                );
+        if (error) {
+            g_critical("Unable to set picture projection matrix: %s",
+                    error->message
+                    );
+        }
     }
 }
 
@@ -370,6 +420,8 @@ psy_gtk_window_class_init(PsyGtkWindowClass* klass)
     psy_window_class->schedule_stimulus = schedule_stimulus;
     psy_window_class->remove_stimulus   = remove_stimulus;
     psy_window_class->get_shader_program= get_shader_program;
+
+    psy_window_class->upload_projection_matrices = upload_projection_matrices;
 }
 
 /**

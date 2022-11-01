@@ -3,6 +3,7 @@
 #define PSY_MATRIX4_H
 
 #include <glib-object.h>
+#include <gio/gio.h>
 
 G_BEGIN_DECLS
 
@@ -50,6 +51,9 @@ gboolean psy_matrix4_equals(PsyMatrix4* v1, PsyMatrix4* v2);
 gboolean psy_matrix4_not_equals(PsyMatrix4* v1, PsyMatrix4* v2);
 
 const gdouble* psy_matrix4_ptr(PsyMatrix4* self);
+
+G_MODULE_EXPORT void
+psy_matrix4_get_elements(PsyMatrix4*, gfloat* elements);
 
 
 G_END_DECLS

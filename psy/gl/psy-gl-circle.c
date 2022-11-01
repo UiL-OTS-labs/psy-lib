@@ -1,10 +1,13 @@
 
 #include <math.h>
 #include <epoxy/gl.h>
+#include <graphene.h>
 
+#include "graphene-matrix.h"
 #include "psy-circle.h"
 #include "psy-gl-circle.h"
 #include "psy-gl-vbuffer.h"
+#include "psy-matrix4.h"
 #include "psy-program.h"
 #include "psy-vbuffer.h"
 #include "psy-window.h"
@@ -78,20 +81,16 @@ psy_gl_circle_finalize(GObject* object)
 static void
 gl_circle_draw(PsyArtist* self)
 {
-    //TODO activate a OpenGL program.
-
     PsyGlCircle* artist = PSY_GL_CIRCLE(self);
     PsyCircle* circle = PSY_CIRCLE(psy_artist_get_stimulus(self));
-    PsyWindow* window = psy_artist_get_window(artist);
+    PsyWindow* window = psy_artist_get_window(self);
+    GError* error = NULL;
+
     PsyProgram* program = psy_window_get_shader_program(
             window,
             PSY_PROGRAM_UNIFORM_COLOR
             );
 
-    gboolean store_vertices = FALSE;
-    gfloat radius;
-    GError* error = NULL;
-    
     psy_program_use(program, &error);
     if (error) {
         g_critical("PsyCircle unable to use program: %s", error->message);
@@ -99,6 +98,9 @@ gl_circle_draw(PsyArtist* self)
         error = NULL;
     }
 
+    gboolean store_vertices = FALSE;
+    gfloat radius;
+    
     guint num_vertices = psy_circle_get_num_vertices(circle);
     if (num_vertices != psy_vbuffer_get_nvertices(artist->vertices)) {
         psy_vbuffer_set_nvertices(artist->vertices, num_vertices);

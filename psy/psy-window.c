@@ -29,16 +29,22 @@
 #include "psy-time-point.h"
 #include "psy-visual-stimulus.h"
 #include "psy-window.h"
+#include "psy-matrix4.h"
+#include "enum-types.h"
 
 typedef struct PsyWindowPrivate {
     gint            monitor;
     guint           n_frames;
+    gint            width, height;
     gint            width_mm, height_mm;
     gfloat          back_ground_color[4];
 
     GHashTable*     stimuli;
     GTree*          sorted_stimuli;
     PsyDuration*    frame_dur;
+
+    gint            projection_style;
+    PsyMatrix4*     projection_matrix;
 } PsyWindowPrivate;
 
 G_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE(PsyWindow, psy_window, G_TYPE_OBJECT)
@@ -46,18 +52,21 @@ G_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE(PsyWindow, psy_window, G_TYPE_OBJECT)
 typedef enum {
     CLEAR,
     DRAW_STIMULI,
+    RESIZE,
     LAST_SIGNAL,
 } PsyWindowSignal;
 
 typedef enum {
     N_MONITOR = 1,
     BACKGROUND_COLOR_VALUES,
+    WIDTH,
+    HEIGHT,
     WIDTH_MM,
     HEIGHT_MM,
     FRAME_DUR,
+    PROJECTION_STYLE,
     N_PROPS
 } PsyWindowProperty;
-
 
 static void
 psy_window_set_property(GObject        *object,
@@ -82,6 +91,9 @@ psy_window_set_property(GObject        *object,
         case HEIGHT_MM:
             psy_window_set_height_mm(self, g_value_get_int(value));
             break;
+        case PROJECTION_STYLE:
+            psy_window_set_projection_style(self, g_value_get_int(value));
+            break;
         case FRAME_DUR:
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, spec);
@@ -100,6 +112,12 @@ psy_window_get_property(GObject        *object,
         case N_MONITOR:
             g_value_set_int(value, psy_window_get_monitor(self));
             break;
+        case WIDTH:
+            g_value_set_int(value, psy_window_get_width(self));
+            break;
+        case HEIGHT:
+            g_value_set_int(value, psy_window_get_height(self));
+            break;
         case WIDTH_MM:
             g_value_set_int(value, psy_window_get_width_mm(self));
             break;
@@ -108,6 +126,9 @@ psy_window_get_property(GObject        *object,
             break;
         case FRAME_DUR:
             g_value_set_object(value, psy_window_get_frame_dur(self));
+            break;
+        case PROJECTION_STYLE:
+            g_value_set_int(value, psy_window_get_projection_style(self));
             break;
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, spec);
@@ -196,7 +217,7 @@ psy_window_finalize(GObject* gobject)
 }
 
 static GParamSpec* obj_properties[N_PROPS];
-//static guint window_signals[LAST_SIGNAL];
+static guint window_signals[LAST_SIGNAL];
 
 static gint
 get_monitor(PsyWindow* self) {
@@ -210,6 +231,29 @@ set_monitor(PsyWindow* self, gint nth_monitor) {
     priv->monitor = nth_monitor;
 }
 
+static void resize(PsyWindow* self, gint width, gint height)
+{
+    PsyWindowPrivate* priv = psy_window_get_instance_private(self);
+    priv->width = width;
+    priv->height = height;
+
+    PsyWindowClass* klass = PSY_WINDOW_GET_CLASS(self);
+    klass->set_projection_matrix(self, klass->create_projection_matrix(self));
+}
+
+static void
+set_width(PsyWindow* self, gint width) {
+    PsyWindowPrivate* priv = psy_window_get_instance_private(self);
+    priv->width = width;
+}
+
+static void
+set_height(PsyWindow* self, gint height) {
+    PsyWindowPrivate* priv = psy_window_get_instance_private(self);
+    priv->width = height;
+}
+
+
 static void
 set_frame_dur(PsyWindow* self, PsyDuration* dur)
 {
@@ -219,7 +263,6 @@ set_frame_dur(PsyWindow* self, PsyDuration* dur)
 
 static void
 schedule_stimulus(PsyWindow* self, PsyVisualStimulus* stimulus) {
-    g_print("%s\n", __PRETTY_FUNCTION__ );
     PsyWindowPrivate* priv = psy_window_get_instance_private(self);
 
     // Check if the stimulus is already scheduled
@@ -241,6 +284,9 @@ static void
 draw(PsyWindow* self, guint64 frame_num, PsyTimePoint* tp)
 {
     PsyWindowClass* cls = PSY_WINDOW_GET_CLASS(self);
+
+    // upload the default projection matrices.
+    cls->upload_projection_matrices(self);
     g_return_if_fail(cls->clear);
     g_return_if_fail(cls->draw_stimuli);
 
@@ -312,6 +358,92 @@ set_monitor_size_mm(PsyWindow* self, gint width_mm, gint height_mm)
     priv->height_mm = height_mm;
 }
 
+PsyMatrix4*
+create_projection_matrix(PsyWindow* self) {
+    //TODO check whether near and far are valid.
+    gint w, h;
+    gfloat width, height, width_mm, height_mm;
+    gint w_mm, h_mm;
+    gfloat left = 0.0, right = 0.0, bottom, top, near = 100.0, far = -100.0;
+
+    g_object_get(self,
+            "width", &w,
+            "height", &h,
+            "width_mm", &w_mm,
+            "height_mm", &h_mm,
+            NULL);
+    width = (gfloat)w;
+    height= (gfloat)h;
+    width_mm = (gfloat) w_mm;
+    height_mm = (gfloat) h_mm;
+    bottom = height;
+    top = 0.0;
+
+    gint style = psy_window_get_projection_style(self);
+
+    if (style & PSY_WINDOW_PROJECTION_STYLE_CENTER) {
+        if (style & PSY_WINDOW_PROJECTION_STYLE_PIXELS) {
+            left   =   -width / 2;
+            right  =    width / 2;
+            top    =   height / 2;
+            bottom =  -height / 2;
+        }
+        else if (style & PSY_WINDOW_PROJECTION_STYLE_METER) {
+            left   =   -(width_mm / 1000) / 2;
+            right  =    (width_mm / 1000) / 2;
+            top    =   (height_mm / 1000) / 2;
+            bottom =  -(height_mm / 1000) / 2;
+        }
+        else if (style & PSY_WINDOW_PROJECTION_STYLE_MILLIMETER) {
+            left   =   -width_mm / 2;
+            right  =    width_mm / 2;
+            top    =   height_mm / 2;
+            bottom =  -height_mm / 2;
+        }
+        else {
+            g_assert(style & PSY_WINDOW_PROJECTION_STYLE_VISUAL_DEGREES);
+            g_warning("visual degrees are yet unsupported");
+            return NULL;
+        }
+    }
+    else {
+        g_assert(style & PSY_WINDOW_PROJECTION_STYLE_C);
+        if (style & PSY_WINDOW_PROJECTION_STYLE_PIXELS) {
+            left   =  0.0;
+            right  =  width;
+            top    =  0.0;
+            bottom =  height;
+        }
+        else if (style & PSY_WINDOW_PROJECTION_STYLE_METER) {
+            left   =  0.0;
+            right  =  width_mm / 1000;
+            top    =  0.0;
+            bottom =  height_mm / 1000;
+        }
+        else if (style & PSY_WINDOW_PROJECTION_STYLE_MILLIMETER) {
+            left   =  0.0;
+            right  =  width_mm;
+            top    =  0.0;
+            bottom =  height_mm;
+        }
+        else {
+            g_assert(style & PSY_WINDOW_PROJECTION_STYLE_VISUAL_DEGREES);
+            g_warning("visual degrees are yet unsupported");
+            return NULL;
+        }
+    }
+
+    return psy_matrix4_new_ortographic(left, right, bottom, top, near, far);
+}
+
+static void
+set_projection_matrix(PsyWindow* self, PsyMatrix4* projection)
+{
+    PsyWindowPrivate* priv = psy_window_get_instance_private(self);
+    g_clear_object(&priv->projection_matrix);
+    priv->projection_matrix = projection;
+}
+
 static void
 psy_window_class_init(PsyWindowClass* klass)
 {
@@ -325,6 +457,11 @@ psy_window_class_init(PsyWindowClass* klass)
     klass->get_monitor          = get_monitor;
     klass->set_monitor          = set_monitor;
 
+    klass->resize               = resize;
+
+    klass->set_width            = set_width;
+    klass->set_height           = set_height;
+
     klass->draw                 = draw;
     klass->draw_stimuli         = draw_stimuli;
     klass->set_monitor_size_mm  = set_monitor_size_mm;
@@ -333,6 +470,9 @@ psy_window_class_init(PsyWindowClass* klass)
 
     klass->schedule_stimulus    = schedule_stimulus;
     klass->remove_stimulus      = remove_stimulus;
+
+    klass->create_projection_matrix = create_projection_matrix;
+    klass->set_projection_matrix = set_projection_matrix;
 
     /**
      * PsyWindow:n-monitor:
@@ -348,6 +488,31 @@ psy_window_class_init(PsyWindowClass* klass)
                          G_MAXINT32,
                          0,
                          G_PARAM_CONSTRUCT | G_PARAM_READWRITE
+                         );
+    /**
+     * PsyWindow:width:
+     */
+    obj_properties[WIDTH] =
+        g_param_spec_int("width",
+                         "Width",
+                         "The width of the window in pixels",
+                         0,
+                         G_MAXINT32,
+                         0,
+                         G_PARAM_READABLE
+                         );
+    
+    /**
+     * PsyWindow:height:
+     */
+    obj_properties[HEIGHT] =
+        g_param_spec_int("height",
+                         "",
+                         "The height of the window in pixel.",
+                         0,
+                         G_MAXINT32,
+                         0,
+                         G_PARAM_READABLE
                          );
 
     /**
@@ -420,7 +585,57 @@ psy_window_class_init(PsyWindowClass* klass)
             G_PARAM_READABLE
             );
 
+    /**
+     * PsyWindow:projection-style:
+     *
+     * The manner in which geometrical units normalized coordinates are
+     * projected to the physical output parameters. In OpenGL for example
+     * units are specified normalized device parameters between -1.0 and 1.0
+     * This is for other users perhaps not as convenient. For our 2D drawing
+     * it might be more appropriate to specify the range in pixels.
+     * This is a combination `PsyWindowProjectionStyle` flags
+     * When setting the property one should specify exactly one of:
+     *
+     *  - PSY_WINDOW_PROJECTION_STYLE_C
+     *  - PSY_WINDOW_PROJECTION_STYLE_CENTER
+     *
+     * and exactly one of:
+     *
+     *  - PSY_WINDOW_PROJECTION_STYLE_PIXELS
+     *  - PSY_WINDOW_PROJECTION_STYLE_METER
+     *  - PSY_WINDOW_PROJECTION_STYLE_MILLIMETER
+     *  - PSY_WINDOW_PROJECTION_STYLE_VISUAL_DEGREES
+     *
+     * if you would fail to this no valid projection can be set and probably
+     * the last one will be kept.
+     * The default is:
+     *  PSY_WINDOW_PROJECTION_STYLE_CENTER | PSY_WINDOW_PROJECTION_STYLE_PIXELS
+     */
+    obj_properties[PROJECTION_STYLE] = g_param_spec_int(
+            "projection-style",
+            "Projection style",
+            "Tells what the projection matrix is doing for you",
+            0,
+            G_MAXINT32,
+            PSY_WINDOW_PROJECTION_STYLE_CENTER | PSY_WINDOW_PROJECTION_STYLE_PIXELS,
+            G_PARAM_READWRITE | G_PARAM_CONSTRUCT
+            );
+
     g_object_class_install_properties(object_class, N_PROPS, obj_properties);
+
+    window_signals[RESIZE] = g_signal_new(
+            "resize",
+            PSY_TYPE_WINDOW,
+            G_SIGNAL_RUN_LAST,
+            G_STRUCT_OFFSET(PsyWindowClass, resize),
+            NULL,
+            NULL,
+            NULL,
+            G_TYPE_NONE,
+            2,
+            G_TYPE_INT,
+            G_TYPE_INT
+            );
 
 //    /**
 //     * PsyWindow::clear
@@ -548,6 +763,36 @@ psy_window_get_background_color_values(PsyWindow* self, gfloat* color)
     memcpy(color,
            priv->back_ground_color,
            sizeof(priv->back_ground_color));
+}
+
+/**
+ * psy_window_get_width:
+ * @self:A #PsyWindow instance
+ *
+ * Returns: the width in pixels of the window
+ */
+gint
+psy_window_get_width(PsyWindow* self)
+{
+    PsyWindowPrivate* priv = psy_window_get_instance_private(self);;
+    g_return_val_if_fail(PSY_IS_WINDOW(self), -1);
+    
+    return priv->width;
+}
+
+/**
+ * psy_window_get_height:
+ * @self:A #PsyWindow instance
+ *
+ * Returns: the height in pixels of the window
+ */
+gint
+psy_window_get_height(PsyWindow* self)
+{
+    PsyWindowPrivate* priv = psy_window_get_instance_private(self);
+    g_return_val_if_fail(PSY_IS_WINDOW(self), -1);
+    
+    return priv->height;
 }
 
 /**
@@ -697,5 +942,96 @@ psy_window_get_shader_program(PsyWindow* self, PsyProgramType type)
     g_return_val_if_fail(klass->get_shader_program, NULL);
 
     return klass->get_shader_program(self, type);
+}
+
+/**
+ * psy_window_set_projection_style:
+ * @window: an instance of `PsyWindow`
+ * @style: an instance of `PsyWindowProjectionStyle` an | orable combination
+ *         of `PsyWindowProjectionStyle` Take note some flags may not be
+ *         orred together and at least some must be set.
+ *                      
+ *
+ * Set the style of projection of the window see `PsyWindow:projection-style`
+ */
+void
+psy_window_set_projection_style(PsyWindow* self, gint style)
+{
+    PsyWindowPrivate* priv = psy_window_get_instance_private(self);
+    PsyWindowClass* klass = PSY_WINDOW_GET_CLASS(self);
+
+    gint origin_style = 0;
+    gint unit_style = 0;
+
+    g_return_if_fail(PSY_IS_WINDOW(self));
+    
+    if (style & PSY_WINDOW_PROJECTION_STYLE_C)
+        origin_style++;
+    if (style & PSY_WINDOW_PROJECTION_STYLE_CENTER)
+        origin_style++;
+
+    if (origin_style != 1) {
+        g_critical("%s:You should set PSY_WINDOW_PROJECTION_STYLE_C or "
+                   "PSY_WINDOW_PROJECTION_STYLE_CENTER", __func__);
+        return;
+    }
+
+    if (style & PSY_WINDOW_PROJECTION_STYLE_PIXELS)
+        unit_style++;
+    if (style & PSY_WINDOW_PROJECTION_STYLE_METER)
+        unit_style++;
+    if (style & PSY_WINDOW_PROJECTION_STYLE_MILLIMETER)
+        unit_style++;
+    if (style & PSY_WINDOW_PROJECTION_STYLE_VISUAL_DEGREES) {
+        g_warning("Oops setting visual degrees is currently not supported.");
+        unit_style++;
+    }
+
+    if (unit_style != 1) {
+        g_critical("%s: You should set PSY_WINDOW_PROJECTION_STYLE_PIXELS or "
+                "PSY_WINDOW_PROJECTION_STYLE_METER or"
+                "PSY_WINDOW_PROJECTION_STYLE_MILLIMETER or"
+                "PSY_WINDOW_PROJECTION_STYLE_VISUAL_DEGREES",
+                __func__
+                );
+        return;
+    }
+
+    priv->projection_style = style;
+
+    PsyMatrix4* projection = klass->create_projection_matrix(self);
+
+    g_clear_object(&priv->projection_matrix);
+    priv->projection_matrix = projection;
+}
+
+/**
+ * psy_window_get_projection_style:
+ * @window: an instance of `PsyWindow`
+ *
+ * Returns: the style of projection of the window see `PsyWindow:projection-style`
+ */
+gint
+psy_window_get_projection_style(PsyWindow* self)
+{
+    PsyWindowPrivate* priv = psy_window_get_instance_private(self);
+    
+    g_return_val_if_fail(PSY_IS_WINDOW(self), 0);
+
+    return priv->projection_style;
+}
+
+/**
+ * psy_window_get_projection:
+ * @window: an instance of `PsyWindow`
+ *
+ * Returns: the projection matrix used by this window
+ */
+PsyMatrix4*
+psy_window_get_projection(PsyWindow* self) {
+    PsyWindowPrivate* priv = psy_window_get_instance_private(self);
+
+    g_return_val_if_fail(PSY_IS_WINDOW(self), NULL);
+    return priv->projection_matrix;
 }
 
