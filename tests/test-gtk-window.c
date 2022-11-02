@@ -22,6 +22,9 @@ int g_nvertices = 10;
 gdouble g_radius = 50;
 gdouble g_amplitude = 25;
 gdouble g_frequency = 0.5;
+gdouble g_x = 0.0;
+gdouble g_y = 0.0;
+gdouble g_z = 0.0;
 
 char* g_origin = "center";
 char* g_units = "pixels";
@@ -35,6 +38,9 @@ static GOptionEntry entries[] = {
     {"vertices", 'v', G_OPTION_FLAG_NONE, G_OPTION_ARG_INT, &g_nvertices, "The number of vertices of the circle", "number"},
     {"origin", 'o', G_OPTION_FLAG_NONE, G_OPTION_ARG_STRING, &g_origin, "The center C style or center", "c|center"},
     {"units", 'u', G_OPTION_FLAG_NONE, G_OPTION_ARG_STRING, &g_units, "The units of the coordinate system", "pix|m|mm|visdeg"},
+    {"x", 'x', G_OPTION_FLAG_NONE, G_OPTION_ARG_DOUBLE, &g_x, "The x-coordinate of the circle", "units depends on projection"},
+    {"y", 'y', G_OPTION_FLAG_NONE, G_OPTION_ARG_DOUBLE, &g_y, "The y-coordinate of the circle", "units depends on projection"},
+    {"z", 'z', G_OPTION_FLAG_NONE, G_OPTION_ARG_DOUBLE, &g_z, "The z-coordinate of the circle", "units depends on projection"},
     {0}
 };
 
@@ -128,7 +134,7 @@ gint get_window_style(void)
         g_warning("The units wasn't one of: %s, %s or %s, %s, defaulting to %s",
                 pixels, m, mm, visdeg, pixels
                 );
-        style |= PSY_WINDOW_PROJECTION_STYLE_CENTER;
+        style |= PSY_WINDOW_PROJECTION_STYLE_PIXELS;
     }
 
     return style;
@@ -163,7 +169,9 @@ int main(int argc, char**argv) {
     window_style = get_window_style();
     psy_window_set_projection_style(PSY_WINDOW(window), window_style);
 
-    PsyCircle* circle = psy_circle_new_full(PSY_WINDOW(window), 0, 0, .5, g_nvertices);
+    PsyCircle* circle = psy_circle_new_full(
+            PSY_WINDOW(window), g_x, g_y, g_radius, g_nvertices
+            );
     g_signal_connect(circle, "update", G_CALLBACK(update_circle), tp);
     g_signal_connect(circle, "started", G_CALLBACK(circle_started), tp);
     g_signal_connect(circle, "stopped", G_CALLBACK(circle_stopped), tp);
