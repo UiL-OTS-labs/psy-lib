@@ -51,4 +51,20 @@ psy_visual_stimulus_set_start_frame(
 G_MODULE_EXPORT gint64
 psy_visual_stimulus_get_start_frame(PsyVisualStimulus* stimulus);
 
+G_MODULE_EXPORT gfloat
+psy_visual_stimulus_get_x(PsyVisualStimulus* stimulus);
+G_MODULE_EXPORT void 
+psy_visual_stimulus_set_x(PsyVisualStimulus* stimulus, gfloat x);
+
+G_MODULE_EXPORT gfloat
+psy_visual_stimulus_get_y(PsyVisualStimulus* stimulus);
+G_MODULE_EXPORT void 
+psy_visual_stimulus_set_y(PsyVisualStimulus* stimulus, gfloat y);
+
+G_MODULE_EXPORT gfloat
+psy_visual_stimulus_get_z(PsyVisualStimulus* stimulus);
+G_MODULE_EXPORT void 
+psy_visual_stimulus_set_z(PsyVisualStimulus* stimulus, gfloat z);
+
+
 G_END_DECLS

@@ -15,6 +15,7 @@
 typedef struct _PsyGlCircle {
     PsyArtist parent_instance;
     PsyVBuffer* vertices;
+    gfloat x, y, z;
     gfloat radius;
 } PsyGlCircle;
 
@@ -50,6 +51,11 @@ gl_circle_draw(PsyArtist* self)
     PsyWindow* window = psy_artist_get_window(self);
     GError* error = NULL;
 
+    gfloat x, y, z;
+    gboolean store_vertices = FALSE;
+    gfloat radius;
+    guint num_vertices;
+
     PsyProgram* program = psy_window_get_shader_program(
             window,
             PSY_PROGRAM_UNIFORM_COLOR
@@ -62,12 +68,24 @@ gl_circle_draw(PsyArtist* self)
         error = NULL;
     }
 
-    gboolean store_vertices = FALSE;
-    gfloat radius;
-    
-    guint num_vertices = psy_circle_get_num_vertices(circle);
+    g_object_get(circle,
+            "x", &x,
+            "y", &y,
+            "z", &z,
+            "num-vertices", &num_vertices,
+            "radius", &radius,
+            NULL
+            );
+
     if (num_vertices != psy_vbuffer_get_nvertices(artist->vertices)) {
         psy_vbuffer_set_nvertices(artist->vertices, num_vertices);
+        store_vertices = TRUE;
+    }
+
+    if (x != artist->x || y != artist->y || z != artist->z) {
+        artist->x = x;
+        artist->y = y;
+        artist->z = z;
         store_vertices = TRUE;
     }
 
@@ -78,12 +96,12 @@ gl_circle_draw(PsyArtist* self)
     }
 
     if (store_vertices) {
-        gfloat x = 0, y = 0, z = 0;
-        float twopi = M_PI * 2.0;
+        gfloat twopi = M_PI * 2.0;
+        gfloat nx, ny;
         for (gsize i = 0; i < num_vertices; i++) {
-            x = cos(i * twopi / num_vertices) * radius;
-            y = sin(i * twopi / num_vertices) * radius;
-            psy_vbuffer_set_xyz(artist->vertices, i, x, y, z);
+            nx = x + cos(i * twopi / num_vertices) * radius;
+            ny = y + sin(i * twopi / num_vertices) * radius;
+            psy_vbuffer_set_xyz(artist->vertices, i, nx, ny, z);
         }
         psy_vbuffer_upload(artist->vertices, &error);
         if (error) {

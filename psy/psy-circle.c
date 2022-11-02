@@ -53,10 +53,10 @@ circle_get_property(GObject       *object,
 
     switch((CircleProperty) property_id) {
         case PROP_RADIUS:
-            g_value_set_int64(value, priv->radius);
+            g_value_set_float(value, priv->radius);
             break;
         case PROP_NUM_VERTICES:
-            g_value_set_int64(value, priv->num_vertices);
+            g_value_set_uint(value, priv->num_vertices);
             break;
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
@@ -130,7 +130,7 @@ psy_circle_new(PsyWindow* window)
 
 /**
  * psy_circle:(method)
- * @circle: an instance of %PsyCircle
+ * @circle: an instance of `PsyCircle`
  *
  * Returns: a new instance of `PsyCircle` with the provided values.
  */
@@ -142,8 +142,8 @@ psy_circle_new_full(
     return g_object_new(
             PSY_TYPE_CIRCLE,
             "window", window,
-//            "x", x,
-//            "y", y,
+            "x", x,
+            "y", y,
             "radius", radius,
             "num_vertices", num_vertices,
             NULL);

@@ -1,5 +1,8 @@
 
+#include <math.h>
+
 #include "psy-visual-stimulus.h"
+#include "glibconfig.h"
 #include "psy-stimulus.h"
 #include "psy-window.h"
 
@@ -8,6 +11,7 @@ typedef struct PsyVisualStimulusPrivate {
      gint64     nth_frame;
      gint64     num_frames;
      gint64     start_frame;
+     gfloat     x, y, z;
 } PsyVisualStimulusPrivate;
 
 G_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE(
@@ -20,6 +24,9 @@ typedef enum {
     PROP_NUM_FRAMES,    // The number of frames the stimulus will be presented
     PROP_NTH_FRAME,     // the frame for which we are rendering
     PROP_START_FRAME,   // the frame at which this object should be first presented
+    PROP_X,             // the x coordinate of the stimulus
+    PROP_Y,             // the y coordinate of the stimulus
+    PROP_Z,             // the z coordinate of the stimulus
     NUM_PROPERTIES
 } VisualStimulusProperty;
 
@@ -43,6 +50,15 @@ psy_visual_stimulus_set_property(GObject       *object,
     switch((VisualStimulusProperty) property_id) {
         case PROP_WINDOW:
             psy_visual_stimulus_set_window(self, g_value_get_object(value));
+            break;
+        case PROP_X:
+            psy_visual_stimulus_set_x(self, g_value_get_float(value));
+            break;
+        case PROP_Y:
+            psy_visual_stimulus_set_y(self, g_value_get_float(value));
+            break;
+        case PROP_Z:
+            psy_visual_stimulus_set_z(self, g_value_get_float(value));
             break;
         case PROP_NUM_FRAMES: // gettable only
         case PROP_NTH_FRAME:  // gettable only
@@ -74,6 +90,15 @@ psy_visual_stimulus_get_property(GObject       *object,
             break;
         case PROP_START_FRAME:
             g_value_set_int64(value, priv->start_frame);
+            break;
+        case PROP_X:
+            g_value_set_float(value, priv->x);
+            break;
+        case PROP_Y:
+            g_value_set_float(value, priv->y);
+            break;
+        case PROP_Z:
+            g_value_set_float(value, priv->z);
             break;
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
@@ -210,9 +235,54 @@ psy_visual_stimulus_class_init(PsyVisualStimulusClass* klass)
     visual_stimulus_properties[PROP_START_FRAME] = g_param_spec_int64(
             "start-frame",
             "StartFrame",
-            "The number of the frame on which this stimulus should be prensented",
+            "The number of the frame on which this stimulus should be presented",
             0, G_MAXINT64, 0,
             G_PARAM_READABLE
+            );
+
+    /**
+     * PsyVisualStimulus:x
+     *
+     * The x coordinate of the stimulus
+     */
+    visual_stimulus_properties[PROP_X] = g_param_spec_float(
+            "x",
+            "x-coordinate",
+            "the x coordinate of the stimulus",
+            -G_MAXFLOAT,
+            G_MAXFLOAT,
+            0,
+            G_PARAM_READWRITE
+            );
+    
+    /**
+     * PsyVisualStimulus:y
+     *
+     * The y coordinate of the stimulus
+     */
+    visual_stimulus_properties[PROP_Y] = g_param_spec_float(
+            "y",
+            "y-coordinate",
+            "the y coordinate of the stimulus",
+            -G_MAXFLOAT,
+            G_MAXFLOAT,
+            0,
+            G_PARAM_READWRITE
+            );
+    
+    /**
+     * PsyVisualStimulus:z
+     *
+     * The z coordinate of the stimulus
+     */
+    visual_stimulus_properties[PROP_Z] = g_param_spec_float(
+            "z",
+            "z-coordinate",
+            "the z coordinate of the stimulus",
+            -G_MAXFLOAT,
+            G_MAXFLOAT,
+            0,
+            G_PARAM_READWRITE
             );
     
     g_object_class_install_properties(
@@ -404,5 +474,104 @@ psy_visual_stimulus_get_start_frame(PsyVisualStimulus* self)
     g_return_val_if_fail(PSY_IS_VISUAL_STIMULUS(self), -1);
     
     return priv->start_frame;
+}
+
+/**
+ * psy_visual_stimulus_get_x:
+ * @self: an instance of `PsyVisualStimulus`
+ *
+ * Get the x coordinate of the stimulus.
+ *
+ * Returns: the x coordinate of the stimulus
+ */
+gfloat
+psy_visual_stimulus_get_x(PsyVisualStimulus* self)
+{
+    PsyVisualStimulusPrivate* priv = psy_visual_stimulus_get_instance_private(self);
+    g_return_val_if_fail(PSY_IS_VISUAL_STIMULUS(self), NAN);
+
+    return priv->x;
+}
+
+/**
+ * psy_visual_stimulus_set_x:
+ * @self: an instance of `PsyVisualStimulus`
+ * @x: a `gfloat` representing the x coordinate.
+ *
+ * Set the new value for the x-coordinate
+ */
+void
+psy_visual_stimulus_set_x(PsyVisualStimulus* self, gfloat x)
+{
+    PsyVisualStimulusPrivate* priv = psy_visual_stimulus_get_instance_private(self);
+    g_return_if_fail(PSY_IS_VISUAL_STIMULUS(self));
+
+    priv->x = x;
+}
+
+/**
+ * psy_visual_stimulus_get_y:
+ * @self: an instance of `PsyVisualStimulus`
+ *
+ * Get the y coordinate of the stimulus.
+ *
+ * Returns: the y coordinate of the stimulus
+ */
+gfloat
+psy_visual_stimulus_get_y(PsyVisualStimulus* self)
+{
+    PsyVisualStimulusPrivate* priv = psy_visual_stimulus_get_instance_private(self);
+    g_return_val_if_fail(PSY_IS_VISUAL_STIMULUS(self), NAN);
+
+    return priv->y;
+}
+
+/**
+ * psy_visual_stimulus_set_y:
+ * @self: an instance of `PsyVisualStimulus`
+ * @y: a `gfloat` representing the y coordinate.
+ *
+ * Set the new value for the y-coordinate
+ */
+void
+psy_visual_stimulus_set_y(PsyVisualStimulus* self, gfloat y)
+{
+    PsyVisualStimulusPrivate* priv = psy_visual_stimulus_get_instance_private(self);
+    g_return_if_fail(PSY_IS_VISUAL_STIMULUS(self));
+
+    priv->y = y;
+}
+
+/**
+ * psy_visual_stimulus_get_z:
+ * @self: an instance of `PsyVisualStimulus`
+ *
+ * Get the z coordinate of the stimulus.
+ *
+ * Returns: the z coordinate of the stimulus
+ */
+gfloat
+psy_visual_stimulus_get_z(PsyVisualStimulus* self)
+{
+    PsyVisualStimulusPrivate* priv = psy_visual_stimulus_get_instance_private(self);
+    g_return_val_if_fail(PSY_IS_VISUAL_STIMULUS(self), NAN);
+
+    return priv->z;
+}
+
+/**
+ * psy_visual_stimulus_set_z:
+ * @self: an instance of `PsyVisualStimulus`
+ * @z: a `gfloat` representing the z coordinate.
+ *
+ * Set the new value for the z-coordinate
+ */
+void
+psy_visual_stimulus_set_z(PsyVisualStimulus* self, gfloat z)
+{
+    PsyVisualStimulusPrivate* priv = psy_visual_stimulus_get_instance_private(self);
+    g_return_if_fail(PSY_IS_VISUAL_STIMULUS(self));
+
+    priv->z = z;
 }
 
