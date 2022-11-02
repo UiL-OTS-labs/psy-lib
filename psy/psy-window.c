@@ -988,10 +988,11 @@ psy_window_set_projection_style(PsyWindow* self, gint style)
     }
 
     if (unit_style != 1) {
-        g_critical("%s: You should set PSY_WINDOW_PROJECTION_STYLE_PIXELS or "
-                "PSY_WINDOW_PROJECTION_STYLE_METER or"
-                "PSY_WINDOW_PROJECTION_STYLE_MILLIMETER or"
-                "PSY_WINDOW_PROJECTION_STYLE_VISUAL_DEGREES",
+        g_critical("%s: You should set exactly one of:\n"
+                "   - PSY_WINDOW_PROJECTION_STYLE_PIXELS or\n"
+                "   - PSY_WINDOW_PROJECTION_STYLE_METER or\n"
+                "   - PSY_WINDOW_PROJECTION_STYLE_MILLIMETER or\n"
+                "   - PSY_WINDOW_PROJECTION_STYLE_VISUAL_DEGREES",
                 __func__
                 );
         return;
