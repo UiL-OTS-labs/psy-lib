@@ -26,6 +26,7 @@
  */
 #include "psy-duration.h"
 #include "psy-program.h"
+#include "psy-stimulus.h"
 #include "psy-time-point.h"
 #include "psy-visual-stimulus.h"
 #include "psy-window.h"
@@ -300,6 +301,7 @@ draw_stimuli(PsyWindow* self, guint64 frame_num, PsyTimePoint* tp)
     PsyWindowPrivate* priv = psy_window_get_instance_private(self);
     PsyWindowClass* klass = PSY_WINDOW_GET_CLASS(self);
     GTreeNode* node;
+    GPtrArray* nodes_to_remove = g_ptr_array_new();
 
     for ( node = g_tree_node_first(priv->sorted_stimuli);
           node;
@@ -342,12 +344,20 @@ draw_stimuli(PsyWindow* self, guint64 frame_num, PsyTimePoint* tp)
             psy_stimulus_set_is_started(PSY_STIMULUS(stim), tp);
         }
 
-        if (nth_frame >= num_frames) {
-            PsyTimePoint* tend = psy_time_point_add(tp, priv->frame_dur);
-            psy_stimulus_set_is_finished(PSY_STIMULUS(stim), tend);
-            psy_window_remove_stimulus(self, vstim);
-        }
+        // postpone removing nodes after iterating over items
+        if (nth_frame >= num_frames)
+            g_ptr_array_add(nodes_to_remove, stim);
     }
+    
+    PsyTimePoint* tend = psy_time_point_add(tp, priv->frame_dur);
+    for (gsize i = 0; i < nodes_to_remove->len; i++) {
+        PsyStimulus* stim = g_ptr_array_index(nodes_to_remove, i);
+        psy_stimulus_set_is_finished(stim, tend);
+        psy_window_remove_stimulus(self, PSY_VISUAL_STIMULUS(stim));
+    }
+    g_object_unref(tend);
+    g_ptr_array_unref(nodes_to_remove);
+
 }
 
 static void
