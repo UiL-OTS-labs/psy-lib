@@ -318,6 +318,7 @@ draw_stimuli(PsyWindow* self, guint64 frame_num, PsyTimePoint* tp)
             gint64 num_frames_away = psy_duration_divide_rounded(
                     wait, priv->frame_dur
                     );
+            g_object_unref(wait);
             if (num_frames_away < 0) {
                 g_warning(
                         "Scheduling a stimulus that should have been presented "

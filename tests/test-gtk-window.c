@@ -57,7 +57,7 @@ update_circle(
     (void) nth_frame;
     PsyCircle* circle = PSY_CIRCLE(stim);
     gfloat radius;
-    PsyDuration* dur;
+    PsyDuration* dur = NULL;
     if (g_tstart)
         dur = psy_time_point_subtract(tp, g_tstart);
     else 
@@ -68,6 +68,7 @@ update_circle(
             ) * g_amplitude;
 
     psy_circle_set_radius(circle, radius);
+    g_object_unref(dur);
 }
 
 void
@@ -155,6 +156,7 @@ int main(int argc, char**argv) {
         g_option_context_free(context);
         return EXIT_FAILURE;
     }
+    g_option_context_free(context);
     
     clk = psy_clock_new();
     tp = psy_clock_now(clk);
@@ -200,6 +202,9 @@ int main(int argc, char**argv) {
     g_object_unref(window);
     g_object_unref(clk);
     g_object_unref(dur);
+    g_object_unref(start_dur);
+    g_object_unref(diff);
+    g_object_unref(start);
 
     return ret;
 }

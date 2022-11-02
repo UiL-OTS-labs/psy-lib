@@ -60,6 +60,8 @@ tick_callback(GtkWidget       *d_area,
             frame_count,
             tp);
 
+    g_object_unref(tp);
+
 //    // Queues a new frame. Otherwise the frame clock doesn't update
     gtk_widget_queue_draw(GTK_WIDGET(canvas));
 
