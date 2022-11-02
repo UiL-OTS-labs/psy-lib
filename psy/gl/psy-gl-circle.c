@@ -112,6 +112,13 @@ gl_circle_draw(PsyArtist* self)
         }
     }
     psy_vbuffer_draw_triangle_fan(artist->vertices, &error);
+    if (error) {
+        g_critical("PsyGLCircle: unable to draw triangle_fan: %s",
+                error->message
+                );
+        g_error_free(error);
+    }
+
 }
 
 static void
