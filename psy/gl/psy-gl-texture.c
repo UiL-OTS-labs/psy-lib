@@ -1,8 +1,9 @@
 
+#include <epoxy/gl.h>
 
 #include "psy-gl-error.h"
 #include "psy-gl-texture.h"
-#include <epoxy/gl.h>
+#include "../psy-enums.h"
 
 typedef struct _PsyGlTexture {
     PsyTexture parent;

@@ -1,5 +1,6 @@
 
 #include "psy-texture.h"
+#include "psy-enums.h"
 
 #define STBI_NO_FAILURE_STRINGS
 #define STBI_FAILURE_USERMSG

@@ -4,6 +4,7 @@
 #include <glib-object.h>
 #include "psy-time-point.h"
 #include "psy-program.h"
+#include "psy-enums.h"
 
 G_BEGIN_DECLS
 
@@ -13,58 +14,6 @@ G_BEGIN_DECLS
 struct _PsyVisualStimulus;
 typedef struct _PsyVisualStimulus PsyVisualStimulus;
 
-/**
- * PsyWindowProjectionStyle:
- * @PSY_WINDOW_PROJECTION_STYLE_C: 0.0, 0.0 is in the upper left corner of the
- *                                 window. With positive y coordinates going down.
- * @PSY_WINDOW_PROJECTION_STYLE_CENTER: 0.0, 0.0 is in the center of the window
- *                            with positive y coordinates is going up.
- * @PSY_WINDOW_PROJECTION_STYLE_PIXELS: Create a projection matrix that makes the
- *                            screen as wide,tall as the dimensions of the
- *                            number of pixels. Stimuli may than also be
- *                            specified in pixels.
- * @PSY_WINDOW_PROJECTION_STYLE_METER:  Create a projection matrix based on the number
- *                            meters the window is, the sizes of stimuli can be
- *                            specified in meters.
- * @PSY_WINDOW_PROJECTION_STYLE_MILLIMETER: Create a projection matrix based on the
- *                            number meters the window is tall. Stimuli
- *                            may also be presented in millimeters.
- * @PSY_WINDOW_PROJECTION_STYLE_VISUAL_DEGREES: Create a projection matrix based on 
- *                            the number of visual degrees the window is tall.
- *                            Stimuli should be specified in visual degrees.
- *                            NOT IMPLEMENTED YET.
- *
- * Instances of `PsyWindow` use an orthographic projection by default. We
- * focus on 2 Dimensional stimuli. This enum can be used to set the 
- * projection-style property of a PsyWindow. By default the projection is
- * set up with the point[0.0, 0.0] in the center of the screen, regardless
- * of the units used.
- *
- * The PsyWindow is able to tell the size in meters of the window when it's
- * fullscreen and also the "size" in pixels. It doesn't know how far the
- * subject is sitting from the screen, so this need to be specified when using
- * #PsyProjectionStyleVisualDegrees.
- *
- * When using these flags one should always specify exactly one of:
- *
- *  - PSY_WINDOW_PROJECTION_STYLE_C
- *  - PSY_WINDOW_PROJECTION_STYLE_CENTER
- *
- * and exactly one of 
- *
- *  - PSY_WINDOW_PROJECTION_STYLE_PIXELS
- *  - PSY_WINDOW_PROJECTION_STYLE_METER
- *  - PSY_WINDOW_PROJECTION_STYLE_MILLIMETER
- *  - PSY_WINDOW_PROJECTION_STYLE_VISUAL_DEGREES
- */
-typedef enum _PsyWindowProjectionStyle {
-    PSY_WINDOW_PROJECTION_STYLE_C               = 1 << 0,
-    PSY_WINDOW_PROJECTION_STYLE_CENTER          = 1 << 1,
-    PSY_WINDOW_PROJECTION_STYLE_PIXELS          = 1 << 2,
-    PSY_WINDOW_PROJECTION_STYLE_METER           = 1 << 3,
-    PSY_WINDOW_PROJECTION_STYLE_MILLIMETER      = 1 << 4,
-    PSY_WINDOW_PROJECTION_STYLE_VISUAL_DEGREES  = 1 << 5
-} PsyWindowProjectionStyle;
 
 #define PSY_TYPE_WINDOW psy_window_get_type()
 G_DECLARE_DERIVABLE_TYPE(PsyWindow, psy_window, PSY, WINDOW, GObject)

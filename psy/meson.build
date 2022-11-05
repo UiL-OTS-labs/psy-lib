@@ -36,6 +36,7 @@ libpsy_headers = files(
     'psy-circle.h',
     'psy-clock.h',
     'psy-duration.h',
+    'psy-enums.h',
     'psy-loop.h',
     'psy-matrix4.h',
     'psy-program.h',
