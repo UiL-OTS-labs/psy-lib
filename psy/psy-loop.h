@@ -3,20 +3,13 @@
 #define PSY_LOOP_H
 
 #include "psy-step.h"
+#include "psy-enums.h"
 
 G_BEGIN_DECLS
 
 #define PSY_TYPE_LOOP psy_loop_get_type()
 
 G_DECLARE_DERIVABLE_TYPE(PsyLoop, psy_loop, PSY, LOOP, PsyStep)
-
-typedef enum {
-    PSY_LOOP_CONDITION_LESS,
-    PSY_LOOP_CONDITION_LESS_EQUAL,
-    PSY_LOOP_CONDITION_EQUAL,
-    PSY_LOOP_CONDITION_GREATER_EQUAL,
-    PSY_LOOP_CONDITION_GREATER
-} PsyLoopCondition;
 
 
 struct _PsyLoopClass {

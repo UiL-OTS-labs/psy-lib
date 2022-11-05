@@ -2,8 +2,9 @@
 #ifndef PSY_STEPPING_STONES_H
 #define PSY_STEPPING_STONES_H
 
-#include <psy-step.h>
 #include <gmodule.h>
+#include <psy-step.h>
+#include <psy-enums.h>
 
 G_BEGIN_DECLS
 
@@ -11,11 +12,6 @@ G_BEGIN_DECLS
 G_MODULE_EXPORT GQuark
 psy_stepping_stones_error_quark(void);
 
-typedef enum {
-    PSY_STEPPING_STONES_ERROR_KEY_EXISTS,
-    PSY_STEPPING_STONES_ERROR_INVALID_INDEX,
-    PSY_STEPPING_STONES_ERROR_NO_SUCH_KEY
-} PsySteppingStoneError;
 
 #define PSY_TYPE_STEPPING_STONES psy_stepping_stones_get_type()
 G_DECLARE_DERIVABLE_TYPE(

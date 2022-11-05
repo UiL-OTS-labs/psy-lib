@@ -10,11 +10,6 @@ G_BEGIN_DECLS
 #define PSY_TEXTURE_ERROR psy_texture_error_quark()
 GQuark psy_texture_error_quark();
 
-typedef enum _PsyTextureError {
-    PSY_TEXTURE_ERROR_DECODE, // failed to decode the texture.
-    PSY_TEXTURE_ERROR_FAILED
-} PsyTextureError;
-
 #define PSY_TYPE_TEXTURE psy_texture_get_type()
 G_DECLARE_DERIVABLE_TYPE(PsyTexture, psy_texture, PSY, TEXTURE, GObject)
 
