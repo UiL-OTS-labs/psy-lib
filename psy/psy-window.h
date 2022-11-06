@@ -5,6 +5,7 @@
 #include "psy-time-point.h"
 #include "psy-program.h"
 #include "psy-enums.h"
+#include "psy-drawing-context.h"
 
 G_BEGIN_DECLS
 
@@ -131,6 +132,12 @@ psy_window_get_projection_style(PsyWindow* window);
 
 G_MODULE_EXPORT PsyMatrix4*
 psy_window_get_projection(PsyWindow* window);
+
+G_MODULE_EXPORT void 
+psy_window_set_context(PsyWindow* window, PsyDrawingContext* context);
+
+G_MODULE_EXPORT PsyDrawingContext*
+psy_window_get_context(PsyWindow* window);
 
 
 G_END_DECLS

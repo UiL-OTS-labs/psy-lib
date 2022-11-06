@@ -30,6 +30,7 @@
 #include "psy-time-point.h"
 #include "psy-visual-stimulus.h"
 #include "psy-window.h"
+#include "psy-drawing-context.h"
 #include "psy-matrix4.h"
 #include "enum-types.h"
 
@@ -43,6 +44,8 @@ typedef struct PsyWindowPrivate {
     GHashTable*     stimuli;
     GTree*          sorted_stimuli;
     PsyDuration*    frame_dur;
+
+    PsyDrawingContext* context;
 
     gint            projection_style;
     PsyMatrix4*     projection_matrix;
@@ -66,6 +69,7 @@ typedef enum {
     HEIGHT_MM,
     FRAME_DUR,
     PROJECTION_STYLE,
+    CONTEXT,
     N_PROPS
 } PsyWindowProperty;
 
@@ -130,6 +134,9 @@ psy_window_get_property(GObject        *object,
             break;
         case PROJECTION_STYLE:
             g_value_set_int(value, psy_window_get_projection_style(self));
+            break;
+        case CONTEXT:
+            g_value_set_object(value, psy_window_get_context(self));
             break;
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, spec);
@@ -632,6 +639,26 @@ psy_window_class_init(PsyWindowClass* klass)
             G_PARAM_READWRITE | G_PARAM_CONSTRUCT
             );
 
+    /**
+     * PsyContext:context:
+     * The drawing context of this window. You can get the drawing context
+     * of the current window. The context might help one to get some drawing
+     * done on this window. Also it contains resources related to drawing
+     * such as Shaders(`PsyShader`) and ShaderPrograms (`PsyProgram`)
+     * this context allows to create `PsyArtist`s that can use the methods
+     * from this context in order to draw the stimulus. And than makes it
+     * possible to use General drawing method instead of Stimulus specific
+     * methods.
+     */
+
+    obj_properties[CONTEXT] = g_param_spec_object(
+            "context",
+            "Context",
+            "The drawing context of this window.",
+            PSY_TYPE_DRAWING_CONTEXT,
+            G_PARAM_READABLE
+            );
+
     g_object_class_install_properties(object_class, N_PROPS, obj_properties);
 
     window_signals[RESIZE] = g_signal_new(
@@ -1045,5 +1072,41 @@ psy_window_get_projection(PsyWindow* self) {
 
     g_return_val_if_fail(PSY_IS_WINDOW(self), NULL);
     return priv->projection_matrix;
+}
+
+/**
+ * psy_window_set_context:
+ * @self: an instance of `PsyWindow`
+ * @context:(transfer=full): the drawing context for this window that draws using
+ * whatever backend this window is using.
+ *
+ * Set the drawing context for this window
+ * 
+ * private:
+ */
+void
+psy_window_set_context(PsyWindow* self, PsyDrawingContext* context)
+{
+    g_return_if_fail(PSY_IS_WINDOW(self));
+    g_return_if_fail(PSY_IS_DRAWING_CONTEXT(context));
+
+    PsyWindowPrivate* priv = psy_window_get_instance_private(self);
+    g_clear_object(&priv->context);
+    priv->context = context;
+}
+
+/**
+ * psy_window_get_context:
+ * @self: an instance of `PsyWindow`
+ *
+ * Get the drawing context for this window for drawing purposes.
+ */
+PsyDrawingContext*
+psy_window_get_context(PsyWindow* self)
+{
+    g_return_val_if_fail(PSY_IS_WINDOW(self), NULL);
+    PsyWindowPrivate* priv = psy_window_get_instance_private(self);
+
+    return priv->context;
 }
 
