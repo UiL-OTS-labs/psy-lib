@@ -4,10 +4,23 @@
 #include "psy-shader.h"
 #include "psy-vbuffer.h"
 
+/**
+ * PsyDrawingContext:
+ *
+ * A `PsyDrawingContext` is the connection between the drawing backend of the
+ * window and a stimulus (`PsyArtist`). The drawing context make it contains
+ * general methods to draw  to the surface of a window. This makes it possible
+ * to send geometry and textures to the hardware backend whether the backend is
+ * OpenGL or Direct3D. The client also doesn't need to know.
+ *
+ * The drawing context may contain some general shader programs in order to
+ * render pictures or shapes in an arbitrary color.
+ */
+
 typedef struct _PsyDrawingContextPrivate {
 } PsyDrawingContextPrivate;
 
-G_DEFINE_TYPE_WITH_PRIVATE(PsyDrawingContext, psy_drawing_context, G_TYPE_OBJECT)
+G_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE(PsyDrawingContext, psy_drawing_context, G_TYPE_OBJECT)
 
 typedef enum {
     PROP_NULL,
