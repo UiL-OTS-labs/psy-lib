@@ -210,6 +210,8 @@ psy_window_dispose(GObject* gobject)
         priv->stimuli = NULL;
     }
 
+    g_clear_object(&priv->context);
+
     G_OBJECT_CLASS(psy_window_parent_class)->dispose(gobject);
 }
 
