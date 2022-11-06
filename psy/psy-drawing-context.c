@@ -1,6 +1,8 @@
 
 
 #include "psy-drawing-context.h"
+#include "psy-shader.h"
+#include "psy-vbuffer.h"
 
 typedef struct _PsyDrawingContextPrivate {
 } PsyDrawingContextPrivate;
@@ -90,4 +92,33 @@ psy_drawing_context_class_init(PsyDrawingContextClass* class)
 
 /* ************ public functions ******************** */
 
+PsyProgram*
+psy_drawing_context_create_program (PsyDrawingContext* self)
+{
+    g_return_val_if_fail(PSY_IS_DRAWING_CONTEXT(self), NULL);
+    PsyDrawingContextClass* cls = PSY_DRAWING_CONTEXT_GET_CLASS(self);
+
+    g_return_val_if_fail(cls->create_program, NULL);
+    return cls->create_program(self);
+}
+
+PsyShader*
+psy_drawing_context_create_shader (PsyDrawingContext* self)
+{
+    g_return_val_if_fail(PSY_IS_DRAWING_CONTEXT(self), NULL);
+    PsyDrawingContextClass* cls = PSY_DRAWING_CONTEXT_GET_CLASS(self);
+
+    g_return_val_if_fail(cls->create_shader, NULL);
+    return cls->create_shader(self);
+}
+
+PsyVBuffer*
+psy_drawing_context_create_vbuffer (PsyDrawingContext* self)
+{
+    g_return_val_if_fail(PSY_IS_DRAWING_CONTEXT(self), NULL);
+    PsyDrawingContextClass* cls = PSY_DRAWING_CONTEXT_GET_CLASS(self);
+
+    g_return_val_if_fail(cls->create_shader, NULL);
+    return cls->create_vbuffer(self);
+}
 
