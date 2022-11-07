@@ -19,7 +19,7 @@
  * render pictures or shapes in an arbitrary color.
  */
 
-G_DEFINE_QUARK(psy-context-error-quark, psy_context_error)
+G_DEFINE_QUARK(psy-drawing-context-error-quark, psy_drawing_context_error)
 
 typedef struct _PsyDrawingContextPrivate {
     GHashTable *shader_programs;
