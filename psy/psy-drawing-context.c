@@ -183,7 +183,7 @@ psy_drawing_context_register_program (
     g_return_if_fail(PSY_IS_DRAWING_CONTEXT(self));
     g_return_if_fail(name);
     g_return_if_fail(PSY_IS_PROGRAM(program));
-    g_return_if_fail(error == NULL || *error != NULL);
+    g_return_if_fail(error == NULL || *error == NULL);
 
     PsyDrawingContextPrivate* priv = psy_drawing_context_get_instance_private(self);
 

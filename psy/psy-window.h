@@ -3,17 +3,13 @@
 
 #include <glib-object.h>
 #include "psy-time-point.h"
+#include "psy-artist.h"
+#include "psy-visual-stimulus.h"
 #include "psy-program.h"
 #include "psy-enums.h"
 #include "psy-drawing-context.h"
 
 G_BEGIN_DECLS
-
-/*
- * Forward declarations as psy-visual-stimulus.h also includes this file.
- */
-struct _PsyVisualStimulus;
-typedef struct _PsyVisualStimulus PsyVisualStimulus;
 
 
 #define PSY_TYPE_WINDOW psy_window_get_type()
@@ -64,10 +60,9 @@ typedef struct _PsyWindowClass {
     PsyDuration* (*get_frame_dur) (PsyWindow* window);
     void (*set_frame_dur) (PsyWindow* window, PsyDuration* dur);
 
+    PsyArtist* (*create_artist)(PsyWindow* self, PsyVisualStimulus* stimulus);
     void (*schedule_stimulus) (PsyWindow* self, PsyVisualStimulus* stimulus);
     void (*remove_stimulus) (PsyWindow* self, PsyVisualStimulus* stimulus);
-
-    PsyProgram* (*get_shader_program)(PsyWindow* window, PsyProgramType type);
 
     PsyMatrix4* (*create_projection_matrix)(PsyWindow* self);
     void (*set_projection_matrix)(PsyWindow* self, PsyMatrix4* projection);
@@ -120,9 +115,6 @@ psy_window_get_frame_dur(PsyWindow* window);
 
 G_MODULE_EXPORT void
 psy_window_remove_stimulus(PsyWindow* window, PsyVisualStimulus* stimulus);
-
-G_MODULE_EXPORT PsyProgram*
-psy_window_get_shader_program(PsyWindow* window, PsyProgramType type);
 
 G_MODULE_EXPORT void
 psy_window_set_projection_style(PsyWindow* window, gint projection_style);

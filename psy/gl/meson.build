@@ -1,6 +1,5 @@
 
 libpsy_headers += files(
-    'psy-gl-circle.h',
     'psy-gl-context.h',
     'psy-gl-error.h',
     'psy-gl-fragment-shader.h',
@@ -12,7 +11,6 @@ libpsy_headers += files(
 )
 
 libpsyfiles += files(
-    'psy-gl-circle.c',
     'psy-gl-context.c',
     'psy-gl-error.c',
     'psy-gl-fragment-shader.c',

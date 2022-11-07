@@ -1,54 +1,61 @@
 
 #include <math.h>
-#include <epoxy/gl.h>
-#include <graphene.h>
 
-#include "graphene-matrix.h"
+#include "psy-circle-artist.h"
 #include "psy-circle.h"
-#include "psy-gl-circle.h"
-#include "psy-gl-vbuffer.h"
+#include "psy-drawing-context.h"
+#include "psy-vbuffer.h"
 #include "psy-matrix4.h"
 #include "psy-program.h"
-#include "psy-vbuffer.h"
 #include "psy-window.h"
 
-typedef struct _PsyGlCircle {
+typedef struct _PsyCircleArtist {
     PsyArtist parent_instance;
     PsyVBuffer* vertices;
     gfloat x, y, z;
     gfloat radius;
-} PsyGlCircle;
+} PsyCircleArtist;
 
-G_DEFINE_TYPE(PsyGlCircle, psy_gl_circle, PSY_TYPE_ARTIST)
+G_DEFINE_TYPE(PsyCircleArtist, psy_circle_artist, PSY_TYPE_ARTIST)
 
 static void
-psy_gl_circle_init(PsyGlCircle *self)
+psy_circle_artist_init(PsyCircleArtist *self)
 {
-    self->vertices = PSY_VBUFFER(psy_gl_vbuffer_new());
+    (void) self;
 }
 
 static void
-psy_gl_circle_dispose(GObject* object)
+psy_cirlcle_artist_constructed(GObject* self)
 {
-    PsyGlCircle* self = PSY_GL_CIRCLE(object);
+    PsyCircleArtist* ca = PSY_CIRCLE_ARTIST(self);
+    PsyWindow* window = psy_artist_get_window(PSY_ARTIST(self));
+    PsyDrawingContext* context = psy_window_get_context(window);
+    ca->vertices = psy_drawing_context_create_vbuffer(context);
+}
+
+static void
+psy_circle_artist_dispose(GObject* object)
+{
+    PsyCircleArtist* self = PSY_CIRCLE_ARTIST(object);
 
     g_clear_object(&self->vertices);
 
-    G_OBJECT_CLASS(psy_gl_circle_parent_class)->dispose(object);
+    G_OBJECT_CLASS(psy_circle_artist_parent_class)->dispose(object);
 }
 
 static void
-psy_gl_circle_finalize(GObject* object)
+psy_circle_artist_finalize(GObject* object)
 {
-    G_OBJECT_CLASS(psy_gl_circle_parent_class)->finalize(object);
+    G_OBJECT_CLASS(psy_circle_artist_parent_class)->finalize(object);
 }
 
 static void
-gl_circle_draw(PsyArtist* self)
+circle_artist_draw(PsyArtist* self)
 {
-    PsyGlCircle* artist = PSY_GL_CIRCLE(self);
+    PsyCircleArtist* artist = PSY_CIRCLE_ARTIST(self);
     PsyCircle* circle = PSY_CIRCLE(psy_artist_get_stimulus(self));
     PsyWindow* window = psy_artist_get_window(self);
+    PsyDrawingContext* context = psy_window_get_context(window);
     GError* error = NULL;
 
     gfloat x, y, z;
@@ -56,9 +63,9 @@ gl_circle_draw(PsyArtist* self)
     gfloat radius;
     guint num_vertices;
 
-    PsyProgram* program = psy_window_get_shader_program(
-            window,
-            PSY_PROGRAM_UNIFORM_COLOR
+    PsyProgram* program = psy_drawing_context_get_program(
+            context,
+            PSY_UNIFORM_COLOR_PROGRAM_NAME
             );
 
     psy_program_use(program, &error);
@@ -122,28 +129,32 @@ gl_circle_draw(PsyArtist* self)
 }
 
 static void
-psy_gl_circle_class_init(PsyGlCircleClass* class)
+psy_circle_artist_class_init(PsyCircleArtistClass* class)
 {
     GObjectClass      *gobject_class = G_OBJECT_CLASS(class);
     PsyArtistClass    *artist_class  = PSY_ARTIST_CLASS(class);
 
-    gobject_class->finalize     = psy_gl_circle_finalize;
-    gobject_class->dispose      = psy_gl_circle_dispose;
+    gobject_class->finalize     = psy_circle_artist_finalize;
+    gobject_class->dispose      = psy_circle_artist_dispose;
+    gobject_class->constructed  = psy_cirlcle_artist_constructed;
 
-    artist_class->draw          = gl_circle_draw;
+    artist_class->draw          = circle_artist_draw;
 }
 
 /* ************ public functions ******************** */
 
-PsyGlCircle*
-psy_gl_circle_new(PsyWindow* window, PsyVisualStimulus* stimulus)
+PsyCircleArtist*
+psy_circle_artist_new(PsyWindow* window, PsyVisualStimulus* stimulus)
 {
-    PsyGlCircle *gl_circle = g_object_new(PSY_TYPE_GL_CIRCLE,
+    g_return_val_if_fail(PSY_IS_WINDOW(window), NULL);
+    g_return_val_if_fail(PSY_IS_VISUAL_STIMULUS(stimulus), NULL);
+
+    PsyCircleArtist *circle_artist = g_object_new(PSY_TYPE_CIRCLE_ARTIST,
           "window", window,
           "stimulus", stimulus,
           NULL
           );
 
-    return gl_circle;
+    return circle_artist;
 }
 

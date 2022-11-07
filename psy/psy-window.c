@@ -24,6 +24,9 @@
  * 2. It will update the stimuli that should be presented and make
  *    sure that the deriving window will actually draw every stimulus.
  */
+#include "psy-artist.h"
+#include "psy-circle.h"
+#include "psy-circle-artist.h"
 #include "psy-duration.h"
 #include "psy-program.h"
 #include "psy-stimulus.h"
@@ -188,7 +191,7 @@ psy_window_init(PsyWindow* self)
             stimulus_cmp,
             NULL,
             g_object_unref,
-            NULL);
+            g_object_unref);
 
     memcpy(priv->back_ground_color, default_bg, sizeof(default_bg));
 }
@@ -271,16 +274,37 @@ set_frame_dur(PsyWindow* self, PsyDuration* dur)
     priv->frame_dur = dur;
 }
 
+static PsyArtist*
+create_artist(PsyWindow* self, PsyVisualStimulus* stimulus)
+{
+    GType type = G_OBJECT_TYPE(stimulus);
+    PsyArtist* artist = NULL;
+
+    if (type == psy_circle_get_type()) {
+        artist = PSY_ARTIST(psy_circle_artist_new(self, stimulus));
+    }
+    else {
+        g_warning(
+                "PsyWindow hasn't got an Artist for %s",
+                G_OBJECT_TYPE_NAME(stimulus)
+                );
+    }
+
+    return artist;
+}
+
 static void
 schedule_stimulus(PsyWindow* self, PsyVisualStimulus* stimulus) {
     PsyWindowPrivate* priv = psy_window_get_instance_private(self);
+    PsyWindowClass* cls = PSY_WINDOW_GET_CLASS(self);
 
     // Check if the stimulus is already scheduled
     if (g_tree_lookup(priv->sorted_stimuli, stimulus) != NULL)
         return;
 
     g_object_ref(stimulus);
-    g_tree_insert_node(priv->sorted_stimuli, stimulus, NULL);
+    PsyArtist* artist = cls->create_artist(self, stimulus);
+    g_tree_insert_node(priv->sorted_stimuli, stimulus, artist);
 }
 
 static void
@@ -347,6 +371,7 @@ draw_stimuli(PsyWindow* self, guint64 frame_num, PsyTimePoint* tp)
         num_frames = psy_visual_stimulus_get_num_frames(vstim);
         if (start_frame <= (gint64) frame_num) {
             psy_visual_stimulus_update(vstim, tp, nth_frame);
+            g_assert(klass->draw_stimulus);
             klass->draw_stimulus(self, vstim);
         }
         nth_frame = psy_visual_stimulus_get_nth_frame(vstim);
@@ -367,7 +392,16 @@ draw_stimuli(PsyWindow* self, guint64 frame_num, PsyTimePoint* tp)
     }
     g_object_unref(tend);
     g_ptr_array_unref(nodes_to_remove);
+}
 
+static void
+draw_stimulus(PsyWindow* self, PsyVisualStimulus* stimulus)
+{
+    PsyWindowPrivate* priv = psy_window_get_instance_private(self);
+    PsyArtist* artist;
+
+    artist = g_tree_lookup(priv->sorted_stimuli, stimulus);
+    psy_artist_draw(artist);
 }
 
 static void
@@ -484,10 +518,12 @@ psy_window_class_init(PsyWindowClass* klass)
 
     klass->draw                 = draw;
     klass->draw_stimuli         = draw_stimuli;
+    klass->draw_stimulus        = draw_stimulus;
     klass->set_monitor_size_mm  = set_monitor_size_mm;
 
     klass->set_frame_dur        = set_frame_dur;
-
+    
+    klass->create_artist        = create_artist;
     klass->schedule_stimulus    = schedule_stimulus;
     klass->remove_stimulus      = remove_stimulus;
 
@@ -963,25 +999,6 @@ psy_window_remove_stimulus(PsyWindow* self, PsyVisualStimulus* stimulus)
     g_return_if_fail(klass->remove_stimulus);
 
     klass->remove_stimulus(self, stimulus);
-}
-
-/**
- * psy_window_get_shader_program:
- * @self: A `PsyWindow` instance.
- * @type: A value from  `PsyProgramType` that describes the kind of program
- *        you would like to use
- *
- * Returns: A `PsyProgram` instance of NULL when it doesn't exist
- */
-PsyProgram*
-psy_window_get_shader_program(PsyWindow* self, PsyProgramType type)
-{
-    g_return_val_if_fail(PSY_IS_WINDOW(self), NULL);
-
-    PsyWindowClass* klass = PSY_WINDOW_GET_CLASS(self);
-    g_return_val_if_fail(klass->get_shader_program, NULL);
-
-    return klass->get_shader_program(self, type);
 }
 
 /**

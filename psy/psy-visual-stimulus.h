@@ -3,9 +3,14 @@
 
 #include "psy-stimulus.h"
 #include "psy-time-point.h"
-#include "psy-window.h"
 
 G_BEGIN_DECLS
+
+/**
+ * Forward declaration in order to avoid cyclic header inclusion.
+ */
+struct _PsyWindow;
+typedef struct _PsyWindow PsyWindow;
 
 #define PSY_TYPE_VISUAL_STIMULUS psy_visual_stimulus_get_type()
 G_DECLARE_DERIVABLE_TYPE(
