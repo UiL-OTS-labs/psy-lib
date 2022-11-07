@@ -81,7 +81,7 @@ psy_gl_shader_finalize(GObject* object)
         glDeleteShader(priv->object_id);
     }
 
-    G_OBJECT_CLASS(psy_gl_shader_parent_class)->dispose(object);
+    G_OBJECT_CLASS(psy_gl_shader_parent_class)->finalize(object);
 }
 
 static void
@@ -171,7 +171,6 @@ psy_gl_shader_class_init(PsyGlShaderClass* class)
 
 /* ************ public functions ******************** */
 
-
 guint
 psy_gl_shader_get_object_id(PsyGlShader* self) {
     g_return_val_if_fail(PSY_IS_SHADER(self), 0);
@@ -180,4 +179,5 @@ psy_gl_shader_get_object_id(PsyGlShader* self) {
     
     return priv->object_id;
 }
+
 
