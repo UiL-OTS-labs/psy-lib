@@ -1,9 +1,9 @@
 #ifndef PSY_CIRCLE_ARTIST_H
 #define PSY_CIRCLE_ARTIST_H
 
-#include "../psy-artist.h"
-#include "../psy-circle.h"
-#include "../psy-window.h"
+#include <psy-artist.h>
+#include <psy-circle.h>
+#include <psy-window.h>
 
 G_BEGIN_DECLS
 
