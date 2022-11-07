@@ -2,6 +2,21 @@
 #pragma once
 
 /**
+ * PsyDrawingContextError:
+ * @PSY_DRAWING_CONTEXT_ERROR_NAME_EXISTS: A shader program with that name has already
+ *                                 been registered.
+ * @PSY_DRAWING_CONTEXT_ERROR_NAME_FAILED: Some less specified error regarding the
+ *                                 context occured.
+ *
+ * These errors may be the result of invalid operations on an instance
+ * of `PsyDrawingContext`
+ */
+typedef enum {
+    PSY_DRAWING_CONTEXT_ERROR_NAME_EXISTS,
+    PSY_DRAWING_CONTEXT_ERROR_FAILED
+} PsyDrawingContextError;
+
+/**
  * PsyLoopCondition:
  * @PSY_LOOP_CONDITION_LESS:  The loop continues while :
  *                            `PsyLoop:index` < `PsyLoop:stop`
