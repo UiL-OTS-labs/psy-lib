@@ -24,12 +24,16 @@
  * 2. It will update the stimuli that should be presented and make
  *    sure that the deriving window will actually draw every stimulus.
  */
+#include "psy-artist.h"
+#include "psy-circle.h"
+#include "psy-circle-artist.h"
 #include "psy-duration.h"
 #include "psy-program.h"
 #include "psy-stimulus.h"
 #include "psy-time-point.h"
 #include "psy-visual-stimulus.h"
 #include "psy-window.h"
+#include "psy-drawing-context.h"
 #include "psy-matrix4.h"
 #include "enum-types.h"
 
@@ -43,6 +47,8 @@ typedef struct PsyWindowPrivate {
     GHashTable*     stimuli;
     GTree*          sorted_stimuli;
     PsyDuration*    frame_dur;
+
+    PsyDrawingContext* context;
 
     gint            projection_style;
     PsyMatrix4*     projection_matrix;
@@ -66,6 +72,7 @@ typedef enum {
     HEIGHT_MM,
     FRAME_DUR,
     PROJECTION_STYLE,
+    CONTEXT,
     N_PROPS
 } PsyWindowProperty;
 
@@ -131,6 +138,9 @@ psy_window_get_property(GObject        *object,
         case PROJECTION_STYLE:
             g_value_set_int(value, psy_window_get_projection_style(self));
             break;
+        case CONTEXT:
+            g_value_set_object(value, psy_window_get_context(self));
+            break;
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, spec);
     }
@@ -181,7 +191,7 @@ psy_window_init(PsyWindow* self)
             stimulus_cmp,
             NULL,
             g_object_unref,
-            NULL);
+            g_object_unref);
 
     memcpy(priv->back_ground_color, default_bg, sizeof(default_bg));
 }
@@ -202,6 +212,8 @@ psy_window_dispose(GObject* gobject)
         g_hash_table_destroy(priv->stimuli);
         priv->stimuli = NULL;
     }
+
+    g_clear_object(&priv->context);
 
     G_OBJECT_CLASS(psy_window_parent_class)->dispose(gobject);
 }
@@ -262,16 +274,37 @@ set_frame_dur(PsyWindow* self, PsyDuration* dur)
     priv->frame_dur = dur;
 }
 
+static PsyArtist*
+create_artist(PsyWindow* self, PsyVisualStimulus* stimulus)
+{
+    GType type = G_OBJECT_TYPE(stimulus);
+    PsyArtist* artist = NULL;
+
+    if (type == psy_circle_get_type()) {
+        artist = PSY_ARTIST(psy_circle_artist_new(self, stimulus));
+    }
+    else {
+        g_warning(
+                "PsyWindow hasn't got an Artist for %s",
+                G_OBJECT_TYPE_NAME(stimulus)
+                );
+    }
+
+    return artist;
+}
+
 static void
 schedule_stimulus(PsyWindow* self, PsyVisualStimulus* stimulus) {
     PsyWindowPrivate* priv = psy_window_get_instance_private(self);
+    PsyWindowClass* cls = PSY_WINDOW_GET_CLASS(self);
 
     // Check if the stimulus is already scheduled
     if (g_tree_lookup(priv->sorted_stimuli, stimulus) != NULL)
         return;
 
     g_object_ref(stimulus);
-    g_tree_insert_node(priv->sorted_stimuli, stimulus, NULL);
+    PsyArtist* artist = cls->create_artist(self, stimulus);
+    g_tree_insert_node(priv->sorted_stimuli, stimulus, artist);
 }
 
 static void
@@ -338,6 +371,7 @@ draw_stimuli(PsyWindow* self, guint64 frame_num, PsyTimePoint* tp)
         num_frames = psy_visual_stimulus_get_num_frames(vstim);
         if (start_frame <= (gint64) frame_num) {
             psy_visual_stimulus_update(vstim, tp, nth_frame);
+            g_assert(klass->draw_stimulus);
             klass->draw_stimulus(self, vstim);
         }
         nth_frame = psy_visual_stimulus_get_nth_frame(vstim);
@@ -358,7 +392,16 @@ draw_stimuli(PsyWindow* self, guint64 frame_num, PsyTimePoint* tp)
     }
     g_object_unref(tend);
     g_ptr_array_unref(nodes_to_remove);
+}
 
+static void
+draw_stimulus(PsyWindow* self, PsyVisualStimulus* stimulus)
+{
+    PsyWindowPrivate* priv = psy_window_get_instance_private(self);
+    PsyArtist* artist;
+
+    artist = g_tree_lookup(priv->sorted_stimuli, stimulus);
+    psy_artist_draw(artist);
 }
 
 static void
@@ -475,10 +518,12 @@ psy_window_class_init(PsyWindowClass* klass)
 
     klass->draw                 = draw;
     klass->draw_stimuli         = draw_stimuli;
+    klass->draw_stimulus        = draw_stimulus;
     klass->set_monitor_size_mm  = set_monitor_size_mm;
 
     klass->set_frame_dur        = set_frame_dur;
-
+    
+    klass->create_artist        = create_artist;
     klass->schedule_stimulus    = schedule_stimulus;
     klass->remove_stimulus      = remove_stimulus;
 
@@ -630,6 +675,26 @@ psy_window_class_init(PsyWindowClass* klass)
             G_MAXINT32,
             PSY_WINDOW_PROJECTION_STYLE_CENTER | PSY_WINDOW_PROJECTION_STYLE_PIXELS,
             G_PARAM_READWRITE | G_PARAM_CONSTRUCT
+            );
+
+    /**
+     * PsyContext:context:
+     * The drawing context of this window. You can get the drawing context
+     * of the current window. The context might help one to get some drawing
+     * done on this window. Also it contains resources related to drawing
+     * such as Shaders(`PsyShader`) and ShaderPrograms (`PsyProgram`)
+     * this context allows to create `PsyArtist`s that can use the methods
+     * from this context in order to draw the stimulus. And than makes it
+     * possible to use General drawing method instead of Stimulus specific
+     * methods.
+     */
+
+    obj_properties[CONTEXT] = g_param_spec_object(
+            "context",
+            "Context",
+            "The drawing context of this window.",
+            PSY_TYPE_DRAWING_CONTEXT,
+            G_PARAM_READABLE
             );
 
     g_object_class_install_properties(object_class, N_PROPS, obj_properties);
@@ -937,25 +1002,6 @@ psy_window_remove_stimulus(PsyWindow* self, PsyVisualStimulus* stimulus)
 }
 
 /**
- * psy_window_get_shader_program:
- * @self: A `PsyWindow` instance.
- * @type: A value from  `PsyProgramType` that describes the kind of program
- *        you would like to use
- *
- * Returns: A `PsyProgram` instance of NULL when it doesn't exist
- */
-PsyProgram*
-psy_window_get_shader_program(PsyWindow* self, PsyProgramType type)
-{
-    g_return_val_if_fail(PSY_IS_WINDOW(self), NULL);
-
-    PsyWindowClass* klass = PSY_WINDOW_GET_CLASS(self);
-    g_return_val_if_fail(klass->get_shader_program, NULL);
-
-    return klass->get_shader_program(self, type);
-}
-
-/**
  * psy_window_set_projection_style:
  * @window: an instance of `PsyWindow`
  * @style: an instance of `PsyWindowProjectionStyle` an | orable combination
@@ -1045,5 +1091,41 @@ psy_window_get_projection(PsyWindow* self) {
 
     g_return_val_if_fail(PSY_IS_WINDOW(self), NULL);
     return priv->projection_matrix;
+}
+
+/**
+ * psy_window_set_context:
+ * @self: an instance of `PsyWindow`
+ * @context:(transfer=full): the drawing context for this window that draws using
+ * whatever backend this window is using.
+ *
+ * Set the drawing context for this window
+ * 
+ * private:
+ */
+void
+psy_window_set_context(PsyWindow* self, PsyDrawingContext* context)
+{
+    g_return_if_fail(PSY_IS_WINDOW(self));
+    g_return_if_fail(PSY_IS_DRAWING_CONTEXT(context));
+
+    PsyWindowPrivate* priv = psy_window_get_instance_private(self);
+    g_clear_object(&priv->context);
+    priv->context = context;
+}
+
+/**
+ * psy_window_get_context:
+ * @self: an instance of `PsyWindow`
+ *
+ * Get the drawing context for this window for drawing purposes.
+ */
+PsyDrawingContext*
+psy_window_get_context(PsyWindow* self)
+{
+    g_return_val_if_fail(PSY_IS_WINDOW(self), NULL);
+    PsyWindowPrivate* priv = psy_window_get_instance_private(self);
+
+    return priv->context;
 }
 

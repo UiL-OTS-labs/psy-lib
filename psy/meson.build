@@ -34,7 +34,9 @@ libpsy_incdirs = include_directories(
 libpsy_headers = files(
     'psy-artist.h',
     'psy-circle.h',
+    'psy-circle-artist.h',
     'psy-clock.h',
+    'psy-drawing-context.h',
     'psy-duration.h',
     'psy-enums.h',
     'psy-loop.h',
@@ -63,7 +65,9 @@ libpsy_header_private = files(
 libpsyfiles = files (
     'psy-artist.c',
     'psy-circle.c',
+    'psy-circle-artist.c',
     'psy-clock.c',
+    'psy-drawing-context.c',
     'psy-duration.c',
     'psy-loop.c',
     'psy-matrix4.cpp',
