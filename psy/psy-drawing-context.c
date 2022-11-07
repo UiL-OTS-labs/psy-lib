@@ -21,6 +21,22 @@
 
 G_DEFINE_QUARK(psy-drawing-context-error-quark, psy_drawing_context_error)
 
+/**
+ * PSY_UNIFORM_COLOR_PROGRAM_NAME:
+ *
+ * The name for a string constant used to register a shader program that
+ * draws using a uniform color.
+ */
+const gchar* PSY_UNIFORM_COLOR_PROGRAM_NAME = "uniform-color-program";
+
+/**
+ * PSY_PICTURE_PROGRAM_NAME:
+ *
+ * The name for a string constant used to register a shader program that
+ * is able to draw a picture/texture.
+ */
+const gchar* PSY_PICTURE_PROGRAM_NAME = "picture-program";
+
 typedef struct _PsyDrawingContextPrivate {
     GHashTable *shader_programs;
 } PsyDrawingContextPrivate;
@@ -119,9 +135,30 @@ psy_drawing_context_class_init(PsyDrawingContextClass* class)
 
 /* ************ public functions ******************** */
 
+/**
+ * psy_drawing_context_free_resources:
+ * @self: The `PsyDrawingContext` instance that needs to free it's resources
+ *
+ * This function should be called when the context should giveup it's resources
+ * for example when the window is unrealized, there should not be any
+ * drawing any more. Also OpenGL needs to be current, in order to function,
+ * these resources may be managed by the window, so the window can tell
+ * when the drawing context can free the resources.
+ */
+void
+psy_drawing_context_free_resources(PsyDrawingContext* self)
+{
+    g_return_if_fail(PSY_IS_DRAWING_CONTEXT(self));
+    PsyDrawingContextPrivate* priv = psy_drawing_context_get_instance_private(self);
+
+    if (priv->shader_programs) {
+        g_hash_table_destroy(priv->shader_programs);
+        priv->shader_programs = NULL;
+    }
+}
 
 /**
- * psy_drawing_context_register:
+ * psy_drawing_context_register_program:
  * @self: an instance of `PsyDrawingContext`
  * @name: the name to use to register the program, it should not have been used
  *        to register a `PsyProgram` before.

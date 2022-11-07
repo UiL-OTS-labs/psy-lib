@@ -26,6 +26,8 @@ typedef struct _PsyDrawingContextClass {
 
 } PsyDrawingContextClass;
 
+G_MODULE_EXPORT void
+psy_drawing_context_free_resources(PsyDrawingContext* self);
 
 G_MODULE_EXPORT PsyProgram*
 psy_drawing_context_create_program(PsyDrawingContext* self);
@@ -40,12 +42,18 @@ G_MODULE_EXPORT PsyVBuffer*
 psy_drawing_context_create_vbuffer(PsyDrawingContext* self);
 
 G_MODULE_EXPORT void
-psy_drawing_context_register_programe (
+psy_drawing_context_register_program (
         PsyDrawingContext* self,
         const gchar* name,
         PsyProgram* program,
         GError** error
         );
+
+G_MODULE_EXPORT PsyProgram*
+psy_drawing_context_get_program(PsyDrawingContext* self, const gchar* name);
+
+G_MODULE_EXPORT extern const gchar* PSY_UNIFORM_COLOR_PROGRAM_NAME;
+G_MODULE_EXPORT extern const gchar* PSY_PICTURE_PROGRAM_NAME;
 
 G_END_DECLS
 

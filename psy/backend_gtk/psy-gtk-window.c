@@ -4,10 +4,13 @@
 
 #include "psy-circle.h"
 #include "psy-clock.h"
+#include "psy-drawing-context.h"
 #include "psy-duration.h"
 #include "psy-gtk-window.h"
+#include "../gl/psy-gl-context.h"
 #include "../gl/psy-gl-program.h"
-#include "../gl/psy-gl-circle.h"
+#include <psy-artist.h>
+#include <psy-drawing-context.h>
 #include "psy-program.h"
 #include "psy-window.h"
 
@@ -15,9 +18,6 @@ struct _PsyGtkWindow {
     PsyWindow       parent;
     GtkWidget      *window;
     GtkWidget      *darea;
-    GHashTable     *artists;
-    PsyProgram     *uniform_color_program;
-    PsyProgram     *picture_program;
 };
 
 G_DEFINE_TYPE_WITH_CODE(
@@ -85,46 +85,70 @@ on_canvas_resize(GtkDrawingArea* darea, gint width, gint height, gpointer data)
 }
 
 static void
+create_drawing_context(PsyGtkWindow* window)
+{
+    PsyGlContext* context = psy_gl_context_new();
+    psy_window_set_context(PSY_WINDOW(window), PSY_DRAWING_CONTEXT(context));
+}
+
+
+static void
 init_shaders(PsyGtkWindow* self, GError **error)
 {
     // Uniform color program
-    PsyGlProgram *program = psy_gl_program_new();
-    self->uniform_color_program = PSY_PROGRAM(program);
+    PsyDrawingContext* context = psy_window_get_context(PSY_WINDOW(self));
+    
+    PsyProgram *program = psy_drawing_context_create_program(context);
 
-    psy_program_set_vertex_shader_from_path(
-            self->uniform_color_program, "./psy/uniform-color.vert", error
+    psy_program_set_vertex_shader_from_path (
+            program, "./psy/uniform-color.vert", error
             );
     if (*error)
         goto fail;
+
     psy_program_set_fragment_shader_from_path(
-            self->uniform_color_program, "./psy/uniform-color.frag", error);
+            program, "./psy/uniform-color.frag", error);
     if (*error)
         goto fail;
 
-    psy_program_link(self->uniform_color_program, error);
+    psy_program_link(program, error);
     if (*error)
         goto fail;
+
+    psy_drawing_context_register_program(
+            context,
+            PSY_UNIFORM_COLOR_PROGRAM_NAME,
+            program,
+            error
+            );
+    if (*error)
+        return;
 
     // Picture program
-    program = psy_gl_program_new();
-    self->picture_program = PSY_PROGRAM(program);
+    program = psy_drawing_context_create_program(context);
 
-    psy_program_set_vertex_shader_from_path(
-            self->picture_program, "./psy/picture.vert", error
+    psy_program_set_vertex_shader_from_path (
+            program, "./psy/picture.vert", error
             );
     if (*error)
         goto fail;
 
-    psy_program_set_fragment_shader_from_path(
-            self->picture_program, "./psy/picture.frag", error
+    psy_program_set_fragment_shader_from_path (
+            program, "./psy/picture.frag", error
             );
     if (*error)
         goto fail;
 
-    psy_program_link(self->picture_program, error);
+    psy_program_link(program, error);
     if (*error)
         goto fail;
-
+    
+    psy_drawing_context_register_program(
+            context,
+            PSY_PICTURE_PROGRAM_NAME,
+            program,
+            error
+            );
     return;
 
     fail:
@@ -139,6 +163,8 @@ on_canvas_realize(GtkGLArea* canvas, PsyGtkWindow* window)
 
     if (gtk_gl_area_get_error(canvas) != NULL)
         return;
+
+    create_drawing_context(window);
 
     init_shaders(window, &error);
 
@@ -156,9 +182,8 @@ static void
 on_canvas_unrealize(GtkGLArea* area, PsyGtkWindow* self)
 {
     gtk_gl_area_make_current(area);
-
-    g_clear_object(&self->uniform_color_program);
-    g_clear_object(&self->picture_program);
+    PsyDrawingContext* context = psy_window_get_context(PSY_WINDOW(self));
+    psy_drawing_context_free_resources(context);
 }
 
 static void
@@ -168,14 +193,6 @@ psy_gtk_window_init(PsyGtkWindow* self)
     self->window = gtk_window_new();
     GtkWidget* canvas = gtk_gl_area_new();
     gtk_window_set_child(GTK_WINDOW(self->window), canvas);
-
-    // Create a table to find artist to draw the scene
-    self->artists = g_hash_table_new_full(
-            g_direct_hash,
-            g_direct_equal,
-            g_object_unref,
-            g_object_unref
-            );
 
     // Prepare common OpenGL setup prior to realization.
     gtk_gl_area_set_required_version(GTK_GL_AREA(canvas), 4, 4);
@@ -212,8 +229,6 @@ psy_gtk_window_dispose(GObject* gobject)
     PsyGtkWindow* self = PSY_GTK_WINDOW(gobject);
 
     g_clear_object(&self->window);
-    g_clear_object(&self->uniform_color_program);
-    g_clear_object(&self->picture_program);
 
     G_OBJECT_CLASS(psy_gtk_window_parent_class)->dispose(gobject);
 }
@@ -222,11 +237,7 @@ static void
 psy_gtk_window_finalize(GObject* gobject)
 {
     PsyGtkWindow* self = PSY_GTK_WINDOW(gobject);
-
-    if (self->artists) {
-        g_hash_table_destroy(self->artists);
-        self->artists = NULL;
-    }
+    (void) self;
 
     G_OBJECT_CLASS(psy_gtk_window_parent_class)->finalize(gobject);
 }
@@ -287,92 +298,28 @@ draw_stimuli(PsyWindow* self, guint64 nth_frame, PsyTimePoint* tp)
 }
 
 static void
-draw_stimulus(PsyWindow* self, PsyVisualStimulus* stimulus)
-{
-    PsyGtkWindow* window = PSY_GTK_WINDOW(self);
-    PsyArtist* artist = g_hash_table_lookup(window->artists, stimulus);
-
-    psy_artist_draw(artist);
-}
-
-static PsyArtist*
-get_artist_for_stimulus(PsyWindow* window, PsyVisualStimulus* stimulus, GType type) {
-    if (type == PSY_TYPE_CIRCLE) {
-        return PSY_ARTIST(psy_gl_circle_new(window, stimulus));
-    }
-    return NULL;
-}
-
-static void
-schedule_stimulus(PsyWindow* self, PsyVisualStimulus* stimulus)
-{
-    PsyGtkWindow* win = PSY_GTK_WINDOW(self);
-
-    PsyArtist* artist = get_artist_for_stimulus( 
-            self,
-            stimulus,
-            G_TYPE_FROM_INSTANCE(stimulus)
-            );
-    if (!artist) {
-        g_critical(
-                "PsyGtkWindow has no artist for instances of: %s",
-                g_type_name(G_TYPE_FROM_INSTANCE(stimulus))
-                );
-        return;
-    }
-    g_object_ref(stimulus);
-    g_hash_table_insert(win->artists, stimulus, artist);
-
-    PSY_WINDOW_CLASS(psy_gtk_window_parent_class)->schedule_stimulus(
-            self, stimulus
-            );
-}
-
-static void
-remove_stimulus(PsyWindow* self, PsyVisualStimulus* stimulus)
-{
-    PsyGtkWindow* window = PSY_GTK_WINDOW(self);
-    g_hash_table_remove(window->artists, stimulus);
-
-    PSY_WINDOW_CLASS(psy_gtk_window_parent_class)->remove_stimulus(
-            self,
-            stimulus
-            );
-}
-
-static PsyProgram*
-get_shader_program(PsyWindow* self, PsyProgramType type)
-{
-    PsyGtkWindow* win = PSY_GTK_WINDOW(self);
-
-    switch(type) {
-        case PSY_PROGRAM_UNIFORM_COLOR:
-            return win->uniform_color_program;
-        case PSY_PROGRAM_PICTURE:
-            return win->picture_program;
-        default:
-            g_critical("PsyGtkWindow doens't have a program for type %d", type);
-            return NULL;
-    }
-}
-
-static void
 upload_projection_matrices(PsyWindow* self)
 {
-    PsyGtkWindow* win = PSY_GTK_WINDOW(self);
     PsyMatrix4* projection = psy_window_get_projection(self);
     GError* error = NULL;
 
-    if (win->picture_program) {
-        psy_program_use(win->picture_program, &error);
+    PsyDrawingContext* context = psy_window_get_context(PSY_WINDOW(self));
+    PsyProgram* program = psy_drawing_context_get_program(
+            context,
+            PSY_UNIFORM_COLOR_PROGRAM_NAME
+            );
+
+    if (program) {
+        psy_program_use(program, &error);
         if (error) {
             g_critical("Unable to set picture projection matrix: %s",
                     error->message
                     );
+            g_error_free(error);
             error = NULL;
         }
         psy_program_set_uniform_matrix4(
-                win->picture_program,
+                program,
                 "projection",
                 projection,
                 &error
@@ -381,19 +328,25 @@ upload_projection_matrices(PsyWindow* self)
             g_critical("Unable to set picture projection matrix: %s",
                     error->message
                     );
+            g_error_free(error);
             error = NULL;
         }
     }
-    if (win->uniform_color_program) {
-        psy_program_use(win->uniform_color_program, &error);
+    program = psy_drawing_context_get_program(
+            context,
+            PSY_UNIFORM_COLOR_PROGRAM_NAME
+            );
+    if (program) {
+        psy_program_use(program, &error);
         if (error) {
             g_critical("Unable to set picture projection matrix: %s",
                     error->message
                     );
+            g_error_free(error);
             error = NULL;
         }
         psy_program_set_uniform_matrix4(
-                win->uniform_color_program,
+                program,
                 "projection",
                 projection,
                 &error
@@ -402,6 +355,8 @@ upload_projection_matrices(PsyWindow* self)
             g_critical("Unable to set picture projection matrix: %s",
                     error->message
                     );
+            g_error_free(error);
+            error = NULL;
         }
     }
 }
@@ -418,10 +373,6 @@ psy_gtk_window_class_init(PsyGtkWindowClass* klass)
     psy_window_class->set_monitor       = set_monitor;
     psy_window_class->clear             = clear;
     psy_window_class->draw_stimuli      = draw_stimuli;
-    psy_window_class->draw_stimulus     = draw_stimulus;
-    psy_window_class->schedule_stimulus = schedule_stimulus;
-    psy_window_class->remove_stimulus   = remove_stimulus;
-    psy_window_class->get_shader_program= get_shader_program;
 
     psy_window_class->upload_projection_matrices = upload_projection_matrices;
 }
