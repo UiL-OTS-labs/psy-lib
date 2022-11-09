@@ -22,7 +22,7 @@
  * 1. It will check the scheduled stimuli, to see whether there is
  *    a stimulus ready to present.
  * 2. It will update the stimuli that should be presented and make
- *    sure that the deriving window will actually draw every stimulus.
+ *    sure that the `PsyArtist`s will actually draw every stimulus.
  */
 #include "psy-artist.h"
 #include "psy-circle.h"
@@ -46,8 +46,9 @@ typedef struct PsyWindowPrivate {
     gint            width_mm, height_mm;
     gfloat          back_ground_color[4];
 
-    GHashTable*     stimuli;
-    GTree*          sorted_stimuli;
+    GPtrArray*      stimuli; // owns a ref on the PsyStimulus
+    GHashTable*     artists; // owns a ref on the PsyStimulus and PsyArtist
+
     PsyDuration*    frame_dur;
 
     PsyDrawingContext* context;
@@ -75,6 +76,7 @@ typedef enum {
     FRAME_DUR,
     PROJECTION_STYLE,
     CONTEXT,
+    NUM_STIMULI,
     N_PROPS
 } PsyWindowProperty;
 
@@ -105,6 +107,7 @@ psy_window_set_property(GObject        *object,
             psy_window_set_projection_style(self, g_value_get_int(value));
             break;
         case FRAME_DUR:
+        case NUM_STIMULI:
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, spec);
     }
@@ -143,34 +146,12 @@ psy_window_get_property(GObject        *object,
         case CONTEXT:
             g_value_set_object(value, psy_window_get_context(self));
             break;
+        case NUM_STIMULI:
+            g_value_set_uint(value, psy_window_get_num_stimuli(self));
+            break;
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, spec);
     }
-}
-
-static gint
-stimulus_cmp(gconstpointer s1, gconstpointer s2, gpointer data)
-{
-    (void) data;
-    PsyStimulus *stim1 = PSY_STIMULUS((gpointer)s1);
-    PsyStimulus *stim2 = PSY_STIMULUS((gpointer)s2);
-
-    PsyTimePoint *t1 = psy_stimulus_get_start_time(stim1);
-    PsyTimePoint *t2 = psy_stimulus_get_start_time(stim2);
-
-    // This way the stimuli are sorted on start time
-    if (psy_time_point_less(t1, t2))
-        return -1;
-    else if(psy_time_point_greater(t1, t2))
-        return 1;
-
-    // Allow multiple stimuli with same start time
-    if (s1 == s2)
-        return 0;
-    else if (s1 < s2)
-        return -2;
-    else
-        return 2;
 }
 
 static void
@@ -181,19 +162,14 @@ psy_window_init(PsyWindow* self)
         0.5, 0.5, 0.5, 1.0
     };
 
-//
-//    priv->stimuli = g_hash_table_new_full(
-//            g_direct_hash,
-//            g_direct_equal,
-//            g_object_unref,
-//            NULL
-//            );
-
-    priv->sorted_stimuli = g_tree_new_full(
-            stimulus_cmp,
-            NULL,
+    // Both the stimuli and artist own a reference
+    priv->stimuli = g_ptr_array_new_with_free_func(g_object_unref);
+    priv->artists = g_hash_table_new_full(
+            g_direct_hash,
+            g_direct_equal,
             g_object_unref,
-            g_object_unref);
+            g_object_unref
+            );
 
     memcpy(priv->back_ground_color, default_bg, sizeof(default_bg));
 }
@@ -205,14 +181,14 @@ psy_window_dispose(GObject* gobject)
             PSY_WINDOW(gobject)
             );
 
-    if (priv->sorted_stimuli) {
-        g_tree_destroy(priv->sorted_stimuli);
-        priv->sorted_stimuli = NULL;
+    if (priv->stimuli) {
+        g_ptr_array_unref(priv->stimuli);
+        priv->stimuli = NULL;
     }
 
-    if (priv->stimuli) {
-        g_hash_table_destroy(priv->stimuli);
-        priv->stimuli = NULL;
+    if (priv->artists) {
+        g_hash_table_unref(priv->artists);
+        priv->artists = NULL;
     }
 
     g_clear_object(&priv->context);
@@ -304,19 +280,27 @@ schedule_stimulus(PsyWindow* self, PsyVisualStimulus* stimulus) {
     PsyWindowClass* cls = PSY_WINDOW_GET_CLASS(self);
 
     // Check if the stimulus is already scheduled
-    if (g_tree_lookup(priv->sorted_stimuli, stimulus) != NULL)
+    if (g_hash_table_contains(priv->artists, stimulus)) {
+        g_info("PsyWindow:%s, stimulus is already scheduled", __func__);
         return;
+    }
 
-    g_object_ref(stimulus);
     PsyArtist* artist = cls->create_artist(self, stimulus);
-    g_tree_insert_node(priv->sorted_stimuli, stimulus, artist);
+
+    // add a reference for insertion in array and hashtable
+    g_object_ref(stimulus);
+    g_ptr_array_add(priv->stimuli, stimulus);
+    g_object_ref(stimulus);
+    g_hash_table_insert(priv->artists, stimulus, artist);
 }
 
 static void
 remove_stimulus(PsyWindow* self, PsyVisualStimulus* stimulus)
 {
     PsyWindowPrivate* priv = psy_window_get_instance_private(self);
-    g_tree_remove(priv->sorted_stimuli, stimulus);
+
+    g_ptr_array_remove(priv->stimuli, stimulus);
+    g_hash_table_remove(priv->artists, stimulus);
 }
 
 static void
@@ -338,14 +322,15 @@ draw_stimuli(PsyWindow* self, guint64 frame_num, PsyTimePoint* tp)
 {
     PsyWindowPrivate* priv = psy_window_get_instance_private(self);
     PsyWindowClass* klass = PSY_WINDOW_GET_CLASS(self);
-    GTreeNode* node;
     GPtrArray* nodes_to_remove = g_ptr_array_new();
 
-    for ( node = g_tree_node_first(priv->sorted_stimuli);
-          node;
-          node = g_tree_node_next(node) ) {
+    // Draw stimuli from top to bottom, this means that the stimulus
+    // that was added the latest, is drawn the first. This means that if
+    // they are presented at the same depth (z-coordinate) that the last
+    // stimulus is dominant and will be visible.
+    for (gint i = priv->stimuli->len - 1; i >= 0; i--) {
         
-        PsyStimulus* stim = g_tree_node_key(node);
+        PsyStimulus* stim = priv->stimuli->pdata[i];
         PsyVisualStimulus* vstim = PSY_VISUAL_STIMULUS(stim);
         gint64 start_frame, nth_frame, num_frames;
 
@@ -405,7 +390,7 @@ draw_stimulus(PsyWindow* self, PsyVisualStimulus* stimulus)
     PsyWindowPrivate* priv = psy_window_get_instance_private(self);
     PsyArtist* artist;
 
-    artist = g_tree_lookup(priv->sorted_stimuli, stimulus);
+    artist = g_hash_table_lookup(priv->artists, stimulus);
     psy_artist_draw(artist);
 }
 
@@ -699,6 +684,21 @@ psy_window_class_init(PsyWindowClass* klass)
             "Context",
             "The drawing context of this window.",
             PSY_TYPE_DRAWING_CONTEXT,
+            G_PARAM_READABLE
+            );
+    
+    /**
+     * PsyContext:num-stimuli:
+     *
+     * Contains the number of stimuli attached to this window.
+     */
+    obj_properties[NUM_STIMULI] = g_param_spec_uint(
+            "num-stimuli",
+            "NumStimuli",
+            "The number of contained stimuli",
+            0,
+            G_MAXUINT32,
+            0,
             G_PARAM_READABLE
             );
 
@@ -1101,7 +1101,7 @@ psy_window_get_projection(PsyWindow* self) {
 /**
  * psy_window_set_context:
  * @self: an instance of `PsyWindow`
- * @context:(transfer=full): the drawing context for this window that draws using
+ * @context:(transfer full): the drawing context for this window that draws using
  * whatever backend this window is using.
  *
  * Set the drawing context for this window
@@ -1132,5 +1132,43 @@ psy_window_get_context(PsyWindow* self)
     PsyWindowPrivate* priv = psy_window_get_instance_private(self);
 
     return priv->context;
+}
+
+/**
+ * psy_window_swap_stimuli:
+ * @self: an instance of `PsyWindow`
+ * @i1: The index of the first stimulus must be larger or equal than
+ *      0 but smaller than PsyWindow:num-stims
+ * @i2: the same for @i1
+ *
+ * Swap the order in which the visual stimuli are drawn.
+ */
+void
+psy_window_swap_stimuli(PsyWindow* self, guint i1, guint i2)
+{
+    PsyWindowPrivate* priv = psy_window_get_instance_private(self);
+    g_return_if_fail(PSY_WINDOW(self));
+    g_return_if_fail(i1 < priv->stimuli->len);
+    g_return_if_fail(i2 < priv->stimuli->len);
+
+    PsyStimulus *stim_temp;
+    stim_temp = priv->stimuli->pdata[i1];
+    priv->stimuli->pdata[i1] = priv->stimuli->pdata[i2];
+    priv->stimuli->pdata[i2] = stim_temp;
+}
+
+/**
+ * psy_window_get_num_stimuli:
+ * @self: A `PsyWindow` instance
+ *
+ * Returns: the number of stimuli contained by the window
+ */
+guint
+psy_window_get_num_stimuli(PsyWindow* self)
+{
+    PsyWindowPrivate* priv = psy_window_get_instance_private(self);
+    g_return_val_if_fail(PSY_WINDOW(self), 0);
+
+    return priv->stimuli->len;
 }
 
