@@ -27,6 +27,8 @@
 #include "psy-artist.h"
 #include "psy-circle.h"
 #include "psy-circle-artist.h"
+#include "psy-cross.h"
+#include "psy-cross-artist.h"
 #include "psy-duration.h"
 #include "psy-program.h"
 #include "psy-stimulus.h"
@@ -282,6 +284,9 @@ create_artist(PsyWindow* self, PsyVisualStimulus* stimulus)
 
     if (type == psy_circle_get_type()) {
         artist = PSY_ARTIST(psy_circle_artist_new(self, stimulus));
+    }
+    else if (type == psy_cross_get_type()) {
+        artist = PSY_ARTIST(psy_cross_artist_new(self, stimulus));
     }
     else {
         g_warning(

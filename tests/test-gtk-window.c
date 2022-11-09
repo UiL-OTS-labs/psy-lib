@@ -7,6 +7,7 @@
 #include <psy-window.h>
 #include <backend_gtk/psy-gtk-window.h>
 #include <psy-circle.h>
+#include <psy-cross.h>
 #include <stdlib.h>
 #include <math.h>
 
@@ -174,6 +175,8 @@ int main(int argc, char**argv) {
     PsyCircle* circle = psy_circle_new_full(
             PSY_WINDOW(window), g_x, g_y, g_radius, g_nvertices
             );
+    PsyCross* cross = psy_cross_new_full(PSY_WINDOW(window), 0, 0, 200, 10);
+    g_print("Circle @ %p,\tCross @ %p\n", circle, cross);
     g_signal_connect(circle, "update", G_CALLBACK(update_circle), tp);
     g_signal_connect(circle, "started", G_CALLBACK(circle_started), tp);
     g_signal_connect(circle, "stopped", G_CALLBACK(circle_stopped), tp);
@@ -182,6 +185,7 @@ int main(int argc, char**argv) {
     start = psy_time_point_add(tp, start_dur);
 
     psy_stimulus_play_for(PSY_STIMULUS(circle), start, dur);
+    psy_stimulus_play_for(PSY_STIMULUS(cross), start, dur);
 
     g_main_loop_run(loop);
 
@@ -196,7 +200,6 @@ int main(int argc, char**argv) {
             psy_visual_stimulus_get_num_frames(PSY_VISUAL_STIMULUS(circle)));
 
     g_print("Difference between start and stop = %lf\n", psy_duration_get_seconds(diff));
-
 
     g_main_loop_unref(loop);
     g_object_unref(window);
