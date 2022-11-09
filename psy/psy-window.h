@@ -131,6 +131,11 @@ psy_window_set_context(PsyWindow* window, PsyDrawingContext* context);
 G_MODULE_EXPORT PsyDrawingContext*
 psy_window_get_context(PsyWindow* window);
 
+G_MODULE_EXPORT void
+psy_window_swap_stimuli(PsyWindow* window, guint i1, guint i2);
+
+G_MODULE_EXPORT guint
+psy_window_get_num_stimuli(PsyWindow* window);
 
 G_END_DECLS
 
