@@ -50,12 +50,12 @@ G_MODULE_EXPORT gboolean
 psy_stimulus_get_is_started(PsyStimulus* self);
 
 G_MODULE_EXPORT void
-psy_stimulus_set_is_started(PsyStimulus* self, PsyTimePoint* tstart);
+psy_stimulus_set_is_started(PsyStimulus* self, PsyTimePoint* start_time);
 
 G_MODULE_EXPORT gboolean
 psy_stimulus_get_is_finished(PsyStimulus* self);
 
 G_MODULE_EXPORT void
-psy_stimulus_set_is_finished(PsyStimulus* self, PsyTimePoint* tstop);
+psy_stimulus_set_is_finished(PsyStimulus* self, PsyTimePoint* stop_time);
 
 G_END_DECLS

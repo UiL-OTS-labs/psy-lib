@@ -6,7 +6,7 @@
 
 G_BEGIN_DECLS
 
-/**
+/*
  * Forward declaration in order to avoid cyclic header inclusion.
  */
 struct _PsyWindow;
