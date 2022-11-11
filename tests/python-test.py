@@ -9,6 +9,7 @@ should be able to run it otherwise use:
 """
 
 import gi
+import typing
 
 gi.require_versions (
     {
@@ -20,14 +21,31 @@ gi.require_versions (
 from gi.repository import Psy
 from gi.repository import GLib
 
-def stop_loop(circle:Psy.Circle, time_point:Psy.TimePoint, loop:GLib.MainLoop):
+def stop_loop(
+        circle:Psy.Circle,
+        time_point:Psy.TimePoint,
+        tup:typing.Tuple[GLib.MainLoop, Psy.TimePoint]):
     """
     Exit from the mainloop and exit the program
     """
+    loop = tup[0]
+    time_start = tup[1]
+
     try:
-        print ("Circle.start = {}".format(circle.started))
-        print ("Circle.stop = {}".format(circle.stopped))
-    except:
+        print ("Circle.start = {}".format(
+            circle.props.start_time.subtract(time_start).props.seconds
+            )
+        )
+        print ("Circle.stop = {}".format(
+            circle.props.stop_time.subtract(time_start).props.seconds
+            )
+        )
+        print ("The circle is presented for roughly = {} seconds".format(
+            circle.props.stop_time.subtract(circle.props.start_time).props.seconds
+            )
+        )
+    except Exception as e:
+        print ("We shouldn't get here", e)
         pass
 
     loop.quit()
@@ -48,9 +66,9 @@ dur = Psy.Duration.new(0.5)
 window = Psy.GtkWindow()
 circle = Psy.Circle.new(window)
 cross = Psy.Cross(window=window, x=200, y=200, line_length=100, line_width=30)
-circle.play_for(start.add(dur), dur.multiply_scalar(10))
-cross.play_for(start.add(dur), dur.multiply_scalar(8))
-circle.connect("stopped", stop_loop, loop)
+circle.play_for(start.add(dur), dur.multiply_scalar(5))
+cross.play_for(start.add(dur), dur.multiply_scalar(4))
+circle.connect("stopped", stop_loop, (loop, start))
 circle.connect("update", circle_update)
 
 loop.run()
