@@ -285,7 +285,7 @@ psy_matrix4_is_null(PsyMatrix4* self)
 /**
  * psy_matrix4_add_s:
  * @self : the matrix to which @scalar is added
- * @s: the scalar to add to @self
+ * @scalar: the scalar to add to @self
  *
  * Returns :(transfer full): The result of self + s
  */
@@ -303,20 +303,20 @@ psy_matrix4_add_s(PsyMatrix4* self, gdouble scalar)
 
 /**
  * psy_matrix4_add:
- * @self : the matrix to which @v2 is added
- * @v2: the matrix which to add to @self
+ * @self : the matrix to which @other is added
+ * @other: the matrix which to add to @self
  *
- * Returns :(transfer full): The result of self + s
+ * Returns :(transfer full): The result of self + other
  */
 PsyMatrix4*
-psy_matrix4_add(PsyMatrix4* v1, PsyMatrix4 *v2)
+psy_matrix4_add(PsyMatrix4* self, PsyMatrix4 *other)
 {
-    g_return_val_if_fail(PSY_IS_MATRIX4(v1), NULL);
-    g_return_val_if_fail(PSY_IS_MATRIX4(v2), NULL);
+    g_return_val_if_fail(PSY_IS_MATRIX4(other), NULL);
+    g_return_val_if_fail(PSY_IS_MATRIX4(other), NULL);
 
     PsyMatrix4* ret = PSY_MATRIX4(psy_matrix4_new());
 
-    *ret->matrix = (*v1->matrix) + (*v2->matrix);
+    *ret->matrix = (*self->matrix) + (*other->matrix);
 
     return ret;
 }
@@ -326,10 +326,10 @@ psy_matrix4_add(PsyMatrix4* v1, PsyMatrix4 *v2)
  * @self: an `PsyMatrix4` from which @scalar is subtracted
  * @scalar: The scalar that is subracted from @self
  *
- * Performs scalar subtraction, the scal is subtractef from
- * every elemen in @self.
+ * Performs scalar subtraction, the scalar is subtracted from
+ * every element in @self.
  *
- * Returns:(transfer full): A newly inialized `PsyMatix4`
+ * Returns:(transfer full): A newly initialized `PsyMatix4`
  *         that is the result of self - scalar.
  */
 PsyMatrix4*
@@ -346,24 +346,24 @@ psy_matrix4_sub_s(PsyMatrix4* self, gdouble scalar)
 
 /**
  * psy_matrix4_sub:
- * @v1: an `PsyMatrix4` from which @scalar is subtracted
- * @v2: The matrix that is subracted from @self
+ * @self: an `PsyMatrix4` from which @other is subtracted
+ * @other: The matrix that is subracted from @self
  *
- * Performs matrix subtraction, the elements from @v2 are
- * subtracted from every in @v1.
+ * Performs matrix subtraction, the elements from @other are
+ * subtracted from every in @self.
  *
  * Returns:(transfer full): A newly inialized `PsyMatix4`
- *         that is the result of v1 - v2.
+ *         that is the result of self - other.
  */
 PsyMatrix4*
-psy_matrix4_sub(PsyMatrix4* v1, PsyMatrix4 *v2)
+psy_matrix4_sub(PsyMatrix4* self, PsyMatrix4 *other)
 {
-    g_return_val_if_fail(PSY_IS_MATRIX4(v1), NULL);
-    g_return_val_if_fail(PSY_IS_MATRIX4(v2), NULL);
+    g_return_val_if_fail(PSY_IS_MATRIX4(self), NULL);
+    g_return_val_if_fail(PSY_IS_MATRIX4(other), NULL);
 
     PsyMatrix4* ret = PSY_MATRIX4(psy_matrix4_new());
 
-    *ret->matrix = (*v1->matrix) - (*v2->matrix);
+    *ret->matrix = (*self->matrix) - (*other->matrix);
     return ret;
 }
 
@@ -391,60 +391,60 @@ psy_matrix4_mul_s(PsyMatrix4* self, gdouble scalar)
 
 /**
  * psy_matrix4_mul:
- * @self: an `PsyMatrix4` in which each element is scaled by s
- * @scalar: The scalar that used to scale the elements in @self
+ * @self: an `PsyMatrix4`
+ * @other: another `PsyMatrix4`
  *
  * Performs matrix multiplication.
  *
  * Returns:(transfer full): A newly inialized `PsyMatix4`
- *         that is the result of self * scalar.
+ *         that is the result of self * other.
  */
 PsyMatrix4*
-psy_matrix4_mul(PsyMatrix4* v1, PsyMatrix4* v2)
+psy_matrix4_mul(PsyMatrix4* self, PsyMatrix4* other)
 {
-    g_return_val_if_fail(PSY_IS_MATRIX4(v1), NULL);
-    g_return_val_if_fail(PSY_IS_MATRIX4(v2), NULL);
+    g_return_val_if_fail(PSY_IS_MATRIX4(self), NULL);
+    g_return_val_if_fail(PSY_IS_MATRIX4(other), NULL);
 
     PsyMatrix4* ret = psy_matrix4_new();
 
-    *ret->matrix = (*v1->matrix) - (*v2->matrix);
+    *ret->matrix = (*self->matrix) - (*other->matrix);
     return ret;
 }
 
 /**
  * psy_matrix4_equals:
- * @v1:
- * @v2:
+ * @self: a `PsyMatrix4` instant to compare with @other
+ * @other: another `PsyMatrix4`
  *
  * Checks whether both matrices are equal
  *
  * Returns: TRUE or FALSE
  */
 gboolean
-psy_matrix4_equals(PsyMatrix4* v1, PsyMatrix4* v2)
+psy_matrix4_equals(PsyMatrix4* self, PsyMatrix4* other)
 {
-    g_return_val_if_fail(PSY_IS_MATRIX4(v1), FALSE);
-    g_return_val_if_fail(PSY_IS_MATRIX4(v2), FALSE);
+    g_return_val_if_fail(PSY_IS_MATRIX4(self), FALSE);
+    g_return_val_if_fail(PSY_IS_MATRIX4(other), FALSE);
 
-    if (v1 == v2)
+    if (self == other)
         return TRUE;
 
-    return  *v1->matrix == *v2->matrix;
+    return  *self->matrix == *other->matrix;
 }
 
 /**
  * psy_matrix4_not_equals:
- * @v1:
- * @v2:
+ * @self: a `PsyMatrix4` instant to compare with @other
+ * @other: another `PsyMatrix4`
  *
  * Checks whether both matrices are NOT equal
  *
  * Returns: TRUE or FALSE
  */
 gboolean
-psy_matrix4_not_equals(PsyMatrix4* v1, PsyMatrix4* v2)
+psy_matrix4_not_equals(PsyMatrix4* self, PsyMatrix4* other)
 {
-    return !psy_matrix4_equals(v1, v2);
+    return !psy_matrix4_equals(self, other);
 }
 
 const gdouble*

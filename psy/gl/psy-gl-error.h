@@ -39,7 +39,7 @@ typedef enum  {
 } PsyGlError;
 
 G_MODULE_EXPORT GQuark
-psy_gl_error_quark();
+psy_gl_error_quark(void);
 
 G_MODULE_EXPORT gboolean
 psy_gl_check_error(GError** error);

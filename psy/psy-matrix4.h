@@ -38,22 +38,22 @@ gboolean psy_matrix4_is_identity(PsyMatrix4* self);
 void psy_matrix4_set_null(PsyMatrix4* self);
 gboolean psy_matrix4_is_null(PsyMatrix4* self);
 
-PsyMatrix4* psy_matrix4_add_s(PsyMatrix4* v1, gdouble scalar);
-PsyMatrix4* psy_matrix4_add(PsyMatrix4* v1, PsyMatrix4* v2);
+PsyMatrix4* psy_matrix4_add_s(PsyMatrix4* self, gdouble scalar);
+PsyMatrix4* psy_matrix4_add(PsyMatrix4* self, PsyMatrix4* other);
 
-PsyMatrix4* psy_matrix4_sub_s(PsyMatrix4* v1, gdouble scalar);
-PsyMatrix4* psy_matrix4_sub(PsyMatrix4* v1, PsyMatrix4* v2);
+PsyMatrix4* psy_matrix4_sub_s(PsyMatrix4* self, gdouble scalar);
+PsyMatrix4* psy_matrix4_sub(PsyMatrix4* self, PsyMatrix4* other);
 
-PsyMatrix4* psy_matrix4_mul_s(PsyMatrix4* v1, gdouble scalar);
-PsyMatrix4* psy_matrix4_mul(PsyMatrix4* v1, PsyMatrix4* v2);
+PsyMatrix4* psy_matrix4_mul_s(PsyMatrix4* self, gdouble scalar);
+PsyMatrix4* psy_matrix4_mul(PsyMatrix4* self, PsyMatrix4* other);
 
-gboolean psy_matrix4_equals(PsyMatrix4* v1, PsyMatrix4* v2);
-gboolean psy_matrix4_not_equals(PsyMatrix4* v1, PsyMatrix4* v2);
+gboolean psy_matrix4_equals(PsyMatrix4* self, PsyMatrix4* other);
+gboolean psy_matrix4_not_equals(PsyMatrix4* self, PsyMatrix4* other);
 
 const gdouble* psy_matrix4_ptr(PsyMatrix4* self);
 
 G_MODULE_EXPORT void
-psy_matrix4_get_elements(PsyMatrix4*, gfloat* elements);
+psy_matrix4_get_elements(PsyMatrix4* self, gfloat* elements);
 
 
 G_END_DECLS

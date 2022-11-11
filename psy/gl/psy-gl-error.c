@@ -2,12 +2,6 @@
 #include "psy-gl-error.h"
 #include <epoxy/gl.h>
 
-/**
- * SECTION:OpenGL error handeling
- *
- * This file implements error handling/reporting to the
- * developpers that use psylib opengl functions.
- */
 
 G_DEFINE_QUARK(psy-gl-error-quark, psy_gl_error)
 
@@ -80,3 +74,4 @@ psy_gl_check_error(GError **error)
     }
     return erroreno != GL_NO_ERROR;
 }
+
