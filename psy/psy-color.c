@@ -145,7 +145,7 @@ color_get_property(GObject       *object,
                    )
 {
     PsyColor* self = PSY_COLOR(object);
-    const gfloat factor = 1.0/255;
+    const gfloat factor = 255.0;
 
     switch((ColorProperty) property_id) {
 
@@ -264,10 +264,10 @@ psy_color_class_init(PsyColorClass* klass)
             G_PARAM_READWRITE
             );
     
-    color_properties[PROP_AI] = g_param_spec_float(
-            "a",
-            "alpha",
-            "The alpha color component",
+    color_properties[PROP_AI] = g_param_spec_int(
+            "ai",
+            "alpha integer",
+            "The alpha color component in integer format",
             0,
             255,
             255,
@@ -324,9 +324,9 @@ psy_color_new_rgba(gfloat r, gfloat g, gfloat b, gfloat a)
     g_warn_if_fail(a >= 0.0 && a <= 1.0);
 
     r = CLAMP(r, 0.0, 1.0);
-    g = CLAMP(r, 0.0, 1.0);
-    b = CLAMP(r, 0.0, 1.0);
-    a = CLAMP(r, 0.0, 1.0);
+    g = CLAMP(g, 0.0, 1.0);
+    b = CLAMP(b, 0.0, 1.0);
+    a = CLAMP(a, 0.0, 1.0);
 
     return g_object_new(
             PSY_TYPE_COLOR,
@@ -373,9 +373,9 @@ psy_color_new_rgbai(gint r, gint g, gint b, gint a)
     g_warn_if_fail(a >= 0 && a <= 255);
 
     r = CLAMP(r, 0, 255);
-    g = CLAMP(r, 0, 255);
-    b = CLAMP(r, 0, 255);
-    a = CLAMP(r, 0, 255);
+    g = CLAMP(g, 0, 255);
+    b = CLAMP(b, 0, 255);
+    a = CLAMP(a, 0, 255);
 
     return g_object_new(
             PSY_TYPE_COLOR,

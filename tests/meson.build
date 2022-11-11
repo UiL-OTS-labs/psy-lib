@@ -35,7 +35,14 @@ test_gtk_window = executable(
     dependencies : [psy_dep]
 )
 
+test_color = executable (
+    'test-color',
+    'test-color.c',
+    dependencies : [psy_dep, mutest_dep]
+)
+
 test('vector test', vector_test)
 test('vector4_test', vector4_test)
 test('test-stepping', test_stepping)
 test('test-time-utilities', test_time_utilities)
+test('test-color', test_color)
