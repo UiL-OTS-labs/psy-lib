@@ -200,7 +200,7 @@ psy_visual_stimulus_class_init(PsyVisualStimulusClass* klass)
      * on which it will be drawn will be determine when it will be presented for
      * the first time.
      * This value will be most useful in the update signal handler or in
-     * #psy_visual_stimulus_update.
+     * `psy_visual_stimulus_update`.
      */
     visual_stimulus_properties[PROP_NUM_FRAMES] = g_param_spec_int64(
             "num-frames",
@@ -215,7 +215,7 @@ psy_visual_stimulus_class_init(PsyVisualStimulusClass* klass)
      * 
      * Everytime the window draws a stimulus, you'll get the time to update it.
      * This value will be most useful in the update signal handler or in
-     * #psy_visual_stimulus_update.
+     * `psy_visual_stimulus_update`.
      */
     visual_stimulus_properties[PROP_NTH_FRAME] = g_param_spec_int64(
             "nth-frame",
@@ -299,8 +299,6 @@ psy_visual_stimulus_class_init(PsyVisualStimulusClass* klass)
      * This signal is emitted so a client may update certain parameters of a visual
      * stimulus. These parameters make it ready for drawing on a new frame at the time
      * specified by @frame_time.
-     * The class handler updates the values of:
-     *     #
      */
     visual_stimulus_signals [SIG_UPDATE] = g_signal_new(
             "update",
@@ -356,14 +354,15 @@ psy_visual_stimulus_set_window(PsyVisualStimulus* stimulus,
     priv->window = window;
 }
 
-/**
- * psy_visual_stimulus_update:
+/*
+ * psy_visual_stimulus_emit_update:
  * @self the #PsyVisualStimulus instance in need of an update for a comming frame.
  * @frame_time:(transfer none): The time at which the next frame when the new
  *      frame is to be presented.
  * @nth_frame: the number of the frame, at each presentation the number of the frame
  *              should be incremented with 1.
- * @stability:private
+ *
+ * stability:private
  *
  * This function should not be used by 3rd party libraries. It designed in order
  * to the PsyWindows to indicate when they will be drawing the frame, in order
@@ -374,7 +373,7 @@ psy_visual_stimulus_set_window(PsyVisualStimulus* stimulus,
  * 
  */
 void
-psy_visual_stimulus_update (
+psy_visual_stimulus_emit_update (
         PsyVisualStimulus  *self,
         PsyTimePoint       *frame_time,
         gint64              nth_frame
@@ -400,7 +399,7 @@ psy_visual_stimulus_update (
  * This number reflects the duration of the stimulus. e.g A stimulus with a
  * duration of 50 ms will be presented precisely 3 frames at 60Hz monitors.
  *
- * Returns: An integer refelecting how many frames this stimulus has been presented.
+ * Returns: An integer reflecting how many frames this stimulus has been presented.
  */
 gint64
 psy_visual_stimulus_get_num_frames(PsyVisualStimulus* self)
@@ -418,7 +417,7 @@ psy_visual_stimulus_get_num_frames(PsyVisualStimulus* self)
  * This function returns how many times the stimulus has be presented. Notice
  * that this starts at 0 when preparing the first frame.
  *
- * Returns: An integer refelecting how many frames this stimulus has been presented.
+ * Returns: An integer reflecting how many frames this stimulus has been presented.
  */
 gint64
 psy_visual_stimulus_get_nth_frame(PsyVisualStimulus* self)

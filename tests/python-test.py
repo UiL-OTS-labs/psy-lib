@@ -21,6 +21,18 @@ gi.require_versions (
 from gi.repository import Psy
 from gi.repository import GLib
 
+class MyCross (Psy.Cross):
+    '''
+    In order to override a virtual method you have to prepend your
+    method with do_, so PsyCrossClass->update is called in python
+    by MyCross.do_update
+    '''
+
+    def do_update(self, timepoint, frame_num):
+        self.props.x += 1
+        self.props.y += 1
+
+
 def stop_loop(
         circle:Psy.Circle,
         time_point:Psy.TimePoint,
@@ -65,7 +77,7 @@ start = clock.now()
 dur = Psy.Duration.new(0.5)
 window = Psy.GtkWindow()
 circle = Psy.Circle.new(window)
-cross = Psy.Cross(window=window, x=200, y=200, line_length=100, line_width=30)
+cross = MyCross(window=window, x=200, y=200, line_length=100, line_width=30)
 circle.play_for(start.add(dur), dur.multiply_scalar(5))
 cross.play_for(start.add(dur), dur.multiply_scalar(4))
 circle.connect("stopped", stop_loop, (loop, start))

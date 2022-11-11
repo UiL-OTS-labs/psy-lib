@@ -261,7 +261,7 @@ create_artist(PsyWindow* self, PsyVisualStimulus* stimulus)
     if (type == psy_circle_get_type()) {
         artist = PSY_ARTIST(psy_circle_artist_new(self, stimulus));
     }
-    else if (type == psy_cross_get_type()) {
+    else if (PSY_IS_CROSS(stimulus)) {
         artist = PSY_ARTIST(psy_cross_artist_new(self, stimulus));
     }
     else {
@@ -360,7 +360,7 @@ draw_stimuli(PsyWindow* self, guint64 frame_num, PsyTimePoint* tp)
         nth_frame = psy_visual_stimulus_get_nth_frame(vstim);
         num_frames = psy_visual_stimulus_get_num_frames(vstim);
         if (start_frame <= (gint64) frame_num) {
-            psy_visual_stimulus_update(vstim, tp, nth_frame);
+            psy_visual_stimulus_emit_update(vstim, tp, nth_frame);
             g_assert(klass->draw_stimulus);
             klass->draw_stimulus(self, vstim);
         }
