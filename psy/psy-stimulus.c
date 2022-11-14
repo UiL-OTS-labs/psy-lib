@@ -266,13 +266,13 @@ psy_stimulus_play(PsyStimulus* self, PsyTimePoint* start_time)
 
 /**
  * psy_stimulus_play_for:
+ * @self: A #PsyStimulus instance
+ * @start_time:(transfer none): The intended start time of the stimulus
+ * @duration(transfer none):   The intended duration of the stimulus
  *
  * This is short hand for psy_stimulus_play(self, start_time) and
  * psy_stimulus_stop(self, start_time + dur);
  *
- * self: A #PsyStimulus instance
- * start_time:(transfer none): The intended start time of the stimulus
- * dur:(transfer none):        The intended duration of the stimulus
  */
 void
 psy_stimulus_play_for(PsyStimulus  *self,
@@ -290,12 +290,11 @@ psy_stimulus_play_for(PsyStimulus  *self,
 
 /**
  * psy_stimulus_play_until:
- *
- * self: A #PsyStimulus instance.
- * start_time: A #PsyTimePoint instance specifying a time point in the future
- *            when the stimulus in desired to start.
- * stop_time:  A #PsyTimePoint instance specifying a time point in the future
- *             when the stimulus in desired to stop.
+ * @self: A #PsyStimulus instance.
+ * @start_time: A #PsyTimePoint instance specifying a time point in the future
+ *              when the stimulus in desired to start.
+ * @stop_time:  A #PsyTimePoint instance specifying a time point in the future
+ *              when the stimulus in desired to stop.
  *
  * this is short hand for doing:
  * psy_stimulus_play(self, start_time);
@@ -340,14 +339,13 @@ psy_stimulus_stop(PsyStimulus *self, PsyTimePoint *stop_time)
 
 /**
  * psy_stimulus_get_start_time:
+ * @self: A #PsyStimulus instance
  *
  * Get the best estimation of when a stimulus is about to start or has started.
  *
- * self: A #PsyStimulus instance
- *
- * Returns:  An #PsyTimePoint describing when the stimulus will start or
- *           was started if it is in the past. Or NULL when the start time
- *           is still not decided on.
+ * Returns:(transfer none): A #PsyTimePoint describing when the stimulus will
+ *     start or was started if it is in the past. Or NULL when the start time
+ *     is still not decided on.
  */
 PsyTimePoint*
 psy_stimulus_get_start_time(PsyStimulus *self)
@@ -382,9 +380,9 @@ psy_stimulus_get_stop_time(PsyStimulus *self)
 
 /**
  * psy_stimulus_set_duration:
- * @self: A #PsyStimulus instance.
- * @duration: A #PsyDuration instance that tells the framework for how long
- *        this stimulus should be presented.
+ * @self: A `PsyStimulus` instance.
+ * @duration: A `PsyDuration` instance that tells the framework for how long
+ *            this stimulus should be presented.
  *
  * Sets the duration for the stimulus, in order to succeed the starting
  * time should be known.
@@ -409,7 +407,8 @@ psy_stimulus_set_duration(PsyStimulus* self, PsyDuration* duration)
  * between the start and end time. Hence, both must be known, otherwise
  * NULL is returned.
  *
- * Returns: An instance of `PsyDuration` or NULL when the duration isn't set.
+ * Returns:(transfer none): An instance of `PsyDuration` or NULL when the
+ *                          duration isn't set.
  */
 PsyDuration*
 psy_stimulus_get_duration(PsyStimulus* self)

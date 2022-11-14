@@ -145,7 +145,8 @@ gir = gnome.generate_gir(
     include_directories : '/opt/gtk/share/gir-1.0',
     dependencies : [libpsy_dep],
 #    header : libpsy_public_header,
-    install : true
+    install : true,
+    fatal_warnings :true
 )
 gir_target = gir[0]
 typelib_target = gir[1]

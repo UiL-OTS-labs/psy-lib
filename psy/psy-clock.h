@@ -12,7 +12,7 @@ G_MODULE_EXPORT PsyClock*
 psy_clock_new(void);
 
 G_MODULE_EXPORT PsyTimePoint*
-psy_clock_now(PsyClock* clock);
+psy_clock_now(PsyClock* self);
 
 G_MODULE_EXPORT gint64
 psy_clock_get_zero_time(void);

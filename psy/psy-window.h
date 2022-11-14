@@ -45,8 +45,8 @@ typedef struct _PsyWindowClass {
 
     void (*resize) (PsyWindow* self, gint width, gint height);
 
-    void (*set_width)(PsyWindow* window, gint width);
-    void (*set_height)(PsyWindow* window, gint width);
+    void (*set_width)(PsyWindow* self, gint width);
+    void (*set_height)(PsyWindow* self, gint width);
 
     void (*draw) (PsyWindow* self, guint64 frame_num, PsyTimePoint* frame_time);
     void (*clear)(PsyWindow* self);
@@ -57,8 +57,8 @@ typedef struct _PsyWindowClass {
                                 gint width_mm,
                                 gint height_mm);
 
-    PsyDuration* (*get_frame_dur) (PsyWindow* window);
-    void (*set_frame_dur) (PsyWindow* window, PsyDuration* dur);
+    PsyDuration* (*get_frame_dur) (PsyWindow* self);
+    void (*set_frame_dur) (PsyWindow* self, PsyDuration* dur);
 
     PsyArtist* (*create_artist)(PsyWindow* self, PsyVisualStimulus* stimulus);
     void (*schedule_stimulus) (PsyWindow* self, PsyVisualStimulus* stimulus);
@@ -66,7 +66,7 @@ typedef struct _PsyWindowClass {
 
     PsyMatrix4* (*create_projection_matrix)(PsyWindow* self);
     void (*set_projection_matrix)(PsyWindow* self, PsyMatrix4* projection);
-    void (*upload_projection_matrices)(PsyWindow* window);
+    void (*upload_projection_matrices)(PsyWindow* self);
     
     /*< private >*/
 
@@ -75,67 +75,67 @@ typedef struct _PsyWindowClass {
 
 
 G_MODULE_EXPORT gint 
-psy_window_get_monitor(PsyWindow* window);
+psy_window_get_monitor(PsyWindow* self);
 
 G_MODULE_EXPORT void
-psy_window_set_monitor(PsyWindow* window, gint nth_monitor);
+psy_window_set_monitor(PsyWindow* self, gint nth_monitor);
 
 G_MODULE_EXPORT void
-psy_window_set_background_color_values(PsyWindow* window, gfloat* color);
+psy_window_set_background_color_values(PsyWindow* self, gfloat* color);
 
 G_MODULE_EXPORT void
-psy_window_get_background_color_values(PsyWindow* window, gfloat* color);
+psy_window_get_background_color_values(PsyWindow* self, gfloat* color);
 
 G_MODULE_EXPORT void 
-psy_window_get_width_height_mm(PsyWindow* window, gint* width, gint* height);
+psy_window_get_width_height_mm(PsyWindow* self, gint* width_mm, gint* height_mm);
 
 G_MODULE_EXPORT gint 
-psy_window_get_width_mm(PsyWindow* window);
+psy_window_get_width_mm(PsyWindow* self);
 
 G_MODULE_EXPORT gint 
-psy_window_get_height_mm(PsyWindow* window);
+psy_window_get_height_mm(PsyWindow* self);
 
 G_MODULE_EXPORT gint
-psy_window_get_width(PsyWindow* window);
+psy_window_get_width(PsyWindow* self);
 
 G_MODULE_EXPORT gint
-psy_window_get_height(PsyWindow* window);
+psy_window_get_height(PsyWindow* self);
 
 G_MODULE_EXPORT void
-psy_window_set_width_mm(PsyWindow* window, gint width_mm);
+psy_window_set_width_mm(PsyWindow* self, gint width_mm);
 
 G_MODULE_EXPORT void
-psy_window_set_height_mm(PsyWindow* window, gint height_mm);
+psy_window_set_height_mm(PsyWindow* self, gint height_mm);
 
 G_MODULE_EXPORT void
-psy_window_schedule_stimulus(PsyWindow* window, PsyVisualStimulus* stimulus);
+psy_window_schedule_stimulus(PsyWindow* self, PsyVisualStimulus* stimulus);
 
 G_MODULE_EXPORT PsyDuration*
-psy_window_get_frame_dur(PsyWindow* window);
+psy_window_get_frame_dur(PsyWindow* self);
 
 G_MODULE_EXPORT void
-psy_window_remove_stimulus(PsyWindow* window, PsyVisualStimulus* stimulus);
+psy_window_remove_stimulus(PsyWindow* self, PsyVisualStimulus* stimulus);
 
 G_MODULE_EXPORT void
-psy_window_set_projection_style(PsyWindow* window, gint projection_style);
+psy_window_set_projection_style(PsyWindow* self, gint projection_style);
 
 G_MODULE_EXPORT gint
-psy_window_get_projection_style(PsyWindow* window);
+psy_window_get_projection_style(PsyWindow* self);
 
 G_MODULE_EXPORT PsyMatrix4*
-psy_window_get_projection(PsyWindow* window);
+psy_window_get_projection(PsyWindow* self);
 
 G_MODULE_EXPORT void 
-psy_window_set_context(PsyWindow* window, PsyDrawingContext* context);
+psy_window_set_context(PsyWindow* self, PsyDrawingContext* context);
 
 G_MODULE_EXPORT PsyDrawingContext*
-psy_window_get_context(PsyWindow* window);
+psy_window_get_context(PsyWindow* self);
 
 G_MODULE_EXPORT void
-psy_window_swap_stimuli(PsyWindow* window, guint i1, guint i2);
+psy_window_swap_stimuli(PsyWindow* self, guint i1, guint i2);
 
 G_MODULE_EXPORT guint
-psy_window_get_num_stimuli(PsyWindow* window);
+psy_window_get_num_stimuli(PsyWindow* self);
 
 G_END_DECLS
 

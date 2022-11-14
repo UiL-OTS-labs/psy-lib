@@ -1,6 +1,9 @@
 
 #include "../psy/psy-vector4.h"
+#include "psy-vector.h"
+#include <linux/rtnetlink.h>
 #include <math.h>
+#include <string.h>
 
 static void
 test_create(void) {
@@ -60,7 +63,7 @@ test_unit(void) {
     psy_vector4_destroy(unit);
 
     vec = psy_vector4_new();
-    unit = psy_vector4_normalize(vec);
+    unit = psy_vector4_unit(vec);
     g_assert(unit == NULL);
 
     psy_vector4_destroy(vec);
@@ -236,8 +239,36 @@ test_vector_dot(void)
     psy_vector4_destroy(v2);
 }
 
+//static void
+//test_vector_property_values(void)
+//{
+//    GArray *copy = NULL, *list = g_array_sized_new(FALSE, FALSE, sizeof(gdouble), 4);
+//    double values[4] =  {0.0, 2.0, 3.0, 4.0};
+//    g_array_append_vals(list, values, 4);
+//
+//    PsyVector4* vec = g_object_new(
+//            PSY_TYPE_VECTOR4,
+//            "values", list,
+//            NULL);
+//    PsyVector4* similar = psy_vector4_new_data(4, values);
+//
+//    gboolean the_same = psy_vector4_equals(vec, similar);
+//    g_assert(the_same);
+//
+//    g_object_get(vec, "values", &copy, NULL);
+//
+//    the_same = memcmp(copy->data, values, 4) == 0;
+//    g_assert(the_same);
+//    g_array_unref(copy);
+//    g_array_unref(list);
+//
+//    psy_vector4_destroy(vec);
+//    psy_vector4_destroy(similar);
+//}
 
-int main() {
+
+int
+main(void) {
 
     test_create();
     test_magnitude();
@@ -249,6 +280,7 @@ int main() {
     test_sub_vector();
     test_mul_scalar();
     test_vector_dot();
+//    test_vector_property_values();
 
     return EXIT_SUCCESS;
 }

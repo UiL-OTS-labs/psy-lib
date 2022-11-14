@@ -117,7 +117,6 @@ psy_clock_new(void)
  * psy_clock_now:
  * @self: An instance of a `PsyClock`
  *
- *
  * Returns:(transfer full): A `PsyTimePoint` instance.
  */
 PsyTimePoint*
@@ -134,7 +133,7 @@ psy_clock_now(PsyClock* self)
 }
 
 /**
- * psy_clock_get_zero_time:(method)
+ * psy_clock_get_zero_time:
  *
  * Returns the global zero_time, if no clock has been created, it will create and
  * destroy one in order to get a valid zero time. This function is used to create

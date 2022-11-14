@@ -210,7 +210,7 @@ psy_drawing_context_register_program (
  *
  * Obtain a PsyProgram previously that was previously registered.
  *
- * Returns: an Instance of `PsyProgram` or NULL
+ * Returns:(transfer none): an Instance of `PsyProgram` or NULL
  */
 PsyProgram*
 psy_drawing_context_get_program(PsyDrawingContext* self, const gchar* name)
@@ -223,6 +223,13 @@ psy_drawing_context_get_program(PsyDrawingContext* self, const gchar* name)
     return g_hash_table_lookup(priv->shader_programs, name);
 }
 
+/**
+ * psy_drawing_context_create_program:
+ * @self: An instance of `PsyDrawingContext`
+ *
+ * Returns:(transfer full): A default ShaderProgram suitable for use with
+ *                          this context.
+ */
 PsyProgram*
 psy_drawing_context_create_program (PsyDrawingContext* self)
 {
@@ -233,6 +240,13 @@ psy_drawing_context_create_program (PsyDrawingContext* self)
     return cls->create_program(self);
 }
 
+/**
+ * psy_drawing_context_create_vertex_shader:
+ * @self: An instance of `PsyDrawingContext`
+ *
+ * Returns:(transfer full): A `PsyVertexShader` suitable for use with
+ *                          this context.
+ */
 PsyShader*
 psy_drawing_context_create_vertex_shader (PsyDrawingContext* self)
 {
@@ -243,6 +257,13 @@ psy_drawing_context_create_vertex_shader (PsyDrawingContext* self)
     return cls->create_vertex_shader(self);
 }
 
+/**
+ * psy_drawing_context_create_fragment_shader:
+ * @self: An instance of `PsyDrawingContext`
+ *
+ * Returns:(transfer full): A `PsyFragmentShader` suitable for use with
+ *                          this context.
+ */
 PsyShader*
 psy_drawing_context_create_fragment_shader (PsyDrawingContext* self)
 {
@@ -253,6 +274,13 @@ psy_drawing_context_create_fragment_shader (PsyDrawingContext* self)
     return cls->create_fragment_shader(self);
 }
 
+/**
+ * psy_drawing_context_create_vbuffer:
+ * @self: An instance of `PsyDrawingContext`
+ *
+ * Returns:(transfer full): A `PsyVBuffer` suitable for use with
+ *                          this context.
+ */
 PsyVBuffer*
 psy_drawing_context_create_vbuffer (PsyDrawingContext* self)
 {

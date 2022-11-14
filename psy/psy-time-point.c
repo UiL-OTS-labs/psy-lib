@@ -233,7 +233,8 @@ psy_time_point_add(PsyTimePoint* self, PsyDuration* dur)
  * of the PsyClock. The PsyClock start is roughly 0 the PsyClock type is
  * initialized.
  *
- * Returns: a PsyDuration that reflects the time when the first clock is loaded.
+ * Returns:(transfer full): a `PsyDuration` that reflects the time when the
+ * first clock is loaded.
  */
 PsyDuration*
 psy_time_point_duration_since_start(PsyTimePoint* self)

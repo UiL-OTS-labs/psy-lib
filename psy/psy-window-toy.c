@@ -500,24 +500,24 @@ psy_window_toy_new_for_monitor(guint n)
 /**
  * psy_window_toy_set_monitor:
  * @self:A #PsyWindowToy instance
- * @monitor_num: A number between 0 and n - 1 where n is the number
+ * @nth_monitor: A number between 0 and n - 1 where n is the number
  *               of available monitors.
  *
  * Display the the window on monitor monitor_num
  */
 void
-psy_window_toy_set_monitor(PsyWindowToy* self, guint monitor_num)
+psy_window_toy_set_monitor(PsyWindowToy* self, guint nth_monitor)
 {
     g_return_if_fail(PSY_IS_WINDOW_TOY(self));
     GdkDisplay* display = gdk_display_get_default();
     guint num_monitors = g_list_model_get_n_items(gdk_display_get_monitors(display));
-    g_return_if_fail(monitor_num < num_monitors);
+    g_return_if_fail(nth_monitor < num_monitors);
 
     GListModel* monitors = gdk_display_get_monitors(display);
-    GdkMonitor* monitor = g_list_model_get_item(monitors, monitor_num);
+    GdkMonitor* monitor = g_list_model_get_item(monitors, nth_monitor);
 
     gtk_window_fullscreen_on_monitor(GTK_WINDOW(self),  monitor);
-    self->monitor = monitor_num;
+    self->monitor = nth_monitor;
 }
 
 /**

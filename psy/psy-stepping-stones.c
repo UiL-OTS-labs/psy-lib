@@ -178,7 +178,7 @@ psy_stepping_stones_class_init(PsySteppingStonesClass* klass)
  * Returns: a new `PsySteppingStones` instance
  */
 PsySteppingStones*
-psy_stepping_stones_new()
+psy_stepping_stones_new(void)
 {
     return g_object_new(PSY_TYPE_STEPPING_STONES, NULL);
 }
@@ -191,7 +191,7 @@ psy_stepping_stones_destroy(PsySteppingStones* self)
 }
 
 /**
- * psy_stepping_stones_add_step:(constructor)
+ * psy_stepping_stones_add_step:
  * @self: The `PsySteppingStones` instance to which a `PsyStep` @step
  * @step: The `PsyStep` to add to @self
  *

@@ -17,10 +17,10 @@ G_MODULE_EXPORT PsyWindowToy*
 psy_window_toy_new_for_monitor(guint monitor);
 
 G_MODULE_EXPORT void
-psy_window_toy_set_monitor(PsyWindowToy* window, guint nth_window);
+psy_window_toy_set_monitor(PsyWindowToy* self, guint nth_monitor);
 
 G_MODULE_EXPORT guint 
-psy_window_toy_get_monitor(PsyWindowToy* window);
+psy_window_toy_get_monitor(PsyWindowToy* self);
 
 
 G_END_DECLS

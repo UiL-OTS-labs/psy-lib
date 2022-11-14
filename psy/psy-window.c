@@ -787,7 +787,7 @@ psy_window_get_monitor(PsyWindow* self)
 /**
  * psy_window_set_monitor:
  * @self: a #PsyWindow instance
- * @n: the number of the monitor on which to display the window
+ * @nth_monitor: the number of the monitor on which to display the window
  *
  * Returns the number of the monitor this window is being presented.
  * The result should b 0 for the first monitor to n - 1 for the last
@@ -878,7 +878,7 @@ psy_window_get_height(PsyWindow* self)
 
 /**
  * psy_window_get_width_height_mm:
- * @window: a #PsyWindow instance
+ * @self: a #PsyWindow instance
  * @width_mm:(out)(nullable): The width in mm.
  * @height_mm:(out)(nullable): The height in mm.
  *
@@ -886,10 +886,10 @@ psy_window_get_height(PsyWindow* self)
  * indicates that we were not able to establish the width and/or height.
  */
 void
-psy_window_get_width_height_mm(PsyWindow* window, gint* width_mm, gint* height_mm)
+psy_window_get_width_height_mm(PsyWindow* self, gint* width_mm, gint* height_mm)
 {
-    g_return_if_fail(PSY_IS_WINDOW(window));
-    PsyWindowPrivate* private = psy_window_get_instance_private(window);
+    g_return_if_fail(PSY_IS_WINDOW(self));
+    PsyWindowPrivate* private = psy_window_get_instance_private(self);
     if (width_mm)
         *width_mm = private->width_mm;
     if (height_mm)
@@ -898,90 +898,95 @@ psy_window_get_width_height_mm(PsyWindow* window, gint* width_mm, gint* height_m
 
 /**
  * psy_window_get_width_mm:
- * @window:A #PsyWindow instance
+ * @self:A #PsyWindow instance
  *
  * Returns: the width in mm of the window
  */
 gint
-psy_window_get_width_mm(PsyWindow* window)
+psy_window_get_width_mm(PsyWindow* self)
 {
-    g_return_val_if_fail(PSY_IS_WINDOW(window), -1);
-    PsyWindowPrivate* private = psy_window_get_instance_private(window);
+    g_return_val_if_fail(PSY_IS_WINDOW(self), -1);
+    PsyWindowPrivate* private = psy_window_get_instance_private(self);
     return private->width_mm;
 }
 
 /**
  * psy_window_set_width_mm:
- * @window:A #PsyWindow instance
+ * @self: A `PsyWindow` instance
  * @width_mm: the width of the window/monitor
  *
  * Set the width of the window. Override the settings as found by the os/backend
  */
 void
-psy_window_set_width_mm(PsyWindow* window, gint width_mm)
+psy_window_set_width_mm(PsyWindow* self, gint width_mm)
 {
-    g_return_if_fail(PSY_IS_WINDOW(window));
-    PsyWindowPrivate* private = psy_window_get_instance_private(window);
+    g_return_if_fail(PSY_IS_WINDOW(self));
+    PsyWindowPrivate* private = psy_window_get_instance_private(self);
     private->width_mm = width_mm;
 }
 
 /**
  * psy_window_get_height_mm:
- * @window:A #PsyWindow instance
+ * @self:A #PsyWindow instance
  *
  * Returns: the height in mm of the window
  */
 gint
-psy_window_get_height_mm(PsyWindow* window)
+psy_window_get_height_mm(PsyWindow* self)
 {
-    g_return_val_if_fail(PSY_IS_WINDOW(window), -1);
-    PsyWindowPrivate* private = psy_window_get_instance_private(window);
+    g_return_val_if_fail(PSY_IS_WINDOW(self), -1);
+    PsyWindowPrivate* private = psy_window_get_instance_private(self);
     return private->height_mm;
 }
 
 /**
  * psy_window_set_height_mm:
- * @window:A #PsyWindow instance
+ * @self:A #PsyWindow instance
  * @height_mm: the height of the window/monitor
  *
  * Set the height of the window. Override the settings as found by the os/backend
  */
 void
-psy_window_set_height_mm(PsyWindow* window, gint height_mm)
+psy_window_set_height_mm(PsyWindow* self, gint height_mm)
 {
-    g_return_if_fail(PSY_IS_WINDOW(window));
-    PsyWindowPrivate* private = psy_window_get_instance_private(window);
+    g_return_if_fail(PSY_IS_WINDOW(self));
+    PsyWindowPrivate* private = psy_window_get_instance_private(self);
     private->height_mm = height_mm;
 }
 
 /**
  * psy_window_schedule_stimulus:
- * @window: a PsyWindow instance
+ * @self: a PsyWindow instance
  * @stimulus: a `PsyVisualStimulus` instance that should be drawn on this window
  *
  * Notifies the window about a stimulus that should be drawn on it, if the
  * stimulus was already present, it is ignored.
  */
 void
-psy_window_schedule_stimulus(PsyWindow* window, PsyVisualStimulus* stimulus)
+psy_window_schedule_stimulus(PsyWindow* self, PsyVisualStimulus* stimulus)
 {
-    g_return_if_fail(PSY_IS_WINDOW(window));
-    g_return_if_fail(PSY_IS_VISUAL_STIMULUS(stimulus));
+    g_return_if_fail(PSY_IS_WINDOW(self));
+    g_return_if_fail(PSY_IS_VISUAL_STIMULUS(self));
 
-    PsyWindowClass* klass = PSY_WINDOW_GET_CLASS(window);
+    PsyWindowClass* klass = PSY_WINDOW_GET_CLASS(self);
 
     g_return_if_fail(klass->schedule_stimulus);
 
-    klass->schedule_stimulus(window, stimulus);
+    klass->schedule_stimulus(self, stimulus);
 }
 
-
+/**
+ * psy_window_get_frame_dur:
+ * @self: A `PsyWindow` instance
+ *
+ * Returns:(transfer none): a `PsyDuration` for the duration between two frames
+ */
 PsyDuration*
-psy_window_get_frame_dur(PsyWindow* window)
+psy_window_get_frame_dur(PsyWindow* self)
 {
-    PsyWindowPrivate *priv = psy_window_get_instance_private(window);
+    PsyWindowPrivate *priv = psy_window_get_instance_private(self);
 
-    g_return_val_if_fail(PSY_IS_WINDOW(window), NULL);
+    g_return_val_if_fail(PSY_IS_WINDOW(self), NULL);
     return priv->frame_dur;
 }
 
@@ -1008,19 +1013,20 @@ psy_window_remove_stimulus(PsyWindow* self, PsyVisualStimulus* stimulus)
 
 /**
  * psy_window_set_projection_style:
- * @window: an instance of `PsyWindow`
- * @style: an instance of `PsyWindowProjectionStyle` an | orable combination
- *         of `PsyWindowProjectionStyle` Take note some flags may not be
- *         orred together and at least some must be set.
+ * @self: an instance of `PsyWindow`
+ * @projection_style: an instance of `PsyWindowProjectionStyle` an | orable combination
+ *      of `PsyWindowProjectionStyle` Take note some flags may not be
+ *      orred together and at least some must be set.
  *                      
  *
  * Set the style of projection of the window see `PsyWindow:projection-style`
  */
 void
-psy_window_set_projection_style(PsyWindow* self, gint style)
+psy_window_set_projection_style(PsyWindow* self, gint projection_style)
 {
     PsyWindowPrivate* priv = psy_window_get_instance_private(self);
     PsyWindowClass* klass = PSY_WINDOW_GET_CLASS(self);
+    gint style = projection_style;
 
     gint origin_style = 0;
     gint unit_style = 0;
@@ -1070,7 +1076,7 @@ psy_window_set_projection_style(PsyWindow* self, gint style)
 
 /**
  * psy_window_get_projection_style:
- * @window: an instance of `PsyWindow`
+ * @self: an instance of `PsyWindow`
  *
  * Returns: the style of projection of the window see `PsyWindow:projection-style`
  */
@@ -1086,9 +1092,9 @@ psy_window_get_projection_style(PsyWindow* self)
 
 /**
  * psy_window_get_projection:
- * @window: an instance of `PsyWindow`
+ * @self: an instance of `PsyWindow`
  *
- * Returns: the projection matrix used by this window
+ * Returns:(transfer none): The projection matrix used by this window
  */
 PsyMatrix4*
 psy_window_get_projection(PsyWindow* self) {
@@ -1124,6 +1130,9 @@ psy_window_set_context(PsyWindow* self, PsyDrawingContext* context)
  * @self: an instance of `PsyWindow`
  *
  * Get the drawing context for this window for drawing purposes.
+ *
+ * Returns:(transfer none): The active drawing context that belongs to this
+ *                          `PsyWindow`
  */
 PsyDrawingContext*
 psy_window_get_context(PsyWindow* self)

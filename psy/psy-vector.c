@@ -169,146 +169,244 @@ psy_vector_new_xyz(gfloat x, gfloat y, gfloat z)
 }
 
 void
-psy_vector_destroy(PsyVector* v) {
-    g_object_unref(v);
+psy_vector_destroy(PsyVector* self) {
+    g_object_unref(self);
 }
 
+/**
+ * psy_vector_magnitude:
+ * @self: A PsyVector
+ * 
+ * Returns: the magnitude/length of @self
+ */
 gfloat
-psy_vector_magnitude(PsyVector* v)
+psy_vector_magnitude(PsyVector* self)
 {
-    g_return_val_if_fail(PSY_IS_VECTOR(v), NAN);
+    g_return_val_if_fail(PSY_IS_VECTOR(self), NAN);
     gfloat sum = 0;
-    for (size_t i = 0; i < (sizeof(v->array)/sizeof(v->array[0])); i++)
-        sum += (v->array[i] * v->array[i]);
+    for (size_t i = 0; i < (sizeof(self->array)/sizeof(self->array[0])); i++)
+        sum += (self->array[i] * self->array[i]);
     return sqrtf(sum);
 }
 
+/**
+ * psy_vector_unit:
+ * @self: an instance of `PsyVector`
+ *
+ * Obtain a unitvector of @self; a vector with a mangitude of 1 in the
+ * same direction of @self.
+ *
+ * Returns:(transfer full): a unit vector of @self
+ */
 PsyVector*
-psy_vector_unit(PsyVector* v)
+psy_vector_unit(PsyVector* self)
 {
-    g_return_val_if_fail(PSY_IS_VECTOR(v), NULL);
-    gfloat mag = psy_vector_magnitude(v);
+    g_return_val_if_fail(PSY_IS_VECTOR(self), NULL);
+    gfloat mag = psy_vector_magnitude(self);
 
     if (mag == 0.0) // oops there is no unit vector of zero vector.
         return NULL;
 
-    gfloat x = v->array[0] / mag;
-    gfloat y = v->array[1] / mag;
-    gfloat z = v->array[2] / mag;
+    gfloat x = self->array[0] / mag;
+    gfloat y = self->array[1] / mag;
+    gfloat z = self->array[2] / mag;
 
     return psy_vector_new_xyz(x, y, z);
 }
 
+/**
+ * psy_vector_negate:
+ * @self: an instance of `PsyVector`
+ *
+ * Get a vector with the same magnitude but opposite direction of @self
+ *
+ * Returns:(transfer full): a negated version of @self
+ */
 PsyVector*
-psy_vector_negate(PsyVector* v)
+psy_vector_negate(PsyVector* self)
 {
-    g_return_val_if_fail(PSY_IS_VECTOR(v), NULL);
-    gfloat x = -v->array[0];
-    gfloat y = -v->array[1];
-    gfloat z = -v->array[2];
+    g_return_val_if_fail(PSY_IS_VECTOR(self), NULL);
+    gfloat x = -self->array[0];
+    gfloat y = -self->array[1];
+    gfloat z = -self->array[2];
     return psy_vector_new_xyz(x, y, z);
 }
 
+/**
+ * psy_vector_add_s:
+ * @self: an instance of `PsyVector`
+ * @scalar: a scalar added to @self
+ *
+ * Adds a scalar to each element of @self
+ * 
+ * Returns:(transfer full): a vector that is the result of the vector scalar
+ *                          addition
+ */
 PsyVector*
-psy_vector_add_s(PsyVector* v, gfloat s)
+psy_vector_add_s(PsyVector* self, gfloat scalar)
 {
-    g_return_val_if_fail(PSY_IS_VECTOR(v), NULL);
+    g_return_val_if_fail(PSY_IS_VECTOR(self), NULL);
     gfloat x, y, z;
-    x = v->array[0] + s;
-    y = v->array[1] + s;
-    z = v->array[2] + s;
+    x = self->array[0] + scalar;
+    y = self->array[1] + scalar;
+    z = self->array[2] + scalar;
     return psy_vector_new_xyz(x, y, z);
 }
 
+/**
+ * psy_vector_add:
+ * @self: An instance of `PsyVector`
+ * @other: An instance of `PsyVector` added to @self
+ *
+ * adds to vectors together:
+ *
+ * Returns:(transfer full): The result of @self + @other
+ */
 PsyVector*
-psy_vector_add(PsyVector* v1, PsyVector *v2)
+psy_vector_add(PsyVector* self, PsyVector *other)
 {
-    g_return_val_if_fail(PSY_IS_VECTOR(v1), NULL);
-    g_return_val_if_fail(PSY_IS_VECTOR(v2), NULL);
+    g_return_val_if_fail(PSY_IS_VECTOR(self), NULL);
+    g_return_val_if_fail(PSY_IS_VECTOR(other), NULL);
     gfloat x, y, z;
-    x = v1->array[0] + v2->array[0];
-    y = v1->array[1] + v2->array[1];
-    z = v1->array[2] + v2->array[2];
+    x = self->array[0] + other->array[0];
+    y = self->array[1] + other->array[1];
+    z = self->array[2] + other->array[2];
     return psy_vector_new_xyz(x, y, z);
 }
 
+/**
+ * psy_vector_sub_s:
+ * @self: An instance of `PsyVector`
+ * @scalar: An instance of `PsyVector` subtracted from @self
+ *
+ * Returns:(transfer full): The result of @self - other
+ */
 PsyVector*
-psy_vector_sub_s(PsyVector* v, gfloat s)
+psy_vector_sub_s(PsyVector* self, gfloat scalar)
 {
-    g_return_val_if_fail(PSY_IS_VECTOR(v), NULL);
+    g_return_val_if_fail(PSY_IS_VECTOR(self), NULL);
     gfloat x, y, z;
-    x = v->array[0] - s;
-    y = v->array[1] - s;
-    z = v->array[2] - s;
+    x = self->array[0] - scalar;
+    y = self->array[1] - scalar;
+    z = self->array[2] - scalar;
     return psy_vector_new_xyz(x, y, z);
 }
 
+/**
+ * psy_vector_sub:
+ * @self: An instance of `PsyVector`
+ * @other: An instance of `PsyVector` subtracted from @self
+ *
+ * Returns:(transfer full): The result of @self - other
+ */
 PsyVector*
-psy_vector_sub(PsyVector* v1, PsyVector *v2)
+psy_vector_sub(PsyVector* self, PsyVector *other)
 {
-    g_return_val_if_fail(PSY_IS_VECTOR(v1), NULL);
-    g_return_val_if_fail(PSY_IS_VECTOR(v2), NULL);
+    g_return_val_if_fail(PSY_IS_VECTOR(self), NULL);
+    g_return_val_if_fail(PSY_IS_VECTOR(other), NULL);
     gfloat x, y, z;
-    x = v1->array[0] - v2->array[0];
-    y = v1->array[1] - v2->array[1];
-    z = v1->array[2] - v2->array[2];
+    x = self->array[0] - other->array[0];
+    y = self->array[1] - other->array[1];
+    z = self->array[2] - other->array[2];
     return psy_vector_new_xyz(x, y, z);
 }
 
+/**
+ * psy_vector_mul_s:
+ * @self: An instance of `PsyVector`
+ * @scalar: A scaling factor for @self
+ *
+ * Scale @self by @scalar this maintains the direction of @self, but
+ * changes the sign or magnitude.
+ *
+ * Returns:(transfer full): The result of @self * @scalar 
+ */
 PsyVector*
-psy_vector_mul_s(PsyVector* v, gfloat s)
+psy_vector_mul_s(PsyVector* self, gfloat scalar)
 {
-    g_return_val_if_fail(PSY_IS_VECTOR(v), NULL);
+    g_return_val_if_fail(PSY_IS_VECTOR(self), NULL);
     gfloat x, y, z;
-    x = v->array[0] * s;
-    y = v->array[1] * s;
-    z = v->array[2] * s;
+    x = self->array[0] * scalar;
+    y = self->array[1] * scalar;
+    z = self->array[2] * scalar;
     return psy_vector_new_xyz(x, y, z);
 }
 
+/**
+ * psy_vector_dot:
+ * @self: An instance of `PsyVector`
+ * @other: A scaling factor for @self
+ *
+ * Returns the dotproduct between @self and @other
+ *
+ * Returns: The result of @self . @scalar 
+ */
 gfloat
-psy_vector_dot(PsyVector* v1, PsyVector* v2)
+psy_vector_dot(PsyVector* self, PsyVector* other)
 {
-    g_return_val_if_fail(PSY_IS_VECTOR(v1), 0);
-    g_return_val_if_fail(PSY_IS_VECTOR(v2), 0);
+    g_return_val_if_fail(PSY_IS_VECTOR(self), 0);
+    g_return_val_if_fail(PSY_IS_VECTOR(other), 0);
     gfloat l1, l2;
-    l1 = psy_vector_magnitude(v1);
-    l2 = psy_vector_magnitude(v2);
-    return (v1->array[0] / l1) * (v2->array[0] / l2)+
-           (v1->array[1] / l1) * (v2->array[1] / l2)+
-           (v1->array[2] / l1) * (v2->array[2] / l2);
+    l1 = psy_vector_magnitude(self);
+    l2 = psy_vector_magnitude(other);
+    return (self->array[0] / l1) * (other->array[0] / l2)+
+           (self->array[1] / l1) * (other->array[1] / l2)+
+           (self->array[2] / l1) * (other->array[2] / l2);
 }
 
+/**
+ * psy_vector_cross:
+ * @self: An instance of `PsyVector`
+ * @other: An instance of `PsyVector`
+ *
+ * returns the crosproduct a vector perpendicular to both @self and @other
+ *
+ * Returns:(transfer full): @self X @other.
+ */
 PsyVector*
-psy_vector_cross(PsyVector* v1, PsyVector* v2)
+psy_vector_cross(PsyVector* self, PsyVector* other)
 {
-    g_return_val_if_fail(PSY_IS_VECTOR(v1), NULL);
-    g_return_val_if_fail(PSY_IS_VECTOR(v2), NULL);
+    g_return_val_if_fail(PSY_IS_VECTOR(self), NULL);
+    g_return_val_if_fail(PSY_IS_VECTOR(other), NULL);
     gfloat x, y, z;
-    x = v1->array[1]  * v2->array[2] - v1->array[2] * v2->array[1];
-    y = v1->array[2]  * v2->array[0] - v1->array[0] * v2->array[2];
-    z = v1->array[0]  * v2->array[1] - v1->array[1] * v2->array[0];
+    x = self->array[1]  * other->array[2] - self->array[2] * other->array[1];
+    y = self->array[2]  * other->array[0] - self->array[0] * other->array[2];
+    z = self->array[0]  * other->array[1] - self->array[1] * other->array[0];
     return psy_vector_new_xyz(x, y, z);
 }
 
+/**
+ * psy_vector_equals:
+ * @self: an instance of `PsyVector`
+ * @other: an instance of `PsyVector`
+ *
+ * Returns: #true when @self == @other
+ */
 gboolean
-psy_vector_equals(PsyVector* v1, PsyVector* v2)
+psy_vector_equals(PsyVector* self, PsyVector* other)
 {
-    g_return_val_if_fail(PSY_IS_VECTOR(v1), FALSE);
-    g_return_val_if_fail(PSY_IS_VECTOR(v2), FALSE);
+    g_return_val_if_fail(PSY_IS_VECTOR(self), FALSE);
+    g_return_val_if_fail(PSY_IS_VECTOR(other), FALSE);
 
-    if (v1 == v2)
+    if (self == other)
         return TRUE;
 
-    return v1->array[0] == v2->array[0] &&
-           v1->array[1] == v2->array[1] &&
-           v1->array[2] == v2->array[2];
+    return self->array[0] == other->array[0] &&
+           self->array[1] == other->array[1] &&
+           self->array[2] == other->array[2];
 }
 
+/**
+ * psy_vector_not_equals:
+ * @self: an instance of `PsyVector`
+ * @other: an instance of `PsyVector`
+ *
+ * Returns: #true when @self != @other
+ */
 gboolean
-psy_vector_not_equals(PsyVector* v1, PsyVector* v2)
+psy_vector_not_equals(PsyVector* self, PsyVector* other)
 {
-    return !psy_vector_equals(v1, v2);
+    return !psy_vector_equals(self, other);
 }
 
 #endif
