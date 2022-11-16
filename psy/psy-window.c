@@ -966,7 +966,7 @@ void
 psy_window_schedule_stimulus(PsyWindow* self, PsyVisualStimulus* stimulus)
 {
     g_return_if_fail(PSY_IS_WINDOW(self));
-    g_return_if_fail(PSY_IS_VISUAL_STIMULUS(self));
+    g_return_if_fail(PSY_IS_VISUAL_STIMULUS(stimulus));
 
     PsyWindowClass* klass = PSY_WINDOW_GET_CLASS(self);
 

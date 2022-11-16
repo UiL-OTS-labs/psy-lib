@@ -280,4 +280,30 @@ psy_program_set_uniform_matrix4(
     class->set_uniform_matrix4(self, name, matrix, error);
 }
 
+/**
+ * psy_program_set_uniform_4f:
+ * @self: an instance of `PsyProgram`
+ * @name: the name in order to refer to proper name of the uniform
+ * @values:(array fixed-size=4): the 4 value to send to the uniform
+ * @error:An error might be returned here.
+ *
+ * Set a uniform property with 4 floats in the shader
+ */
+void
+psy_program_set_uniform_4f(
+        PsyProgram     *self,
+        const gchar    *name,
+        gfloat         *values,
+        GError        **error
+        )
+{
+    g_return_if_fail(PSY_IS_PROGRAM(self));
+    g_return_if_fail(name);
+    g_return_if_fail(error == NULL || *error == NULL);
+
+    PsyProgramClass* class = PSY_PROGRAM_GET_CLASS(self);
+
+    g_return_if_fail(class->set_uniform_4f);
+    class->set_uniform_4f(self, name, values, error);
+}
 

@@ -12,6 +12,7 @@
 typedef struct _PsyCircleArtist {
     PsyArtist parent_instance;
     PsyVBuffer* vertices;
+    gfloat r, g, b, a;
     gfloat x, y, z;
     gfloat radius;
 } PsyCircleArtist;
@@ -52,16 +53,19 @@ psy_circle_artist_finalize(GObject* object)
 static void
 circle_artist_draw(PsyArtist* self)
 {
+    gfloat x, y, z;
+    gfloat rgba[4] = {0.0, 0.0, 0.0, 1.0};
+    PsyColor* color = NULL;
+    GError* error = NULL;
+    gboolean store_vertices = FALSE;
+    gfloat radius;
+    guint num_vertices;
+    const gchar* color_name = "ourColor";
+
     PsyCircleArtist* artist = PSY_CIRCLE_ARTIST(self);
     PsyCircle* circle = PSY_CIRCLE(psy_artist_get_stimulus(self));
     PsyWindow* window = psy_artist_get_window(self);
     PsyDrawingContext* context = psy_window_get_context(window);
-    GError* error = NULL;
-
-    gfloat x, y, z;
-    gboolean store_vertices = FALSE;
-    gfloat radius;
-    guint num_vertices;
 
     PsyProgram* program = psy_drawing_context_get_program(
             context,
@@ -81,8 +85,23 @@ circle_artist_draw(PsyArtist* self)
             "z", &z,
             "num-vertices", &num_vertices,
             "radius", &radius,
+            "color", &color,
             NULL
             );
+
+    if (color) {
+        g_object_get(color,
+                "r", &rgba[0],
+                "g", &rgba[1],
+                "b", &rgba[2],
+                "a", &rgba[3],
+                NULL);
+    }
+    psy_program_set_uniform_4f(program, color_name, rgba, &error);
+    if (error) {
+        g_critical("%s: Unable to set the color: %s", __func__, error->message);
+        g_clear_error(&error);
+    }
 
     if (num_vertices != psy_vbuffer_get_nvertices(artist->vertices)) {
         psy_vbuffer_set_nvertices(artist->vertices, num_vertices);

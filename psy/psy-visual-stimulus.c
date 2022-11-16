@@ -1,6 +1,7 @@
 
 #include <math.h>
 
+#include "psy-color.h"
 #include "psy-visual-stimulus.h"
 #include "glibconfig.h"
 #include "psy-stimulus.h"
@@ -12,6 +13,7 @@ typedef struct PsyVisualStimulusPrivate {
      gint64     num_frames;
      gint64     start_frame;
      gfloat     x, y, z;
+     PsyColor  *color;
 } PsyVisualStimulusPrivate;
 
 G_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE(
@@ -27,6 +29,7 @@ typedef enum {
     PROP_X,             // the x coordinate of the stimulus
     PROP_Y,             // the y coordinate of the stimulus
     PROP_Z,             // the z coordinate of the stimulus
+    PROP_COLOR,         // the fill color of the stimulus.
     NUM_PROPERTIES
 } VisualStimulusProperty;
 
@@ -59,6 +62,9 @@ psy_visual_stimulus_set_property(GObject       *object,
             break;
         case PROP_Z:
             psy_visual_stimulus_set_z(self, g_value_get_float(value));
+            break;
+        case PROP_COLOR:
+            psy_visual_stimulus_set_color(self, g_value_get_object(value));
             break;
         case PROP_NUM_FRAMES: // gettable only
         case PROP_NTH_FRAME:  // gettable only
@@ -100,9 +106,22 @@ psy_visual_stimulus_get_property(GObject       *object,
         case PROP_Z:
             g_value_set_float(value, priv->z);
             break;
+        case PROP_COLOR:
+            g_value_set_object(value, psy_visual_stimulus_get_color(self));
+            break;
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
     }
+}
+
+static void
+psy_visual_stimulus_dispose(GObject* object)
+{
+    PsyVisualStimulusPrivate* priv = psy_visual_stimulus_get_instance_private(
+            PSY_VISUAL_STIMULUS(object)
+            );
+
+    g_clear_object(&priv->color);
 }
 
 static void
@@ -171,6 +190,7 @@ psy_visual_stimulus_class_init(PsyVisualStimulusClass* klass)
     GObjectClass *object_class = G_OBJECT_CLASS(klass);
     object_class->get_property = psy_visual_stimulus_get_property;
     object_class->set_property = psy_visual_stimulus_set_property;
+    object_class->dispose = psy_visual_stimulus_dispose;
 
     PsyStimulusClass* stimulus_class = PSY_STIMULUS_CLASS(klass);
     stimulus_class->play        = visual_stimulus_play;
@@ -282,6 +302,19 @@ psy_visual_stimulus_class_init(PsyVisualStimulusClass* klass)
             -G_MAXFLOAT,
             G_MAXFLOAT,
             0,
+            G_PARAM_READWRITE
+            );
+
+    /**
+     * PsyVisualStimulus:color
+     *
+     * The color `PsyColor` used to fill this object with
+     */
+    visual_stimulus_properties[PROP_COLOR] = g_param_spec_object(
+            "color",
+            "Color",
+            "The fill color for this stimulus",
+            PSY_TYPE_COLOR,
             G_PARAM_READWRITE
             );
     
@@ -573,4 +606,41 @@ psy_visual_stimulus_set_z(PsyVisualStimulus* self, gfloat z)
 
     priv->z = z;
 }
+
+/**
+ * psy_visual_stimulus_get_color:
+ * @self: An instance of `PsyVisualStimulus`
+ *
+ * Get the color of the window.
+ *
+ * Returns:(transfer none): the `PsyColor` of used to fill the stimuli
+ */
+PsyColor*
+psy_visual_stimulus_get_color(PsyVisualStimulus* self)
+{
+    PsyVisualStimulusPrivate* priv = psy_visual_stimulus_get_instance_private(self);
+    g_return_val_if_fail(PSY_IS_VISUAL_STIMULUS(self), NULL);
+
+    return priv->color;
+}
+
+/**
+ * psy_visual_stimulus_set_color:
+ * @self: an instance of `PsyVisualStimulus`
+ * @color:(transfer full): An instance of `PsyVisualStimulus` that is going to
+ *                         be used in order to fill the shape of the stimulus
+ *
+ * Set the fill color of the stimulus, this color is used to fill the stimulus
+ */
+void
+psy_visual_stimulus_set_color(PsyVisualStimulus* self, PsyColor* color)
+{
+    PsyVisualStimulusPrivate* priv = psy_visual_stimulus_get_instance_private(self);
+
+    g_return_if_fail(PSY_IS_VISUAL_STIMULUS(self) && PSY_IS_COLOR(color));
+
+    g_clear_object(&priv->color);
+    priv->color = color;    
+}
+
 

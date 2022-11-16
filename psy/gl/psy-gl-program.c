@@ -337,6 +337,23 @@ psy_gl_program_set_uniform_matrix_4(
 }
 
 static void
+psy_gl_program_set_uniform_4f(
+        PsyProgram     *self,
+        const gchar    *name,
+        gfloat         *values,
+        GError        **error
+        )
+{
+    PsyGlProgram* program = PSY_GL_PROGRAM(self);
+    
+    GLint location = glGetUniformLocation(program->object_id, name);
+    if (psy_gl_check_error(error))
+        return;
+
+    glUniform4f(location, values[0], values[1], values[2], values[3]);
+}
+
+static void
 psy_gl_program_class_init(PsyGlProgramClass* class)
 {
     GObjectClass       *gobject_class = G_OBJECT_CLASS(class);
@@ -369,7 +386,8 @@ psy_gl_program_class_init(PsyGlProgramClass* class)
     program_class->is_linked    = psy_gl_program_is_linked;
     program_class->use_program  = psy_gl_program_use_program;
 
-    program_class->set_uniform_matrix4 = psy_gl_program_set_uniform_matrix_4;
+    program_class->set_uniform_matrix4  = psy_gl_program_set_uniform_matrix_4;
+    program_class->set_uniform_4f       = psy_gl_program_set_uniform_4f;
 
     gl_program_properties[PROP_OBJECT_ID] = g_param_spec_string(
             "object-id",

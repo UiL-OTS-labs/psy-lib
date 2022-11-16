@@ -5,6 +5,7 @@
 #include <psy-stimulus.h>
 #include <psy-clock.h>
 #include <psy-window.h>
+#include <psy-color.h>
 #include <backend_gtk/psy-gtk-window.h>
 #include <psy-circle.h>
 #include <psy-cross.h>
@@ -29,6 +30,7 @@ gdouble g_z = 0.0;
 
 char* g_origin = "center";
 char* g_units = "pixels";
+gboolean circle_first = FALSE;
 
 static GOptionEntry entries[] = {
     {"monitor-number", 'n', G_OPTION_FLAG_NONE, G_OPTION_ARG_INT, &n_monitor, "The number of the desired monitor", "N"},
@@ -42,6 +44,7 @@ static GOptionEntry entries[] = {
     {"x", 'x', G_OPTION_FLAG_NONE, G_OPTION_ARG_DOUBLE, &g_x, "The x-coordinate of the circle", "units depends on projection"},
     {"y", 'y', G_OPTION_FLAG_NONE, G_OPTION_ARG_DOUBLE, &g_y, "The y-coordinate of the circle", "units depends on projection"},
     {"z", 'z', G_OPTION_FLAG_NONE, G_OPTION_ARG_DOUBLE, &g_z, "The z-coordinate of the circle", "units depends on projection"},
+    {"circle-first", 'c', G_OPTION_FLAG_NONE, G_OPTION_ARG_NONE, &circle_first, "Whether or not to present the circle first", NULL},
     {0}
 };
 
@@ -148,6 +151,8 @@ int main(int argc, char**argv) {
     PsyTimePoint* tp, *start;
     GError* error = NULL;
     gint window_style;
+    PsyColor* circle_color = psy_color_new_rgb(1.0, 0, 0);
+    PsyColor* cross_color = psy_color_new_rgb(1.0, 1.0, 0);
     
     GOptionContext* context = g_option_context_new("");
     g_option_context_add_main_entries(context, entries, NULL); 
@@ -176,6 +181,12 @@ int main(int argc, char**argv) {
             PSY_WINDOW(window), g_x, g_y, g_radius, g_nvertices
             );
     PsyCross* cross = psy_cross_new_full(PSY_WINDOW(window), 0, 0, 200, 10);
+    
+    psy_visual_stimulus_set_color(PSY_VISUAL_STIMULUS(circle), circle_color);
+    g_object_set(cross,
+           "color", cross_color,
+           NULL);
+
     g_print("Circle @ %p,\tCross @ %p\n", circle, cross);
     g_signal_connect(circle, "update", G_CALLBACK(update_circle), tp);
     g_signal_connect(circle, "started", G_CALLBACK(circle_started), tp);
@@ -184,8 +195,14 @@ int main(int argc, char**argv) {
 
     start = psy_time_point_add(tp, start_dur);
 
-    psy_stimulus_play_for(PSY_STIMULUS(circle), start, dur);
-    psy_stimulus_play_for(PSY_STIMULUS(cross), start, dur);
+    if (circle_first) {
+        psy_stimulus_play_for(PSY_STIMULUS(circle), start, dur);
+        psy_stimulus_play_for(PSY_STIMULUS(cross), start, dur);
+    }
+    else {
+        psy_stimulus_play_for(PSY_STIMULUS(cross), start, dur);
+        psy_stimulus_play_for(PSY_STIMULUS(circle), start, dur);
+    }
 
     g_main_loop_run(loop);
 

@@ -7,6 +7,7 @@
 #include "psy-matrix4.h"
 #include "psy-program.h"
 #include "psy-window.h"
+#include "psy-color.h"
 
 typedef struct _PsyCrossArtist {
     PsyArtist parent_instance;
@@ -52,12 +53,15 @@ psy_cross_artist_finalize(GObject* object)
 static void
 cross_artist_draw(PsyArtist* self)
 {
+    gfloat rgba[4];
     PsyCrossArtist* artist = PSY_CROSS_ARTIST(self);
     PsyCross* cross = PSY_CROSS(psy_artist_get_stimulus(self));
     PsyWindow* window = psy_artist_get_window(self);
     PsyDrawingContext* context = psy_window_get_context(window);
+    PsyColor* color = NULL;
     GError* error = NULL;
     const guint nverts = 14; // origin + 12 corners
+    const gchar* color_name = "ourColor";
 
     gfloat x, y, z;
     gboolean store_vertices = FALSE;
@@ -84,8 +88,23 @@ cross_artist_draw(PsyArtist* self)
             "line-length-y", &line_length_y,
             "line-width-x", &line_width_x,
             "line-width-y", &line_width_y,
+            "color", &color,
             NULL
             );
+
+    if (color) {
+        g_object_get(color,
+                "r", &rgba[0],
+                "g", &rgba[1],
+                "b", &rgba[2],
+                "a", &rgba[3],
+                NULL);
+        psy_program_set_uniform_4f(program, color_name, rgba, &error);
+        if (error) {
+            g_critical("%s: failed to set color: %s", __func__, error->message);
+            g_clear_error(&error);
+        }
+    }
 
     if (psy_vbuffer_get_nvertices(artist->vertices) != nverts) {
         psy_vbuffer_set_nvertices(artist->vertices, nverts);
