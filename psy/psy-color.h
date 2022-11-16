@@ -7,60 +7,46 @@
 G_BEGIN_DECLS
 
 
-///**
-// * PSY_TYPE_RGB:
-// *
-// * The #GType for a boxed holding a floating point RGB range
-// */
-//#define PSY_TYPE_RGB (psy_rgb_get_type())
-//
-//typedef struct _PsyRgb PsyRgb;
-//
-///**
-// * PsyRgb:
-// * @r: The red component of the color [0.0 - 1.0] 
-// * @g: The green component of the color [0.0 - 1.0] 
-// * @b: The blue component of the color [0.0 - 1.0] 
-// *
-// * You can use PsyRgb to specify the color in Red, Blue and Green components
-// * The useful range is between 0 and 1.0, if you go beyond this border the
-// * color will saturate.
-// */
-// struct _PsyRgb {
-//    gfloat r, g, b;
-//};
-//
-//G_MODULE_EXPORT PsyRgb*
-//psy_rgb_new(gfloat red, gfloat green, gfloat blue);
-////
-////G_MODULE_EXPORT PsyRgb*
-////psy_rgb_copy(PsyRgb* self);
-////
-////G_MODULE_EXPORT void
-////psy_rgb_free(PsyRgb* self);
-//
-//
-//#define PSY_TYPE_RGBA (psy_rgba_get_type())
-//
-///**
-// * PsyRGBA:
-// * @r: The red component of the color [0.0 - 1.0] 
-// * @g: The green component of the color [0.0 - 1.0] 
-// * @b: The blue component of the color [0.0 - 1.0] 
-// * @a: The alpha component of the color [0.0 - 1.0] 
-// *
-// * You can use PsyRGBA to specify the color in Red, Blue and Green components
-// * The useful range is between 0 and 1.0, if you go beyond this border the
-// * color will saturate. The alpha value may be used differently by different
-// * shaders.
-// */
-//typedef struct _PsyRGBA {
-//    gfloat r, g, b, a;
-//} PsyRGBA;
+/**
+ * PSY_TYPE_RGB:
+ *
+ * The #GType for a boxed holding a floating point RGB range
+ */
+#define PSY_TYPE_RGB (psy_rgba_get_type())
+G_MODULE_EXPORT GType psy_rgba_get_type();
 
+typedef struct _PsyRgba PsyRgba;
+
+/**
+ * PsyRgba:
+ * @r: The red component of the color [0.0 - 1.0] 
+ * @g: The green component of the color [0.0 - 1.0] 
+ * @b: The blue component of the color [0.0 - 1.0] 
+ * @a: The alpha component of the color [0.0 - 1.0] 
+ *
+ * You can use PsyRgb to specify the color in Red, Blue, Green and Alpha components
+ * The useful range is between 0 and 1.0, if you go beyond this border the
+ * color will saturate.
+ */
+ struct _PsyRgba {
+    gfloat r, g, b, a;
+};
+
+G_MODULE_EXPORT PsyRgba*
+psy_rgba_new(gfloat red, gfloat green, gfloat blue);
+
+G_MODULE_EXPORT PsyRgba*
+psy_rgba_new_full(gfloat red, gfloat green, gfloat blue, gfloat alpha);
+
+G_MODULE_EXPORT PsyRgba*
+psy_rgba_copy(PsyRgba* self);
+
+G_MODULE_EXPORT void
+psy_rgba_free(PsyRgba* self);
+
+/* ******* psy-color ********** */
 
 #define PSY_TYPE_COLOR psy_color_get_type()
-
 G_DECLARE_FINAL_TYPE(PsyColor, psy_color, PSY, COLOR, GObject)
 
 G_MODULE_EXPORT PsyColor*

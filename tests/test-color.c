@@ -108,19 +108,21 @@ color_specific_rgbi_values(void)
             NULL
             );
 
-    mutest_expect ("r to be 0/255",
-            mutest_float_value(rf), mutest_to_be, red / max_color,
+    gfloat epsilon = 1e-6;
+
+    mutest_expect ("r to be close to0/255",
+            mutest_float_value(rf), mutest_to_be_close_to, red / max_color, epsilon,
             NULL);
     mutest_expect (
-            "g to be 2/255",
-            mutest_float_value(gf), mutest_to_be, green / max_color,
+            "g to be close to  2/255",
+            mutest_float_value(gf), mutest_to_be_close_to, green / max_color, epsilon,
             NULL);
     mutest_expect (
-            "b to be 3/255",
-            mutest_float_value(bf), mutest_to_be, blue / max_color,
+            "b to be close to 3/255",
+            mutest_float_value(bf), mutest_to_be_close_to, blue / max_color, epsilon,
             NULL);
-    mutest_expect ("a to be 4/255",
-            mutest_float_value(af), mutest_to_be, alpha / max_color,
+    mutest_expect ("a to be close to 4/255",
+            mutest_float_value(af), mutest_to_be_close_to, alpha / max_color, epsilon,
             NULL);
     
     mutest_expect ("ri to be 0", mutest_int_value(ri),

@@ -1,74 +1,94 @@
 
 #include "psy-color.h"
 
-//PsyRgb*
-//psy_rgb_new(gfloat red, gfloat green, gfloat blue);
-//
-//PsyRgb*
-//psy_rgb_copy(PsyRgb* self);
-//
-//void
-//psy_rgb_free(PsyRgb* self);
+PsyRgba*
+psy_rgba_new(gfloat red, gfloat green, gfloat blue);
 
-//#pragma GCC diagnostic push
-//#pragma GCC diagnostic ignored "-Wpedantic"
-//
-//G_DEFINE_BOXED_TYPE(PsyRgb, psy_rgb, psy_rgb_copy, psy_rgb_free)
-//
-//#pragma GCC diagnostic pop
-//
-///**
-// * psy_rgb_new:
-// * @red: The red component of the color
-// * @green: The green component of the color
-// * @blue: The blue component of the color
-// *
-// * The valid colors are between [0.0 and 1.0], if the values
-// * go outside of that color, the colors will saturate.
-// *
-// * Returns:(transfer full): a newly created `PsyRgb` instance
-// */
-//PsyRgb*
-//psy_rgb_new(gfloat red, gfloat green, gfloat blue)
-//{
-//    PsyRgb* rgb = g_slice_new(PsyRgb);
-//    
-//    rgb->r = red;
-//    rgb->g = green;
-//    rgb->b = blue;
-//
-//    return rgb;
-//}
-//
-///**
-// * psy_rgb_copy:
-// * @self: The `PsyRgb` instance to copy
-// *
-// * Copy is made by value semantics.
-// *
-// * Returns:(transfer full): a copy of the input
-// */
-//PsyRgb* 
-//psy_rgb_copy(PsyRgb* self)
-//{
-//    g_return_val_if_fail(self, NULL);
-//
-//    PsyRgb* out = g_memdup2(self, sizeof(PsyRgb));
-//    return out;
-//}
-//
-//
-///**
-// * psy_rgb_free:
-// * @self: The `PsyRgb` instance to free
-// *
-// * free an instance of `PsyRgb
-// */
-//void
-//psy_rgb_free(PsyRgb* self)
-//{
-//    g_free(self);
-//}
+PsyRgba*
+psy_rgba_copy(PsyRgba* self);
+
+void
+psy_rgb_free(PsyRgba* self);
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+
+G_DEFINE_BOXED_TYPE(PsyRgba, psy_rgba, psy_rgba_copy, psy_rgba_free)
+
+#pragma GCC diagnostic pop
+
+/**
+ * psy_rgba_new:
+ * @red: The red component of the color
+ * @green: The green component of the color
+ * @blue: The blue component of the color
+ *
+ * The valid colors are between [0.0 and 1.0], if the values
+ * go outside of that color, the colors will saturate.
+ *
+ * This will set the alpha channel to 1.0
+ *
+ * Returns:(transfer full): a newly created `PsyRgb` instance
+ */
+PsyRgba*
+psy_rgba_new(gfloat red, gfloat green, gfloat blue)
+{
+    return psy_rgba_new_full(red, green, blue, 1.0);
+}
+
+/**
+ * psy_rgba_new_full:
+ * @red: The red component of the color
+ * @green: The green component of the color
+ * @blue: The blue component of the color
+ * @alpha: The blue component of the color
+ *
+ * The valid colors are between [0.0 and 1.0], if the values
+ * go outside of that color, the colors will saturate.
+ *
+ * Returns:(transfer full): a newly created `PsyRgb` instance
+ */
+PsyRgba*
+psy_rgba_new_full(gfloat red, gfloat green, gfloat blue, gfloat alpha)
+{
+    PsyRgba* ret = g_slice_alloc(sizeof(PsyRgba));
+    ret->r = red;
+    ret->g = green;
+    ret->b = blue;
+    ret->a = alpha;
+
+    return ret;
+}
+
+/**
+ * psy_rgba_copy:
+ * @self: The `PsyRgb` instance to copy
+ *
+ * Copy is made by value semantics.
+ *
+ * Returns:(transfer full): a copy of the input
+ */
+PsyRgba* 
+psy_rgba_copy(PsyRgba* self)
+{
+    g_return_val_if_fail(self, NULL);
+
+    PsyRgba* out = g_memdup2(self, sizeof(PsyRgba));
+    return out;
+}
+
+
+/**
+ * psy_rgba_free:
+ * @self: The `PsyRgba` instance to free
+ *
+ * free an instance of `PsyRgba`
+ */
+void
+psy_rgba_free(PsyRgba* self)
+{
+    g_free(self);
+}
 
 /**
  * PsyColor:
@@ -389,10 +409,10 @@ psy_color_new_rgbai(gint r, gint g, gint b, gint a)
 
     return g_object_new(
             PSY_TYPE_COLOR,
-            "r", r,
-            "g", g,
-            "b", b,
-            "a", a,
+            "ri", r,
+            "gi", g,
+            "bi", b,
+            "ai", a,
             NULL
             );
 }
