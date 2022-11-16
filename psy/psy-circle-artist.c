@@ -12,7 +12,6 @@
 typedef struct _PsyCircleArtist {
     PsyArtist parent_instance;
     PsyVBuffer* vertices;
-    gfloat r, g, b, a;
     gfloat x, y, z;
     gfloat radius;
 } PsyCircleArtist;

@@ -332,6 +332,11 @@ psy_gl_program_set_uniform_matrix_4(
     GLint location = glGetUniformLocation(program->object_id, name);
     if (psy_gl_check_error(error))
         return;
+    if (location == -1) {
+        g_set_error(error, PSY_GL_ERROR, PSY_GL_ERROR_INVALID_VALUE,
+                "no matrix uniform with name '%s", name);
+        return;
+    }
 
     glUniformMatrix4fv(location, 1, GL_FALSE, elements);
 }
@@ -349,6 +354,11 @@ psy_gl_program_set_uniform_4f(
     GLint location = glGetUniformLocation(program->object_id, name);
     if (psy_gl_check_error(error))
         return;
+    if (location == -1) {
+        g_set_error(error, PSY_GL_ERROR, PSY_GL_ERROR_INVALID_VALUE,
+                "no uniform_4f with name '%s", name);
+        return;
+    }
 
     glUniform4f(location, values[0], values[1], values[2], values[3]);
 }

@@ -53,7 +53,7 @@ psy_cross_artist_finalize(GObject* object)
 static void
 cross_artist_draw(PsyArtist* self)
 {
-    gfloat rgba[4];
+    gfloat rgba[4] = {0, 0, 0, 1};
     PsyCrossArtist* artist = PSY_CROSS_ARTIST(self);
     PsyCross* cross = PSY_CROSS(psy_artist_get_stimulus(self));
     PsyWindow* window = psy_artist_get_window(self);
@@ -99,11 +99,11 @@ cross_artist_draw(PsyArtist* self)
                 "b", &rgba[2],
                 "a", &rgba[3],
                 NULL);
-        psy_program_set_uniform_4f(program, color_name, rgba, &error);
-        if (error) {
-            g_critical("%s: failed to set color: %s", __func__, error->message);
-            g_clear_error(&error);
-        }
+    }
+    psy_program_set_uniform_4f(program, color_name, rgba, &error);
+    if (error) {
+        g_critical("%s: failed to set color: %s", __func__, error->message);
+        g_clear_error(&error);
     }
 
     if (psy_vbuffer_get_nvertices(artist->vertices) != nverts) {
