@@ -77,9 +77,14 @@ start = clock.now()
 dur = Psy.Duration.new(0.5)
 window = Psy.GtkWindow()
 circle = Psy.Circle.new(window)
+rect = Psy.Rectangle.new(window)
+rect.props.x, rect.props.y = -200, -200
+rect.props.width, rect.props.height = 100, 100
+rect.set_color(Psy.Color.new_rgb(1.0, 0.0, 0.0))
 cross = MyCross(window=window, x=200, y=200, line_length=100, line_width=30)
 circle.play_for(start.add(dur), dur.multiply_scalar(5))
 cross.play_for(start.add(dur), dur.multiply_scalar(4))
+rect.play_for(start.add(dur), dur.multiply_scalar(4))
 circle.connect("stopped", stop_loop, (loop, start))
 circle.connect("update", circle_update)
 
