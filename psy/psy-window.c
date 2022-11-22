@@ -29,6 +29,8 @@
 #include "psy-circle-artist.h"
 #include "psy-cross.h"
 #include "psy-cross-artist.h"
+#include "psy-rectangle.h"
+#include "psy-rectangle-artist.h"
 #include "psy-duration.h"
 #include "psy-program.h"
 #include "psy-stimulus.h"
@@ -263,6 +265,9 @@ create_artist(PsyWindow* self, PsyVisualStimulus* stimulus)
     }
     else if (PSY_IS_CROSS(stimulus)) {
         artist = PSY_ARTIST(psy_cross_artist_new(self, stimulus));
+    }
+    else if (PSY_IS_RECTANGLE(stimulus)) {
+        artist = PSY_ARTIST(psy_rectangle_artist_new(self, stimulus));
     }
     else {
         g_warning(
