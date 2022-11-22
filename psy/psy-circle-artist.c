@@ -130,7 +130,7 @@ circle_artist_draw(PsyArtist* self)
         }
         psy_vbuffer_upload(artist->vertices, &error);
         if (error) {
-            g_critical("PsyGLCircle: unable to upload vertices: %s",
+            g_critical("PsyCircleArtist: unable to upload vertices: %s",
                     error->message
                     );
             g_error_free(error);
@@ -138,7 +138,7 @@ circle_artist_draw(PsyArtist* self)
     }
     psy_vbuffer_draw_triangle_fan(artist->vertices, &error);
     if (error) {
-        g_critical("PsyGLCircle: unable to draw triangle_fan: %s",
+        g_critical("PsyCircleArtist: unable to draw triangle_fan: %s",
                 error->message
                 );
         g_error_free(error);
