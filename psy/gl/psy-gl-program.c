@@ -77,6 +77,9 @@ psy_gl_program_dispose(GObject* object)
     PsyGlProgram* self = PSY_GL_PROGRAM(object);
     (void) self;
 
+    g_clear_object(&self->fragment_shader);
+    g_clear_object(&self->vertex_shader);
+
     G_OBJECT_CLASS(psy_gl_program_parent_class)->dispose(object);
 }
 

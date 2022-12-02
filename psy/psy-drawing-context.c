@@ -118,7 +118,7 @@ psy_drawing_context_finalize(GObject* object)
     PsyDrawingContextPrivate* priv = psy_drawing_context_get_instance_private(self);
     (void) priv;
 
-    G_OBJECT_CLASS(psy_drawing_context_parent_class)->dispose(object);
+    G_OBJECT_CLASS(psy_drawing_context_parent_class)->finalize(object);
 }
 
 

@@ -43,6 +43,23 @@ typedef enum {
 static GParamSpec*  artist_properties[NUM_PROPERTIES] = {0};
 
 static void
+artist_dispose(GObject* object)
+{
+    PsyArtistPrivate* priv = psy_artist_get_instance_private(object);
+
+    if (priv->window) {
+        g_object_unref(priv->window);
+        priv->window = NULL;
+    }
+    if (priv->stimulus) {
+        g_object_unref(priv->stimulus);
+        priv->window = NULL;
+    }
+
+    G_OBJECT_CLASS(psy_artist_parent_class)->dispose(object);
+}
+
+static void
 artist_set_property(GObject       *object,
                     guint          property_id,
                     const GValue  *value,
@@ -97,6 +114,8 @@ psy_artist_class_init(PsyArtistClass* klass)
     GObjectClass *object_class = G_OBJECT_CLASS(klass);
     object_class->get_property = artist_get_property;
     object_class->set_property = artist_set_property;
+
+    object_class->dispose = artist_dispose;
 
     /**
      * Artist:stimulus:

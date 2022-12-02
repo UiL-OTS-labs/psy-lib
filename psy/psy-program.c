@@ -67,6 +67,9 @@ psy_program_dispose(GObject* object)
     PsyProgramPrivate* priv = psy_program_get_instance_private(self);
     (void) priv;
 
+    g_clear_object(&priv->vertex_shader);
+    g_clear_object(&priv->fragment_shader);
+
     G_OBJECT_CLASS(psy_program_parent_class)->dispose(object);
 }
 
@@ -77,7 +80,7 @@ psy_program_finalize(GObject* object)
     PsyProgramPrivate* priv = psy_program_get_instance_private(self);
     (void) priv;
 
-    G_OBJECT_CLASS(psy_program_parent_class)->dispose(object);
+    G_OBJECT_CLASS(psy_program_parent_class)->finalize(object);
 }
 
 

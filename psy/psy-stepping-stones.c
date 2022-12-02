@@ -81,14 +81,6 @@ psy_stepping_stones_dispose (GObject *gobject)
             PSY_STEPPING_STONES(gobject)
             );
 
-    if (priv->steps) {
-        g_ptr_array_unref(priv->steps);
-        priv->steps = NULL;
-    }
-    if (priv->step_table) {
-        g_hash_table_unref(priv->step_table);
-        priv->step_table = NULL;
-    }
     G_OBJECT_CLASS (psy_stepping_stones_parent_class)->dispose (gobject);
 }
 
@@ -99,7 +91,14 @@ psy_stepping_stones_finalize (GObject *gobject)
             PSY_STEPPING_STONES(gobject)
             );
 
-    (void) priv;
+    if (priv->steps) {
+        g_ptr_array_unref(priv->steps);
+        priv->steps = NULL;
+    }
+    if (priv->step_table) {
+        g_hash_table_destroy(priv->step_table);
+        priv->step_table = NULL;
+    }
 
     G_OBJECT_CLASS (psy_stepping_stones_parent_class)->finalize (gobject);
 }
@@ -110,10 +109,12 @@ psy_stepping_stones_init(PsySteppingStones* self)
     PsySteppingStonesPrivate *priv = psy_stepping_stones_get_instance_private(
             self
             );
+
     priv->steps = g_ptr_array_new_full(
             64,
             g_object_unref
             );
+
     priv->step_table = g_hash_table_new_full(
             g_str_hash,
             g_str_equal,

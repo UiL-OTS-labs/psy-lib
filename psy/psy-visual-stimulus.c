@@ -123,6 +123,8 @@ psy_visual_stimulus_dispose(GObject* object)
 
     g_clear_object(&priv->color);
     g_clear_object(&priv->window);
+
+    G_OBJECT_CLASS(psy_visual_stimulus_parent_class)->dispose(object);
 }
 
 static void
@@ -307,7 +309,7 @@ psy_visual_stimulus_class_init(PsyVisualStimulusClass* klass)
             );
 
     /**
-     * PsyVisualStimulus:color:
+     * PsyVisualStimulus:color
      *
      * The color `PsyColor` used to fill this object with
      */

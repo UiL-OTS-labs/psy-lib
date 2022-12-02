@@ -189,11 +189,13 @@ psy_window_dispose(GObject* gobject)
     }
 
     if (priv->artists) {
-        g_hash_table_unref(priv->artists);
+        g_hash_table_destroy(priv->artists);
         priv->artists = NULL;
     }
 
+    g_clear_object(&priv->frame_dur);
     g_clear_object(&priv->context);
+    g_clear_object(&priv->projection_matrix);
 
     G_OBJECT_CLASS(psy_window_parent_class)->dispose(gobject);
 }
