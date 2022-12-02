@@ -150,7 +150,8 @@ gir = gnome.generate_gir(
     dependencies : [libpsy_dep],
 #    header : libpsy_public_header,
     install : true,
-    fatal_warnings :true
+    extra_args : ['--warn-all'],
+    fatal_warnings : true
 )
 gir_target = gir[0]
 typelib_target = gir[1]
