@@ -79,9 +79,13 @@ psy_shader_finalize(GObject* object)
 {
     PsyShader* self = PSY_SHADER(object);
     PsyShaderPrivate* priv = psy_shader_get_instance_private(self);
-    (void) priv;
+    
+    if (priv->source) {
+        g_free(priv->source);
+        priv->source = NULL;
+    }
 
-    G_OBJECT_CLASS(psy_shader_parent_class)->dispose(object);
+    G_OBJECT_CLASS(psy_shader_parent_class)->finalize(object);
 }
 
 

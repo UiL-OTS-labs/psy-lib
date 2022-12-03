@@ -31,6 +31,19 @@ static GParamSpec  *stimulus_properties[NUM_PROPERTIES] = {0};
 static guint        stimulus_signals[NUM_SIGNALS]       = {0};
 
 static void
+psy_stimulus_dispose(GObject* object)
+{
+    PsyStimulusPrivate* priv =  psy_stimulus_get_instance_private(
+        PSY_STIMULUS(object)
+    );
+
+    g_clear_object(&priv->start_time);
+    g_clear_object(&priv->duration);
+
+    G_OBJECT_CLASS(psy_stimulus_parent_class)->dispose(object);
+}
+
+static void
 psy_stimulus_set_property (GObject      *object,
                            guint         property_id,
                            const GValue *value,
@@ -114,6 +127,7 @@ psy_stimulus_class_init(PsyStimulusClass* klass)
 
     object_class->set_property = psy_stimulus_set_property;
     object_class->get_property = psy_stimulus_get_property;
+    object_class->dispose      = psy_stimulus_dispose;
 
     klass->play = stimulus_play;
     klass->set_duration = stimulus_set_duration;

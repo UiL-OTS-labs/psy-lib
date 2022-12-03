@@ -85,7 +85,7 @@ psy_gl_vbuffer_finalize(GObject* object)
         self->vertex_array_id = 0;
     }
 
-    G_OBJECT_CLASS(psy_gl_vbuffer_parent_class)->dispose(object);
+    G_OBJECT_CLASS(psy_gl_vbuffer_parent_class)->finalize(object);
 }
 
 static void
@@ -270,7 +270,7 @@ psy_gl_vbuffer_class_init(PsyGlVBufferClass* class)
 /* ************ public functions ******************** */
 
 PsyGlVBuffer*
-psy_gl_vbuffer_new()
+psy_gl_vbuffer_new(void)
 {
     PsyGlVBuffer *gl_vbuffer = g_object_new(PSY_TYPE_GL_VBUFFER, NULL);
     return gl_vbuffer;

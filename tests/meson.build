@@ -1,4 +1,8 @@
 
+cc = meson.get_compiler('c')
+cunit_dep = dependency('cunit')
+
+
 window_prog = executable (
     '3dwindow_prog',
     files('window-prog.c'),
@@ -39,6 +43,12 @@ test_color = executable (
     'test-color',
     'test-color.c',
     dependencies : [psy_dep, mutest_dep]
+)
+
+test_ref_count = executable (
+    'test-ref-count',
+    'test-ref-count.c',
+    dependencies : [psy_dep, cunit_dep]
 )
 
 test('vector test', vector_test)

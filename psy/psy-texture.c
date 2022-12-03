@@ -136,7 +136,7 @@ psy_texture_init(PsyTexture* self)
 static void
 psy_texture_dispose(GObject* object)
 {
-    (void) object;
+    G_OBJECT_CLASS(psy_texture_parent_class)->dispose(object);
 }
 
 static void

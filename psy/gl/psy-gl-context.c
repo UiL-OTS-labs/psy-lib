@@ -44,7 +44,7 @@ psy_gl_context_finalize(GObject* object)
 {
     PsyGlContext* self = PSY_GL_CONTEXT(object);
 
-    G_OBJECT_CLASS(psy_gl_context_parent_class)->dispose(object);
+    G_OBJECT_CLASS(psy_gl_context_parent_class)->finalize(object);
 }
 
 static PsyProgram*
