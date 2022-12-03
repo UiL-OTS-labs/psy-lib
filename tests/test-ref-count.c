@@ -2,6 +2,7 @@
 #include "psy-visual-stimulus.h"
 #include <CUnit/CUnit.h>
 #include <CUnit/Basic.h>
+#include <assert.h>
 
 #include <glib.h>
 #include <psy-color.h>
@@ -29,6 +30,7 @@ init_window(void) {
 
 static int 
 destoy_window(void) {
+    assert(G_OBJECT(window)->ref_count == 1);
     g_object_unref(window);
     window = NULL;
     return 0;
