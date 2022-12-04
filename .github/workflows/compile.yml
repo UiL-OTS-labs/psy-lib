@@ -19,14 +19,10 @@ jobs:
           sudo apt install ninja-build
 
       - uses: actions/checkout@v3
-      - name: Setup python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.10'
       - name: Install meson
         run: |
-          pip install --upgrade pip
-          pip install meson
+          python3 -m pip install --upgrade pip
+          python3 -m pip install meson
       - name: Configure and build
         run: |
           meson setup --buildtype=debug build
