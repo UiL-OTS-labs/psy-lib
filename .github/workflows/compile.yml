@@ -1,0 +1,35 @@
+name: PsyLib compilation and test
+run-name: ${{ github.actor }} is compiling and testing PsyLib
+on:
+  push:
+    branches: ["develop"]
+  pull_request:
+    branches: ["develop"]
+jobs:
+  Compile-psy-lib:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install libglib2.0-dev
+          sudo apt install libgtk-4-dev
+          sudo apt install libcunit1-dev
+          sudo apt install ninja-build
+
+      - uses: actions/checkout@v3
+      - name: Setup python
+        uses: actions/setup-python@4
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+      - name: Install meson
+        pip install --upgrade pip
+        pip install meson
+      - name: Configure and build
+        run: |
+          meson setup --buildtype=debug build
+          ninja -C build
+
+
+
