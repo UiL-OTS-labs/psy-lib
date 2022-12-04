@@ -2,9 +2,10 @@ name: PsyLib compilation and test
 run-name: ${{ github.actor }} is compiling and testing PsyLib
 on:
   push:
-    branches: ["develop"]
+    branches: [develop, main, ]
   pull_request:
-    branches: ["develop"]
+    branches: [develop, main, ]
+
 jobs:
   Compile-psy-lib:
     runs-on: ubuntu-22.04
