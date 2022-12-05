@@ -1,10 +1,11 @@
+---
 name: PsyLib compilation and test
 run-name: ${{ github.actor }} is compiling and testing PsyLib
 on:
   push:
-    branches: [develop, main, ]
+    branches: [develop, main]
   pull_request:
-    branches: [develop, main, ]
+    branches: [develop, main]
 
 jobs:
 
@@ -32,7 +33,7 @@ jobs:
         run: xvfb-run meson compile -C build/
       - name: C Unit tests
         run: meson test -C build/ -v
-        - uses:actions/upload-artifact@v1
+      - uses:actions/upload-artifact@v1
         if: failure()
         with:
           name: Linux_Meson_Testlog
