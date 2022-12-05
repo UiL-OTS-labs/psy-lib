@@ -21,19 +21,17 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v1
         with:
-          python-version: '3.x'
+          python-version: '3.10'
       - name: Install meson ninja
         run: |
           python3 -m pip install --upgrade pip
           python3 -m pip install meson ninja gi-docgen PyGObject
       - name: Configure
-        run: |
-          meson setup --buildtype=debug build/
+        run: meson setup --buildtype=debug build/
       - name: Build
-          xvfb-run meson compile -C build/
+        run: xvfb-run meson compile -C build/
       - name: C Unit tests
-        run: |
-          meson test -C build/ -v
+        run: meson test -C build/ -v
         - uses:actions/upload-artifact@v1
         if: failure()
         with:
