@@ -26,9 +26,10 @@ jobs:
         run: |
           python3 -m pip install --upgrade pip
           python3 -m pip install meson ninja gi-docgen PyGObject
-      - name: Configure and build
+      - name: Configure
         run: |
           meson setup --buildtype=debug build/
+      - name: Build
           xvfb-run meson compile -C build/
       - name: C Unit tests
         run: |
