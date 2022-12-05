@@ -29,6 +29,12 @@ jobs:
         run: |
           meson setup --buildtype=debug build
           xvfb-run ninja -C build
-
-
-
+      - name: C Unit tests
+        run: |
+          cd build/tests
+          ./test-color
+          ./test-ref-count
+          ./test-stepping
+          ./test-time-utilities
+          ./vector4-test
+          ./vector-test
