@@ -33,7 +33,7 @@ jobs:
         run: |
           cd build/tests
           ./test-color
-          ./test-ref-count
+          xvfb-run ./test-ref-count
           ./test-stepping
           ./test-time-utilities
           ./vector4-test
