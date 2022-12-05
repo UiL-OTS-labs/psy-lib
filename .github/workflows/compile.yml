@@ -32,7 +32,7 @@ jobs:
       - name: Build
         run: xvfb-run meson compile -C build/
       - name: C Unit tests
-        run: meson test -C build/ -v
+        run: xvfb-run meson test -C build/ -v
       - uses: actions/upload-artifact@v1
         if: failure()
         with:
