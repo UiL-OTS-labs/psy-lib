@@ -38,7 +38,7 @@ color_default_values(void)
     mutest_expect ("bi to be 0", mutest_int_value(gi),
             mutest_to_be, 0, NULL);
     mutest_expect ("ai to be 255", mutest_int_value(ai),
-            mutest_to_be, 254, NULL);
+            mutest_to_be, 255, NULL);
 
     g_object_unref(color);
 }
