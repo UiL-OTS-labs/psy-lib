@@ -7,7 +7,8 @@ on:
     branches: [develop, main, ]
 
 jobs:
-  Compile-psy-lib:
+
+  Compile-psy-lib-Linux:
     runs-on: ubuntu-22.04
     steps:
       - name: Install dependencies
@@ -16,25 +17,28 @@ jobs:
           sudo apt install libglib2.0-dev
           sudo apt install libgtk-4-dev
           sudo apt install libcunit1-dev
-          sudo apt install ninja-build
 
       - uses: actions/checkout@v3
-      - name: Install meson
+      - uses: actions/setup-python@v1
+        with:
+          python-version: '3.x'
+      - name: Install meson ninja
         run: |
           python3 -m pip install --upgrade pip
-          python3 -m pip install meson
-          python3 -m pip install gi-docgen 
-          python3 -m pip install PyGObject
+          python3 -m pip install meson ninja gi-docgen PyGObject
       - name: Configure and build
         run: |
-          meson setup --buildtype=debug build
-          xvfb-run ninja -C build
+          meson setup --buildtype=debug build/
+          xvfb-run meson compile -C build/
       - name: C Unit tests
         run: |
-          cd build/tests
-          ./test-color
-          xvfb-run ./test-ref-count
-          ./test-stepping
-          ./test-time-utilities
-          ./vector4-test
-          ./vector-test
+          meson test -C build/ -v
+        - uses:actions/upload-artifact@v1
+        if: failure()
+        with:
+          name: Linux_Meson_Testlog
+          path: build/meson-logs/testlog.txt
+
+#  see https://mesonbuild.com/Continuous-Integration.html
+#  Compile-psylib-windows:
+#    runs-on: windows-latest
