@@ -33,7 +33,7 @@ jobs:
         run: xvfb-run meson compile -C build/
       - name: C Unit tests
         run: meson test -C build/ -v
-      - uses:actions/upload-artifact@v1
+      - uses: actions/upload-artifact@v1
         if: failure()
         with:
           name: Linux_Meson_Testlog
