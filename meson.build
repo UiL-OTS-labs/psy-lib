@@ -68,13 +68,6 @@ mutest_dep = dependency('mutest-1',
   disabler: true,
 )
 
-exe = executable(
-    'gtk_hello',
-    files('gtk-hello.c'),
-    install : true,
-    dependencies : [gtk_dep]
-)
-
 gnome = import('gnome')
 
 subdir('psy')
@@ -93,5 +86,4 @@ if get_option('documentation')
     subdir('doc')
 endif
 
-test('basic', exe)
 
