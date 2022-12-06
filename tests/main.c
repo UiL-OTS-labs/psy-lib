@@ -27,6 +27,10 @@ add_suites_to_registry(void)
     if (error)
         return error;
     
+    error = add_time_utilities_suite();
+    if (error)
+        return error;
+
     error = add_vector_suite();
     if (error)
         return error;

@@ -21,11 +21,6 @@ test_stepping = executable(
     dependencies : [psy_dep]
 )
 
-test_time_utilities = executable(
-    'test-time-utilities',
-    'test-time-utilities.c',
-    dependencies : [psy_dep]
-)
 
 test_gtk_window = executable(
     'test-gtk-window',
@@ -38,8 +33,9 @@ unit_test = executable (
     'unit-test',
     files (
         'main.c',
-        'test-ref-count.c',
         'test-color.c',
+        'test-ref-count.c',
+        'test-time-utilities.c',
         'vector-test.c'
     ),
     dependencies : [psy_dep, cunit_dep]
@@ -47,5 +43,4 @@ unit_test = executable (
 
 test('vector4_test', vector4_test)
 test('test-stepping', test_stepping)
-test('test-time-utilities', test_time_utilities)
 test('unit-test', unit_test)
