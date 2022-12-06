@@ -26,6 +26,10 @@ add_suites_to_registry(void)
     error = add_color_suite();
     if (error)
         return error;
+    
+    error = add_vector_suite();
+    if (error)
+        return error;
 
     return error;
 }

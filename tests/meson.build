@@ -9,12 +9,6 @@ window_prog = executable (
     dependencies : [psy_dep]
 )
 
-vector_test=executable(
-    'vector-test',
-    'vector-test.c',
-    dependencies : [psy_dep]
-)
-
 vector4_test=executable(
     'vector4-test',
     'vector4-test.c',
@@ -46,11 +40,11 @@ unit_test = executable (
         'main.c',
         'test-ref-count.c',
         'test-color.c',
+        'vector-test.c'
     ),
     dependencies : [psy_dep, cunit_dep]
 )
 
-test('vector test', vector_test)
 test('vector4_test', vector4_test)
 test('test-stepping', test_stepping)
 test('test-time-utilities', test_time_utilities)
