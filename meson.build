@@ -61,13 +61,6 @@ gtk_dep = dependency(
 # OpenGL function loader helper
 epoxy_dep = dependency('epoxy', version : '>1.0')
 
-mutest_dep = dependency('mutest-1',
-  fallback: [ 'mutest', 'mutest_dep' ],
-#  default_options: ['static=true'],
-  required: false,
-  disabler: true,
-)
-
 gnome = import('gnome')
 
 subdir('psy')
