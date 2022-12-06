@@ -1,23 +1,15 @@
 
-#include "psy-visual-stimulus.h"
-#include <CUnit/CUnit.h>
-#include <CUnit/Basic.h>
 #include <assert.h>
 
-#include <glib.h>
-#include <psy-color.h>
+#include <CUnit/CUnit.h>
+#include <CUnit/CUError.h>
+
 #include <psy-circle.h>
+#include <psy-color.h>
 #include <backend_gtk/psy-gtk-window.h>
 
-gboolean verbose;
 
-GOptionEntry options[] = {
-    {"verbose", 'v', G_OPTION_FLAG_NONE, G_OPTION_ARG_NONE, &verbose, "Run the suite verbosely",""},
-    {0}
-};
-
-
-PsyWindow* window = NULL;
+static PsyWindow* window = NULL;
 
 static int
 init_window(void) {
@@ -106,31 +98,25 @@ ref_set_property(void)
     g_object_unref(color);
 }
 
-
-int main(int argc, char** argv) {
-
-    GOptionContext* context = g_option_context_new("");
-    g_option_context_add_main_entries(context, options, NULL);
-    GError* error = NULL;
-
-    if (!g_option_context_parse(context, &argc, &argv, &error)) {
-        g_printerr("Unable to parse options: %s\n", error->message);
-        g_option_context_free(context);
-        return EXIT_FAILURE;
-    }
-
-    CU_initialize_registry();
-
-    if (verbose)
-        CU_basic_set_mode(CU_BRM_VERBOSE);
-
+int add_ref_count_suite(void) {
     CU_Suite* suite = CU_add_suite("test reference count", init_window, destoy_window);
-    CU_add_test(suite, "Object start with reference of 1", ref_starts_with_one);
-    CU_add_test(suite, "Objects ref set method", ref_set_method);
-    CU_add_test(suite, "Objects ref set property", ref_set_property);
+    CU_Test* test = NULL;
+    
+    if (!suite)
+        return 1;
 
-    CU_basic_run_tests();
+    test = CU_add_test(suite, "Object start with reference of 1", ref_starts_with_one);
+    if (!test)
+        return 1;
 
-    CU_cleanup_registry();
-    g_option_context_free(context);
+    test = CU_add_test(suite, "Objects ref set method", ref_set_method);
+    if (!test)
+        return 1;
+
+    test = CU_add_test(suite, "Objects ref set property", ref_set_property);
+    if (!test)
+        return 1;
+
+    return 0;
 }
+

@@ -45,9 +45,12 @@ test_color = executable (
     dependencies : [psy_dep, mutest_dep]
 )
 
-test_ref_count = executable (
-    'test-ref-count',
-    'test-ref-count.c',
+unit_test = executable (
+    'unit-test',
+    files (
+        'main.c',
+        'test-ref-count.c',
+    ),
     dependencies : [psy_dep, cunit_dep]
 )
 
@@ -56,4 +59,4 @@ test('vector4_test', vector4_test)
 test('test-stepping', test_stepping)
 test('test-time-utilities', test_time_utilities)
 test('test-color', test_color)
-test('test-ref-count', test_ref_count)
+test('unit-test', unit_test)
