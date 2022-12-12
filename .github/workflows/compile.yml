@@ -12,7 +12,7 @@ jobs:
   Compile-psy-lib-Linux:
     strategy:
       matrix:
-        #        compiler: [gcc, clang]
+        compiler: [gcc, clang]
         buildtype: [debug, release]
     runs-on: ubuntu-22.04
     steps:
@@ -30,6 +30,16 @@ jobs:
         run: |
           python3 -m pip install --upgrade pip
           python3 -m pip install meson ninja gi-docgen PyGObject
+      - name: gcc build
+        if: ${{ matrix.compiler }} == "gcc"
+        env:
+          CC: gcc
+          CXX: g++
+      - name: clang build
+        if: ${{ matrix.compiler }} == "clang"
+        env:
+          CC: clang
+          CXX: clang++
       - name: Configure
         run: meson setup --buildtype=${{ matrix.buildtype}} build/
       - name: Build
