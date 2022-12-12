@@ -9,6 +9,12 @@ window_prog = executable (
     dependencies : [psy_dep]
 )
 
+test_gtk_window = executable(
+    'test_gtk_window',
+    files('test-gtk-window.c'),
+    dependencies : [psy_dep]
+)
+
 unit_test = executable (
     'unit-test',
     files (
