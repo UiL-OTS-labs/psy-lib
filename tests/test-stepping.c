@@ -1,34 +1,65 @@
 
-#include <glib.h>
-#include <gio/gio.h>
+#include<assert.h>
+
+#include<CUnit/CUnit.h>
+
 #include <psy-trial.h>
 #include <psy-loop.h>
 #include <psy-stepping-stones.h>
 #include <psy-clock.h>
 
+typedef struct ActivateData {
+    GApplication* app;
+    gboolean activated;
+    gboolean entered;
+    gboolean left;
+} ActivateData;
+
+
 void
 on_trial_enter(PsyStep* self, PsyTimePoint *tstamp, gpointer data)
 {
-    (void) data;
+    ActivateData* ad = data;
+    ad->entered = TRUE;
     psy_step_leave(self, tstamp);
 }
 
 void
-on_final_step_leave(PsyStep* self, PsyTimePoint *tstamp, gpointer data)
+on_trial_leave(PsyStep* self, PsyTimePoint *tstamp, gpointer data)
 {
     (void) self;
     (void) tstamp;
-    GApplication* app = data;
+    ActivateData* ad = data;
+    ad->left = TRUE;
+    g_application_release(ad->app);
+}
+
+void
+on_final_step_leave(PsyStep* step, PsyTimePoint* timestamp, gpointer data)
+{
+    (void) step;
+    (void) timestamp;
+    GApplication *app = G_APPLICATION(data);
+
     g_application_release(app);
+}
+            
+static void
+on_basic_step_shut_down(GApplication* app, gpointer data)
+{
+    (void) app;
+    PsyStep* step = PSY_STEP(data);
+    g_object_unref(step);
 }
 
 static void
 on_basic_step_activate(GApplication* app,
-            gpointer      data)
+                       gpointer      data)
 {
     PsyClock *clk = psy_clock_new();
-    (void) data;
     PsyTimePoint *now, *in_cb;
+    ActivateData* ad = data;
+    ad->activated = TRUE;
     (void) in_cb;
 
     g_assert(g_application_get_is_registered(G_APPLICATION(app)));
@@ -40,12 +71,19 @@ on_basic_step_activate(GApplication* app,
     g_signal_connect(
             trial,
             "enter",
-            G_CALLBACK(on_trial_enter), &in_cb);
+            G_CALLBACK(on_trial_enter),
+            ad);
     g_signal_connect(
             trial,
             "leave",
-            G_CALLBACK(on_final_step_leave),
-            app);
+            G_CALLBACK(on_trial_leave),
+            ad);
+    g_signal_connect(
+            app,
+            "shutdown",
+            G_CALLBACK(on_basic_step_shut_down),
+            trial
+            );
 
     now = psy_clock_now(clk);
     psy_step_enter(PSY_STEP(trial), now);
@@ -54,24 +92,32 @@ on_basic_step_activate(GApplication* app,
     g_object_unref(now);
 }
 
-static int
-test_basic_step(int argc, char** argv)
+static void
+test_basic_step(void)
 {
     int status;
     GApplication* app = g_application_new(
             NULL,
             G_APPLICATION_FLAGS_NONE
     );
+    
+    ActivateData data = {
+        .app = app
+    };
 
     g_signal_connect(
             app,
             "activate",
             G_CALLBACK(on_basic_step_activate),
-            NULL);
+            &data);
 
-    status = g_application_run(G_APPLICATION(app), argc, argv);
+    status = g_application_run(G_APPLICATION(app), 0, NULL);
+    assert(status == 0);
     g_object_unref(app);
-    return status;
+
+    CU_ASSERT_TRUE(data.activated);
+    CU_ASSERT_TRUE(data.entered);
+    CU_ASSERT_TRUE(data.left);
 }
 
 typedef struct LoopStats {
@@ -131,8 +177,8 @@ on_basic_loop_activate(GApplication* app,
     g_object_unref(timestamp);
 }
 
-static int
-test_basic_loop(int argc, char** argv)
+static void
+test_basic_loop(void)
 {
     int status;
 
@@ -148,11 +194,11 @@ test_basic_loop(int argc, char** argv)
                  "condition", &condition,
                  NULL);
 
-    g_assert_true(index == 0);
-    g_assert_true(stop == 0);
-    g_assert_true(increment == 1);
-    g_assert_true(condition == PSY_LOOP_CONDITION_LESS);
-    g_assert_true(psy_loop_test(loop) == FALSE);
+    CU_ASSERT_EQUAL(index, 0);
+    CU_ASSERT_EQUAL(stop, 0);
+    CU_ASSERT_EQUAL(increment, 1);
+    CU_ASSERT_EQUAL(condition, PSY_LOOP_CONDITION_LESS);
+    CU_ASSERT_FALSE(psy_loop_test(loop));
 
     psy_loop_destroy(loop);
 
@@ -169,8 +215,8 @@ test_basic_loop(int argc, char** argv)
     GApplication *app = g_application_new(NULL, G_APPLICATION_FLAGS_NONE);
     g_signal_connect(app, "activate", G_CALLBACK(on_basic_loop_activate), &lparams);
 
-    status = g_application_run(app, argc, argv);
-    g_assert_true(status == 0);
+    status = g_application_run(app, 0, NULL);
+    g_assert(status == 0);
     g_object_unref(app);
 
     for (gint64 i = index; i < stop; i += increment) {
@@ -179,9 +225,9 @@ test_basic_loop(int argc, char** argv)
         regular.index_at_end = i;
     }
 
-    g_assert_true(lparams.stats.count        == regular.count);
-    g_assert_true(lparams.stats.sum          == regular.sum);
-    g_assert_true(lparams.stats.index_at_end == regular.index_at_end);
+    CU_ASSERT_EQUAL(lparams.stats.count,        regular.count);
+    CU_ASSERT_EQUAL(lparams.stats.sum,          regular.sum);
+    CU_ASSERT_EQUAL(lparams.stats.index_at_end, regular.index_at_end);
 
     // test PSY_LOOP_GREATER_EQUAL
     index = 10, increment = -2, stop = -10;
@@ -195,8 +241,8 @@ test_basic_loop(int argc, char** argv)
     app = g_application_new(NULL, G_APPLICATION_FLAGS_NONE);
     g_signal_connect(app, "activate", G_CALLBACK(on_basic_loop_activate), &lparams);
 
-    status = g_application_run(app, argc, argv);
-    g_assert_true(status == 0);
+    status = g_application_run(app, 0, NULL);
+    g_assert(status == 0);
     g_object_unref(app);
 
     for (gint64 i = index; i >= stop; i += increment) {
@@ -205,9 +251,9 @@ test_basic_loop(int argc, char** argv)
         regular.index_at_end = i;
     }
 
-    g_assert_true(lparams.stats.count        == regular.count);
-    g_assert_true(lparams.stats.sum          == regular.sum);
-    g_assert_true(lparams.stats.index_at_end == regular.index_at_end);
+    CU_ASSERT_EQUAL(lparams.stats.count,        regular.count);
+    CU_ASSERT_EQUAL(lparams.stats.sum,          regular.sum);
+    CU_ASSERT_EQUAL(lparams.stats.index_at_end, regular.index_at_end);
 
     // PSY_LOOP_LESS_EQUAL
     index = 0, increment = 2, stop = 19;
@@ -221,8 +267,8 @@ test_basic_loop(int argc, char** argv)
     app = g_application_new(NULL, G_APPLICATION_FLAGS_NONE);
     g_signal_connect(app, "activate", G_CALLBACK(on_basic_loop_activate), &lparams);
 
-    status = g_application_run(app, argc, argv);
-    g_assert_true(status == 0);
+    status = g_application_run(app, 0, NULL);
+    g_assert(status == 0);
     g_object_unref(app);
 
     for (gint64 i = index; i <= stop; i += increment) {
@@ -231,9 +277,9 @@ test_basic_loop(int argc, char** argv)
         regular.index_at_end = i;
     }
 
-    g_assert_true(lparams.stats.count        == regular.count);
-    g_assert_true(lparams.stats.sum          == regular.sum);
-    g_assert_true(lparams.stats.index_at_end == regular.index_at_end);
+    CU_ASSERT_EQUAL(lparams.stats.count,        regular.count);
+    CU_ASSERT_EQUAL(lparams.stats.sum,          regular.sum);
+    CU_ASSERT_EQUAL(lparams.stats.index_at_end, regular.index_at_end);
 
     // PSY_LOOP_GREATER
     index = 0, increment = 2, stop = 19;
@@ -247,8 +293,8 @@ test_basic_loop(int argc, char** argv)
     app = g_application_new(NULL, G_APPLICATION_FLAGS_NONE);
     g_signal_connect(app, "activate", G_CALLBACK(on_basic_loop_activate), &lparams);
 
-    status = g_application_run(app, argc, argv);
-    g_assert_true(status == 0);
+    status = g_application_run(app, 0, NULL);
+    g_assert(status == 0);
     g_object_unref(app);
 
     for (gint64 i = index; i > stop; i += increment) {
@@ -257,9 +303,9 @@ test_basic_loop(int argc, char** argv)
         regular.index_at_end = i;
     }
 
-    g_assert_true(lparams.stats.count        == regular.count);
-    g_assert_true(lparams.stats.sum          == regular.sum);
-    g_assert_true(lparams.stats.index_at_end == regular.index_at_end);
+    CU_ASSERT_EQUAL(lparams.stats.count,        regular.count);
+    CU_ASSERT_EQUAL(lparams.stats.sum,          regular.sum);
+    CU_ASSERT_EQUAL(lparams.stats.index_at_end, regular.index_at_end);
 
     // PSY_LOOP_EQUAL
     index = 50, increment = 2, stop = 50;
@@ -273,8 +319,8 @@ test_basic_loop(int argc, char** argv)
     app = g_application_new(NULL, G_APPLICATION_FLAGS_NONE);
     g_signal_connect(app, "activate", G_CALLBACK(on_basic_loop_activate), &lparams);
 
-    status = g_application_run(app, argc, argv);
-    g_assert_true(status == 0);
+    status = g_application_run(app, 0, NULL);
+    g_assert(status == 0);
     g_object_unref(app);
 
     for (gint64 i = index; i == stop; i += increment) {
@@ -283,11 +329,9 @@ test_basic_loop(int argc, char** argv)
         regular.index_at_end = i;
     }
 
-    g_assert_true(lparams.stats.count        == regular.count);
-    g_assert_true(lparams.stats.sum          == regular.sum);
-    g_assert_true(lparams.stats.index_at_end == regular.index_at_end);
-
-    return status;
+    CU_ASSERT_EQUAL(lparams.stats.count,        regular.count);
+    CU_ASSERT_EQUAL(lparams.stats.sum,          regular.sum);
+    CU_ASSERT_EQUAL(lparams.stats.index_at_end, regular.index_at_end);
 }
 
 typedef struct StoneParams {
@@ -405,8 +449,8 @@ on_basic_stepping_stones_activate(GApplication* app, gpointer data)
 }
 
 
-static int
-test_stepping_stones(int argc, char** argv)
+static void 
+test_stepping_stones(void)
 {
     int status;
     GApplication* app = g_application_new(
@@ -422,26 +466,35 @@ test_stepping_stones(int argc, char** argv)
             G_CALLBACK(on_basic_stepping_stones_activate),
             &params
             );
-    status = g_application_run(G_APPLICATION(app), argc, argv);
+    status = g_application_run(G_APPLICATION(app), 0, NULL);
+    g_assert(status == 0);
     g_object_unref(app);
 
-    g_assert_true(params.stones_activated == 3);
-    g_assert_true(params.trial_activated == 2);
-    g_assert_true(params.loop_iterations == 10000);
-    return status;
+    CU_ASSERT_EQUAL(params.stones_activated, 3);
+    CU_ASSERT_EQUAL(params.trial_activated, 2);
+    CU_ASSERT_EQUAL(params.loop_iterations, 10000);
 }
 
+int
+add_stepping_suite(void)
+{
+    CU_Suite* suite = CU_add_suite("Stepping tests.", NULL, NULL);
+    CU_Test* test = NULL;
 
-int main(int argc, char** argv) {
-    int status;
-    status = test_basic_step(argc, argv);
-    g_assert_true(status == 0);
+    if (!suite)
+        return 1;
 
-    status = test_basic_loop(argc, argv);
-    g_assert_true(status == 0);
+    test = CU_add_test(suite, "Test base class PsyStep", test_basic_step);
+    if (!test)
+        return 1;
 
-    status = test_stepping_stones(argc, argv);
-    g_assert_true(status == 0);
+    test = CU_add_test(suite, "Test PsyLoop", test_basic_loop);
+    if (!test)
+        return 1;
 
-    return status;
+    test = CU_add_test(suite, "Test PsySteppingStones", test_stepping_stones);
+    if (!test)
+        return 1;
+
+    return 0;
 }

@@ -26,6 +26,10 @@ add_suites_to_registry(void)
     error = add_color_suite();
     if (error)
         return error;
+
+    error = add_stepping_suite();
+    if (error)
+        return error;
     
     error = add_time_utilities_suite();
     if (error)

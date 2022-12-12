@@ -137,11 +137,6 @@ step_deactivate(PsyStep* self, PsyTimePoint* timestamp)
     if (priv->parent) {
         psy_step_activate(priv->parent, timestamp);
     }
-    else {
-        g_object_unref(self);
-    }
-    (void) self;
-    (void) timestamp;
 }
 
 static void
