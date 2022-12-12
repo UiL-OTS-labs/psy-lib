@@ -38,6 +38,10 @@ add_suites_to_registry(void)
     error = add_vector_suite();
     if (error)
         return error;
+    
+    error = add_vector4_suite();
+    if (error)
+        return error;
 
     return error;
 }
@@ -73,3 +77,4 @@ int main(int argc, char** argv) {
 
     return n_test_failed != 0;
 }
+

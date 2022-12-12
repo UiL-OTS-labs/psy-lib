@@ -1,25 +1,26 @@
 
-#include "../psy/psy-vector4.h"
-#include "psy-vector.h"
-#include <linux/rtnetlink.h>
 #include <math.h>
 #include <string.h>
+
+#include <CUnit/CUnit.h>
+
+#include "../psy/psy-vector4.h"
+#include "psy-vector.h"
 
 static void
 test_create(void) {
     PsyVector4* vec = psy_vector4_new();
-    g_assert(vec != NULL);
+    CU_ASSERT_PTR_NOT_NULL_FATAL(vec);
     psy_vector4_destroy(vec);
 
     gdouble data[4] = {1, 2, 3, 4};
     gdouble x, y ,z, w;
     vec = psy_vector4_new_data(4, data);
-    g_assert(vec);
     g_object_get(vec, "x", &x, "y", &y, "z", &z, "w", &w, NULL);
-    g_assert(x == data[0]);
-    g_assert(y == data[1]);
-    g_assert(z == data[2]);
-    g_assert(w == data[3]);
+    CU_ASSERT_EQUAL(x, data[0]);
+    CU_ASSERT_EQUAL(y, data[1]);
+    CU_ASSERT_EQUAL(z, data[2]);
+    CU_ASSERT_EQUAL(w, data[3]);
 
     psy_vector4_destroy(vec);
 }
@@ -35,8 +36,8 @@ test_magnitude(void)
     gdouble expected = sqrt(x * x + y * y + z * z + w * w);
     magnitude = psy_vector4_get_magnitude(vec);
     g_object_get(vec, "magnitude", &length, NULL);
-    g_assert(magnitude == expected);
-    g_assert(length == magnitude);
+    CU_ASSERT_EQUAL(magnitude, expected);
+    CU_ASSERT_EQUAL(length, magnitude);
 
     g_object_unref(vec);
 }
@@ -55,16 +56,15 @@ test_unit(void) {
     g_object_get(vec,
                  "unit", &unit,
                  NULL);
-    g_assert(PSY_VECTOR4(unit));
 
     length = psy_vector4_get_magnitude(unit);
-    g_assert(length == 1.0f);
+    CU_ASSERT_EQUAL(length, 1.0f);
     psy_vector4_destroy(vec);
     psy_vector4_destroy(unit);
 
     vec = psy_vector4_new();
     unit = psy_vector4_unit(vec);
-    g_assert(unit == NULL);
+    CU_ASSERT_PTR_NULL(unit);
 
     psy_vector4_destroy(vec);
 }
@@ -92,8 +92,13 @@ test_negate(void)
                  );
 
     psy_vector4_get_magnitude(vec);
-    g_assert(mx == -x && my == -y && mz == -z);
-    g_assert(psy_vector4_get_magnitude(vec) == psy_vector4_get_magnitude(negated));
+    CU_ASSERT_EQUAL(mx, -x);
+    CU_ASSERT_EQUAL(my, -y);
+    CU_ASSERT_EQUAL(mz, -z);
+    CU_ASSERT_EQUAL(
+            psy_vector4_get_magnitude(vec),
+            psy_vector4_get_magnitude(negated)
+            );
 
     psy_vector4_destroy(vec);
     psy_vector4_destroy(negated);
@@ -120,9 +125,10 @@ test_add_scalar(void)
                  "w", &rw,
                  NULL
                  );
-    g_assert(rx == x + scalar && ry == y + scalar &&
-             rz == z + scalar && rw == w + scalar
-             );
+    CU_ASSERT_EQUAL(rx, x + scalar);
+    CU_ASSERT_EQUAL(ry, y + scalar);
+    CU_ASSERT_EQUAL(rz, z + scalar);
+    CU_ASSERT_EQUAL(rw, w + scalar);
 
     psy_vector4_destroy(vec);
     psy_vector4_destroy(result);
@@ -147,7 +153,7 @@ test_add_vector(void)
                                    );
     PsyVector4 *result = psy_vector4_add(v1, v2);
     PsyVector4 *v3  = psy_vector4_mul_s(v1, 2.0);
-    g_assert(psy_vector4_equals(result, v3));
+    CU_ASSERT_TRUE(psy_vector4_equals(result, v3));
 
     psy_vector4_destroy(v1);
     psy_vector4_destroy(v2);
@@ -175,8 +181,10 @@ test_sub_scalar(void)
                  "w", &rw,
                  NULL
                  );
-    g_assert(rx == x - scalar && ry == y - scalar &&
-             rz == z - scalar && rw == w - scalar);
+    CU_ASSERT_EQUAL(rx, x - scalar);
+    CU_ASSERT_EQUAL(ry, y - scalar);
+    CU_ASSERT_EQUAL(rz, z - scalar);
+    CU_ASSERT_EQUAL(rw, w - scalar);
 
     psy_vector4_destroy(vec);
     psy_vector4_destroy(result);
@@ -193,7 +201,7 @@ test_sub_vector(void)
                                    "w", w,
                                    NULL);
     PsyVector4 *result = psy_vector4_sub(v1, v1);
-    g_assert(psy_vector4_is_null(result));
+    CU_ASSERT_TRUE(psy_vector4_is_null(result));
 
     psy_vector4_destroy(v1);
     psy_vector4_destroy(result);
@@ -217,7 +225,9 @@ test_mul_scalar(void)
             "z", z * scalar,
             "w", w * scalar,
             NULL);
-    g_assert(psy_vector4_equals(expected, result));
+
+    CU_ASSERT_TRUE(psy_vector4_equals(expected, result));
+
     psy_vector4_destroy(v1);
     psy_vector4_destroy(result);
     psy_vector4_destroy(expected);
@@ -231,56 +241,65 @@ test_vector_dot(void)
     v1 = g_object_new(PSY_TYPE_VECTOR4,"x", x, NULL);
     v2 = g_object_new(PSY_TYPE_VECTOR4,"y", y, NULL);
     gdouble cos = psy_vector4_dot(v1, v2);
-    g_assert(cos == 0.0f);
+    CU_ASSERT_EQUAL(cos, 0.0f);
 
     cos = psy_vector4_dot(v2, v1);
-    g_assert(cos == 0);
+    CU_ASSERT_EQUAL(cos, 0.0f);
     psy_vector4_destroy(v1);
     psy_vector4_destroy(v2);
 }
 
-//static void
-//test_vector_property_values(void)
-//{
-//    GArray *copy = NULL, *list = g_array_sized_new(FALSE, FALSE, sizeof(gdouble), 4);
-//    double values[4] =  {0.0, 2.0, 3.0, 4.0};
-//    g_array_append_vals(list, values, 4);
-//
-//    PsyVector4* vec = g_object_new(
-//            PSY_TYPE_VECTOR4,
-//            "values", list,
-//            NULL);
-//    PsyVector4* similar = psy_vector4_new_data(4, values);
-//
-//    gboolean the_same = psy_vector4_equals(vec, similar);
-//    g_assert(the_same);
-//
-//    g_object_get(vec, "values", &copy, NULL);
-//
-//    the_same = memcmp(copy->data, values, 4) == 0;
-//    g_assert(the_same);
-//    g_array_unref(copy);
-//    g_array_unref(list);
-//
-//    psy_vector4_destroy(vec);
-//    psy_vector4_destroy(similar);
-//}
 
+int add_vector4_suite(void)
+{
+    CU_Suite* suite = CU_add_suite("PsyVector4 suite", NULL, NULL);
+    CU_Test* test;
+    if (!suite)
+        return 1;
 
-int
-main(void) {
+    test = CU_add_test(suite, "Vector4 Create", test_create);
+    if (!test)
+        return 1;
+    
+    test = CU_add_test(suite, "Vector4 magnitude", test_magnitude);
+    if (!test)
+        return 1;
+    
+    test = CU_add_test(suite, "Vector4 unit", test_unit);
+    if (!test)
+        return 1;
 
-    test_create();
-    test_magnitude();
-    test_unit();
-    test_negate();
-    test_add_scalar();
-    test_add_vector();
-    test_sub_scalar();
-    test_sub_vector();
-    test_mul_scalar();
-    test_vector_dot();
-//    test_vector_property_values();
+    test = CU_add_test(suite, "Vector4 create", test_create);
+    if (!test)
+        return 1;
+    
+    test = CU_add_test(suite, "Vector4 negate", test_negate);
+    if (!test)
+        return 1;
+    
+    test = CU_add_test(suite, "Vector4 add scalar", test_add_scalar);
+    if (!test)
+        return 1;
+    
+    test = CU_add_test(suite, "Vector4 add vector", test_add_vector);
+    if (!test)
+        return 1;
+    
+    test = CU_add_test(suite, "Vector4 subtract scalar", test_sub_scalar);
+    if (!test)
+        return 1;
 
-    return EXIT_SUCCESS;
+    test = CU_add_test(suite, "Vector4 subtract vector", test_sub_scalar);
+    if (!test)
+        return 1;
+
+    test = CU_add_test(suite, "Vector4 scale", test_mul_scalar);
+    if (!test)
+        return 1;
+    
+    test = CU_add_test(suite, "Vector4 dot product", test_vector_dot);
+    if (!test)
+        return 1;
+
+    return 0;
 }

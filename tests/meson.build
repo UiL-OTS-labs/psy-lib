@@ -9,19 +9,6 @@ window_prog = executable (
     dependencies : [psy_dep]
 )
 
-vector4_test=executable(
-    'vector4-test',
-    'vector4-test.c',
-    dependencies : [psy_dep]
-)
-
-test_gtk_window = executable(
-    'test-gtk-window',
-    'test-gtk-window.c',
-    dependencies : [psy_dep]
-)
-
-
 unit_test = executable (
     'unit-test',
     files (
@@ -30,10 +17,10 @@ unit_test = executable (
         'test-ref-count.c',
         'test-stepping.c',
         'test-time-utilities.c',
-        'vector-test.c'
+        'vector-test.c',
+        'vector4-test.c'
     ),
     dependencies : [psy_dep, cunit_dep]
 )
 
-test('vector4_test', vector4_test)
 test('unit-test', unit_test)

@@ -288,3 +288,4 @@ int add_vector_suite(void) {
 
     return EXIT_SUCCESS;
 }
+
