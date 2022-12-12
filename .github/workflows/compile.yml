@@ -31,13 +31,13 @@ jobs:
           python3 -m pip install --upgrade pip
           python3 -m pip install meson ninja gi-docgen PyGObject
       - name: configure_for_gcc
-        if: matrix.compiler == gcc 
+        if: ${{matrix.compiler == 'gcc'}}
         run: meson setup --buildtype=${{ matrix.buildtype}} build/
         env:
           CC: gcc
           CXX: g++
       - name: configure_for_clang
-        if: matrix.compiler == clang
+        if: ${{matrix.compiler == 'clang'}}
         run: meson setup --buildtype=${{ matrix.buildtype}} build/
         env:
           CC: clang
