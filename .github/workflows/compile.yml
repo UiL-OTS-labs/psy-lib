@@ -30,18 +30,18 @@ jobs:
         run: |
           python3 -m pip install --upgrade pip
           python3 -m pip install meson ninja gi-docgen PyGObject
-      - name: gcc build
+      - name: configure_for_gcc
         if: ${{ matrix.compiler }} == "gcc"
+        run: meson setup --buildtype=${{ matrix.buildtype}} build/
         env:
           CC: gcc
           CXX: g++
-      - name: clang build
+      - name: configure_for_clang
         if: ${{ matrix.compiler }} == "clang"
+        run: meson setup --buildtype=${{ matrix.buildtype}} build/
         env:
           CC: clang
           CXX: clang++
-      - name: Configure
-        run: meson setup --buildtype=${{ matrix.buildtype}} build/
       - name: Build
         run: xvfb-run meson compile -C build/
       - name: C Unit tests
