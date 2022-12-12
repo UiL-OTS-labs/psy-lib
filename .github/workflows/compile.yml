@@ -12,8 +12,8 @@ jobs:
   Compile-psy-lib-Linux:
     strategy:
       matrix:
-        compiler: [gcc, clang]
-        buildtype: [debug, release]
+        compiler: ["gcc", "clang"]
+        buildtype: ["debug", "release"]
     runs-on: ubuntu-22.04
     steps:
       - name: Install dependencies
