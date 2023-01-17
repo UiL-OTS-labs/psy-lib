@@ -27,6 +27,7 @@ config_incdirs = include_directories('.')
 libpsy_incdirs = include_directories(
     'external_libs',
     'gl',
+    'hw',
     'backend_gtk',
 )
 
@@ -101,6 +102,7 @@ libpsyfiles = files (
 
 subdir('gl')
 subdir('backend_gtk')
+subdir('hw')
 enum_files = gnome.mkenums_simple('enum-types', sources : libpsy_headers)
 
 configure_file(input : 'v-shader.vert',
