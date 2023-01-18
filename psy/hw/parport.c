@@ -1,11 +1,13 @@
 
+#include "parport.h"
 
 #include <error.h>
 #include <fcntl.h>
+#include <linux/parport.h>
+#include <linux/ppdev.h>
+#include <sys/ioctl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-
-#include "parport.h"
 
 /**
  * PsyParport:
@@ -30,6 +32,7 @@ psy_parport_init(PsyParport *self)
 static void
 parport_open(PsyParallelPort *self, gint port_num, GError **error)
 {
+    int          mode;
     gchar        buffer[64];
     PsyParport  *pp       = PSY_PARPORT(self);
     const gchar *dev_name = NULL;
@@ -55,9 +58,39 @@ parport_open(PsyParallelPort *self, gint port_num, GError **error)
                     "Unable to open %s: %s",
                     dev_name,
                     g_strerror(errno));
-        psy_parallel_port_close(self);
         return;
     }
+
+    if (ioctl(pp->fd, PPGETMODE, &mode)) {
+        goto error;
+    }
+    if (mode != IEEE1284_MODE_COMPAT) {
+        mode = IEEE1284_MODE_COMPAT;
+        if (ioctl(pp->fd, PPSETMODE, &mode))
+            goto error;
+    }
+
+    int set_flags = PP_FASTWRITE | PP_FASTREAD;
+    if (ioctl(pp->fd, PPSETFLAGS, &set_flags))
+        goto error;
+
+    int is_output =
+        psy_parallel_port_get_direction(self) == PSY_IO_DIRECTION_OUT;
+
+    if (ioctl(pp->fd, PPDATADIR, &is_output))
+        goto error;
+
+    parallel_cls->open(self, port_num, error);
+    return;
+
+error:
+
+    g_set_error(error,
+                PSY_PARALLEL_PORT_ERROR,
+                PSY_PARALLEL_PORT_ERROR_OPEN,
+                "Unable to configure device %s: %s",
+                dev_name,
+                g_strerror(errno));
 }
 
 static void
