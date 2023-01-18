@@ -45,6 +45,8 @@ typedef enum PsyIoLevel {
  * @write: This function should be implemented in the deriving class as it's
  *         not implemented in PsyParallelPortClass, the deriving class makes
  *         sure that the mask is put to the datalines of the parallel port.
+ * @set_device_name: Sets the "OS" name of the parallelport. This should
+ *                   typically be called from a derived class' open function.
  * @write_pin: This should be implemented in the deriving class.
                this function should write on of the datalines high or low.
  * @read: This function should be implemented in the deriving class as it's
@@ -58,6 +60,8 @@ typedef struct _PsyParallelPortClass {
 
     void (*open)(PsyParallelPort *self, gint dev_num, GError **error);
     void (*close)(PsyParallelPort *self);
+
+    void (*set_device_name)(PsyParallelPort *self, const gchar *name);
 
     void (*write)(PsyParallelPort *self, guint8 mask, GError **error);
     void (*write_pin)(PsyParallelPort *self,

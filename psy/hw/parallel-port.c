@@ -99,6 +99,31 @@ parallel_port_finalize(GObject *obj)
 }
 
 static void
+parallel_port_open(PsyParallelPort *self, gint port_num, GError **error)
+{
+    (void) error;
+    PsyParallelPortPrivate *priv = psy_parallel_port_get_instance_private(self);
+
+    priv->port_num = port_num;
+}
+
+static void
+parallel_port_close(PsyParallelPort *self)
+{
+    PsyParallelPortPrivate *priv = psy_parallel_port_get_instance_private(self);
+    priv->port_num               = -1;
+    g_snprintf(priv->port_name, sizeof(priv->port_name), "");
+}
+
+static void
+parallel_port_set_device_name(PsyParallelPort *self, const gchar *name)
+{
+    PsyParallelPortPrivate *priv = psy_parallel_port_get_instance_private(self);
+
+    g_snprintf(priv->port_name, sizeof(priv->port_name), "%s", name);
+}
+
+static void
 psy_parallel_port_class_init(PsyParallelPortClass *cls)
 {
     GObjectClass *obj_cls = G_OBJECT_CLASS(cls);
@@ -106,6 +131,10 @@ psy_parallel_port_class_init(PsyParallelPortClass *cls)
     obj_cls->set_property = psy_parallel_port_set_property;
     obj_cls->get_property = psy_parallel_port_get_property;
     obj_cls->finalize     = parallel_port_finalize;
+
+    cls->open            = parallel_port_open;
+    cls->close           = parallel_port_close;
+    cls->set_device_name = parallel_port_set_device_name;
 
     port_properties[PORT_NUM] =
         g_param_spec_int("port-num",
