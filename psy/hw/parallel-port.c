@@ -2,6 +2,11 @@
 #include "parallel-port.h"
 #include "enum-types.h"
 
+// clang-format off
+G_DEFINE_QUARK(psy-parallel-port-error-quark, psy_parallel_port_error)
+
+// clang-format on
+
 /**
  * PsyParallelPort:
  *
@@ -116,7 +121,7 @@ parallel_port_close(PsyParallelPort *self)
 }
 
 static void
-parallel_port_set_device_name(PsyParallelPort *self, const gchar *name)
+parallel_port_set_port_name(PsyParallelPort *self, const gchar *name)
 {
     PsyParallelPortPrivate *priv = psy_parallel_port_get_instance_private(self);
 
@@ -132,9 +137,9 @@ psy_parallel_port_class_init(PsyParallelPortClass *cls)
     obj_cls->get_property = psy_parallel_port_get_property;
     obj_cls->finalize     = parallel_port_finalize;
 
-    cls->open            = parallel_port_open;
-    cls->close           = parallel_port_close;
-    cls->set_device_name = parallel_port_set_device_name;
+    cls->open          = parallel_port_open;
+    cls->close         = parallel_port_close;
+    cls->set_port_name = parallel_port_set_port_name;
 
     port_properties[PORT_NUM] =
         g_param_spec_int("port-num",
@@ -219,6 +224,28 @@ psy_parallel_port_is_open(PsyParallelPort *self)
     PsyParallelPortPrivate *priv = psy_parallel_port_get_instance_private(self);
 
     return priv->port_num >= 0;
+}
+
+/**
+ * psy_parallel_get_port_name:
+ * @self: an instance of `PsyParallelPort`
+ *
+ * Get the device name of the parallel port. The device name is set when the
+ * device is opened with an id. For example, opening device with port_num = 0
+ * will likely result in a port name of "/dev/parport0" on linux and "LPT1" on
+ * windows.
+ *
+ * Returns: a string with the name of the device that has been opened or
+ *          an empty string otherwise.
+ */
+const gchar *
+psy_parallel_port_get_port_name(PsyParallelPort *self)
+{
+    PsyParallelPortPrivate *priv = psy_parallel_port_get_instance_private(self);
+
+    g_return_val_if_fail(PSY_IS_PARALLEL_PORT(self), NULL);
+
+    return priv->port_name;
 }
 
 /**
