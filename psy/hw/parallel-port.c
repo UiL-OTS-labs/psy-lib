@@ -26,6 +26,7 @@ typedef struct {
     gchar          port_name[64];
     gint           port_num; // -1 closed or 0 - max_port for a open one.
     PsyIoDirection direction;
+    guint8         pins; // the lines as written to or read from the device.
 } PsyParallelPortPrivate;
 
 G_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE(PsyParallelPort,
@@ -37,6 +38,7 @@ typedef enum PsyParallelPortProperty {
     PORT_NUM,
     PORT_NAME,
     PORT_DIRECTION,
+    PORT_PINS,
     NUM_PROPS,
 } PsyParallelPortProperty;
 
@@ -55,6 +57,17 @@ psy_parallel_port_set_property(GObject      *object,
     case PORT_DIRECTION:
         psy_parallel_port_set_direction(self, g_value_get_enum(value));
         break;
+    case PORT_PINS:
+    {
+        GError *error = NULL;
+        guint8  pins  = (guint8) g_value_get_uint(value);
+        psy_parallel_port_write(self, pins, &error);
+        if (error) {
+            g_critical("unable to set \"pins\": %s", error->message);
+            g_error_free(error);
+        }
+        break;
+    }
     default:
         G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, spec);
     }
@@ -79,6 +92,24 @@ psy_parallel_port_get_property(GObject    *object,
     case PORT_DIRECTION:
         g_value_set_enum(value, priv->direction);
         break;
+    case PORT_PINS:
+    {
+        gboolean is_output =
+            psy_parallel_port_get_direction(self) == PSY_IO_DIRECTION_OUT;
+        if (is_output) {
+            g_value_set_uint(value, priv->pins);
+        }
+        else {
+            GError *error = NULL;
+            guint   pins  = psy_parallel_port_read(self, &error);
+            if (error) {
+                g_critical("unable to read pins: %s", error->message);
+                g_error_free(error);
+            }
+            g_value_set_uint(value, pins);
+        }
+        break;
+    }
     default:
         G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, spec);
     }
@@ -117,7 +148,7 @@ parallel_port_close(PsyParallelPort *self)
 {
     PsyParallelPortPrivate *priv = psy_parallel_port_get_instance_private(self);
     priv->port_num               = -1;
-    g_snprintf(priv->port_name, sizeof(priv->port_name), "");
+    priv->port_name[0]           = '\0';
 }
 
 static void
@@ -141,6 +172,13 @@ psy_parallel_port_class_init(PsyParallelPortClass *cls)
     cls->close         = parallel_port_close;
     cls->set_port_name = parallel_port_set_port_name;
 
+    /**
+     * PsyParallelPort:port-num:
+     *
+     * The number of device used for opening the parallel port. It is
+     * specified using `psy_parallel_port_open`, hence it is read only
+     * and should be -1 when closed.
+     */
     port_properties[PORT_NUM] =
         g_param_spec_int("port-num",
                          "PortNumber",
@@ -150,6 +188,13 @@ psy_parallel_port_class_init(PsyParallelPortClass *cls)
                          -1,
                          G_PARAM_READABLE);
 
+    /**
+     * PsyParallelPort:port-name:
+     *
+     * This is the name of the device at the os level, at linux it might be
+     * "/dev/parport0" and at windows "LPT1". It should be set when the
+     * device is open and should result in an empty string otherwise.
+     */
     port_properties[PORT_NAME] = g_param_spec_string(
         "port-name",
         "PortName",
@@ -157,6 +202,13 @@ psy_parallel_port_class_init(PsyParallelPortClass *cls)
         "",
         G_PARAM_READABLE);
 
+    /**
+     * PsyParallelPort:direction:
+     *
+     * Whether or not the device is configured as an input or an output device.
+     * You may also use this attribute to change the direction of the
+     * parallel port.
+     */
     port_properties[PORT_DIRECTION] =
         g_param_spec_enum("direction",
                           "Direction",
@@ -164,6 +216,23 @@ psy_parallel_port_class_init(PsyParallelPortClass *cls)
                           PSY_TYPE_IO_DIRECTION,
                           PSY_IO_DIRECTION_OUT,
                           G_PARAM_READWRITE);
+
+    /**
+     * PsyParallelPort:pins:
+     *
+     * When writing to this property, you'll have to make sure the device
+     * is configured as output as you try to update the lines. When reading
+     * you'll be reading from the Port it self, when the port is configured as
+     * output, you'll just get the most recent value written to the port.
+     */
+    port_properties[PORT_PINS] = g_param_spec_uint(
+        "pins",
+        "Pins",
+        "A bit mask representing whether the lines are HIGH or LOW",
+        0,
+        255,
+        0,
+        G_PARAM_READWRITE);
 
     g_object_class_install_properties(obj_cls, NUM_PROPS, port_properties);
 }
@@ -384,4 +453,40 @@ psy_parallel_port_read_pin(PsyParallelPort *self, gint pin, GError **error)
     cls = PSY_PARALLEL_PORT_GET_CLASS(self);
     g_return_val_if_fail(cls->read, PSY_IO_LEVEL_LOW);
     return cls->read_pin(self, pin, error);
+}
+
+/**
+ * psy_parallel_port_get_pins:
+ *
+ * This operations doesn't touch the parallel port but merely obtains
+ * the value after last read or write of the port.
+ *
+ * Returns: the status of the pins after the last operation.
+ */
+guint8
+psy_parallel_port_get_pins(PsyParallelPort *self)
+{
+    PsyParallelPortPrivate *priv = psy_parallel_port_get_instance_private(self);
+
+    g_return_val_if_fail(PSY_IS_PARALLEL_PORT(self), 0);
+
+    return priv->pins;
+}
+
+// private functions
+
+/**
+ * psy_parallel_port_set_pins:(skip)
+ *
+ * This function updates the lines this function only does administration.
+ * This function is for inside psy-lib only.
+ */
+void
+psy_parallel_port_set_pins(PsyParallelPort *self, guint8 pins)
+{
+    PsyParallelPortPrivate *priv = psy_parallel_port_get_instance_private(self);
+
+    g_return_if_fail(PSY_IS_PARALLEL_PORT(self));
+
+    priv->pins = pins;
 }
