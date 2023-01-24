@@ -1,18 +1,24 @@
 
+#include <CUnit/Basic.h>
+#include <CUnit/CUnit.h>
 #include <CUnit/TestRun.h>
 #include <glib.h>
-#include <CUnit/CUnit.h>
-#include <CUnit/Basic.h>
 #include <stdlib.h>
 
 #include "suites.h"
 
-gboolean verbose;
+static gboolean verbose;
+static gint     g_port_num = -1;
 
+/* clang-format off */
 GOptionEntry options[] = {
     {"verbose", 'v', G_OPTION_FLAG_NONE, G_OPTION_ARG_NONE, &verbose, "Run the suite verbosely",""},
-    {0}
+    {"port-num", 'p', G_OPTION_FLAG_NONE, G_OPTION_ARG_INT, &g_port_num,
+        "Specify a port number to open for the parallel tests.",""},
+    {0,},
 };
+
+/* clang-format on */
 
 static int
 add_suites_to_registry(void)
@@ -27,10 +33,14 @@ add_suites_to_registry(void)
     if (error)
         return error;
 
+    error = add_parallel_suite(g_port_num);
+    if (error)
+        return error;
+
     error = add_stepping_suite();
     if (error)
         return error;
-    
+
     error = add_time_utilities_suite();
     if (error)
         return error;
@@ -38,7 +48,7 @@ add_suites_to_registry(void)
     error = add_vector_suite();
     if (error)
         return error;
-    
+
     error = add_vector4_suite();
     if (error)
         return error;
@@ -46,18 +56,20 @@ add_suites_to_registry(void)
     return error;
 }
 
-int main(int argc, char** argv) {
-    GOptionContext* context = g_option_context_new("");
+int
+main(int argc, char **argv)
+{
+    GOptionContext *context = g_option_context_new("");
     g_option_context_add_main_entries(context, options, NULL);
-    int ret, n_test_failed = -1;
-    GError* error = NULL;
+    int     ret, n_test_failed = -1;
+    GError *error = NULL;
 
     if (!g_option_context_parse(context, &argc, &argv, &error)) {
         g_printerr("Unable to parse options: %s\n", error->message);
         g_option_context_free(context);
         return EXIT_FAILURE;
     }
-    
+
     CU_initialize_registry();
 
     if (verbose)
@@ -77,4 +89,3 @@ int main(int argc, char** argv) {
 
     return n_test_failed != 0;
 }
-

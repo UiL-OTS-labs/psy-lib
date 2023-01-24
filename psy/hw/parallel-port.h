@@ -98,6 +98,9 @@ typedef struct _PsyParallelPortClass {
 
 } PsyParallelPortClass;
 
+G_MODULE_EXPORT PsyParallelPort *
+psy_parallel_port_new(void);
+
 G_MODULE_EXPORT void
 psy_parallel_port_open(PsyParallelPort *self, gint dev_num, GError **error);
 
@@ -115,6 +118,12 @@ psy_parallel_port_set_direction(PsyParallelPort *self, PsyIoDirection dir);
 
 G_MODULE_EXPORT PsyIoDirection
 psy_parallel_port_get_direction(PsyParallelPort *self);
+
+G_MODULE_EXPORT gboolean
+psy_parallel_port_is_output(PsyParallelPort *self);
+
+G_MODULE_EXPORT gboolean
+psy_parallel_port_is_input(PsyParallelPort *self);
 
 G_MODULE_EXPORT void
 psy_parallel_port_write(PsyParallelPort *self, guint8 mask, GError **eror);

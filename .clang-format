@@ -16,6 +16,7 @@ AlwaysBreakAfterReturnType: TopLevel
 BinPackArguments: false
 BinPackParameters: false
 
+BreakBeforeBinaryOperators: All
 BreakBeforeBraces: Custom
 BraceWrapping:
     AfterCaseLabel: true
@@ -33,6 +34,7 @@ BraceWrapping:
 BreakStringLiterals: true
 
 IndentGotoLabels: false
+IndentPPDirectives: BeforeHash
 
 PointerAlignment: Right
 

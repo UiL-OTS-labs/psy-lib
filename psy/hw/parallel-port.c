@@ -1,6 +1,10 @@
 
 #include "parallel-port.h"
 #include "enum-types.h"
+#include "psy-config.h"
+#if defined(HAVE_LINUX_PARPORT_H)
+    #include "parport.h"
+#endif
 
 // clang-format off
 G_DEFINE_QUARK(psy-parallel-port-error-quark, psy_parallel_port_error)
@@ -90,12 +94,15 @@ psy_parallel_port_get_property(GObject    *object,
         g_value_set_string(value, priv->port_name);
         break;
     case PORT_DIRECTION:
-        g_value_set_enum(value, priv->direction);
+    {
+        gint dir = priv->direction;
+        g_value_set_enum(value, dir);
         break;
+    }
     case PORT_PINS:
     {
-        gboolean is_output =
-            psy_parallel_port_get_direction(self) == PSY_IO_DIRECTION_OUT;
+        gboolean is_output
+            = psy_parallel_port_get_direction(self) == PSY_IO_DIRECTION_OUT;
         if (is_output) {
             g_value_set_uint(value, priv->pins);
         }
@@ -179,14 +186,14 @@ psy_parallel_port_class_init(PsyParallelPortClass *cls)
      * specified using `psy_parallel_port_open`, hence it is read only
      * and should be -1 when closed.
      */
-    port_properties[PORT_NUM] =
-        g_param_spec_int("port-num",
-                         "PortNumber",
-                         "The number of the port device to use",
-                         -1,
-                         16,
-                         -1,
-                         G_PARAM_READABLE);
+    port_properties[PORT_NUM]
+        = g_param_spec_int("port-num",
+                           "PortNumber",
+                           "The number of the port device to use",
+                           -1,
+                           16,
+                           -1,
+                           G_PARAM_READABLE);
 
     /**
      * PsyParallelPort:port-name:
@@ -209,13 +216,13 @@ psy_parallel_port_class_init(PsyParallelPortClass *cls)
      * You may also use this attribute to change the direction of the
      * parallel port.
      */
-    port_properties[PORT_DIRECTION] =
-        g_param_spec_enum("direction",
-                          "Direction",
-                          "The in- or output direction of this device",
-                          PSY_TYPE_IO_DIRECTION,
-                          PSY_IO_DIRECTION_OUT,
-                          G_PARAM_READWRITE);
+    port_properties[PORT_DIRECTION]
+        = g_param_spec_enum("direction",
+                            "Direction",
+                            "The in- or output direction of this device",
+                            PSY_TYPE_IO_DIRECTION,
+                            PSY_IO_DIRECTION_OUT,
+                            G_PARAM_READWRITE | G_PARAM_CONSTRUCT);
 
     /**
      * PsyParallelPort:pins:
@@ -235,6 +242,35 @@ psy_parallel_port_class_init(PsyParallelPortClass *cls)
         G_PARAM_READWRITE);
 
     g_object_class_install_properties(obj_cls, NUM_PROPS, port_properties);
+}
+
+/**
+ * psy_parallel_port_new:(constructor)
+ *
+ * Creates a new PsyParallelPort and returns it. The port returned will
+ * be an instance of PsyParallelPort, but it will be a derived class for
+ * a specific backend. E.g. an instance of PsyParport on Linux and another
+ * class on Windows.
+ * You may also use `g_object_new(PSY_TYPE_PARPORT, NULL)` to create a new
+ * device, but that is perhaps not so handy. This function will create a
+ * ParallelPort device for any supported
+ *
+ * Returns: an Derived instance of `PsyParallelPort`, or NULL when there
+ *    is no backend for parallel ports.
+ */
+PsyParallelPort *
+psy_parallel_port_new(void)
+{
+    PsyParallelPort *port = NULL;
+#if defined(HAVE_LINUX_PARPORT_H)
+
+    port = g_object_new(PSY_TYPE_PARPORT, NULL);
+
+#else
+    #pragma message "No instance for a parallel port"
+#endif
+
+    return port;
 }
 
 /**
@@ -354,6 +390,40 @@ psy_parallel_port_get_direction(PsyParallelPort *self)
     PsyParallelPortPrivate *priv = psy_parallel_port_get_instance_private(self);
 
     return priv->direction;
+}
+
+/**
+ * psy_parallel_port_is_output:
+ * @self: An instance of `PsyParallelPort`
+ *
+ * Returns whether or not the devices is configured as output.
+ *
+ * Returns: #TRUE if the port is open and an output FALSE otherwise
+ */
+gboolean
+psy_parallel_port_is_output(PsyParallelPort *self)
+{
+    g_return_val_if_fail(PSY_IS_PARALLEL_PORT(self), FALSE);
+
+    return psy_parallel_port_is_open(self)
+           && (psy_parallel_port_get_direction(self) == PSY_IO_DIRECTION_OUT);
+}
+
+/**
+ * psy_parallel_port_is_input:
+ * @self: An instance of `PsyParallelPort`
+ *
+ * Returns whether or not the devices is configured as input.
+ *
+ * Returns: #TRUE if the port is open and an input FALSE otherwise
+ */
+gboolean
+psy_parallel_port_is_input(PsyParallelPort *self)
+{
+    g_return_val_if_fail(PSY_IS_PARALLEL_PORT(self), FALSE);
+
+    return psy_parallel_port_is_open(self)
+           && (psy_parallel_port_get_direction(self) == PSY_IO_DIRECTION_IN);
 }
 
 /**

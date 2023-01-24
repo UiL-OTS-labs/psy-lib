@@ -20,6 +20,7 @@ unit_test = executable (
     files (
         'main.c',
         'test-color.c',
+        'test-parallel.c',
         'test-ref-count.c',
         'test-stepping.c',
         'test-time-utilities.c',
