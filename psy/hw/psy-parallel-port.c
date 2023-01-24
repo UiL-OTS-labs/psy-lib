@@ -94,11 +94,8 @@ psy_parallel_port_get_property(GObject    *object,
         g_value_set_string(value, priv->port_name);
         break;
     case PORT_DIRECTION:
-    {
-        gint dir = priv->direction;
-        g_value_set_enum(value, dir);
+        g_value_set_enum(value, priv->direction);
         break;
-    }
     case PORT_PINS:
     {
         gboolean is_output
