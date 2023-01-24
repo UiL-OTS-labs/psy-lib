@@ -15,6 +15,8 @@ parallel_port_create(void)
     gint   port_num;
     gint   dir = 0;
 
+    gboolean is_output, is_input, is_open;
+
     PsyParallelPort *port = psy_parallel_port_new();
 
     CU_ASSERT_PTR_NOT_NULL(port);
@@ -30,19 +32,28 @@ parallel_port_create(void)
                  &name,
                  "port-num",
                  &port_num,
+                 "is_open",
+                 &is_open,
+                 "is-output",
+                 &is_output,
+                 "is-input",
+                 &is_input,
                  NULL);
 
-    // CU_ASSERT_EQUAL(dir, PSY_IO_DIRECTION_OUT);
+    CU_ASSERT_EQUAL(dir, PSY_IO_DIRECTION_OUT);
     CU_ASSERT_STRING_EQUAL(name, "");
-    // CU_ASSERT_EQUAL(port_num, -1);
-    // CU_ASSERT_EQUAL(pins, 0);
+    CU_ASSERT_EQUAL(port_num, -1);
+    CU_ASSERT_EQUAL(pins, 0);
 
-    // CU_ASSERT_FALSE(psy_parallel_port_is_open(port));
-    // CU_ASSERT_FALSE(psy_parallel_port_is_output(port));
-    // CU_ASSERT_FALSE(psy_parallel_port_is_input(port));
+    CU_ASSERT_FALSE(psy_parallel_port_is_open(port));
+    CU_ASSERT_FALSE(psy_parallel_port_is_output(port));
+    CU_ASSERT_FALSE(psy_parallel_port_is_input(port));
+    CU_ASSERT_FALSE(is_input);
+    CU_ASSERT_FALSE(is_output);
+    CU_ASSERT_FALSE(is_input);
 
-    g_free(name);
-    // g_object_unref(port);
+    // g_free(name);
+    g_object_unref(port);
 }
 
 static void

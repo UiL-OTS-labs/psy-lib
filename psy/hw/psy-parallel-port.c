@@ -42,6 +42,9 @@ typedef enum PsyParallelPortProperty {
     PORT_NUM,
     PORT_NAME,
     PORT_DIRECTION,
+    PORT_IS_OPEN,
+    PORT_IS_OUTPUT,
+    PORT_IS_INPUT,
     PORT_PINS,
     NUM_PROPS,
 } PsyParallelPortProperty;
@@ -95,6 +98,15 @@ psy_parallel_port_get_property(GObject    *object,
         break;
     case PORT_DIRECTION:
         g_value_set_enum(value, priv->direction);
+        break;
+    case PORT_IS_OPEN:
+        g_value_set_boolean(value, psy_parallel_port_is_open(self));
+        break;
+    case PORT_IS_OUTPUT:
+        g_value_set_boolean(value, psy_parallel_port_is_output(self));
+        break;
+    case PORT_IS_INPUT:
+        g_value_set_boolean(value, psy_parallel_port_is_input(self));
         break;
     case PORT_PINS:
     {
@@ -220,6 +232,42 @@ psy_parallel_port_class_init(PsyParallelPortClass *cls)
                             PSY_TYPE_IO_DIRECTION,
                             PSY_IO_DIRECTION_OUT,
                             G_PARAM_READWRITE | G_PARAM_CONSTRUCT);
+
+    /**
+     * PsyParallelPort:is-open:
+     *
+     * Returns true when the device is open.
+     */
+    port_properties[PORT_IS_OPEN]
+        = g_param_spec_boolean("is-open",
+                               "IsOpen",
+                               "Whether or not the port is open",
+                               FALSE,
+                               G_PARAM_READABLE);
+
+    /**
+     * PsyParallelPort:is-output:
+     *
+     * Returns true when the device is open and a output
+     */
+    port_properties[PORT_IS_OUTPUT]
+        = g_param_spec_boolean("is-output",
+                               "IsOutput",
+                               "Whether or not the port is open and output",
+                               FALSE,
+                               G_PARAM_READABLE);
+
+    /**
+     * PsyParallelPort:is-input:
+     *
+     * Returns true when the device is open and a input
+     */
+    port_properties[PORT_IS_INPUT]
+        = g_param_spec_boolean("is-input",
+                               "IsInput",
+                               "Whether or not the port is open and input",
+                               FALSE,
+                               G_PARAM_READABLE);
 
     /**
      * PsyParallelPort:pins:
