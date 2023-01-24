@@ -1,9 +1,9 @@
 
-#include "parallel-port.h"
+#include "psy-parallel-port.h"
 #include "enum-types.h"
 #include "psy-config.h"
 #if defined(HAVE_LINUX_PARPORT_H)
-    #include "parport.h"
+    #include "psy-parport.h"
 #endif
 
 // clang-format off

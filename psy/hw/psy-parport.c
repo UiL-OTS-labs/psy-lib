@@ -1,6 +1,5 @@
 
-#include "parport.h"
-#include "parallel-port.h"
+#include "psy-parport.h"
 
 #include <error.h>
 #include <fcntl.h>

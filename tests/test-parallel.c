@@ -2,7 +2,7 @@
 #include <CUnit/CUnit.h>
 #include <CUnit/TestDB.h>
 
-#include "hw/parallel-port.h"
+#include "hw/psy-parallel-port.h"
 #include "psy-config.h"
 
 gint g_port_num = -1;

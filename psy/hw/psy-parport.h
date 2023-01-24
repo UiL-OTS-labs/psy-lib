@@ -1,7 +1,7 @@
 
 #pragma once
 
-#include "parallel-port.h"
+#include "psy-parallel-port.h"
 
 G_BEGIN_DECLS
 
