@@ -57,6 +57,24 @@ parallel_port_create(void)
 }
 
 static void
+parallel_port_as_input(void)
+{
+
+    PsyIoDirection   dir;
+    PsyParallelPort *port = psy_parallel_port_new();
+
+    CU_ASSERT_PTR_NOT_NULL_FATAL(port);
+
+    psy_parallel_port_set_direction(port, PSY_IO_DIRECTION_IN);
+
+    g_object_get(port, "direction", &dir, NULL);
+
+    CU_ASSERT_EQUAL(dir, PSY_IO_DIRECTION_IN);
+
+    g_object_unref(port);
+}
+
+static void
 parallel_port_open(void)
 {
     gchar  *name;
@@ -117,6 +135,11 @@ add_parallel_suite(gint port_num)
     test = CU_add_test(suite,
                        "ParallelPort gets sensible default values",
                        parallel_port_create);
+    if (!test)
+        return 1;
+
+    test = CU_add_test(
+        suite, "Close ports may change to input", parallel_port_as_input);
     if (!test)
         return 1;
 

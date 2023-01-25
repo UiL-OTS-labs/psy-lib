@@ -537,7 +537,7 @@ psy_parallel_port_read(PsyParallelPort *self, GError **error)
 {
     PsyParallelPortClass *cls;
     g_return_val_if_fail(PSY_IS_PARALLEL_PORT(self), 0);
-    g_return_val_if_fail(error == NULL || *error != NULL, 0);
+    g_return_val_if_fail(error == NULL || *error == NULL, 0);
 
     cls = PSY_PARALLEL_PORT_GET_CLASS(self);
     g_return_val_if_fail(cls->read, 0);
