@@ -59,7 +59,6 @@ parallel_port_create(void)
 static void
 parallel_port_open(void)
 {
-    fprintf(stderr, "%s\n", __FUNCTION__);
     gchar  *name;
     gint    port_num;
     GError *error = NULL;
@@ -83,6 +82,9 @@ parallel_port_open(void)
         return;
     }
     CU_ASSERT_PTR_NULL(error);
+    if (error) {
+        g_print("Error = %s\n", error->message);
+    }
 
     g_object_get(port, "port-num", &port_num, "port-name", &name, NULL);
 
@@ -100,7 +102,6 @@ parallel_port_open(void)
     psy_parallel_port_close(port);
     g_free(name);
     g_object_unref(port);
-    fprintf(stderr, "%s\n", __FUNCTION__);
 }
 
 int
