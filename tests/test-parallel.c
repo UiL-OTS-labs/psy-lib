@@ -52,7 +52,7 @@ parallel_port_create(void)
     CU_ASSERT_FALSE(is_output);
     CU_ASSERT_FALSE(is_input);
 
-    // g_free(name);
+    g_free(name);
     g_object_unref(port);
 }
 

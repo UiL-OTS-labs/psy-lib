@@ -1,6 +1,14 @@
 
+#pragma once
+
 #mesondefine PSY_VERSION
+
+// functions (or build in compiler additions)
 #mesondefine HAVE_BUILTIN_ADD_OVERFLOW
 #mesondefine HAVE_BUILTIN_SUB_OVERFLOW
 #mesondefine HAVE_BUILTIN_MUL_OVERFLOW
 
+// headers
+#mesondefine HAVE_UNISTD_H
+#mesondefine HAVE_LINUX_PARPORT_H
+#mesondefine HAVE_LINUX_PPDEV_H
