@@ -377,13 +377,30 @@ psy_parallel_port_is_open(PsyParallelPort *self)
 }
 
 /**
+ * psy_parallel_port_get_port_num:
+ *
+ * Obtains the port number of the device.
+ *
+ * Returns: -1 when the device is closed or a number >= 0 when the device is
+ * open.
+ */
+gint
+psy_parallel_port_get_port_num(PsyParallelPort *self)
+{
+    PsyParallelPortPrivate *priv = psy_parallel_port_get_instance_private(self);
+    g_return_val_if_fail(PSY_IS_PARALLEL_PORT(self), -1);
+
+    return priv->port_num;
+}
+
+/**
  * psy_parallel_get_port_name:
  * @self: an instance of `PsyParallelPort`
  *
- * Get the device name of the parallel port. The device name is set when the
- * device is opened with an id. For example, opening device with port_num = 0
- * will likely result in a port name of "/dev/parport0" on linux and "LPT1" on
- * windows.
+ * Get the device name of the parallel port. The device name is set when
+ * the device is opened with an id. For example, opening device with
+ * port_num = 0 will likely result in a port name of "/dev/parport0" on
+ * linux and "LPT1" on windows.
  *
  * Returns: a string with the name of the device that has been opened or
  *          an empty string otherwise.
@@ -424,8 +441,8 @@ psy_parallel_port_set_direction(PsyParallelPort *self, PsyIoDirection dir)
  * This function may be used to set/get the direction in which the operation
  * of the port is desired.
  *
- * Returns: the current configuration whether the port is configured as input
- *          or an output.
+ * Returns: the current configuration whether the port is configured as
+ * input or an output.
  */
 PsyIoDirection
 psy_parallel_port_get_direction(PsyParallelPort *self)
@@ -479,8 +496,8 @@ psy_parallel_port_is_input(PsyParallelPort *self)
  * @error: Errors are returned here.
  *
  * This function may be used to set some of the lines high or low
- * simultaneously. Not that in order to use this function you should configure
- * the device as an output first.
+ * simultaneously. Not that in order to use this function you should
+ * configure the device as an output first.
  */
 void
 psy_parallel_port_write(PsyParallelPort *self, guint8 mask, GError **error)
@@ -502,8 +519,8 @@ psy_parallel_port_write(PsyParallelPort *self, guint8 mask, GError **error)
  * @error: Errors are returned here.
  *
  * This function may be used to set some of the lines high or low
- * independently. Not that in order to use this function you should configure
- * the device as an output first.
+ * independently. Not that in order to use this function you should
+ * configure the device as an output first.
  */
 void
 psy_parallel_port_write_pin(PsyParallelPort *self,
@@ -526,8 +543,8 @@ psy_parallel_port_write_pin(PsyParallelPort *self,
  * @error: Errors are returned here.
  *
  * This function may be used to set some of the lines high or low
- * simultaneously. Not that in order to use this function you should configure
- * the device as an input first.
+ * simultaneously. Not that in order to use this function you should
+ * configure the device as an input first.
  *
  * Returns: A value, you can check the bits[0 - 7] to see which lines are
  *          high or low, if a bit is set it is high.
@@ -552,8 +569,8 @@ psy_parallel_port_read(PsyParallelPort *self, GError **error)
  * @error:(out): Errors are returned here.
  *
  * This function may be used to see whether some of the lines high or low
- * independently. Note that in order to use this function you should configure
- * the device as an input first.
+ * independently. Note that in order to use this function you should
+ * configure the device as an input first.
  *
  * Returns: PSY_IO_LEVEL_LOW if the voltage has a low logical level,
  *          PSY_IO_LEVEL_HIGH otherwise.

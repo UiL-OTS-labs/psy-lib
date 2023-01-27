@@ -74,8 +74,8 @@ parport_open(PsyParallelPort *self, gint port_num, GError **error)
     if (ioctl(pp->fd, PPSETFLAGS, &set_flags))
         goto error;
 
-    int is_output =
-        psy_parallel_port_get_direction(self) == PSY_IO_DIRECTION_OUT;
+    int is_output
+        = psy_parallel_port_get_direction(self) == PSY_IO_DIRECTION_OUT ? 1 : 0;
 
     if (ioctl(pp->fd, PPDATADIR, &is_output))
         goto error;
@@ -113,8 +113,8 @@ parport_write(PsyParallelPort *self, guint8 pins, GError **error)
 {
     PsyParport *pp      = PSY_PARPORT(self);
     gboolean    is_open = psy_parallel_port_is_open(self);
-    gboolean    is_output =
-        psy_parallel_port_get_direction(self) == PSY_IO_DIRECTION_OUT;
+    gboolean    is_output
+        = psy_parallel_port_get_direction(self) == PSY_IO_DIRECTION_OUT;
 
     if (!is_open) {
         g_set_error(error,
@@ -167,8 +167,8 @@ parport_read(PsyParallelPort *self, GError **error)
 {
     PsyParport *pp      = PSY_PARPORT(self);
     gboolean    is_open = psy_parallel_port_is_open(self);
-    gboolean    is_input =
-        psy_parallel_port_get_direction(self) == PSY_IO_DIRECTION_IN;
+    gboolean    is_input
+        = psy_parallel_port_get_direction(self) == PSY_IO_DIRECTION_IN;
     guint8 lines = 0;
 
     if (!is_open) {

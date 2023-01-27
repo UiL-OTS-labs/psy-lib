@@ -110,6 +110,9 @@ psy_parallel_port_close(PsyParallelPort *self);
 G_MODULE_EXPORT gboolean
 psy_parallel_port_is_open(PsyParallelPort *self);
 
+G_MODULE_EXPORT gint
+psy_parallel_port_get_port_num(PsyParallelPort *self);
+
 G_MODULE_EXPORT const gchar *
 psy_parallel_port_get_port_name(PsyParallelPort *self);
 
