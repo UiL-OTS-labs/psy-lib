@@ -15,6 +15,13 @@ test_gtk_window = executable(
     dependencies : [psy_dep]
 )
 
+parallel_write = executable(
+    'parallel_write',
+    files('parallel_write.c'),
+    dependencies : [psy_dep]
+)
+
+
 unit_test = executable (
     'unit-test',
     files (

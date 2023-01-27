@@ -504,7 +504,7 @@ psy_parallel_port_write(PsyParallelPort *self, guint8 mask, GError **error)
 {
     PsyParallelPortClass *cls;
     g_return_if_fail(PSY_IS_PARALLEL_PORT(self));
-    g_return_if_fail(error == NULL || *error != NULL);
+    g_return_if_fail(error == NULL || *error == NULL);
 
     cls = PSY_PARALLEL_PORT_GET_CLASS(self);
     g_return_if_fail(cls->write);

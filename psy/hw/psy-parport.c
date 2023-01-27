@@ -61,6 +61,10 @@ parport_open(PsyParallelPort *self, gint port_num, GError **error)
         return;
     }
 
+    if (ioctl(pp->fd, PPCLAIM)) { // Claim the device, before using it
+        goto error;
+    }
+
     if (ioctl(pp->fd, PPGETMODE, &mode)) {
         goto error;
     }
@@ -75,16 +79,16 @@ parport_open(PsyParallelPort *self, gint port_num, GError **error)
         goto error;
 
     int is_output
-        = psy_parallel_port_get_direction(self) == PSY_IO_DIRECTION_OUT ? 1 : 0;
+        = psy_parallel_port_get_direction(self) == PSY_IO_DIRECTION_OUT ? 0 : 1;
 
-    if (ioctl(pp->fd, PPDATADIR, &is_output))
+    if (ioctl(pp->fd, PPDATADIR, &is_output) != 0)
         goto error;
 
-    parallel_cls->set_port_name(self, buffer);
-    parallel_cls->open(self, port_num, error);
     return;
 
 error:
+
+    psy_parallel_port_close(self);
 
     g_set_error(error,
                 PSY_PARALLEL_PORT_ERROR,
