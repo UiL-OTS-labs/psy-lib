@@ -4,6 +4,7 @@ BasedOnStyle: LLVM
 IndentWidth: 4
 
 AlignAfterOpenBracket: Align
+
 AlignArrayOfStructures: Right
 AlignConsecutiveAssignments: AcrossComments
 AlignConsecutiveBitFields: AcrossEmptyLinesAndComments
@@ -38,7 +39,7 @@ IndentPPDirectives: BeforeHash
 
 PointerAlignment: Right
 
-ReferenceAlignment: Pointer
+ReferenceAlignment: Left
 
 SeparateDefinitionBlocks: Always
 
