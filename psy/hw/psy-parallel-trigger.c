@@ -8,7 +8,7 @@
 #include "psy-time-point.h"
 
 static void
-wait_until(PsyTimePoint *tp, GCancellable* cancellable)
+wait_until(PsyTimePoint *tp, GCancellable *cancellable)
 {
     PsyDuration *one_ms  = psy_duration_new_ms(1);
     PsyDuration *null_ms = psy_duration_new_ms(0);
@@ -117,7 +117,13 @@ typedef enum PsyParallelTriggerProperty {
     NUM_PROPS,
 } PsyParallelTriggerProperty;
 
-static GParamSpec *port_properties[NUM_PROPS];
+typedef enum {
+    SIG_FINISHED,
+    NUM_SIGNALS,
+} PsyParallelTriggerSignal;
+
+static GParamSpec *trigger_props[NUM_PROPS];
+static guint       trigger_signals[NUM_SIGNALS];
 
 // There are currently no settable properties
 // static void
@@ -126,7 +132,7 @@ static GParamSpec *port_properties[NUM_PROPS];
 //                                   const GValue *value,
 //                                   GParamSpec   *spec)
 // {
-//     PsyParallelTrigger *self = PSY_PARALLEL_TRIGGER(object);
+//     PsyParallelTrigger *self = PSY_PARALLEL_TRI?GGER(object);
 //     // PsyParallelTriggerPrivate *priv
 //     //     = psy_parallel_trigger_get_instance_private(self);
 //
@@ -198,7 +204,7 @@ psy_parallel_trigger_class_init(PsyParallelTriggerClass *cls)
      * specified using `psy_parallel_trigger_open`, hence it is read only
      * and should be -1 when closed.
      */
-    port_properties[PORT_NUM]
+    trigger_props[PORT_NUM]
         = g_param_spec_int("port-num",
                            "PortNumber",
                            "The number of the port device to use",
@@ -214,7 +220,7 @@ psy_parallel_trigger_class_init(PsyParallelTriggerClass *cls)
      * "/dev/parport0" and at windows "LPT1". It should be set when the
      * device is open and should result in an empty string otherwise.
      */
-    port_properties[PORT_NAME] = g_param_spec_string(
+    trigger_props[PORT_NAME] = g_param_spec_string(
         "port-name",
         "PortName",
         "The (file/device) name that corresponds with the parallel port",
@@ -226,14 +232,36 @@ psy_parallel_trigger_class_init(PsyParallelTriggerClass *cls)
      *
      * Returns true when the device is open.
      */
-    port_properties[PORT_IS_OPEN]
+    trigger_props[PORT_IS_OPEN]
         = g_param_spec_boolean("is-open",
                                "IsOpen",
                                "Whether or not the port is open",
                                FALSE,
                                G_PARAM_READABLE);
 
-    g_object_class_install_properties(obj_cls, NUM_PROPS, port_properties);
+    g_object_class_install_properties(obj_cls, NUM_PROPS, trigger_props);
+
+    /**
+     * PsyParallelTrigger::finished:
+     * @self: an instance of `PsyParallelTrigger`
+     * @mask: the mask that was send to the trigger.
+     * @tstart: the timepoint on which the trigger started.
+     * @tstop: the timepoint on which the trigger stopped.
+     *
+     * This signal is triggered once a write operation has finished.
+     */
+    trigger_signals[SIG_FINISHED] = g_signal_new("finished",
+                                                 G_TYPE_FROM_CLASS(obj_cls),
+                                                 G_SIGNAL_RUN_LAST,
+                                                 0,
+                                                 NULL,
+                                                 NULL,
+                                                 NULL,
+                                                 G_TYPE_NONE,
+                                                 3,
+                                                 G_TYPE_UINT,
+                                                 PSY_TYPE_TIME_POINT,
+                                                 PSY_TYPE_TIME_POINT);
 }
 
 /**
@@ -383,7 +411,10 @@ write_thread(GTask        *task,
     g_assert(G_IS_TASK(task));
     g_assert(PSY_IS_PARALLEL_TRIGGER(source_obj));
 
-    TriggerData *data = task_data;
+    TriggerData               *data    = task_data;
+    PsyParallelTrigger        *trigger = PSY_PARALLEL_TRIGGER(source_obj);
+    PsyParallelTriggerPrivate *priv
+        = psy_parallel_trigger_get_instance_private(trigger);
 
     GError *error = NULL;
 
@@ -394,28 +425,26 @@ write_thread(GTask        *task,
     wait_until(tstart, cancellable);
 
     if (g_cancellable_is_cancelled(cancellable)) {
+        g_task_return_error_if_cancelled(task);
         goto end;
     }
 
-    psy_parallel_port_write(PSY_PARALLEL_PORT(source_obj), data->mask, &error);
+    psy_parallel_port_write(PSY_PARALLEL_PORT(priv->port), data->mask, &error);
     if (error) {
-        g_printerr("Oops write failed: %s\n", error->message);
+        g_critical("ParallelTrigger write failed: %s\n", error->message);
     }
-
-    g_print("trigger\n");
 
     wait_until(end, cancellable);
-    
+
     if (g_cancellable_is_cancelled(cancellable)) {
+        g_task_return_error_if_cancelled(task);
         goto end;
     }
 
-    psy_parallel_port_write(PSY_PARALLEL_PORT(source_obj), 0, &error);
+    psy_parallel_port_write(PSY_PARALLEL_PORT(priv->port), 0, &error);
     if (error) {
         g_printerr("Oops write failed: %s\n", error->message);
     }
-
-    g_print("trigger stop\n");
 
     g_task_return_boolean(task, TRUE);
 
@@ -424,14 +453,43 @@ end:
     g_object_unref(end);
 }
 
+/**
+ * psy_parallel_trigger_finish:
+ * @self: an instance of `PsyParallelPort`
+ * @result: the result of the operation
+ * @mask:(out): The trigger written to the port
+ * @tstart:(out) (transfer full): The trigger written to the port
+ * @tfinish:(out) (transfer full): The trigger written to the port
+ * @error: if an error occured it returned here.
+ *
+ * Collect the result of the write operation.
+ */
 static gboolean
 psy_parallel_trigger_write_finish(PsyParallelTrigger *self,
                                   GAsyncResult       *result,
+                                  guint              *mask,
+                                  PsyTimePoint      **tstart,
+                                  PsyTimePoint      **tfinish,
                                   GError            **error)
 {
     g_return_val_if_fail(g_task_is_valid(result, self), FALSE);
+    g_return_val_if_fail(tstart == NULL || *tstart == NULL, FALSE);
+    g_return_val_if_fail(tfinish == NULL || *tfinish == NULL, FALSE);
 
-    return g_task_propagate_boolean(G_TASK(result), error);
+    GTask       *task = G_TASK(result);
+    TriggerData *data = g_task_get_task_data(task);
+
+    if (mask)
+        *mask = data->mask;
+
+    if (tstart) {
+        *tstart = g_object_ref(data->trigger_start);
+    }
+    if (tfinish) {
+        *tfinish = psy_time_point_add(data->trigger_start, data->trigger_dur);
+    }
+
+    return g_task_propagate_boolean(task, error);
 }
 
 void
@@ -441,13 +499,23 @@ trigger_finished_cb(PsyParallelTrigger *self,
 {
     PsyParallelTriggerPrivate *priv
         = psy_parallel_trigger_get_instance_private(self);
+
     g_return_if_fail(PSY_IS_PARALLEL_TRIGGER(self));
     g_return_if_fail(G_IS_TASK(result));
 
-    gboolean succes = psy_parallel_trigger_write_finish(self, result, error);
-    g_print("%s, succes %d", __func__, succes);
+    PsyTimePoint *tstart = NULL, *tfinish = NULL;
+    guint         mask;
+
+    gboolean succes = psy_parallel_trigger_write_finish(
+        self, result, &mask, &tstart, &tfinish, error);
 
     g_clear_object(&priv->trigger_task);
+
+    if (succes)
+        g_signal_emit(self, trigger_signals[SIG_FINISHED], 0, mask, tstart, tfinish);
+
+    g_object_unref(tfinish);
+    g_object_unref(tstart);
 }
 
 /**
@@ -474,7 +542,7 @@ psy_parallel_trigger_write(PsyParallelTrigger *self,
         = psy_parallel_trigger_get_instance_private(self);
 
     g_return_if_fail(PSY_IS_PARALLEL_TRIGGER(self));
-    g_return_if_fail(error == NULL || *error != NULL);
+    g_return_if_fail(error == NULL || *error == NULL);
 
     if (!psy_parallel_port_is_open(priv->port)) {
         g_set_error(error,

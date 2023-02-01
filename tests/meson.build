@@ -21,6 +21,12 @@ parallel_write = executable(
     dependencies : [psy_dep]
 )
 
+parallel_trigger = executable(
+    'parallel_trigger',
+    files('parallel_trigger.c'),
+    dependencies : [psy_dep]
+)
+
 
 unit_test = executable (
     'unit-test',
