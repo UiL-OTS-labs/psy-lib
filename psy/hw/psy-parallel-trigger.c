@@ -8,7 +8,7 @@
 #include "psy-time-point.h"
 
 static void
-wait_until(PsyTimePoint *tp)
+wait_until(PsyTimePoint *tp, GCancellable* cancellable)
 {
     PsyDuration *one_ms  = psy_duration_new_ms(1);
     PsyDuration *null_ms = psy_duration_new_ms(0);
@@ -20,6 +20,9 @@ wait_until(PsyTimePoint *tp)
     PsyTimePoint *now      = NULL;
 
     while (loop) {
+        if (g_cancellable_is_cancelled(cancellable)) {
+            break;
+        }
         now      = psy_clock_now(clock);
         dur_test = psy_time_point_subtract(tp, now);
 
@@ -40,6 +43,9 @@ wait_until(PsyTimePoint *tp)
     loop = 1;
 
     while (loop) {
+        if (g_cancellable_is_cancelled(cancellable)) {
+            break;
+        }
         now      = psy_clock_now(clock);
         dur_test = psy_time_point_subtract(tp, now);
 
@@ -376,7 +382,8 @@ write_thread(GTask        *task,
 {
     g_assert(G_IS_TASK(task));
     g_assert(PSY_IS_PARALLEL_TRIGGER(source_obj));
-    (void) task_data;
+
+    TriggerData *data = task_data;
 
     GError *error = NULL;
 
@@ -384,7 +391,11 @@ write_thread(GTask        *task,
     PsyDuration  *dur    = data->trigger_dur;
     PsyTimePoint *end    = psy_time_point_add(tstart, dur);
 
-    wait_until(tstart);
+    wait_until(tstart, cancellable);
+
+    if (g_cancellable_is_cancelled(cancellable)) {
+        goto end;
+    }
 
     psy_parallel_port_write(PSY_PARALLEL_PORT(source_obj), data->mask, &error);
     if (error) {
@@ -393,7 +404,12 @@ write_thread(GTask        *task,
 
     g_print("trigger\n");
 
-    wait_until(end);
+    wait_until(end, cancellable);
+    
+    if (g_cancellable_is_cancelled(cancellable)) {
+        goto end;
+    }
+
     psy_parallel_port_write(PSY_PARALLEL_PORT(source_obj), 0, &error);
     if (error) {
         g_printerr("Oops write failed: %s\n", error->message);
@@ -402,6 +418,8 @@ write_thread(GTask        *task,
     g_print("trigger stop\n");
 
     g_task_return_boolean(task, TRUE);
+
+end:
 
     g_object_unref(end);
 }
@@ -466,7 +484,7 @@ psy_parallel_trigger_write(PsyParallelTrigger *self,
         return;
     }
 
-    if (priv->cancellable) {
+    if (priv->trigger_task) {
         g_set_error(error,
                     PSY_PARALLEL_TRIGGER_ERROR,
                     PSY_PARALLEL_TRIGGER_ERROR_BUSY,
@@ -474,10 +492,14 @@ psy_parallel_trigger_write(PsyParallelTrigger *self,
         return;
     }
 
-    priv->cancellable = g_cancellable_new();
+    GCancellable *cancellable = g_cancellable_new();
 
     psy_parallel_trigger_write_async(
-        self, mask, tstart, dur, priv->cancellable, trigger_finished_cb, NULL);
+        self, mask, tstart, dur, cancellable, trigger_finished_cb, NULL);
+
+    g_assert(cancellable->parent_instance.ref_count == 2);
+    g_object_unref(cancellable);
+    g_assert(cancellable->parent_instance.ref_count == 1);
 }
 
 // /**
@@ -513,6 +535,9 @@ psy_parallel_trigger_write(PsyParallelTrigger *self,
  * If there is an ongoing call to send a trigger or a trigger is busy, this
  * call will try to cancel that trigger. If nothing is going on, this does
  * nothing.
+ * Note that this may be inconvenient, when the parallel port has just
+ * triggered, but
+ *
  */
 void
 psy_parallel_trigger_cancel(PsyParallelTrigger *self)
@@ -521,7 +546,13 @@ psy_parallel_trigger_cancel(PsyParallelTrigger *self)
         = psy_parallel_trigger_get_instance_private(self);
     g_return_if_fail(PSY_IS_PARALLEL_TRIGGER(self));
 
-    if (priv->cancellable) {
-        g_cancellable_cancel(priv->cancellable);
+    if (priv->trigger_task) {
+        GCancellable *cancellable = g_task_get_cancellable(priv->trigger_task);
+        if (cancellable) {
+            g_cancellable_cancel(cancellable);
+        }
+        else {
+            g_critical("Unable to cancel trigger task");
+        }
     }
 }
