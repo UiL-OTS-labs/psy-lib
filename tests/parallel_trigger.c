@@ -2,7 +2,20 @@
 #include <hw/psy-parallel-trigger.h>
 #include <psy-clock.h>
 
-gint dur_us = 1000;
+const gchar *g_option_str = "This is a small program to test triggers with a "
+                            "PsyParallelTriggerDevice";
+
+gint dur_ms       = 1;
+gint num_triggers = 1000;
+
+// clang-format off
+static GOptionEntry entries[] = {
+    {"duration", 'd', G_OPTION_FLAG_NONE, G_OPTION_ARG_INT, &dur_ms,        "The duration of the trigger", NULL},
+    {"num",      'n', G_OPTION_FLAG_NONE, G_OPTION_ARG_INT, &num_triggers,  "The number of triggers",      NULL},
+    {0}
+};
+
+// clang-format on
 
 typedef struct TriggerInfo {
     GMainLoop *loop;
@@ -16,12 +29,12 @@ finished(PsyParallelTrigger *trigger,
          PsyTimePoint       *tfinish,
          gpointer            data)
 {
-    PsyDuration  *dur   = psy_duration_new_us(dur_us);
+    PsyDuration  *dur   = psy_duration_new_ms(dur_ms);
     PsyTimePoint *newtp = psy_time_point_add(tfinish, dur);
 
     TriggerInfo *info = data;
 
-    if (info->n > 0) {
+    if (info->n > 1) {
         psy_parallel_trigger_write(trigger, mask, newtp, dur, NULL);
         info->n--;
     }
@@ -34,8 +47,19 @@ finished(PsyParallelTrigger *trigger,
 }
 
 int
-main()
+main(int argc, char **argv)
 {
+    GError *error = NULL;
+
+    GOptionContext *option_context = g_option_context_new(g_option_str);
+    g_option_context_add_main_entries(option_context, entries, NULL);
+
+    if (!g_option_context_parse(option_context, &argc, &argv, &error)) {
+        g_printerr("Unable to parse commanline options: %s\n", error->message);
+        g_error_free(error);
+        return EXIT_FAILURE;
+    }
+
     GMainContext *context = g_main_context_new();
     g_main_context_push_thread_default(context);
 
@@ -47,10 +71,9 @@ main()
     GMainLoop *loop = g_main_loop_new(context, FALSE);
     PsyClock  *clk  = psy_clock_new();
 
-    TriggerInfo info = {.loop = loop, .n = 1000};
+    TriggerInfo info = {.loop = loop, .n = num_triggers};
 
     PsyParallelTrigger *trigger = psy_parallel_trigger_new();
-    GError             *error   = NULL;
 
     g_signal_connect(trigger, "finished", G_CALLBACK(finished), &info);
 
@@ -62,7 +85,7 @@ main()
     }
 
     now           = psy_clock_now(clk);
-    trigger_dur   = psy_duration_new_us(dur_us);
+    trigger_dur   = psy_duration_new_ms(dur_ms);
     onset_dur     = psy_duration_new_ms(5);
     trigger_start = psy_time_point_add(now, onset_dur);
 
