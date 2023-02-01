@@ -1,0 +1,56 @@
+---
+# we'll use LLVM style as default
+BasedOnStyle: LLVM
+IndentWidth: 4
+
+AlignAfterOpenBracket: Align
+
+AlignArrayOfStructures: Right
+AlignConsecutiveAssignments: AcrossComments
+AlignConsecutiveBitFields: AcrossEmptyLinesAndComments
+AlignConsecutiveDeclarations: Consecutive
+AllowAllArgumentsOnNextLine: true
+AllowAllParametersOfDeclarationOnNextLine: true
+
+AlwaysBreakAfterReturnType: TopLevel
+
+BinPackArguments: false
+BinPackParameters: false
+
+BreakBeforeBinaryOperators: All
+BreakBeforeBraces: Custom
+BraceWrapping:
+    AfterCaseLabel: true
+    AfterClass: false
+    AfterEnum: false
+    AfterFunction: true
+    AfterStruct: false
+    AfterUnion: false
+    BeforeElse: true
+    BeforeWhile: false
+    SplitEmptyFunction: true
+    SplitEmptyRecord: true
+    SplitEmptyNamespace: true
+
+BreakStringLiterals: true
+
+IndentGotoLabels: false
+IndentPPDirectives: BeforeHash
+
+PointerAlignment: Right
+
+ReferenceAlignment: Left
+
+SeparateDefinitionBlocks: Always
+
+SpaceAfterCStyleCast: true
+SpaceAfterLogicalNot: false
+
+SpaceBeforeAssignmentOperators: true
+SpaceBeforeParens: ControlStatements
+SpaceBeforeSquareBrackets: false
+
+SpacesInCStyleCastParentheses: false
+SpacesInConditionalStatement: false
+
+UseTab: Never

@@ -6,6 +6,7 @@ cdata = configuration_data({
     'PSY_VERSION'                   : meson.project_version()
 })
 
+# check for compiler buildins
 if cc.has_function('__builtin_add_overflow')
     cdata.set('HAVE_BUILTIN_ADD_OVERFLOW', 1)
 endif
@@ -14,6 +15,17 @@ if cc.has_function('__builtin_sub_overflow')
 endif
 if cc.has_function('__builtin_mul_overflow')
     cdata.set('HAVE_BUILTIN_MUL_OVERFLOW', 1)
+endif
+
+# check for headers
+if cc.has_header('unistd.h')
+    cdata.set('HAVE_UNISTD_H', true)
+endif
+if cc.has_header('linux/parport.h')
+    cdata.set('HAVE_LINUX_PARPORT_H', true)
+endif
+if cc.has_header('linux/ppdev.h')
+    cdata.set('HAVE_LINUX_PPDEV_H', true)
 endif
 
 
@@ -27,6 +39,7 @@ config_incdirs = include_directories('.')
 libpsy_incdirs = include_directories(
     'external_libs',
     'gl',
+    'hw',
     'backend_gtk',
 )
 
@@ -101,6 +114,7 @@ libpsyfiles = files (
 
 subdir('gl')
 subdir('backend_gtk')
+subdir('hw')
 enum_files = gnome.mkenums_simple('enum-types', sources : libpsy_headers)
 
 configure_file(input : 'v-shader.vert',

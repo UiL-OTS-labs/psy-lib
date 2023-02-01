@@ -15,11 +15,25 @@ test_gtk_window = executable(
     dependencies : [psy_dep]
 )
 
+parallel_write = executable(
+    'parallel_write',
+    files('parallel_write.c'),
+    dependencies : [psy_dep]
+)
+
+parallel_trigger = executable(
+    'parallel_trigger',
+    files('parallel_trigger.c'),
+    dependencies : [psy_dep]
+)
+
+
 unit_test = executable (
     'unit-test',
     files (
         'main.c',
         'test-color.c',
+        'test-parallel.c',
         'test-ref-count.c',
         'test-stepping.c',
         'test-time-utilities.c',
