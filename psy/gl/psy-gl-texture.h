@@ -15,14 +15,14 @@ typedef struct _PsyGlTextureClass {
 } PsyGlTextureClass;
 */
 
-G_MODULE_EXPORT PsyGlTexture*
+G_MODULE_EXPORT PsyGlTexture *
 psy_gl_texture_new();
 
-G_MODULE_EXPORT PsyGlTexture*
-psy_gl_texture_new_for_file(GFile* file);
+G_MODULE_EXPORT PsyGlTexture *
+psy_gl_texture_new_for_file(GFile *file);
 
-G_MODULE_EXPORT PsyGlTexture*
-psy_gl_texture_new_for_path(const gchar* path);
+G_MODULE_EXPORT PsyGlTexture *
+psy_gl_texture_new_for_path(const gchar *path);
 
 G_END_DECLS
 

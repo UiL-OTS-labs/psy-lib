@@ -17,18 +17,19 @@ psy_gl_fragment_shader_create_shader()
     return object_id;
 }
 
-static void psy_gl_fragment_shader_init(PsyGlFragmentShader* self)
+static void
+psy_gl_fragment_shader_init(PsyGlFragmentShader *self)
 {
     (void) self;
 }
 
 static void
-psy_gl_fragment_shader_class_init(PsyGlFragmentShaderClass* klass)
+psy_gl_fragment_shader_class_init(PsyGlFragmentShaderClass *klass)
 {
     /*
     GObjectClass* object_class = G_OBJECT_CLASS(klass);
     */
-    PsyGlShaderClass* gl_shader_class = PSY_GL_SHADER_CLASS(klass);
+    PsyGlShaderClass *gl_shader_class = PSY_GL_SHADER_CLASS(klass);
 
     /*
     object_class->dispose  = psy_gl_fragment_shader_dispose;
@@ -38,10 +39,9 @@ psy_gl_fragment_shader_class_init(PsyGlFragmentShaderClass* klass)
     gl_shader_class->create_shader = psy_gl_fragment_shader_create_shader;
 }
 
-
 /* ******************** public functions ************************ */
 
-PsyGlFragmentShader*
+PsyGlFragmentShader *
 psy_gl_fragment_shader_new()
 {
     PsyGlFragmentShader *ret = g_object_new(PSY_TYPE_GL_FRAGMENT_SHADER, NULL);

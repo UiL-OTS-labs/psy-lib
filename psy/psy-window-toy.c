@@ -1,53 +1,48 @@
 
+#include "psy-window-toy.h"
 #include <epoxy/gl.h>
 #include <epoxy/gl_generated.h>
 #include <epoxy/glx.h>
-#include "psy-window-toy.h"
 
 #include "gl/psy-gl-program.h"
-#include "gl/psy-gl-vbuffer.h"
 #include "gl/psy-gl-texture.h"
+#include "gl/psy-gl-vbuffer.h"
 
 struct _PsyWindowToy {
-    GtkWindow       parent;
-    GtkWidget      *darea;
-    gfloat          clear_color[4];
-    guint           monitor;
-    PsyProgram     *gl_program;
-    PsyProgram     *gl_picture_program;
-    PsyVBuffer     *vertices;
-    PsyVBuffer     *picture_vertices;
-    PsyTexture     *gl_texture;
-    guint           n_frames;
-    guint           fps_timeout;
-    guint           tick_id; // In order to remove the tick callback
+    GtkWindow   parent;
+    GtkWidget  *darea;
+    gfloat      clear_color[4];
+    guint       monitor;
+    PsyProgram *gl_program;
+    PsyProgram *gl_picture_program;
+    PsyVBuffer *vertices;
+    PsyVBuffer *picture_vertices;
+    PsyTexture *gl_texture;
+    guint       n_frames;
+    guint       fps_timeout;
+    guint       tick_id; // In order to remove the tick callback
 };
 
 G_DEFINE_TYPE(PsyWindowToy, psy_window_toy, GTK_TYPE_WINDOW)
 
-typedef enum {
-    N_MONITOR = 1,
-    N_PROPS
-} PsyWindowToyProperty;
+typedef enum { N_MONITOR = 1, N_PROPS } PsyWindowToyProperty;
 
 static gboolean
-tick_callback(GtkWidget       *darea,
-              GdkFrameClock   *clock,
-              gpointer         data)
+tick_callback(GtkWidget *darea, GdkFrameClock *clock, gpointer data)
 {
     (void) data;
-    PsyWindowToy* win3d = PSY_WINDOW_TOY(data);
+    PsyWindowToy *win3d = PSY_WINDOW_TOY(data);
     gtk_gl_area_make_current(GTK_GL_AREA(darea));
-    //glViewport(0, 0, 600, 600);
-    GError* error = gtk_gl_area_get_error(GTK_GL_AREA(darea));
+    // glViewport(0, 0, 600, 600);
+    GError *error = gtk_gl_area_get_error(GTK_GL_AREA(darea));
     if (error) {
         g_critical("An OpenGL error occurred: %s", error->message);
         return G_SOURCE_REMOVE;
     }
 
-    gfloat *color = win3d->clear_color;
-    gint64 us = gdk_frame_clock_get_frame_time(clock);
-    gfloat seconds = (gfloat)us / 1e6;
+    gfloat *color   = win3d->clear_color;
+    gint64  us      = gdk_frame_clock_get_frame_time(clock);
+    gfloat  seconds = (gfloat) us / 1e6;
 
     color[0] = (float) sin(seconds * 1.00) / 2 + .5;
     color[1] = (float) sin(seconds * 0.50) / 2 + .5;
@@ -61,9 +56,8 @@ tick_callback(GtkWidget       *darea,
         return G_SOURCE_CONTINUE;
 
     gint color_id = glGetUniformLocation(
-            psy_gl_program_get_object_id(PSY_GL_PROGRAM(win3d->gl_program)),
-            "ourColor"
-            );
+        psy_gl_program_get_object_id(PSY_GL_PROGRAM(win3d->gl_program)),
+        "ourColor");
 
     psy_program_use(win3d->gl_program, &error);
     if (error) {
@@ -71,7 +65,7 @@ tick_callback(GtkWidget       *darea,
         return G_SOURCE_REMOVE;
     }
     float tc;
-    //tc = sinf(seconds * 2.0f * 3.141592654f) / 2.0 + .5f;
+    // tc = sinf(seconds * 2.0f * 3.141592654f) / 2.0 + .5f;
     tc = sinf(seconds) * .25 / 2.0 + .5f;
     glUniform4f(color_id, tc, tc, tc, 1.0f);
 
@@ -109,26 +103,24 @@ tick_callback(GtkWidget       *darea,
 }
 
 static void
-on_darea_resize(GtkDrawingArea* darea, gint width, gint height, gpointer data)
+on_darea_resize(GtkDrawingArea *darea, gint width, gint height, gpointer data)
 {
     PsyWindowToy *self = data;
     (void) self;
     gtk_gl_area_make_current(GTK_GL_AREA(darea));
-    glViewport(
-            0,
-            0,
-            width > 0 ? (GLsizei) width : 0,
-            height > 0 ? (GLsizei) height : 0
-            );
+    glViewport(0,
+               0,
+               width > 0 ? (GLsizei) width : 0,
+               height > 0 ? (GLsizei) height : 0);
     g_print("width %d, height %d, data %p\n", width, height, data);
 }
 
 static void
-init_textures(PsyWindowToy* self, GError **error)
+init_textures(PsyWindowToy *self, GError **error)
 {
     gtk_gl_area_make_current(GTK_GL_AREA(self->darea));
-    PsyGlTexture  *texture  = psy_gl_texture_new();
-    const gchar   *path     = "./share/Itálica_Owl.jpg";
+    PsyGlTexture *texture = psy_gl_texture_new();
+    const gchar  *path    = "./share/Itálica_Owl.jpg";
     psy_texture_set_num_channels(PSY_TEXTURE(texture), 3);
     psy_texture_set_path(PSY_TEXTURE(texture), path);
     psy_texture_upload(PSY_TEXTURE(texture), error);
@@ -137,19 +129,18 @@ init_textures(PsyWindowToy* self, GError **error)
 }
 
 static void
-init_shaders(PsyWindowToy* self, GError **error)
+init_shaders(PsyWindowToy *self, GError **error)
 {
     // Uniform color program
     PsyGlProgram *program = psy_gl_program_new();
-    self->gl_program = PSY_PROGRAM(program);
+    self->gl_program      = PSY_PROGRAM(program);
 
     psy_program_set_vertex_shader_from_path(
-            self->gl_program, "./psy/uniform-color.vert", error
-            );
+        self->gl_program, "./psy/uniform-color.vert", error);
     if (*error)
         goto fail;
     psy_program_set_fragment_shader_from_path(
-            self->gl_program, "./psy/uniform-color.frag", error);
+        self->gl_program, "./psy/uniform-color.frag", error);
     if (*error)
         goto fail;
 
@@ -158,18 +149,16 @@ init_shaders(PsyWindowToy* self, GError **error)
         goto fail;
 
     // Picture program
-    program = psy_gl_program_new();
+    program                  = psy_gl_program_new();
     self->gl_picture_program = PSY_PROGRAM(program);
 
     psy_program_set_vertex_shader_from_path(
-            self->gl_picture_program, "./psy/picture.vert", error
-            );
+        self->gl_picture_program, "./psy/picture.vert", error);
     if (*error)
         goto fail;
 
     psy_program_set_fragment_shader_from_path(
-            self->gl_picture_program, "./psy/picture.frag", error
-            );
+        self->gl_picture_program, "./psy/picture.frag", error);
     if (*error)
         goto fail;
 
@@ -179,7 +168,7 @@ init_shaders(PsyWindowToy* self, GError **error)
 
     return;
 
-    fail:
+fail:
     g_object_unref(program);
 }
 
@@ -192,6 +181,7 @@ init_vertices(PsyWindowToy *self, GError **error)
     self->picture_vertices = PSY_VBUFFER(psy_gl_vbuffer_new());
     g_assert(self->picture_vertices);
 
+    // clang-format off
     PsyVertex array[] = {
         {
             .pos = {-0.5f, -0.5f, 0.0f}, // left
@@ -209,7 +199,9 @@ init_vertices(PsyWindowToy *self, GError **error)
             {0, 0}
         }
     };
+    // clang-format on
 
+    // clang-format off
     PsyVertex pic_verts[] = {
         {
             .pos = {-0.6f,  0.6f, 0.001f}, // left top
@@ -232,27 +224,33 @@ init_vertices(PsyWindowToy *self, GError **error)
             .texture_pos = {1.0f, 0.0f}
         }
     };
+    // clang-format on
 
     psy_vbuffer_set_from_data(self->vertices, array, 3);
 
     psy_vbuffer_set_from_data(self->picture_vertices,
                               pic_verts,
-                              sizeof(pic_verts)/sizeof(pic_verts[0])
-                              );
+                              sizeof(pic_verts) / sizeof(pic_verts[0]));
     g_assert(sizeof(pic_verts) == psy_vbuffer_get_size(self->picture_vertices));
 
-    for (gsize i = 0; i < sizeof(pic_verts)/sizeof(pic_verts[0]); i++) {
-        PsyVertexPos pos;
-        PsyVertexColor color;
+    for (gsize i = 0; i < sizeof(pic_verts) / sizeof(pic_verts[0]); i++) {
+        PsyVertexPos    pos;
+        PsyVertexColor  color;
         PsyVertexTexPos tpos;
         psy_vbuffer_get_pos(self->picture_vertices, i, &pos);
         psy_vbuffer_get_color(self->picture_vertices, i, &color);
         psy_vbuffer_get_texture_pos(self->picture_vertices, i, &tpos);
 
         g_print("%f %f %f\t%f %f %f %f\t%f %f\n",
-                pos.x, pos.y, pos.z,
-                color.r, color.b, color.g, color.a,
-                tpos.s, tpos.t);
+                pos.x,
+                pos.y,
+                pos.z,
+                color.r,
+                color.b,
+                color.g,
+                color.a,
+                tpos.s,
+                tpos.t);
     }
 
     gtk_gl_area_make_current(GTK_GL_AREA(self->darea));
@@ -271,9 +269,9 @@ init_vertices(PsyWindowToy *self, GError **error)
 }
 
 static void
-on_darea_realize(GtkGLArea* darea, PsyWindowToy* window)
+on_darea_realize(GtkGLArea *darea, PsyWindowToy *window)
 {
-    GError* error = NULL;
+    GError *error = NULL;
     gtk_gl_area_make_current(darea);
 
     if (gtk_gl_area_get_error(darea) != NULL)
@@ -293,18 +291,17 @@ on_darea_realize(GtkGLArea* darea, PsyWindowToy* window)
     }
 
     init_textures(window, &error);
-    if(error) {
+    if (error) {
         gtk_gl_area_set_error(darea, error);
         return;
     }
-    
+
     window->tick_id = gtk_widget_add_tick_callback(
-		    GTK_WIDGET(darea), tick_callback, window, NULL
-		    );
+        GTK_WIDGET(darea), tick_callback, window, NULL);
 }
 
 static void
-on_darea_unrealize(GtkGLArea* area, PsyWindowToy* self)
+on_darea_unrealize(GtkGLArea *area, PsyWindowToy *self)
 {
     gtk_gl_area_make_current(area);
 
@@ -313,46 +310,46 @@ on_darea_unrealize(GtkGLArea* area, PsyWindowToy* self)
     g_clear_object(&self->vertices);
     g_clear_object(&self->picture_vertices);
     g_clear_object(&self->gl_texture);
-    
+
     gtk_widget_remove_tick_callback(GTK_WIDGET(self), self->tick_id);
 }
 
 static void
-psy_window_toy_set_property(GObject        *object,
-                        guint           property_id,
-                        const GValue   *value,
-                        GParamSpec     *spec)
+psy_window_toy_set_property(GObject      *object,
+                            guint         property_id,
+                            const GValue *value,
+                            GParamSpec   *spec)
 {
-    PsyWindowToy* self = PSY_WINDOW_TOY(object);
+    PsyWindowToy *self = PSY_WINDOW_TOY(object);
 
-    switch((PsyWindowToyProperty) property_id) {
-        case N_MONITOR:
-            psy_window_toy_set_monitor(self, g_value_get_uint(value));
-            break;
-        default:
-            G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, spec);
+    switch ((PsyWindowToyProperty) property_id) {
+    case N_MONITOR:
+        psy_window_toy_set_monitor(self, g_value_get_uint(value));
+        break;
+    default:
+        G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, spec);
     }
 }
 
 static void
-psy_window_toy_get_property(GObject        *object,
-                        guint           property_id,
-                        GValue         *value,
-                        GParamSpec     *spec)
+psy_window_toy_get_property(GObject    *object,
+                            guint       property_id,
+                            GValue     *value,
+                            GParamSpec *spec)
 {
-    PsyWindowToy* self = PSY_WINDOW_TOY(object);
+    PsyWindowToy *self = PSY_WINDOW_TOY(object);
 
-    switch((PsyWindowToyProperty) property_id) {
-        case N_MONITOR:
-            g_value_set_uint(value, psy_window_toy_get_monitor(self));
-            break;
-        default:
-            G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, spec);
+    switch ((PsyWindowToyProperty) property_id) {
+    case N_MONITOR:
+        g_value_set_uint(value, psy_window_toy_get_monitor(self));
+        break;
+    default:
+        G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, spec);
     }
 }
 
 static gboolean
-print_fps(PsyWindowToy* self)
+print_fps(PsyWindowToy *self)
 {
     g_print("fps = %d\n", self->n_frames);
     self->n_frames = 0;
@@ -360,9 +357,9 @@ print_fps(PsyWindowToy* self)
 }
 
 static void
-psy_window_toy_init(PsyWindowToy* self)
+psy_window_toy_init(PsyWindowToy *self)
 {
-    gfloat clearcolor[] = { 0.5, 0.5, 0.5, 1.0};
+    gfloat clearcolor[] = {0.5, 0.5, 0.5, 1.0};
     memcpy(self->clear_color, clearcolor, sizeof(clearcolor));
     self->darea = gtk_gl_area_new();
 
@@ -374,26 +371,14 @@ psy_window_toy_init(PsyWindowToy* self)
 
     gtk_window_set_decorated(GTK_WINDOW(self), FALSE);
 
-    gtk_window_set_child (GTK_WINDOW(self), self->darea);
-
-
-    g_signal_connect(
-            self->darea,
-            "realize",
-            G_CALLBACK(on_darea_realize),
-            self);
-    g_signal_connect(
-            self->darea,
-            "unrealize",
-            G_CALLBACK(on_darea_unrealize),
-            self);
+    gtk_window_set_child(GTK_WINDOW(self), self->darea);
 
     g_signal_connect(
-            self->darea,
-            "resize",
-            G_CALLBACK(on_darea_resize),
-            self
-            );
+        self->darea, "realize", G_CALLBACK(on_darea_realize), self);
+    g_signal_connect(
+        self->darea, "unrealize", G_CALLBACK(on_darea_unrealize), self);
+
+    g_signal_connect(self->darea, "resize", G_CALLBACK(on_darea_resize), self);
 
     self->fps_timeout = g_timeout_add(1000, G_SOURCE_FUNC(print_fps), self);
 
@@ -401,9 +386,9 @@ psy_window_toy_init(PsyWindowToy* self)
 }
 
 static void
-psy_window_toy_dispose(GObject* gobject)
+psy_window_toy_dispose(GObject *gobject)
 {
-    PsyWindowToy* self = PSY_WINDOW_TOY(gobject);
+    PsyWindowToy *self = PSY_WINDOW_TOY(gobject);
     (void) self;
 
     if (self->fps_timeout) {
@@ -415,25 +400,25 @@ psy_window_toy_dispose(GObject* gobject)
 }
 
 static void
-psy_window_toy_finalize(GObject* gobject)
+psy_window_toy_finalize(GObject *gobject)
 {
-    PsyWindowToy* self = PSY_WINDOW_TOY(gobject);
+    PsyWindowToy *self = PSY_WINDOW_TOY(gobject);
     (void) self;
 
     G_OBJECT_CLASS(psy_window_toy_parent_class)->finalize(gobject);
 }
 
-static GParamSpec* obj_properties[N_PROPS];
+static GParamSpec *obj_properties[N_PROPS];
 
 static void
-psy_window_toy_class_init(PsyWindowToyClass* klass)
+psy_window_toy_class_init(PsyWindowToyClass *klass)
 {
     GObjectClass *object_class = G_OBJECT_CLASS(klass);
 
-    object_class->set_property  = psy_window_toy_set_property;
-    object_class->get_property  = psy_window_toy_get_property;
-    object_class->dispose       = psy_window_toy_dispose;
-    object_class->finalize      = psy_window_toy_finalize;
+    object_class->set_property = psy_window_toy_set_property;
+    object_class->get_property = psy_window_toy_get_property;
+    object_class->dispose      = psy_window_toy_dispose;
+    object_class->finalize     = psy_window_toy_finalize;
 
     /**
      * PsyWindowToy:n-monitor:
@@ -441,17 +426,16 @@ psy_window_toy_class_init(PsyWindowToyClass* klass)
      * The number of the monitor on which the PsyWindowToy should be
      * presented.
      */
-    obj_properties[N_MONITOR] =
-        g_param_spec_uint("n-monitor",
-                          "nmonitor",
-                          "The number of the monitor to use for this window",
-                          0,
-                          G_MAXINT32,
-                          0,
-                          G_PARAM_CONSTRUCT | G_PARAM_READWRITE
-                          );
+    obj_properties[N_MONITOR]
+        = g_param_spec_uint("n-monitor",
+                            "nmonitor",
+                            "The number of the monitor to use for this window",
+                            0,
+                            G_MAXINT32,
+                            0,
+                            G_PARAM_CONSTRUCT | G_PARAM_READWRITE);
 
-    g_object_class_install_properties(object_class, N_PROPS, obj_properties);    
+    g_object_class_install_properties(object_class, N_PROPS, obj_properties);
 }
 
 /**
@@ -460,10 +444,10 @@ psy_window_toy_class_init(PsyWindowToyClass* klass)
  * Returns a new #PsyWindowToy instance on the first monitor.
  * @return
  */
-PsyWindowToy*
+PsyWindowToy *
 psy_window_toy_new(void)
 {
-    PsyWindowToy* window = g_object_new(PSY_TYPE_WINDOW_TOY, NULL);
+    PsyWindowToy *window = g_object_new(PSY_TYPE_WINDOW_TOY, NULL);
     return window;
 }
 
@@ -479,20 +463,18 @@ psy_window_toy_new(void)
  *
  * Returns: a newly initialized window
  */
-PsyWindowToy*
+PsyWindowToy *
 psy_window_toy_new_for_monitor(guint n)
 {
-    GdkDisplay* disp = gdk_display_get_default();
-    GListModel* monitors = gdk_display_get_monitors(disp);
-    guint max = g_list_model_get_n_items(monitors);
+    GdkDisplay *disp     = gdk_display_get_default();
+    GListModel *monitors = gdk_display_get_monitors(disp);
+    guint       max      = g_list_model_get_n_items(monitors);
 
     if (n >= max)
         n = max - 1;
-    
-    PsyWindowToy* window = g_object_new(
-            PSY_TYPE_WINDOW_TOY,
-            "n-monitor", n,
-            NULL);
+
+    PsyWindowToy *window
+        = g_object_new(PSY_TYPE_WINDOW_TOY, "n-monitor", n, NULL);
 
     return window;
 }
@@ -506,17 +488,18 @@ psy_window_toy_new_for_monitor(guint n)
  * Display the the window on monitor monitor_num
  */
 void
-psy_window_toy_set_monitor(PsyWindowToy* self, guint nth_monitor)
+psy_window_toy_set_monitor(PsyWindowToy *self, guint nth_monitor)
 {
     g_return_if_fail(PSY_IS_WINDOW_TOY(self));
-    GdkDisplay* display = gdk_display_get_default();
-    guint num_monitors = g_list_model_get_n_items(gdk_display_get_monitors(display));
+    GdkDisplay *display = gdk_display_get_default();
+    guint       num_monitors
+        = g_list_model_get_n_items(gdk_display_get_monitors(display));
     g_return_if_fail(nth_monitor < num_monitors);
 
-    GListModel* monitors = gdk_display_get_monitors(display);
-    GdkMonitor* monitor = g_list_model_get_item(monitors, nth_monitor);
+    GListModel *monitors = gdk_display_get_monitors(display);
+    GdkMonitor *monitor  = g_list_model_get_item(monitors, nth_monitor);
 
-    gtk_window_fullscreen_on_monitor(GTK_WINDOW(self),  monitor);
+    gtk_window_fullscreen_on_monitor(GTK_WINDOW(self), monitor);
     self->monitor = nth_monitor;
 }
 
@@ -532,7 +515,7 @@ psy_window_toy_set_monitor(PsyWindowToy* self, guint nth_monitor)
  *          -1 when self is not a valid monitor.
  */
 guint
-psy_window_toy_get_monitor(PsyWindowToy* self)
+psy_window_toy_get_monitor(PsyWindowToy *self)
 {
     g_return_val_if_fail(PSY_IS_WINDOW_TOY(self), -1);
     return self->monitor;

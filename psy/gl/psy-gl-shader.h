@@ -11,13 +11,11 @@ G_DECLARE_DERIVABLE_TYPE(PsyGlShader, psy_gl_shader, PSY, GL_SHADER, PsyShader)
 
 typedef struct _PsyGlShaderClass {
     PsyShaderClass parent_class;
-    GLuint (*create_shader) (void);
+    GLuint (*create_shader)(void);
 } PsyGlShaderClass;
 
-G_MODULE_EXPORT guint 
-psy_gl_shader_get_object_id(PsyGlShader* shader);
-
-
+G_MODULE_EXPORT guint
+psy_gl_shader_get_object_id(PsyGlShader *shader);
 
 G_END_DECLS
 

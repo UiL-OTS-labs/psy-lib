@@ -512,7 +512,8 @@ trigger_finished_cb(PsyParallelTrigger *self,
     g_clear_object(&priv->trigger_task);
 
     if (succes)
-        g_signal_emit(self, trigger_signals[SIG_FINISHED], 0, mask, tstart, tfinish);
+        g_signal_emit(
+            self, trigger_signals[SIG_FINISHED], 0, mask, tstart, tfinish);
 
     g_object_unref(tfinish);
     g_object_unref(tstart);
