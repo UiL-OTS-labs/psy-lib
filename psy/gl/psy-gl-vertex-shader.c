@@ -17,18 +17,19 @@ psy_gl_vertex_shader_create_shader()
     return object_id;
 }
 
-static void psy_gl_vertex_shader_init(PsyGlVertexShader* self)
+static void
+psy_gl_vertex_shader_init(PsyGlVertexShader *self)
 {
     (void) self;
 }
 
 static void
-psy_gl_vertex_shader_class_init(PsyGlVertexShaderClass* klass)
+psy_gl_vertex_shader_class_init(PsyGlVertexShaderClass *klass)
 {
     /*
     GObjectClass* object_class = G_OBJECT_CLASS(klass);
     */
-    PsyGlShaderClass* gl_shader_class = PSY_GL_SHADER_CLASS(klass);
+    PsyGlShaderClass *gl_shader_class = PSY_GL_SHADER_CLASS(klass);
 
     /*
     object_class->dispose  = psy_gl_vertex_shader_dispose;
@@ -40,9 +41,9 @@ psy_gl_vertex_shader_class_init(PsyGlVertexShaderClass* klass)
 
 /* ************ public functions *************/
 
-PsyGlVertexShader*
+PsyGlVertexShader *
 psy_gl_vertex_shader_new()
 {
-    PsyGlVertexShader* shader = g_object_new(PSY_TYPE_GL_VERTEX_SHADER, NULL);
+    PsyGlVertexShader *shader = g_object_new(PSY_TYPE_GL_VERTEX_SHADER, NULL);
     return shader;
 }
