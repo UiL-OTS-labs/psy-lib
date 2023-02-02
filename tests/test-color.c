@@ -6,10 +6,11 @@
 static void
 color_default_values(void)
 {
-    PsyColor* color = psy_color_new();
-    gfloat rf, gf, bf, af;
-    gint ri, gi, bi, ai;
+    PsyColor *color = psy_color_new();
+    gfloat    rf, gf, bf, af;
+    gint      ri, gi, bi, ai;
 
+    // clang-format off
     g_object_get(color,
             "r", &rf,
             "g", &gf,
@@ -21,6 +22,7 @@ color_default_values(void)
             "ai", &ai,
             NULL
             );
+    // clang-format on
 
     // Default floating point values should be 0, except alpha channel which
     // should be 1.0.
@@ -31,10 +33,10 @@ color_default_values(void)
 
     // Default integer values should be 0, except alpha channel which
     // should be 255.
-    CU_ASSERT_EQUAL(ri, 0);    
-    CU_ASSERT_EQUAL(gi, 0);    
-    CU_ASSERT_EQUAL(bi, 0);    
-    CU_ASSERT_EQUAL(ai, 255);    
+    CU_ASSERT_EQUAL(ri, 0);
+    CU_ASSERT_EQUAL(gi, 0);
+    CU_ASSERT_EQUAL(bi, 0);
+    CU_ASSERT_EQUAL(ai, 255);
 
     g_object_unref(color);
 }
@@ -42,13 +44,14 @@ color_default_values(void)
 static void
 color_specific_rgb_values(void)
 {
-    gfloat rf, gf, bf, af;
-    gint ri, gi, bi, ai;
+    gfloat       rf, gf, bf, af;
+    gint         ri, gi, bi, ai;
     const gfloat red = 1.0, green = 0.5, blue = .25, alpha = 0.5;
-    gint max_color = 255;
+    gint         max_color = 255;
 
-    PsyColor* color = psy_color_new_rgba(red, green, blue, alpha);
+    PsyColor *color = psy_color_new_rgba(red, green, blue, alpha);
 
+    // clang-format off
     g_object_get(color,
             "r", &rf,
             "g", &gf,
@@ -60,16 +63,17 @@ color_specific_rgb_values(void)
             "ai", &ai,
             NULL
             );
+    // clang-format on
 
-    CU_ASSERT_DOUBLE_EQUAL(rf, 1.0,  0.0);
-    CU_ASSERT_DOUBLE_EQUAL(gf, 0.5,  0.0);
+    CU_ASSERT_DOUBLE_EQUAL(rf, 1.0, 0.0);
+    CU_ASSERT_DOUBLE_EQUAL(gf, 0.5, 0.0);
     CU_ASSERT_DOUBLE_EQUAL(bf, 0.25, 0.0);
-    CU_ASSERT_DOUBLE_EQUAL(af, 0.5,  0.0);
-    
-    CU_ASSERT_EQUAL(ri, (int)(red * max_color));
-    CU_ASSERT_EQUAL(gi, (int)(green * max_color));
-    CU_ASSERT_EQUAL(bi, (int)(blue * max_color));
-    CU_ASSERT_EQUAL(ai, (int)(alpha * max_color));
+    CU_ASSERT_DOUBLE_EQUAL(af, 0.5, 0.0);
+
+    CU_ASSERT_EQUAL(ri, (int) (red * max_color));
+    CU_ASSERT_EQUAL(gi, (int) (green * max_color));
+    CU_ASSERT_EQUAL(bi, (int) (blue * max_color));
+    CU_ASSERT_EQUAL(ai, (int) (alpha * max_color));
 
     g_object_unref(color);
 }
@@ -77,13 +81,14 @@ color_specific_rgb_values(void)
 static void
 color_specific_rgbi_values(void)
 {
-    gfloat rf, gf, bf, af;
-    gint ri, gi, bi, ai;
+    gfloat     rf, gf, bf, af;
+    gint       ri, gi, bi, ai;
     const gint red = 0, green = 2, blue = 3, alpha = 4;
-    gfloat max_color = 255;
+    gfloat     max_color = 255;
 
-    PsyColor* color = psy_color_new_rgbai(red, green, blue, alpha);
+    PsyColor *color = psy_color_new_rgbai(red, green, blue, alpha);
 
+    // clang-format off
     g_object_get(color,
             "r", &rf,
             "g", &gf,
@@ -95,6 +100,7 @@ color_specific_rgbi_values(void)
             "ai", &ai,
             NULL
             );
+    // clang-format on
 
     gfloat epsilon = 1e-6;
 
@@ -102,7 +108,7 @@ color_specific_rgbi_values(void)
     CU_ASSERT_DOUBLE_EQUAL(gf, green / max_color, epsilon);
     CU_ASSERT_DOUBLE_EQUAL(bf, blue / max_color, epsilon);
     CU_ASSERT_DOUBLE_EQUAL(af, alpha / max_color, epsilon);
-    
+
     CU_ASSERT_EQUAL(ri, red);
     CU_ASSERT_EQUAL(gi, green);
     CU_ASSERT_EQUAL(bi, blue);
@@ -114,36 +120,27 @@ color_specific_rgbi_values(void)
 int
 add_color_suite(void)
 {
-    CU_Suite* suite = CU_add_suite("color tests", NULL, NULL);
-    CU_Test* test = NULL;
+    CU_Suite *suite = CU_add_suite("color tests", NULL, NULL);
+    CU_Test  *test  = NULL;
 
     if (!suite)
         return 1;
 
     test = CU_add_test(
-            suite,
-            "Colors get sensible default values",
-            color_default_values
-            );
+        suite, "Colors get sensible default values", color_default_values);
     if (!test)
         return 1;
 
     test = CU_add_test(
-            suite,
-            "Colors can get specific rgb values",
-            color_specific_rgb_values
-            );
+        suite, "Colors can get specific rgb values", color_specific_rgb_values);
     if (!test)
         return 1;
 
-    test = CU_add_test(
-            suite,
-            "Colors can get specific rgbi values",
-            color_specific_rgbi_values
-            );
+    test = CU_add_test(suite,
+                       "Colors can get specific rgbi values",
+                       color_specific_rgbi_values);
     if (!test)
         return 1;
 
     return 0;
 }
-

@@ -1,18 +1,18 @@
 
 #include <assert.h>
 
-#include <CUnit/CUnit.h>
 #include <CUnit/CUError.h>
+#include <CUnit/CUnit.h>
 
+#include <backend_gtk/psy-gtk-window.h>
 #include <psy-circle.h>
 #include <psy-color.h>
-#include <backend_gtk/psy-gtk-window.h>
 
-
-static PsyWindow* window = NULL;
+static PsyWindow *window = NULL;
 
 static int
-init_window(void) {
+init_window(void)
+{
     window = PSY_WINDOW(psy_gtk_window_new());
     if (window)
         return 0;
@@ -20,8 +20,9 @@ init_window(void) {
         return 1;
 }
 
-static int 
-destoy_window(void) {
+static int
+destoy_window(void)
+{
     assert(G_OBJECT(window)->ref_count == 1);
     g_object_unref(window);
     window = NULL;
@@ -31,10 +32,10 @@ destoy_window(void) {
 static void
 ref_starts_with_one(void)
 {
-    PsyCircle* circle = g_object_new(PSY_TYPE_CIRCLE, "window", window, NULL);
-    PsyColor* color = g_object_new(PSY_TYPE_COLOR, NULL);
-    GObject* circle_gobj = G_OBJECT(circle);
-    GObject* color_gobj = G_OBJECT(color);
+    PsyCircle *circle = g_object_new(PSY_TYPE_CIRCLE, "window", window, NULL);
+    PsyColor  *color  = g_object_new(PSY_TYPE_COLOR, NULL);
+    GObject   *circle_gobj = G_OBJECT(circle);
+    GObject   *color_gobj  = G_OBJECT(color);
 
     CU_ASSERT_EQUAL(circle_gobj->ref_count, 1);
     CU_ASSERT_EQUAL(color_gobj->ref_count, 1);
@@ -46,26 +47,26 @@ ref_starts_with_one(void)
 static void
 ref_set_method(void)
 {
-    PsyCircle* circle = g_object_new(PSY_TYPE_CIRCLE, "window", window, NULL);
-    PsyColor* color = g_object_new(PSY_TYPE_COLOR, NULL);
+    PsyCircle *circle = g_object_new(PSY_TYPE_CIRCLE, "window", window, NULL);
+    PsyColor  *color  = g_object_new(PSY_TYPE_COLOR, NULL);
 
     // Cast to conveniently obtain the reference count
-    GObject* circle_gobj = G_OBJECT(circle);
-    GObject* color_gobj = G_OBJECT(color);
+    GObject *circle_gobj = G_OBJECT(circle);
+    GObject *color_gobj  = G_OBJECT(color);
 
     /*
      * This is (transfer none), so the circle does not own the reference,
      * but has a reference to it.
      * Both we and the Circle should free it.
-     */ 
+     */
     psy_visual_stimulus_set_color(PSY_VISUAL_STIMULUS(circle), color);
-    
+
     CU_ASSERT_EQUAL(circle_gobj->ref_count, 1);
     CU_ASSERT_EQUAL(color_gobj->ref_count, 2);
 
     // The circle disposes its reference to color
     g_object_unref(circle);
-    
+
     CU_ASSERT_EQUAL(color_gobj->ref_count, 1);
 
     g_object_unref(color);
@@ -74,21 +75,17 @@ ref_set_method(void)
 static void
 ref_set_property(void)
 {
-    PsyCircle* circle = g_object_new(PSY_TYPE_CIRCLE, "window", window, NULL);
-    PsyColor* color = g_object_new(PSY_TYPE_COLOR, NULL);
-    GObject* circle_gobj = G_OBJECT(circle);
-    GObject* color_gobj = G_OBJECT(color);
-    
+    PsyCircle *circle = g_object_new(PSY_TYPE_CIRCLE, "window", window, NULL);
+    PsyColor  *color  = g_object_new(PSY_TYPE_COLOR, NULL);
+    GObject   *circle_gobj = G_OBJECT(circle);
+    GObject   *color_gobj  = G_OBJECT(color);
+
     CU_ASSERT_EQUAL(circle_gobj->ref_count, 1);
     CU_ASSERT_EQUAL(color_gobj->ref_count, 1);
 
-     // Circle is owning a reference
-    g_object_set(
-            circle,
-            "color", color,
-            NULL
-            );
-    
+    // Circle is owning a reference
+    g_object_set(circle, "color", color, NULL);
+
     CU_ASSERT_EQUAL(circle_gobj->ref_count, 1);
     CU_ASSERT_EQUAL(color_gobj->ref_count, 2);
 
@@ -98,14 +95,18 @@ ref_set_property(void)
     g_object_unref(color);
 }
 
-int add_ref_count_suite(void) {
-    CU_Suite* suite = CU_add_suite("test reference count", init_window, destoy_window);
-    CU_Test* test = NULL;
-    
+int
+add_ref_count_suite(void)
+{
+    CU_Suite *suite
+        = CU_add_suite("test reference count", init_window, destoy_window);
+    CU_Test *test = NULL;
+
     if (!suite)
         return 1;
 
-    test = CU_add_test(suite, "Object start with reference of 1", ref_starts_with_one);
+    test = CU_add_test(
+        suite, "Object start with reference of 1", ref_starts_with_one);
     if (!test)
         return 1;
 
@@ -119,4 +120,3 @@ int add_ref_count_suite(void) {
 
     return 0;
 }
-
