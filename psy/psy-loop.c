@@ -3,16 +3,16 @@
 #include "enum-types.h"
 
 typedef struct PsyLoopPrivate {
-    gint64  index;
-    gint64  stop;
-    gint64  increment;
-    gint    condition;
+    gint64 index;
+    gint64 stop;
+    gint64 increment;
+    gint   condition;
 } PsyLoopPrivate;
 
 typedef struct Iteration {
-    PsyLoop        *loop;
-    PsyTimePoint   *timestamp;
-}Iteration;
+    PsyLoop      *loop;
+    PsyTimePoint *timestamp;
+} Iteration;
 
 static void
 iteration_free(gpointer iteration)
@@ -25,10 +25,7 @@ iteration_free(gpointer iteration)
 
 G_DEFINE_TYPE_WITH_PRIVATE(PsyLoop, psy_loop, PSY_TYPE_STEP)
 
-typedef enum {
-    ITERATION,
-    NUM_SIGNALS
-} PsyStepSignal;
+typedef enum { ITERATION, NUM_SIGNALS } PsyStepSignal;
 
 typedef enum {
     PROP_NULL,
@@ -40,82 +37,77 @@ typedef enum {
 } PsyLoopProperty;
 
 static void
-psy_loop_set_property (GObject      *object,
-                       guint         property_id,
-                       const GValue *value,
-                       GParamSpec   *pspec)
+psy_loop_set_property(GObject      *object,
+                      guint         property_id,
+                      const GValue *value,
+                      GParamSpec   *pspec)
 {
     PsyLoop *self = PSY_LOOP(object);
 
-    switch ((PsyLoopProperty) property_id)
-    {
-        case PROP_INDEX:
-            psy_loop_set_index(self, g_value_get_int64(value));
-            break;
-        case PROP_INCREMENT:
-            psy_loop_set_increment(self, g_value_get_int64(value));
-            break;
-        case PROP_STOP:
-            psy_loop_set_stop(self, g_value_get_int64(value));
-            break;
-        case PROP_CONDITION:
-            psy_loop_set_condition(self, g_value_get_enum(value));
-            break;
-        default:
-            /* We don't have any other property... */
-            G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
-            break;
+    switch ((PsyLoopProperty) property_id) {
+    case PROP_INDEX:
+        psy_loop_set_index(self, g_value_get_int64(value));
+        break;
+    case PROP_INCREMENT:
+        psy_loop_set_increment(self, g_value_get_int64(value));
+        break;
+    case PROP_STOP:
+        psy_loop_set_stop(self, g_value_get_int64(value));
+        break;
+    case PROP_CONDITION:
+        psy_loop_set_condition(self, g_value_get_enum(value));
+        break;
+    default:
+        /* We don't have any other property... */
+        G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
+        break;
     }
 }
 
 static void
-psy_loop_get_property (GObject    *object,
-                       guint       property_id,
-                       GValue     *value,
-                       GParamSpec *pspec)
+psy_loop_get_property(GObject    *object,
+                      guint       property_id,
+                      GValue     *value,
+                      GParamSpec *pspec)
 {
-    PsyLoop *self = PSY_LOOP(object);
-    PsyLoopPrivate* priv = psy_loop_get_instance_private(self);
+    PsyLoop        *self = PSY_LOOP(object);
+    PsyLoopPrivate *priv = psy_loop_get_instance_private(self);
 
-    switch ((PsyLoopProperty) property_id)
-    {
-        case PROP_INDEX:
-            g_value_set_int64(value, priv->index);
-            break;
-        case PROP_STOP:
-            g_value_set_int64(value, priv->stop);
-            break;
-        case PROP_INCREMENT:
-            g_value_set_int64(value, priv->increment);
-            break;
-        case PROP_CONDITION:
-            g_value_set_enum(value, priv->condition);
-            break;
-        default:
-            /* We don't have any other property... */
-            G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
-            break;
+    switch ((PsyLoopProperty) property_id) {
+    case PROP_INDEX:
+        g_value_set_int64(value, priv->index);
+        break;
+    case PROP_STOP:
+        g_value_set_int64(value, priv->stop);
+        break;
+    case PROP_INCREMENT:
+        g_value_set_int64(value, priv->increment);
+        break;
+    case PROP_CONDITION:
+        g_value_set_enum(value, priv->condition);
+        break;
+    default:
+        /* We don't have any other property... */
+        G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
+        break;
     }
 }
 
-
 static GParamSpec *obj_properties[NUM_PROPERTIES] = {NULL};
-static guint loop_signals[NUM_SIGNALS];
+static guint       loop_signals[NUM_SIGNALS];
 
 static gboolean
 iter_cb(gpointer data)
 {
-    Iteration* iter = data;
+    Iteration *iter = data;
 
     gboolean kontinue = psy_loop_test(iter->loop);
     if (kontinue) {
-        g_signal_emit(
-                iter->loop,
-                loop_signals[ITERATION],
-                0,
-                psy_loop_get_index(iter->loop),
-                iter->timestamp
-        );
+        g_signal_emit(iter->loop,
+                      loop_signals[ITERATION],
+                      0,
+                      psy_loop_get_index(iter->loop),
+                      iter->timestamp);
     }
     else {
         psy_step_leave(PSY_STEP(iter->loop), iter->timestamp);
@@ -124,7 +116,7 @@ iter_cb(gpointer data)
 }
 
 static void
-psy_loop_activate(PsyStep* step, PsyTimePoint *timestamp)
+psy_loop_activate(PsyStep *step, PsyTimePoint *timestamp)
 {
     PsyLoop *self = PSY_LOOP(step);
 
@@ -134,7 +126,7 @@ psy_loop_activate(PsyStep* step, PsyTimePoint *timestamp)
 }
 
 static void
-psy_loop_iteration(PsyLoop* self, gint64 index, gint64 timestamp)
+psy_loop_iteration(PsyLoop *self, gint64 index, gint64 timestamp)
 {
     (void) index;
     (void) timestamp;
@@ -143,9 +135,9 @@ psy_loop_iteration(PsyLoop* self, gint64 index, gint64 timestamp)
 }
 
 static void
-psy_loop_class_init(PsyLoopClass* klass)
+psy_loop_class_init(PsyLoopClass *klass)
 {
-    GObjectClass *obj_class = G_OBJECT_CLASS(klass);
+    GObjectClass *obj_class  = G_OBJECT_CLASS(klass);
     PsyStepClass *step_class = PSY_STEP_CLASS(klass);
 
     obj_class->set_property = psy_loop_set_property;
@@ -153,7 +145,7 @@ psy_loop_class_init(PsyLoopClass* klass)
 
     step_class->activate = psy_loop_activate;
 
-    klass->iteration    = psy_loop_iteration;
+    klass->iteration = psy_loop_iteration;
 
     /**
      * PsyLoop:index:
@@ -161,15 +153,14 @@ psy_loop_class_init(PsyLoopClass* klass)
      * The current index of the loop. It can be used to index other arrays
      * to obtain useful information.
      */
-    obj_properties[PROP_INDEX] = g_param_spec_int64(
-            "index",
-            "Index",
-            "The index at which the loop currently is.",
-            G_MININT64,
-            G_MAXINT64,
-            0,
-            G_PARAM_READWRITE
-            );
+    obj_properties[PROP_INDEX]
+        = g_param_spec_int64("index",
+                             "Index",
+                             "The index at which the loop currently is.",
+                             G_MININT64,
+                             G_MAXINT64,
+                             0,
+                             G_PARAM_READWRITE);
 
     /**
      * PsyLoop:stop:
@@ -177,14 +168,13 @@ psy_loop_class_init(PsyLoopClass* klass)
      * The amount that index compared with prior to each iteration of the loop.
      */
     obj_properties[PROP_STOP] = g_param_spec_int64(
-            "stop",
-            "Stop",
-            "The value used to check whether the loop should stop",
-            G_MININT64,
-            G_MAXINT64,
-            0,
-            G_PARAM_READWRITE
-            );
+        "stop",
+        "Stop",
+        "The value used to check whether the loop should stop",
+        G_MININT64,
+        G_MAXINT64,
+        0,
+        G_PARAM_READWRITE);
 
     /**
      * PsyLoop:increment:
@@ -192,15 +182,15 @@ psy_loop_class_init(PsyLoopClass* klass)
      * The amount that index is incremented with at the end of each iteration
      * of the loop.
      */
-    obj_properties[PROP_INCREMENT] = g_param_spec_int64(
-            "increment",
-            "Increment",
-            "The value used to increment the index with after each iteration of the loop",
-            G_MININT64,
-            G_MAXINT64,
-            1,
-            G_PARAM_READWRITE | G_PARAM_CONSTRUCT
-            );
+    obj_properties[PROP_INCREMENT]
+        = g_param_spec_int64("increment",
+                             "Increment",
+                             "The value used to increment the index with after "
+                             "each iteration of the loop",
+                             G_MININT64,
+                             G_MAXINT64,
+                             1,
+                             G_PARAM_READWRITE | G_PARAM_CONSTRUCT);
 
     /**
      * PsyLoop:condition:
@@ -221,17 +211,15 @@ psy_loop_class_init(PsyLoopClass* klass)
      * etc.
      */
     obj_properties[PROP_CONDITION] = g_param_spec_enum(
-            "condition",
-            "Condition",
-            "The condition used to determine whether to stop the loop",
-            PSY_TYPE_LOOP_CONDITION,
-            PSY_LOOP_CONDITION_LESS,
-            G_PARAM_READWRITE
-            );
+        "condition",
+        "Condition",
+        "The condition used to determine whether to stop the loop",
+        PSY_TYPE_LOOP_CONDITION,
+        PSY_LOOP_CONDITION_LESS,
+        G_PARAM_READWRITE);
 
     g_object_class_install_properties(
-            obj_class, NUM_PROPERTIES, obj_properties
-            );
+        obj_class, NUM_PROPERTIES, obj_properties);
 
     /**
      * PsyLoop::iteration
@@ -243,23 +231,22 @@ psy_loop_class_init(PsyLoopClass* klass)
      * This signal is emitted on each iteration of the loop. The class handler
      * will increment the index in the 3rd stage of signal emission.
      */
-    loop_signals[ITERATION] = g_signal_new(
-            "iteration",
-            PSY_TYPE_LOOP,
-            G_SIGNAL_RUN_LAST,
-            G_STRUCT_OFFSET(PsyLoopClass, iteration),
-            NULL,
-            NULL,
-            NULL,
-            G_TYPE_NONE,
-            2,
-            G_TYPE_INT64,
-            G_TYPE_INT64
-            );
+    loop_signals[ITERATION]
+        = g_signal_new("iteration",
+                       PSY_TYPE_LOOP,
+                       G_SIGNAL_RUN_LAST,
+                       G_STRUCT_OFFSET(PsyLoopClass, iteration),
+                       NULL,
+                       NULL,
+                       NULL,
+                       G_TYPE_NONE,
+                       2,
+                       G_TYPE_INT64,
+                       G_TYPE_INT64);
 }
 
 static void
-psy_loop_init(PsyLoop* self)
+psy_loop_init(PsyLoop *self)
 {
     (void) self;
 }
@@ -272,7 +259,7 @@ psy_loop_init(PsyLoop* self)
  * Returns a new loop.
  * Returns:a new loop with its default - not so useful - parameters.
  */
-PsyLoop*
+PsyLoop *
 psy_loop_new()
 {
     return g_object_new(PSY_TYPE_LOOP, NULL);
@@ -284,13 +271,13 @@ psy_loop_new()
  * Creates a new loop with all parameters specified.
  * Returns: A new loop with all parameters specified.
  */
-PsyLoop*
-psy_loop_new_full(gint64 index,
-                  gint64 stop,
-                  gint64 increment,
-                  PsyLoopCondition condition
-                  )
+PsyLoop *
+psy_loop_new_full(gint64           index,
+                  gint64           stop,
+                  gint64           increment,
+                  PsyLoopCondition condition)
 {
+    // clang-format off
      return g_object_new(PSY_TYPE_LOOP,
                          "index", index,
                          "stop", stop,
@@ -298,6 +285,7 @@ psy_loop_new_full(gint64 index,
                          "condition", condition,
                          NULL
                          );
+    // clang-format on
 }
 
 /**
@@ -305,7 +293,7 @@ psy_loop_new_full(gint64 index,
  * @self:The loop to destroy
  */
 void
-psy_loop_destroy(PsyLoop* loop)
+psy_loop_destroy(PsyLoop *loop)
 {
     g_return_if_fail(PSY_IS_LOOP(loop));
     g_object_unref(loop);
@@ -321,12 +309,12 @@ psy_loop_destroy(PsyLoop* loop)
  * reached, we will step out of the loop and continue the steps of the parent.
  */
 void
-psy_loop_iterate(PsyLoop* self, PsyTimePoint *timestamp)
+psy_loop_iterate(PsyLoop *self, PsyTimePoint *timestamp)
 {
-    GSource *source;
+    GSource   *source;
     Iteration *iter = g_new(Iteration, 1);
 
-    iter->loop = g_object_ref(self);
+    iter->loop      = g_object_ref(self);
     iter->timestamp = g_object_ref(timestamp);
 
     /*
@@ -335,10 +323,10 @@ psy_loop_iterate(PsyLoop* self, PsyTimePoint *timestamp)
      * we use another GThread's GMainContext this wouldn't be the case.
      */
     source = g_idle_source_new();
-    g_source_set_priority (source, G_PRIORITY_DEFAULT);
-    g_source_set_callback (source, iter_cb, iter, iteration_free);
-    g_source_attach (source, psy_step_get_main_context(PSY_STEP(self)));
-    g_source_unref (source);
+    g_source_set_priority(source, G_PRIORITY_DEFAULT);
+    g_source_set_callback(source, iter_cb, iter, iteration_free);
+    g_source_attach(source, psy_step_get_main_context(PSY_STEP(self)));
+    g_source_unref(source);
 }
 
 /**
@@ -347,7 +335,7 @@ psy_loop_iterate(PsyLoop* self, PsyTimePoint *timestamp)
  * @index: the index that will be used for the next iteration of the loop.
  */
 void
-psy_loop_set_index(PsyLoop* self, gint64 index)
+psy_loop_set_index(PsyLoop *self, gint64 index)
 {
     g_return_if_fail(PSY_IS_LOOP(self));
     PsyLoopPrivate *priv = psy_loop_get_instance_private(self);
@@ -362,7 +350,7 @@ psy_loop_set_index(PsyLoop* self, gint64 index)
  * Returns: The current index of the loop.
  */
 gint64
-psy_loop_get_index(PsyLoop* self)
+psy_loop_get_index(PsyLoop *self)
 {
     g_return_val_if_fail(PSY_IS_LOOP(self), 0);
     PsyLoopPrivate *priv = psy_loop_get_instance_private(self);
@@ -376,7 +364,7 @@ psy_loop_get_index(PsyLoop* self)
  * @stop: The value to compare index with after each iteration of the loop.
  */
 void
-psy_loop_set_stop(PsyLoop* self, gint64 stop)
+psy_loop_set_stop(PsyLoop *self, gint64 stop)
 {
     g_return_if_fail(PSY_IS_LOOP(self));
     PsyLoopPrivate *priv = psy_loop_get_instance_private(self);
@@ -391,7 +379,7 @@ psy_loop_set_stop(PsyLoop* self, gint64 stop)
  *         to stop the loop.
  */
 gint64
-psy_loop_get_stop(PsyLoop* self)
+psy_loop_get_stop(PsyLoop *self)
 {
     g_return_val_if_fail(PSY_IS_LOOP(self), 0);
     PsyLoopPrivate *priv = psy_loop_get_instance_private(self);
@@ -408,7 +396,7 @@ psy_loop_get_stop(PsyLoop* self)
  * after each iteration of the loop.
  */
 void
-psy_loop_set_increment(PsyLoop* self, gint64 increment)
+psy_loop_set_increment(PsyLoop *self, gint64 increment)
 {
     g_return_if_fail(PSY_IS_LOOP(self));
     PsyLoopPrivate *priv = psy_loop_get_instance_private(self);
@@ -423,7 +411,7 @@ psy_loop_set_increment(PsyLoop* self, gint64 increment)
  * Returns:The amount that is added to the PsyLoop:index after each iteration.
  */
 gint64
-psy_loop_get_increment(PsyLoop* self)
+psy_loop_get_increment(PsyLoop *self)
 {
     g_return_val_if_fail(PSY_IS_LOOP(self), 0);
     PsyLoopPrivate *priv = psy_loop_get_instance_private(self);
@@ -440,7 +428,7 @@ psy_loop_get_increment(PsyLoop* self)
  * Set the loop condition.
  */
 void
-psy_loop_set_condition(PsyLoop* self, PsyLoopCondition condition)
+psy_loop_set_condition(PsyLoop *self, PsyLoopCondition condition)
 {
     g_return_if_fail(PSY_IS_LOOP(self));
     PsyLoopPrivate *priv = psy_loop_get_instance_private(self);
@@ -456,7 +444,7 @@ psy_loop_set_condition(PsyLoop* self, PsyLoopCondition condition)
  *          iterate.
  */
 PsyLoopCondition
-psy_loop_get_condition(PsyLoop* self)
+psy_loop_get_condition(PsyLoop *self)
 {
     g_return_val_if_fail(PSY_IS_LOOP(self), 0);
     PsyLoopPrivate *priv = psy_loop_get_instance_private(self);
@@ -474,18 +462,24 @@ psy_loop_get_condition(PsyLoop* self)
  * Returns: TRUE if the loop should continue, FALSE otherwise.
  */
 gboolean
-psy_loop_test(PsyLoop* self) {
+psy_loop_test(PsyLoop *self)
+{
     g_return_val_if_fail(PSY_IS_LOOP(self), FALSE);
     PsyLoopPrivate *priv = psy_loop_get_instance_private(self);
 
     switch (priv->condition) {
-        case PSY_LOOP_CONDITION_LESS:          return priv->index <  priv->stop;
-        case PSY_LOOP_CONDITION_LESS_EQUAL:    return priv->index <= priv->stop;
-        case PSY_LOOP_CONDITION_EQUAL:         return priv->index == priv->stop;
-        case PSY_LOOP_CONDITION_GREATER_EQUAL: return priv->index >= priv->stop;
-        case PSY_LOOP_CONDITION_GREATER:       return priv->index >  priv->stop;
-        default:
-            g_assert_not_reached();
-            return FALSE;
+    case PSY_LOOP_CONDITION_LESS:
+        return priv->index < priv->stop;
+    case PSY_LOOP_CONDITION_LESS_EQUAL:
+        return priv->index <= priv->stop;
+    case PSY_LOOP_CONDITION_EQUAL:
+        return priv->index == priv->stop;
+    case PSY_LOOP_CONDITION_GREATER_EQUAL:
+        return priv->index >= priv->stop;
+    case PSY_LOOP_CONDITION_GREATER:
+        return priv->index > priv->stop;
+    default:
+        g_assert_not_reached();
+        return FALSE;
     }
 }

@@ -124,8 +124,8 @@ psy_clock_now(PsyClock *self)
 {
     g_return_val_if_fail(PSY_IS_CLOCK(self), NULL);
     gint64        num_ticks = g_get_monotonic_time() - self->zero_time;
-    PsyTimePoint *tp =
-        g_object_new(PSY_TYPE_TIME_POINT, "num-ticks", num_ticks, NULL);
+    PsyTimePoint *tp
+        = g_object_new(PSY_TYPE_TIME_POINT, "num-ticks", num_ticks, NULL);
     return tp;
 }
 
