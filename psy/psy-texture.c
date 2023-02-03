@@ -362,7 +362,6 @@ load_picture(GTask        *task,
     if (error)
         goto on_error;
 
-    gsize picsize = 0;
     while (error == NULL) {
         guint8 buffer[1024];
         gsize  nread;
@@ -376,7 +375,6 @@ load_picture(GTask        *task,
             goto on_error;
 
         g_byte_array_append(bytes, buffer, nread);
-        picsize += nread;
         if (nread < sizeof(buffer))
             break;
     }
