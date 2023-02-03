@@ -77,15 +77,6 @@ psy_stepping_stones_get_property(GObject    *object,
 }
 
 static void
-psy_stepping_stones_dispose(GObject *gobject)
-{
-    PsySteppingStonesPrivate *priv = psy_stepping_stones_get_instance_private(
-        PSY_STEPPING_STONES(gobject));
-
-    G_OBJECT_CLASS(psy_stepping_stones_parent_class)->dispose(gobject);
-}
-
-static void
 psy_stepping_stones_finalize(GObject *gobject)
 {
     PsySteppingStonesPrivate *priv = psy_stepping_stones_get_instance_private(
@@ -138,7 +129,6 @@ psy_stepping_stones_class_init(PsySteppingStonesClass *klass)
 
     obj_class->set_property = psy_stepping_stones_set_property;
     obj_class->get_property = psy_stepping_stones_get_property;
-    obj_class->dispose      = psy_stepping_stones_dispose;
     obj_class->finalize     = psy_stepping_stones_finalize;
 
     PsyStepClass *step_klass = PSY_STEP_CLASS(klass);

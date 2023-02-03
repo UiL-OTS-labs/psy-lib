@@ -35,14 +35,6 @@ psy_gl_context_dispose(GObject *object)
     G_OBJECT_CLASS(psy_gl_context_parent_class)->dispose(object);
 }
 
-static void
-psy_gl_context_finalize(GObject *object)
-{
-    PsyGlContext *self = PSY_GL_CONTEXT(object);
-
-    G_OBJECT_CLASS(psy_gl_context_parent_class)->finalize(object);
-}
-
 static PsyProgram *
 psy_gl_create_program(PsyDrawingContext *self)
 {
@@ -78,8 +70,7 @@ psy_gl_context_class_init(PsyGlContextClass *class)
     PsyDrawingContextClass *drawing_context_class
         = PSY_DRAWING_CONTEXT_CLASS(class);
 
-    gobject_class->finalize = psy_gl_context_finalize;
-    gobject_class->dispose  = psy_gl_context_dispose;
+    gobject_class->dispose = psy_gl_context_dispose;
 
     drawing_context_class->create_program       = psy_gl_create_program;
     drawing_context_class->create_vertex_shader = psy_gl_create_vertex_shader;

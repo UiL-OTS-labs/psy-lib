@@ -493,10 +493,11 @@ psy_parallel_trigger_write_finish(PsyParallelTrigger *self,
 }
 
 void
-trigger_finished_cb(PsyParallelTrigger *self,
-                    GAsyncResult       *result,
-                    GError            **error)
+trigger_finished_cb(GObject *obj, GAsyncResult *result, gpointer data)
 {
+    (void) data;
+    GError                    *error = NULL;
+    PsyParallelTrigger        *self  = PSY_PARALLEL_TRIGGER(obj);
     PsyParallelTriggerPrivate *priv
         = psy_parallel_trigger_get_instance_private(self);
 
@@ -507,13 +508,22 @@ trigger_finished_cb(PsyParallelTrigger *self,
     guint         mask;
 
     gboolean succes = psy_parallel_trigger_write_finish(
-        self, result, &mask, &tstart, &tfinish, error);
+        self, result, &mask, &tstart, &tfinish, &error);
 
     g_clear_object(&priv->trigger_task);
 
     if (succes)
         g_signal_emit(
             self, trigger_signals[SIG_FINISHED], 0, mask, tstart, tfinish);
+
+    if (error) {
+        if (error->domain != G_IO_ERROR
+            && error->code == G_IO_ERROR_CANCELLED) {
+            g_critical("async write failed: %s", error->message);
+        }
+
+        g_error_free(error);
+    }
 
     g_object_unref(tfinish);
     g_object_unref(tstart);

@@ -6,7 +6,6 @@
 int
 main(int argc, char **argv)
 {
-
     (void) argc;
     (void) argv;
 
@@ -16,11 +15,9 @@ main(int argc, char **argv)
 
     psy_parallel_port_open(pp, 0, &error);
     if (error) {
-        fprintf(stderr, "%s", error->message);
+        fprintf(stderr, "%s\n", error->message);
         goto the_end;
     }
-
-    g_print("Error = %p\n", error);
 
     for (int i = 0; i < 100; i++) {
         psy_parallel_port_write(pp, 0, &error);

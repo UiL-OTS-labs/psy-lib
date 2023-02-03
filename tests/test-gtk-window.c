@@ -48,6 +48,7 @@ static GOptionEntry entries[] = {
     {"circle-first", 'c', G_OPTION_FLAG_NONE, G_OPTION_ARG_NONE, &circle_first, "Whether or not to present the circle first", NULL},
     {0}
 };
+
 // clang-format on
 
 void
@@ -192,7 +193,6 @@ main(int argc, char **argv)
     psy_visual_stimulus_set_color(PSY_VISUAL_STIMULUS(circle), circle_color);
     g_object_set(cross, "color", cross_color, NULL);
 
-    g_print("Circle @ %p,\tCross @ %p\n", circle, cross);
     g_signal_connect(circle, "update", G_CALLBACK(update_circle), tp);
     g_signal_connect(circle, "started", G_CALLBACK(circle_started), tp);
     g_signal_connect(circle, "stopped", G_CALLBACK(circle_stopped), tp);
