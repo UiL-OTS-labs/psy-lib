@@ -1,4 +1,3 @@
-
 /**
  * PsyArtist:
  *
@@ -43,7 +42,8 @@ static GParamSpec *artist_properties[NUM_PROPERTIES] = {0};
 static void
 artist_dispose(GObject *object)
 {
-    PsyArtistPrivate *priv = psy_artist_get_instance_private(object);
+    PsyArtistPrivate *priv
+        = psy_artist_get_instance_private(PSY_ARTIST(object));
 
     if (priv->window) {
         g_object_unref(priv->window);
