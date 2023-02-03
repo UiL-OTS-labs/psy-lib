@@ -165,7 +165,7 @@ test_mul_scalar(void)
     gdouble     scalar = 2.0;
     PsyVector4 *v1
         = g_object_new(PSY_TYPE_VECTOR4, "x", x, "y", y, "z", z, "w", w, NULL);
-    PsyVector4 *result   = psy_vector4_mul_s(v1, scalar);
+    PsyVector4 *result = psy_vector4_mul_s(v1, scalar);
 
     // clang-format off
     PsyVector4 *expected = g_object_new(PSY_TYPE_VECTOR4,
@@ -239,7 +239,7 @@ add_vector4_suite(void)
     if (!test)
         return 1;
 
-    test = CU_add_test(suite, "Vector4 subtract vector", test_sub_scalar);
+    test = CU_add_test(suite, "Vector4 subtract vector", test_sub_vector);
     if (!test)
         return 1;
 
