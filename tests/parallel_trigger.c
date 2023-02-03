@@ -106,10 +106,14 @@ exit:
 
     g_object_unref(clk);
 
-    g_object_unref(onset_dur);
-    g_object_unref(trigger_dur);
-    g_object_unref(trigger_start);
-    g_object_unref(now);
+    if (onset_dur)
+        g_object_unref(onset_dur);
+    if (trigger_dur)
+        g_object_unref(trigger_dur);
+    if (trigger_start)
+        g_object_unref(trigger_start);
+    if (now)
+        g_object_unref(now);
 
     g_object_unref(trigger);
 
