@@ -57,8 +57,7 @@ psy_parallel_port_set_property(GObject      *object,
                                const GValue *value,
                                GParamSpec   *spec)
 {
-    PsyParallelPort        *self = PSY_PARALLEL_PORT(object);
-    PsyParallelPortPrivate *priv = psy_parallel_port_get_instance_private(self);
+    PsyParallelPort *self = PSY_PARALLEL_PORT(object);
 
     switch ((PsyParallelPortProperty) property_id) {
     case PORT_DIRECTION:
