@@ -8,6 +8,12 @@
 #include <psy-stepping-stones.h>
 #include <psy-trial.h>
 
+#if GLIB_CHECK_VERSION(2, 74, 0)
+gint g_default_flags = G_APPLICATION_DEFAULT_FLAGS;
+#else
+gint g_default_flags = G_APPLICATION_FLAGS_NONE;
+#endif
+
 typedef struct ActivateData {
     GApplication *app;
     gboolean      activated;
@@ -82,7 +88,7 @@ static void
 test_basic_step(void)
 {
     int           status;
-    GApplication *app = g_application_new(NULL, G_APPLICATION_FLAGS_NONE);
+    GApplication *app = g_application_new(NULL, g_default_flags);
 
     ActivateData data = {.app = app};
 
@@ -190,7 +196,7 @@ test_basic_loop(void)
         = {.index = index, .stop = stop, .increment = increment, .stats = {0}};
     LoopStats regular = {0};
 
-    GApplication *app = g_application_new(NULL, G_APPLICATION_FLAGS_NONE);
+    GApplication *app = g_application_new(NULL, g_default_flags);
     g_signal_connect(
         app, "activate", G_CALLBACK(on_basic_loop_activate), &lparams);
 
@@ -217,7 +223,7 @@ test_basic_loop(void)
     memset(&lparams.stats, 0, sizeof(lparams.stats));
     memset(&regular, 0, sizeof(regular));
 
-    app = g_application_new(NULL, G_APPLICATION_FLAGS_NONE);
+    app = g_application_new(NULL, g_default_flags);
     g_signal_connect(
         app, "activate", G_CALLBACK(on_basic_loop_activate), &lparams);
 
@@ -244,7 +250,7 @@ test_basic_loop(void)
     memset(&lparams.stats, 0, sizeof(lparams.stats));
     memset(&regular, 0, sizeof(regular));
 
-    app = g_application_new(NULL, G_APPLICATION_FLAGS_NONE);
+    app = g_application_new(NULL, g_default_flags);
     g_signal_connect(
         app, "activate", G_CALLBACK(on_basic_loop_activate), &lparams);
 
@@ -271,7 +277,7 @@ test_basic_loop(void)
     memset(&lparams.stats, 0, sizeof(lparams.stats));
     memset(&regular, 0, sizeof(regular));
 
-    app = g_application_new(NULL, G_APPLICATION_FLAGS_NONE);
+    app = g_application_new(NULL, g_default_flags);
     g_signal_connect(
         app, "activate", G_CALLBACK(on_basic_loop_activate), &lparams);
 
@@ -298,7 +304,7 @@ test_basic_loop(void)
     memset(&lparams.stats, 0, sizeof(lparams.stats));
     memset(&regular, 0, sizeof(regular));
 
-    app = g_application_new(NULL, G_APPLICATION_FLAGS_NONE);
+    app = g_application_new(NULL, g_default_flags);
     g_signal_connect(
         app, "activate", G_CALLBACK(on_basic_loop_activate), &lparams);
 
@@ -435,7 +441,7 @@ static void
 test_stepping_stones(void)
 {
     int           status;
-    GApplication *app = g_application_new(NULL, G_APPLICATION_FLAGS_NONE);
+    GApplication *app = g_application_new(NULL, g_default_flags);
 
     StoneParams params = {0};
 
