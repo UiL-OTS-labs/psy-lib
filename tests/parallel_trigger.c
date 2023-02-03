@@ -29,6 +29,7 @@ finished(PsyParallelTrigger *trigger,
          PsyTimePoint       *tfinish,
          gpointer            data)
 {
+    (void) tstart;
     PsyDuration  *dur   = psy_duration_new_ms(dur_ms);
     PsyTimePoint *newtp = psy_time_point_add(tfinish, dur);
 
@@ -55,7 +56,8 @@ main(int argc, char **argv)
     g_option_context_add_main_entries(option_context, entries, NULL);
 
     if (!g_option_context_parse(option_context, &argc, &argv, &error)) {
-        g_printerr("Unable to parse commanline options: %s\n", error->message);
+        g_printerr("Unable to parse command line options: %s\n",
+                   error->message);
         g_error_free(error);
         return EXIT_FAILURE;
     }
