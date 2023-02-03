@@ -6,7 +6,7 @@
 int
 main(int argc, char **argv)
 {
-
+    (void) argc;
     (void) argv;
 
     PsyParallelPort *pp = psy_parallel_port_new();
