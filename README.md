@@ -1,6 +1,33 @@
 # psy-lib
 A GObject based library for psychological experiments
 
+## Building psy-lib
+Currently psy-lib is setup to run under Linux, support for windows is currently
+planned. So the steps described here to get psy-lib compiled are the based
+on the steps that psy-lib does in the continues integration.
+
+0. You'll need a C and C++ compiler clang and gcc toolchains work, we plan
+   support for msvc.
+1. Install dependencies, you'll be needing the development libararies:
+   - glib-2.0
+   - gtk-4
+   - libcunit1 (for the unittests)
+2. You'll need python-3.10
+3. You need the python packages from the "requirements.txt" file.
+4. Run the meson build system
+   - For a debug build:
+```console
+meson setup build
+```
+   - For a release build:
+```console
+meson setup build --buildtype=release
+```
+   - For other buildtypes please checkout the Meson buildsystem
+5. Compile psy-lib
+   - meson compile -C build
+
+
 ## This library is a work in progress and not yet nearly ready for any serious work
 The main idea of the library is to have a C library for tight control over
 all the relatively low level system libraries such as opengl and windowing libraries
