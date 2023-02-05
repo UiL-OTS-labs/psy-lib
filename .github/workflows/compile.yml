@@ -25,10 +25,10 @@ jobs:
         with:
           python-version: '3.10'
           cache: 'pip'
-      - name: Install meson ninja
+      - name: Install pip packages
         run: |
           python3 -m pip install --upgrade pip
-          python3 -m pip install meson ninja gi-docgen PyGObject
+          python3 -m pip install -r requirements.txt
       - name: configure_for_gcc
         if: ${{matrix.compiler == 'gcc'}}
         run: meson setup --buildtype=${{ matrix.buildtype}} --werror build/
