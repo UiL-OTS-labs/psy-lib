@@ -16,7 +16,7 @@ jobs:
         buildtype: [debug, release]
     runs-on: ubuntu-22.04
     steps:
-      - uses: awalsh128/cache-apt-pgks-action@latest
+      - uses: awalsh128/cache-apt-pkgs-action@latest
         with:
           packages: libglib2.0-dev libgtk-4-dev libcunit1-dev
           version: 1.0
