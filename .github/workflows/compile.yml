@@ -21,7 +21,7 @@ jobs:
           packages: libglib2.0-dev libgtk-4-dev libcunit1-dev
           version: 1.0
       - uses: actions/checkout@v3
-      - uses: actions/setup-python@v1
+      - uses: actions/setup-python@v2
         with:
           python-version: '3.10'
           cache: 'pip'
