@@ -16,21 +16,19 @@ jobs:
         buildtype: [debug, release]
     runs-on: ubuntu-22.04
     steps:
-      - name: Install dependencies
-        run: |
-          sudo apt update
-          sudo apt install libglib2.0-dev
-          sudo apt install libgtk-4-dev
-          sudo apt install libcunit1-dev
+      - uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: libglib2.0-dev libgtk-4-dev libcunit1-dev
+          version: 1.0
       - uses: actions/checkout@v3
-      - uses: actions/setup-python@v1
+      - uses: actions/setup-python@v2
         with:
           python-version: '3.10'
           cache: 'pip'
-      - name: Install meson ninja
+      - name: Install pip packages
         run: |
           python3 -m pip install --upgrade pip
-          python3 -m pip install meson ninja gi-docgen PyGObject
+          python3 -m pip install -r requirements.txt
       - name: configure_for_gcc
         if: ${{matrix.compiler == 'gcc'}}
         run: meson setup --buildtype=${{ matrix.buildtype}} --werror build/
