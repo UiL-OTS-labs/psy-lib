@@ -37,6 +37,7 @@ unit_test = executable (
         'test-ref-count.c',
         'test-stepping.c',
         'test-time-utilities.c',
+        'test-visual-stimulus.c',
         'vector-test.c',
         'vector4-test.c'
     ),

@@ -12,6 +12,8 @@ typedef struct PsyVisualStimulusPrivate {
     gint64     num_frames;
     gint64     start_frame;
     gfloat     x, y, z;
+    gfloat     scale_x, scale_y;
+    gfloat     rotation;
     PsyColor  *color;
 } PsyVisualStimulusPrivate;
 
@@ -29,6 +31,10 @@ typedef enum {
     PROP_X,           // the x coordinate of the stimulus
     PROP_Y,           // the y coordinate of the stimulus
     PROP_Z,           // the z coordinate of the stimulus
+    PROP_SCALE_X,     // scaling along the x axis
+    PROP_SCALE_Y,     // scaling along the y axis
+    PROP_SCALE,       // scaling along the x and y axis
+    PROP_ROTATION,    // Rotation around the z axis
     PROP_COLOR,       // the fill color of the stimulus.
     NUM_PROPERTIES
 } VisualStimulusProperty;
@@ -61,6 +67,19 @@ psy_visual_stimulus_set_property(GObject      *object,
         break;
     case PROP_Z:
         psy_visual_stimulus_set_z(self, g_value_get_float(value));
+        break;
+    case PROP_SCALE_X:
+        psy_visual_stimulus_set_scale_x(self, g_value_get_float(value));
+        break;
+    case PROP_SCALE_Y:
+        psy_visual_stimulus_set_scale_y(self, g_value_get_float(value));
+        break;
+    case PROP_SCALE:
+        psy_visual_stimulus_set_scale_x(self, g_value_get_float(value));
+        psy_visual_stimulus_set_scale_y(self, g_value_get_float(value));
+        break;
+    case PROP_ROTATION:
+        psy_visual_stimulus_set_rotation(self, g_value_get_float(value));
         break;
     case PROP_COLOR:
         psy_visual_stimulus_set_color(self, g_value_get_object(value));
@@ -104,6 +123,15 @@ psy_visual_stimulus_get_property(GObject    *object,
         break;
     case PROP_Z:
         g_value_set_float(value, priv->z);
+        break;
+    case PROP_SCALE_X:
+        g_value_set_float(value, priv->scale_x);
+        break;
+    case PROP_SCALE_Y:
+        g_value_set_float(value, priv->scale_y);
+        break;
+    case PROP_ROTATION:
+        g_value_set_float(value, priv->rotation);
         break;
     case PROP_COLOR:
         g_value_set_object(value, psy_visual_stimulus_get_color(self));
@@ -300,6 +328,62 @@ psy_visual_stimulus_class_init(PsyVisualStimulusClass *klass)
                              G_MAXFLOAT,
                              0,
                              G_PARAM_READWRITE);
+
+    /**
+     * PsyVisualStimulus:scale_x:
+     *
+     * A scaling factor for the stimulus along the x-axis.
+     */
+    visual_stimulus_properties[PROP_SCALE_X]
+        = g_param_spec_float("scale_x",
+                             "scalex",
+                             "The scaling factor along the x-axis",
+                             -G_MAXFLOAT,
+                             G_MAXFLOAT,
+                             1.0,
+                             G_PARAM_READWRITE | G_PARAM_CONSTRUCT);
+    /**
+     * PsyVisualStimulus:scale_y:
+     *
+     * A scaling factor for the stimulus along the y-axis.
+     */
+    visual_stimulus_properties[PROP_SCALE_Y]
+        = g_param_spec_float("scale_y",
+                             "scaley",
+                             "The scaling factor along the y-axis",
+                             -G_MAXFLOAT,
+                             G_MAXFLOAT,
+                             1.0,
+                             G_PARAM_READWRITE | G_PARAM_CONSTRUCT);
+
+    /**
+     * PsyVisualStimulus:scale:
+     *
+     * Using this property one may set the scaling in both x and y direction
+     * in one statement.
+     */
+    visual_stimulus_properties[PROP_SCALE]
+        = g_param_spec_float("scale",
+                             "Scale",
+                             "Sets the scaling for both the x and y axis",
+                             -G_MAXFLOAT,
+                             G_MAXFLOAT,
+                             1.0,
+                             G_PARAM_WRITABLE | G_PARAM_CONSTRUCT);
+
+    /**
+     * PsyVisualStimulus:rotation:
+     *
+     * The rotation quantity about the z axis.
+     */
+    visual_stimulus_properties[PROP_ROTATION]
+        = g_param_spec_float("rotation",
+                             "Rotation",
+                             "The rotation around the z-axis",
+                             -G_MAXFLOAT,
+                             G_MAXFLOAT,
+                             1.0,
+                             G_PARAM_READWRITE | G_PARAM_CONSTRUCT);
 
     /**
      * PsyVisualStimulus:color
@@ -608,6 +692,111 @@ psy_visual_stimulus_set_z(PsyVisualStimulus *self, gfloat z)
     g_return_if_fail(PSY_IS_VISUAL_STIMULUS(self));
 
     priv->z = z;
+}
+
+/**
+ * psy_visual_stimulus_get_scale_x:
+ * @self: an instance of `PsyVisualStimulus`
+ *
+ * Get the scaling along the x axis.
+ *
+ * Returns: the scaling along the x axis
+ */
+gfloat
+psy_visual_stimulus_get_scale_x(PsyVisualStimulus *self)
+{
+    PsyVisualStimulusPrivate *priv
+        = psy_visual_stimulus_get_instance_private(self);
+    g_return_val_if_fail(PSY_IS_VISUAL_STIMULUS(self), NAN);
+
+    return priv->scale_x;
+}
+
+/**
+ * psy_visual_stimulus_set_scale_x:
+ * @self: an instance of `PsyVisualStimulus`
+ * @x: a `gfloat` representing the scale factor.
+ *
+ * Set the new value for the scaling along the x axis
+ */
+void
+psy_visual_stimulus_set_scale_x(PsyVisualStimulus *self, gfloat x)
+{
+    PsyVisualStimulusPrivate *priv
+        = psy_visual_stimulus_get_instance_private(self);
+    g_return_if_fail(PSY_IS_VISUAL_STIMULUS(self));
+
+    priv->scale_x = x;
+}
+
+/**
+ * psy_visual_stimulus_get_scale_y:
+ * @self: an instance of `PsyVisualStimulus`
+ *
+ * Get the scaling along the y axis.
+ *
+ * Returns: the scaling along the y axis
+ */
+gfloat
+psy_visual_stimulus_get_scale_y(PsyVisualStimulus *self)
+{
+    PsyVisualStimulusPrivate *priv
+        = psy_visual_stimulus_get_instance_private(self);
+    g_return_val_if_fail(PSY_IS_VISUAL_STIMULUS(self), NAN);
+
+    return priv->scale_y;
+}
+
+/**
+ * psy_visual_stimulus_set_scale_y:
+ * @self: an instance of `PsyVisualStimulus`
+ * @y: a `gfloat` representing the scale factor.
+ *
+ * Set the new value for the scaling along the y axis
+ */
+void
+psy_visual_stimulus_set_scale_y(PsyVisualStimulus *self, gfloat y)
+{
+    PsyVisualStimulusPrivate *priv
+        = psy_visual_stimulus_get_instance_private(self);
+    g_return_if_fail(PSY_IS_VISUAL_STIMULUS(self));
+
+    priv->scale_y = y;
+}
+
+/**
+ * psy_visual_stimulus_get_rotation:
+ * @self: an instance of `PsyVisualStimulus`
+ *
+ * Get the rotation along the z axis.
+ *
+ * Returns: the rotation along the z axis
+ */
+gfloat
+psy_visual_stimulus_get_rotation(PsyVisualStimulus *self)
+{
+    PsyVisualStimulusPrivate *priv
+        = psy_visual_stimulus_get_instance_private(self);
+    g_return_val_if_fail(PSY_IS_VISUAL_STIMULUS(self), NAN);
+
+    return priv->rotation;
+}
+
+/**
+ * psy_visual_stimulus_set_rotation:
+ * @self: an instance of `PsyVisualStimulus`
+ * @rotation: a `gfloat` representing the amount of rotation
+ *
+ * Set the new value for the rotation along the z axis
+ */
+void
+psy_visual_stimulus_set_rotation(PsyVisualStimulus *self, gfloat rotation)
+{
+    PsyVisualStimulusPrivate *priv
+        = psy_visual_stimulus_get_instance_private(self);
+    g_return_if_fail(PSY_IS_VISUAL_STIMULUS(self));
+
+    priv->rotation = rotation;
 }
 
 /**

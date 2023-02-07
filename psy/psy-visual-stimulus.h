@@ -71,6 +71,21 @@ psy_visual_stimulus_get_z(PsyVisualStimulus *self);
 G_MODULE_EXPORT void
 psy_visual_stimulus_set_z(PsyVisualStimulus *self, gfloat z);
 
+G_MODULE_EXPORT gfloat
+psy_visual_stimulus_get_scale_x(PsyVisualStimulus *self);
+G_MODULE_EXPORT void
+psy_visual_stimulus_set_scale_x(PsyVisualStimulus *self, gfloat x);
+
+G_MODULE_EXPORT gfloat
+psy_visual_stimulus_get_scale_y(PsyVisualStimulus *self);
+G_MODULE_EXPORT void
+psy_visual_stimulus_set_scale_y(PsyVisualStimulus *self, gfloat y);
+
+G_MODULE_EXPORT gfloat
+psy_visual_stimulus_get_rotation(PsyVisualStimulus *self);
+G_MODULE_EXPORT void
+psy_visual_stimulus_set_rotation(PsyVisualStimulus *self, gfloat rotation);
+
 G_MODULE_EXPORT PsyColor *
 psy_visual_stimulus_get_color(PsyVisualStimulus *self);
 
