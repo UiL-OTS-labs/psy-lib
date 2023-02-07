@@ -1,4 +1,5 @@
 
+#include "psy-visual-stimulus.h"
 #include <CUnit/CUnit.h>
 #include <psylib.h>
 
@@ -31,6 +32,10 @@ vstim_default_values(void)
     CU_ASSERT_DOUBLE_EQUAL(scale_y, 1, 0);
 
     CU_ASSERT_DOUBLE_EQUAL(rotation, 0, 0);
+
+    PsyColor *color
+        = psy_visual_stimulus_get_color(PSY_VISUAL_STIMULUS(circle));
+    CU_ASSERT_PTR_NULL(color);
 
     g_object_unref(circle);
 }

@@ -382,7 +382,7 @@ psy_visual_stimulus_class_init(PsyVisualStimulusClass *klass)
                              "The rotation around the z-axis",
                              -G_MAXFLOAT,
                              G_MAXFLOAT,
-                             1.0,
+                             0.0,
                              G_PARAM_READWRITE | G_PARAM_CONSTRUCT);
 
     /**
