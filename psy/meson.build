@@ -78,7 +78,8 @@ libpsy_headers = files(
 )
 
 libpsy_header_private = files(
-    'psy-safe-int-private.h'
+    'psy-safe-int-private.h',
+    'psy-vector3-private.h'
 )
 
 libpsyfiles = files (

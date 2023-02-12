@@ -542,3 +542,33 @@ psy_vector3_as_string(PsyVector3 *self)
     std::string output = glm::to_string(*self->vector);
     return g_strdup(output.c_str());
 }
+
+/*
+ * private functions
+ *
+ * see psy-vector3-private.h
+ */
+
+/**
+ * psy_vector3_get_priv_reference:(skip)
+ *
+ * Returns: the private implementation of the vector a glm::dvec3
+ */
+glm::dvec3&
+psy_vector3_get_priv_reference(PsyVector3 *self)
+{
+    g_assert(PSY_IS_VECTOR3(self));
+
+    return *self->vector;
+}
+
+/**
+ * psy_vector3_get_priv_pointer:(skip)
+ */
+glm::dvec3 *
+psy_vector3_get_priv_pointer(PsyVector3 *self)
+{
+    g_assert(PSY_IS_VECTOR3(self));
+
+    return self->vector;
+}

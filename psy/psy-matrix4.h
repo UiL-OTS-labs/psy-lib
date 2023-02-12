@@ -5,7 +5,7 @@
 #include <gio/gio.h>
 #include <glib-object.h>
 
-#include "psy-vector4.h"
+#include "psy-vector3.h"
 
 G_BEGIN_DECLS
 
@@ -14,6 +14,9 @@ G_DECLARE_FINAL_TYPE(PsyMatrix4, psy_matrix4, PSY, MATRIX4, GObject)
 
 G_MODULE_EXPORT PsyMatrix4 *
 psy_matrix4_new(void);
+
+G_MODULE_EXPORT PsyMatrix4 *
+psy_matrix4_new_identity(void);
 
 G_MODULE_EXPORT PsyMatrix4 *
 psy_matrix4_new_ortographic(gdouble left,
@@ -63,14 +66,23 @@ psy_matrix4_equals(PsyMatrix4 *self, PsyMatrix4 *other);
 G_MODULE_EXPORT gboolean
 psy_matrix4_not_equals(PsyMatrix4 *self, PsyMatrix4 *other);
 
+G_MODULE_EXPORT gchar *
+psy_matrix4_as_string(PsyMatrix4 *self);
+
 G_MODULE_EXPORT const gdouble *
 psy_matrix4_ptr(PsyMatrix4 *self);
 
 G_MODULE_EXPORT void
-psy_matrix4_get_elements(PsyMatrix4 *self, gfloat *elements);
+psy_matrix4_get_elements(PsyMatrix4 *self, gdouble *elements);
 
 G_MODULE_EXPORT void
-psy_matrix4_scale(PsyMatrix4 *self, PsyVector4 *vector);
+psy_matrix4_rotate(PsyMatrix4 *self, gdouble degrees, PsyVector3 *axis);
+
+G_MODULE_EXPORT void
+psy_matrix4_scale(PsyMatrix4 *self, PsyVector3 *vector);
+
+G_MODULE_EXPORT void
+psy_matrix4_translate(PsyMatrix4 *self, PsyVector3 *vector);
 
 G_END_DECLS
 
