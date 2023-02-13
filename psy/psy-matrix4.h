@@ -64,7 +64,7 @@ const gdouble *
 psy_matrix4_ptr(PsyMatrix4 *self);
 
 G_MODULE_EXPORT void
-psy_matrix4_get_elements(PsyMatrix4 *self, gfloat *elements);
+psy_matrix4_get_elements(PsyMatrix4 *self, gdouble *elements);
 
 G_END_DECLS
 
