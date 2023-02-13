@@ -3,12 +3,11 @@
 #include <glm/detail/type_mat4x4.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-
 typedef struct _PsyMatrix4 PsyMatrix4;
 
 struct _PsyMatrix4 {
-    GObject parent_instance;
-    glm::dmat4x4* matrix;
+    GObject       parent_instance;
+    glm::dmat4x4 *matrix;
 };
 
 G_DEFINE_TYPE(PsyMatrix4, psy_matrix4, G_TYPE_OBJECT)
@@ -18,18 +17,22 @@ typedef enum {
     IS_IDENTITY,
     IS_NULL,
     N_PROPERTIES
-}PsyMatrix4Property;
+} PsyMatrix4Property;
 
-static GParamSpec *obj_properties[N_PROPERTIES] = { NULL, };
+static GParamSpec *obj_properties[N_PROPERTIES] = {
+    NULL,
+};
 
-static void psy_matrix4_init(PsyMatrix4* self)
+static void
+psy_matrix4_init(PsyMatrix4 *self)
 {
     self->matrix = new glm::dmat4x4();
 }
 
-static void psy_matrix4_finalize(GObject* obj)
+static void
+psy_matrix4_finalize(GObject *obj)
 {
-    PsyMatrix4* self = PSY_MATRIX4(obj);
+    PsyMatrix4 *self = PSY_MATRIX4(obj);
     delete self->matrix;
     G_OBJECT_CLASS(psy_matrix4_parent_class)->finalize(obj);
 }
@@ -42,83 +45,74 @@ psy_matrix4_set_property(GObject      *object,
 {
     PsyMatrix4 *matrix4 = PSY_MATRIX4(object);
 
-    switch ((PsyMatrix4Property)prop_id)
+    switch ((PsyMatrix4Property) prop_id) {
+    case IS_IDENTITY:
     {
-        case IS_IDENTITY:
-            {
-                gboolean identity = g_value_get_boolean(value);
-                if(identity)
-                    psy_matrix4_set_identity(matrix4);
-            }
-            break;
-        case IS_NULL:
-            {
-                gboolean isnull = g_value_get_boolean(value);
-                if(isnull)
-                    psy_matrix4_set_null(matrix4);
-            }
-            break;
-        default:
-            G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
-            break;
+        gboolean identity = g_value_get_boolean(value);
+        if (identity)
+            psy_matrix4_set_identity(matrix4);
+    } break;
+    case IS_NULL:
+    {
+        gboolean isnull = g_value_get_boolean(value);
+        if (isnull)
+            psy_matrix4_set_null(matrix4);
+    } break;
+    default:
+        G_OBJECT_WARN_INVALID_PROPERTY_ID(object, prop_id, pspec);
+        break;
     }
 }
 
 static void
-psy_matrix4_get_property(GObject      *object,
-                         guint         prop_id,
-                         GValue       *value,
-                         GParamSpec   *pspec)
+psy_matrix4_get_property(GObject    *object,
+                         guint       prop_id,
+                         GValue     *value,
+                         GParamSpec *pspec)
 {
     PsyMatrix4 *matrix4 = PSY_MATRIX4(object);
 
-    switch ((PsyMatrix4Property)prop_id)
-    {
-        case IS_IDENTITY:
-            g_value_set_boolean(value, psy_matrix4_is_identity(matrix4));
-            break;
-        case IS_NULL:
-            g_value_set_boolean(value, psy_matrix4_is_null(matrix4));
-            break;
-        default:
-            G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
-            break;
+    switch ((PsyMatrix4Property) prop_id) {
+    case IS_IDENTITY:
+        g_value_set_boolean(value, psy_matrix4_is_identity(matrix4));
+        break;
+    case IS_NULL:
+        g_value_set_boolean(value, psy_matrix4_is_null(matrix4));
+        break;
+    default:
+        G_OBJECT_WARN_INVALID_PROPERTY_ID(object, prop_id, pspec);
+        break;
     }
 }
 
 static void
-psy_matrix4_class_init(PsyMatrix4Class* klass)
+psy_matrix4_class_init(PsyMatrix4Class *klass)
 {
-    GObjectClass* gobject_class = G_OBJECT_CLASS(klass);
+    GObjectClass *gobject_class = G_OBJECT_CLASS(klass);
     (void) gobject_class;
 
     gobject_class->set_property = psy_matrix4_set_property;
     gobject_class->get_property = psy_matrix4_get_property;
-    gobject_class->finalize = psy_matrix4_finalize;
+    gobject_class->finalize     = psy_matrix4_finalize;
 
-    obj_properties[IS_IDENTITY] = g_param_spec_boolean(
-            "is-identity",
-            "is_idendity",
-            "Test whether the matrix is an identity matrix or make it an identity matrix",
-            FALSE,
-            G_PARAM_READWRITE
-            );
+    obj_properties[IS_IDENTITY]
+        = g_param_spec_boolean("is-identity",
+                               "is_idendity",
+                               "Test whether the matrix is an identity matrix "
+                               "or make it an identity matrix",
+                               FALSE,
+                               G_PARAM_READWRITE);
 
-    obj_properties[IS_NULL] = g_param_spec_boolean(
-            "is-null",
-            "is_null",
-            "Test whether or set all element to 0.",
-            FALSE,
-            G_PARAM_READWRITE
-            );
+    obj_properties[IS_NULL]
+        = g_param_spec_boolean("is-null",
+                               "is_null",
+                               "Test whether or set all element to 0.",
+                               FALSE,
+                               G_PARAM_READWRITE);
 
     g_object_class_install_properties(
-            gobject_class,
-            N_PROPERTIES,
-            obj_properties
-            );
+        gobject_class, N_PROPERTIES, obj_properties);
 }
-
 
 /* ************* public functions ************* */
 
@@ -132,7 +126,7 @@ psy_matrix4_class_init(PsyMatrix4Class* klass)
  *
  * Returns: a new `PsyMatrix3`
  */
-PsyMatrix4*
+PsyMatrix4 *
 psy_matrix4_new()
 {
     return PSY_MATRIX4(g_object_new(PSY_TYPE_MATRIX4, NULL));
@@ -156,17 +150,15 @@ psy_matrix4_new()
  * Returns: A newly created matrix representing an
  *          orthographic projection.
  */
-PsyMatrix4*
-psy_matrix4_new_ortographic(
-        gdouble left,
-        gdouble right,
-        gdouble bottom,
-        gdouble top,
-        gdouble z_near,
-        gdouble z_far
-        )
+PsyMatrix4 *
+psy_matrix4_new_ortographic(gdouble left,
+                            gdouble right,
+                            gdouble bottom,
+                            gdouble top,
+                            gdouble z_near,
+                            gdouble z_far)
 {
-    PsyMatrix4* ret = psy_matrix4_new();
+    PsyMatrix4 *ret = psy_matrix4_new();
 
     *ret->matrix = glm::ortho(left, right, bottom, top, z_near, z_far);
 
@@ -188,15 +180,13 @@ psy_matrix4_new_ortographic(
  * Returns: A new PsyMatrix4 that describes a perspective
  *          projection.
  */
-PsyMatrix4*
-psy_matrix4_new_perspective(
-        gdouble fovy,
-        gdouble aspect,
-        gdouble z_near,
-        gdouble z_far
-        )
+PsyMatrix4 *
+psy_matrix4_new_perspective(gdouble fovy,
+                            gdouble aspect,
+                            gdouble z_near,
+                            gdouble z_far)
 {
-    PsyMatrix4* ret = psy_matrix4_new();
+    PsyMatrix4 *ret = psy_matrix4_new();
 
     *ret->matrix = glm::perspective(fovy, aspect, z_near, z_far);
 
@@ -211,7 +201,7 @@ psy_matrix4_new_perspective(
  * self: the matrix to destroy
  */
 void
-psy_matrix4_destroy(PsyMatrix4* self)
+psy_matrix4_destroy(PsyMatrix4 *self)
 {
     g_object_unref(self);
 }
@@ -224,11 +214,11 @@ psy_matrix4_destroy(PsyMatrix4* self)
  * self: the matrix to reset to an identity matrix
  */
 void
-psy_matrix4_set_identity(PsyMatrix4* self)
+psy_matrix4_set_identity(PsyMatrix4 *self)
 {
     g_return_if_fail(PSY_IS_MATRIX4(self));
 
-    *self->matrix = glm::dmat4x4 (1);
+    *self->matrix = glm::dmat4x4(1);
 }
 
 /**
@@ -242,11 +232,11 @@ psy_matrix4_set_identity(PsyMatrix4* self)
  * returns: TRUE if it is and identity matrix, FALSE otherwise
  */
 gboolean
-psy_matrix4_is_identity(PsyMatrix4* self)
+psy_matrix4_is_identity(PsyMatrix4 *self)
 {
     g_return_val_if_fail(PSY_IS_MATRIX4(self), FALSE);
 
-    return *self->matrix == glm::dmat4x4 (1);
+    return *self->matrix == glm::dmat4x4(1);
 }
 
 /**
@@ -257,11 +247,11 @@ psy_matrix4_is_identity(PsyMatrix4* self)
  * self: Reset the matrix to be a null matrix.
  */
 void
-psy_matrix4_set_null(PsyMatrix4* self)
+psy_matrix4_set_null(PsyMatrix4 *self)
 {
     g_return_if_fail(PSY_IS_MATRIX4(self));
 
-    *self->matrix = glm::dmat4x4 (0);
+    *self->matrix = glm::dmat4x4(0);
 }
 
 /**
@@ -275,11 +265,11 @@ psy_matrix4_set_null(PsyMatrix4* self)
  * Returns: TRUE if it is and null matrix, FALSE otherwise
  */
 gboolean
-psy_matrix4_is_null(PsyMatrix4* self)
+psy_matrix4_is_null(PsyMatrix4 *self)
 {
     g_return_val_if_fail(PSY_IS_MATRIX4(self), FALSE);
 
-    return *self->matrix == glm::dmat4x4 (0);
+    return *self->matrix == glm::dmat4x4(0);
 }
 
 /**
@@ -289,12 +279,12 @@ psy_matrix4_is_null(PsyMatrix4* self)
  *
  * Returns :(transfer full): The result of self + s
  */
-PsyMatrix4*
-psy_matrix4_add_s(PsyMatrix4* self, gdouble scalar)
+PsyMatrix4 *
+psy_matrix4_add_s(PsyMatrix4 *self, gdouble scalar)
 {
     g_return_val_if_fail(PSY_IS_MATRIX4(self), NULL);
 
-    PsyMatrix4* ret = PSY_MATRIX4(psy_matrix4_new());
+    PsyMatrix4 *ret = PSY_MATRIX4(psy_matrix4_new());
 
     *ret->matrix = (*self->matrix) + scalar;
 
@@ -308,13 +298,13 @@ psy_matrix4_add_s(PsyMatrix4* self, gdouble scalar)
  *
  * Returns :(transfer full): The result of self + other
  */
-PsyMatrix4*
-psy_matrix4_add(PsyMatrix4* self, PsyMatrix4 *other)
+PsyMatrix4 *
+psy_matrix4_add(PsyMatrix4 *self, PsyMatrix4 *other)
 {
     g_return_val_if_fail(PSY_IS_MATRIX4(other), NULL);
     g_return_val_if_fail(PSY_IS_MATRIX4(other), NULL);
 
-    PsyMatrix4* ret = PSY_MATRIX4(psy_matrix4_new());
+    PsyMatrix4 *ret = PSY_MATRIX4(psy_matrix4_new());
 
     *ret->matrix = (*self->matrix) + (*other->matrix);
 
@@ -332,12 +322,12 @@ psy_matrix4_add(PsyMatrix4* self, PsyMatrix4 *other)
  * Returns:(transfer full): A newly initialized `PsyMatix4`
  *         that is the result of self - scalar.
  */
-PsyMatrix4*
-psy_matrix4_sub_s(PsyMatrix4* self, gdouble scalar)
+PsyMatrix4 *
+psy_matrix4_sub_s(PsyMatrix4 *self, gdouble scalar)
 {
     g_return_val_if_fail(PSY_IS_MATRIX4(self), NULL);
 
-    PsyMatrix4* ret = PSY_MATRIX4(psy_matrix4_new());
+    PsyMatrix4 *ret = PSY_MATRIX4(psy_matrix4_new());
 
     *ret->matrix = (*self->matrix) - scalar;
 
@@ -355,13 +345,13 @@ psy_matrix4_sub_s(PsyMatrix4* self, gdouble scalar)
  * Returns:(transfer full): A newly inialized `PsyMatix4`
  *         that is the result of self - other.
  */
-PsyMatrix4*
-psy_matrix4_sub(PsyMatrix4* self, PsyMatrix4 *other)
+PsyMatrix4 *
+psy_matrix4_sub(PsyMatrix4 *self, PsyMatrix4 *other)
 {
     g_return_val_if_fail(PSY_IS_MATRIX4(self), NULL);
     g_return_val_if_fail(PSY_IS_MATRIX4(other), NULL);
 
-    PsyMatrix4* ret = PSY_MATRIX4(psy_matrix4_new());
+    PsyMatrix4 *ret = PSY_MATRIX4(psy_matrix4_new());
 
     *ret->matrix = (*self->matrix) - (*other->matrix);
     return ret;
@@ -378,11 +368,11 @@ psy_matrix4_sub(PsyMatrix4* self, PsyMatrix4 *other)
  * Returns:(transfer full): A newly inialized `PsyMatix4`
  *         that is the result of self * scalar.
  */
-PsyMatrix4*
-psy_matrix4_mul_s(PsyMatrix4* self, gdouble scalar)
+PsyMatrix4 *
+psy_matrix4_mul_s(PsyMatrix4 *self, gdouble scalar)
 {
     g_return_val_if_fail(PSY_IS_MATRIX4(self), NULL);
-    PsyMatrix4* ret = psy_matrix4_new();
+    PsyMatrix4 *ret = psy_matrix4_new();
 
     *ret->matrix = (*self->matrix) * scalar;
 
@@ -399,13 +389,13 @@ psy_matrix4_mul_s(PsyMatrix4* self, gdouble scalar)
  * Returns:(transfer full): A newly inialized `PsyMatix4`
  *         that is the result of self * other.
  */
-PsyMatrix4*
-psy_matrix4_mul(PsyMatrix4* self, PsyMatrix4* other)
+PsyMatrix4 *
+psy_matrix4_mul(PsyMatrix4 *self, PsyMatrix4 *other)
 {
     g_return_val_if_fail(PSY_IS_MATRIX4(self), NULL);
     g_return_val_if_fail(PSY_IS_MATRIX4(other), NULL);
 
-    PsyMatrix4* ret = psy_matrix4_new();
+    PsyMatrix4 *ret = psy_matrix4_new();
 
     *ret->matrix = (*self->matrix) - (*other->matrix);
     return ret;
@@ -421,7 +411,7 @@ psy_matrix4_mul(PsyMatrix4* self, PsyMatrix4* other)
  * Returns: TRUE or FALSE
  */
 gboolean
-psy_matrix4_equals(PsyMatrix4* self, PsyMatrix4* other)
+psy_matrix4_equals(PsyMatrix4 *self, PsyMatrix4 *other)
 {
     g_return_val_if_fail(PSY_IS_MATRIX4(self), FALSE);
     g_return_val_if_fail(PSY_IS_MATRIX4(other), FALSE);
@@ -429,7 +419,7 @@ psy_matrix4_equals(PsyMatrix4* self, PsyMatrix4* other)
     if (self == other)
         return TRUE;
 
-    return  *self->matrix == *other->matrix;
+    return *self->matrix == *other->matrix;
 }
 
 /**
@@ -442,13 +432,13 @@ psy_matrix4_equals(PsyMatrix4* self, PsyMatrix4* other)
  * Returns: TRUE or FALSE
  */
 gboolean
-psy_matrix4_not_equals(PsyMatrix4* self, PsyMatrix4* other)
+psy_matrix4_not_equals(PsyMatrix4 *self, PsyMatrix4 *other)
 {
     return !psy_matrix4_equals(self, other);
 }
 
-const gdouble*
-psy_matrix4_ptr(PsyMatrix4* self)
+const gdouble *
+psy_matrix4_ptr(PsyMatrix4 *self)
 {
     g_return_val_if_fail(PSY_IS_MATRIX4(self), NULL);
 
@@ -456,12 +446,13 @@ psy_matrix4_ptr(PsyMatrix4* self)
 }
 
 void
-psy_matrix4_get_elements(PsyMatrix4* self, gfloat* elements)
+psy_matrix4_get_elements(PsyMatrix4 *self, gdouble *elements)
 {
     g_return_if_fail(PSY_IS_MATRIX4(self));
-    float* out = &elements[0];
-    gdouble* in = glm::value_ptr(*(self->matrix)); 
+
+    gdouble *out = &elements[0];
+    gdouble *in  = glm::value_ptr(*(self->matrix));
+
     for (; out < &elements[16]; in++, out++)
         *out = (gfloat) *in;
 }
-
