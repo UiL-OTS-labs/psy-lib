@@ -1,4 +1,5 @@
 
+#include "psy-matrix4.h"
 #include <glm/detail/type_mat4x4.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
@@ -125,6 +126,7 @@ psy_matrix4_class_init(PsyMatrix4Class *klass)
     g_object_class_install_properties(
         gobject_class, N_PROPERTIES, obj_properties);
 }
+
 
 /* ************* public functions ************* */
 
