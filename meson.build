@@ -6,7 +6,7 @@ project('libpsy',
 #        'werror=true',
         'buildtype=debugoptimized',
         'c_std=gnu11', # this makes it easier to compile sub projects
-        'cxx_std=gnu11' # this makes it easier to compile sub projects
+        'cpp_std=gnu++11' # use c++ 11
     ],
     license : 'MIT'
 )
