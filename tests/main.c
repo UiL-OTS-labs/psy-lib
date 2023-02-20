@@ -54,6 +54,10 @@ add_suites_to_registry(void)
     if (error)
         return error;
 
+    error = add_vector3_suite();
+    if (error)
+        return error;
+
     error = add_vector4_suite();
     if (error)
         return error;
