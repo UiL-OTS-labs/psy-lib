@@ -12,7 +12,6 @@
 typedef struct _PsyRectangleArtist {
     PsyArtist   parent_instance;
     PsyVBuffer *vertices;
-    gfloat      x, y, z;
     gfloat      width, height;
 } PsyRectangleArtist;
 
@@ -25,11 +24,13 @@ psy_rectangle_artist_init(PsyRectangleArtist *self)
 }
 
 static void
-psy_cirlcle_artist_constructed(GObject *self)
+psy_rectangle_artist_constructed(GObject *self)
 {
+    PsyArtist *artist = PSY_ARTIST(self);
+    G_OBJECT_CLASS(psy_rectangle_artist_parent_class)->constructed(self);
+
     PsyRectangleArtist *ra      = PSY_RECTANGLE_ARTIST(self);
-    PsyWindow          *window  = psy_artist_get_window(PSY_ARTIST(self));
-    PsyDrawingContext  *context = psy_window_get_context(window);
+    PsyDrawingContext  *context = psy_artist_get_context(artist);
     ra->vertices                = psy_drawing_context_create_vbuffer(context);
 }
 
@@ -52,7 +53,8 @@ psy_rectangle_artist_finalize(GObject *object)
 static void
 rectangle_artist_draw(PsyArtist *self)
 {
-    gfloat       x, y, z;
+    PSY_ARTIST_CLASS(psy_rectangle_artist_parent_class)->draw(self);
+
     gfloat       rgba[4]        = {0.0, 0.0, 0.0, 1.0};
     PsyColor    *color          = NULL;
     GError      *error          = NULL;
@@ -78,9 +80,6 @@ rectangle_artist_draw(PsyArtist *self)
 
     // clang-format off
     g_object_get(rectangle,
-            "x", &x,
-            "y", &y,
-            "z", &z,
             "width", &width,
             "height", &height,
             "color", &color,
@@ -109,13 +108,6 @@ rectangle_artist_draw(PsyArtist *self)
         store_vertices = TRUE;
     }
 
-    if (x != artist->x || y != artist->y || z != artist->z) {
-        artist->x      = x;
-        artist->y      = y;
-        artist->z      = z;
-        store_vertices = TRUE;
-    }
-
     width  = psy_rectangle_get_width(rectangle);
     height = psy_rectangle_get_height(rectangle);
     if (width != artist->width || height != artist->height) {
@@ -127,14 +119,11 @@ rectangle_artist_draw(PsyArtist *self)
     if (store_vertices) {
         gfloat half_width  = width / 2;
         gfloat half_height = height / 2;
-        psy_vbuffer_set_xyz(
-            artist->vertices, 0, x - half_width, y + half_height, z);
-        psy_vbuffer_set_xyz(
-            artist->vertices, 1, x + half_width, y + half_height, z);
-        psy_vbuffer_set_xyz(
-            artist->vertices, 2, x + half_width, y - half_height, z);
-        psy_vbuffer_set_xyz(
-            artist->vertices, 3, x - half_width, y - half_height, z);
+
+        psy_vbuffer_set_xyz(artist->vertices, 0, -half_width, half_height, 0);
+        psy_vbuffer_set_xyz(artist->vertices, 1, half_width, half_height, 0);
+        psy_vbuffer_set_xyz(artist->vertices, 2, half_width, -half_height, 0);
+        psy_vbuffer_set_xyz(artist->vertices, 3, -half_width, -half_height, 0);
 
         psy_vbuffer_upload(artist->vertices, &error);
         if (error) {
@@ -159,7 +148,7 @@ psy_rectangle_artist_class_init(PsyRectangleArtistClass *class)
 
     gobject_class->finalize    = psy_rectangle_artist_finalize;
     gobject_class->dispose     = psy_rectangle_artist_dispose;
-    gobject_class->constructed = psy_cirlcle_artist_constructed;
+    gobject_class->constructed = psy_rectangle_artist_constructed;
 
     artist_class->draw = rectangle_artist_draw;
 }

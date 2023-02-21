@@ -74,6 +74,7 @@ psy_matrix4_ptr(PsyMatrix4 *self);
 
 G_MODULE_EXPORT void
 psy_matrix4_get_elements(PsyMatrix4 *self, gdouble *elements);
+<<<<<<< HEAD
 
 G_MODULE_EXPORT void
 psy_matrix4_rotate(PsyMatrix4 *self, gdouble degrees, PsyVector3 *axis);
@@ -83,6 +84,8 @@ psy_matrix4_scale(PsyMatrix4 *self, PsyVector3 *vector);
 
 G_MODULE_EXPORT void
 psy_matrix4_translate(PsyMatrix4 *self, PsyVector3 *vector);
+=======
+>>>>>>> develop
 
 G_END_DECLS
 

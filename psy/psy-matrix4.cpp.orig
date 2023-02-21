@@ -1,8 +1,8 @@
 
-#include "psy-matrix4.h"
 #include <glm/detail/type_mat4x4.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+<<<<<<< HEAD
 #include "psy-matrix4.h"
 #include "psy-vector3-private.h"
 
@@ -16,6 +16,8 @@
  * which is designed to be relatively similar to GLSL shader matrices.
  */
 
+=======
+>>>>>>> develop
 typedef struct _PsyMatrix4 PsyMatrix4;
 
 struct _PsyMatrix4 {
@@ -126,7 +128,6 @@ psy_matrix4_class_init(PsyMatrix4Class *klass)
     g_object_class_install_properties(
         gobject_class, N_PROPERTIES, obj_properties);
 }
-
 
 /* ************* public functions ************* */
 
@@ -467,6 +468,7 @@ psy_matrix4_not_equals(PsyMatrix4 *self, PsyMatrix4 *other)
     return !psy_matrix4_equals(self, other);
 }
 
+<<<<<<< HEAD
 /**
  * psy_matrix4_as_string:
  * @self: an instance of PsyMatrix4
@@ -513,6 +515,8 @@ psy_matrix4_as_string(PsyMatrix4 *self)
  *
  * Returns (transfer none): a pointer to the data.
  */
+=======
+>>>>>>> develop
 const gdouble *
 psy_matrix4_ptr(PsyMatrix4 *self)
 {
@@ -532,6 +536,7 @@ void
 psy_matrix4_get_elements(PsyMatrix4 *self, gdouble *elements)
 {
     g_return_if_fail(PSY_IS_MATRIX4(self));
+<<<<<<< HEAD
     gdouble       *out = &elements[0];
     const gdouble *in  = glm::value_ptr(*(self->matrix));
     for (; out < &elements[16]; in++, out++)
@@ -586,3 +591,12 @@ psy_matrix4_translate(PsyMatrix4 *self, PsyVector3 *vector)
     const glm::dvec3& vec = psy_vector3_get_priv_reference(vector);
     *self->matrix         = glm::translate(*self->matrix, vec);
 }
+=======
+
+    gdouble *out = &elements[0];
+    gdouble *in  = glm::value_ptr(*(self->matrix));
+
+    for (; out < &elements[16]; in++, out++)
+        *out = (gfloat) *in;
+}
+>>>>>>> develop

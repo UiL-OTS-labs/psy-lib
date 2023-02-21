@@ -310,11 +310,11 @@ draw(PsyWindow *self, guint64 frame_num, PsyTimePoint *tp)
     PsyWindowClass *cls = PSY_WINDOW_GET_CLASS(self);
 
     // upload the default projection matrices.
-    cls->upload_projection_matrices(self);
     g_return_if_fail(cls->clear);
     g_return_if_fail(cls->draw_stimuli);
 
     cls->clear(self);
+    cls->upload_projection_matrices(self);
     cls->draw_stimuli(self, frame_num, tp);
 }
 

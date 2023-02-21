@@ -14,16 +14,79 @@
 #include <psy-artist.h>
 #include <psy-drawing-context.h>
 
+/* forward declarations */
+static void GLAPIENTRY
+gl_debug_cb(GLenum        source,
+            GLenum        type,
+            guint         id,
+            GLenum        severity,
+            GLsizei       length,
+            const GLchar *message,
+            const void   *object);
+
 struct _PsyGtkWindow {
     PsyWindow  parent;
     GtkWidget *window;
     GtkWidget *darea;
+    bool       enable_debug;
 };
 
 G_DEFINE_TYPE_WITH_CODE(PsyGtkWindow, psy_gtk_window, PSY_TYPE_WINDOW, {
     // Initialize GTK when creating the first Gtk window
     gtk_init();
 })
+
+typedef enum GtkWindowProperty {
+    PROP_0,
+    PROP_ENABLE_DEBUG,
+    NUM_PROPS, // number of properties, keep this one last.
+} GtkWindowProperty;
+
+typedef enum GtkWindowSignals {
+    SIG_DEBUG_MESSAGE,
+    NUM_SIGNALS
+} GtkWindowSingals;
+
+static GParamSpec *gtk_window_props[NUM_PROPS]     = {NULL};
+static guint       gtk_window_signals[NUM_SIGNALS] = {0};
+
+static void
+psy_gtk_window_set_property(GObject      *object,
+                            guint         property_id,
+                            const GValue *value,
+                            GParamSpec   *pspec)
+{
+    PsyGtkWindow *self = PSY_GTK_WINDOW(object);
+
+    switch ((GtkWindowProperty) property_id) {
+    case PROP_ENABLE_DEBUG:
+        self->enable_debug = g_value_get_boolean(value);
+        break;
+    default:
+        /* We don't have any other property... */
+        G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
+        break;
+    }
+}
+
+static void
+psy_gtk_window_get_property(GObject    *object,
+                            guint       property_id,
+                            GValue     *value,
+                            GParamSpec *pspec)
+{
+    PsyGtkWindow *self = PSY_GTK_WINDOW(object);
+
+    switch ((GtkWindowProperty) property_id) {
+    case PROP_ENABLE_DEBUG:
+        g_value_set_boolean(value, self->enable_debug);
+        break;
+    default:
+        /* We don't have any other property... */
+        G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
+        break;
+    }
+}
 
 static gboolean
 tick_callback(GtkWidget *d_area, GdkFrameClock *clock, gpointer data)
@@ -33,6 +96,13 @@ tick_callback(GtkWidget *d_area, GdkFrameClock *clock, gpointer data)
     (void) window;
     GtkGLArea *canvas = GTK_GL_AREA(d_area);
     gtk_gl_area_make_current(canvas);
+
+    // Check if there is anything to draw to
+    if (glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER)
+        != GL_FRAMEBUFFER_COMPLETE) {
+        return G_SOURCE_CONTINUE;
+    }
+    // gtk_gl_area_attach_buffers(canvas); // yields OpenGL error within Gtk
     GError *error = gtk_gl_area_get_error(GTK_GL_AREA(canvas));
     if (error) {
         g_critical("An OpenGL error occurred: %s", error->message);
@@ -141,12 +211,19 @@ on_canvas_realize(GtkGLArea *canvas, PsyGtkWindow *window)
     if (gtk_gl_area_get_error(canvas) != NULL)
         return;
 
-    create_drawing_context(window);
+    if (window->enable_debug) {
+        glEnable(GL_DEBUG_OUTPUT);
+        glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+        glDebugMessageCallback(&gl_debug_cb, window);
+        glDebugMessageControl(
+            GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, NULL, GL_TRUE);
+    }
 
     init_shaders(window, &error);
 
     if (error) {
-        gtk_gl_area_set_error(canvas, error);
+        g_critical("Unable to init shaders %s\n", error->message);
+        g_error_free(error);
         return;
     }
 
@@ -162,27 +239,162 @@ on_canvas_unrealize(GtkGLArea *area, PsyGtkWindow *self)
     psy_drawing_context_free_resources(context);
 }
 
-static void
-psy_gtk_window_init(PsyGtkWindow *self)
+static void GLAPIENTRY
+gl_debug_cb(GLenum        source,
+            GLenum        type,
+            guint         id,
+            GLenum        severity,
+            GLsizei       length,
+            const GLchar *message,
+            const void   *object)
 {
-    // Setup a window with a OpenGL canvas as child.
-    self->window      = gtk_window_new();
-    GtkWidget *canvas = gtk_gl_area_new();
-    gtk_window_set_child(GTK_WINDOW(self->window), canvas);
+    const char *source_str   = NULL;
+    const char *type_str     = NULL;
+    const char *severity_str = NULL;
+    (void) length;
 
+    switch (source) {
+    case GL_DEBUG_SOURCE_API:
+        source_str = "API";
+        break;
+    case GL_DEBUG_SOURCE_WINDOW_SYSTEM:
+        source_str = "WINDOW_SYSTEM";
+        break;
+    case GL_DEBUG_SOURCE_SHADER_COMPILER:
+        source_str = "SHADER_COMPILER";
+        break;
+    case GL_DEBUG_SOURCE_THIRD_PARTY:
+        source_str = "THIRD_PARTY";
+        break;
+    case GL_DEBUG_SOURCE_APPLICATION:
+        source_str = "APPLICATION";
+        break;
+    case GL_DEBUG_SOURCE_OTHER:
+        source_str = "OTHER";
+        break;
+    default:
+        source_str = "unexpected <file bug> with the value of source";
+    }
+
+    switch (type) {
+    case GL_DEBUG_TYPE_ERROR:
+        type_str = "ERROR";
+        break;
+    case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR:
+        type_str = "DEPRECATED_BAHAVIOR";
+        break;
+    case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:
+        type_str = "UNDEFINED_BEHAVIOR";
+        break;
+    case GL_DEBUG_TYPE_PORTABILITY:
+        type_str = "PORTABILITY";
+        break;
+    case GL_DEBUG_TYPE_PERFORMANCE:
+        type_str = "PERFORMANCE";
+        break;
+    case GL_DEBUG_TYPE_MARKER:
+        type_str = "MARKER";
+        break;
+    case GL_DEBUG_TYPE_PUSH_GROUP:
+        type_str = "PUSH_GROUP";
+        break;
+    case GL_DEBUG_TYPE_POP_GROUP:
+        type_str = "POP_GROUP";
+        break;
+    case GL_DEBUG_TYPE_OTHER:
+        type_str = "OTHER";
+        break;
+    default:
+        type_str = "unexpected <file bug> with the value of type";
+    }
+
+    switch (severity) {
+    case GL_DEBUG_SEVERITY_HIGH:
+        severity_str = "HIGH";
+        break;
+    case GL_DEBUG_SEVERITY_MEDIUM:
+        severity_str = "MEDIUM";
+        break;
+    case GL_DEBUG_SEVERITY_LOW:
+        severity_str = "LOW";
+        break;
+    case GL_DEBUG_SEVERITY_NOTIFICATION:
+        severity_str = "NOTIFICATION";
+        break;
+    default:
+        type_str = "unexpected <file bug> with the value of severity";
+    }
+
+    // Cast const away
+    PsyGtkWindow *self = (gpointer) object;
+
+    g_signal_emit(self,
+                  gtk_window_signals[SIG_DEBUG_MESSAGE],
+                  0,
+                  source,
+                  type,
+                  id,
+                  severity,
+                  message,
+                  source_str,
+                  type_str,
+                  severity_str,
+                  NULL);
+}
+
+static void
+psy_canvas_create_context_cb(GtkGLArea *darea, gpointer user_data)
+{
+    GtkGLArea    *canvas = darea;
+    PsyGtkWindow *self   = PSY_GTK_WINDOW(user_data);
     // Prepare common OpenGL setup prior to realization.
     gtk_gl_area_set_required_version(GTK_GL_AREA(canvas), 4, 4);
     // gtk_gl_area_set_has_alpha(GTK_GL_AREA(self->darea), TRUE);
     gtk_gl_area_set_has_depth_buffer(GTK_GL_AREA(canvas), TRUE);
+
+    // Setup debugging stuff
+    if (self->enable_debug) {
+        g_assert(GTK_IS_GL_AREA(canvas));
+        GdkGLContext *gdk_context
+            = gtk_gl_area_get_context(GTK_GL_AREA(canvas));
+        g_assert(gdk_context != NULL);
+        g_assert(GDK_IS_GL_CONTEXT(gdk_context));
+        gdk_gl_context_set_debug_enabled(gdk_context, TRUE);
+    }
     gtk_gl_area_set_has_stencil_buffer(GTK_GL_AREA(canvas), FALSE);
+}
 
-    gtk_window_set_decorated(GTK_WINDOW(self->window), FALSE);
+static void
+psy_gtk_window_constructed(GObject *obj)
+{
+    PsyGtkWindow *self = PSY_GTK_WINDOW(obj);
 
+    GtkWidget *canvas = gtk_gl_area_new();
+    self->darea       = canvas;
+
+    g_signal_connect_after(canvas,
+                           "create-context",
+                           G_CALLBACK(psy_canvas_create_context_cb),
+                           self);
     g_signal_connect(canvas, "realize", G_CALLBACK(on_canvas_realize), self);
     g_signal_connect(
         canvas, "unrealize", G_CALLBACK(on_canvas_unrealize), self);
-
     g_signal_connect(canvas, "resize", G_CALLBACK(on_canvas_resize), self);
+
+    gtk_window_set_child(GTK_WINDOW(self->window), canvas);
+
+    G_OBJECT_CLASS(psy_gtk_window_parent_class)->constructed(obj);
+}
+
+static void
+psy_gtk_window_init(PsyGtkWindow *self)
+{
+    // Setup a window with a OpenGL canvas as child.
+    self->window = gtk_window_new();
+
+    gtk_window_set_decorated(GTK_WINDOW(self->window), FALSE);
+
+    create_drawing_context(self);
 
     gtk_widget_show(GTK_WIDGET(self->window));
 }
@@ -205,8 +417,6 @@ psy_gtk_window_finalize(GObject *gobject)
 
     G_OBJECT_CLASS(psy_gtk_window_parent_class)->finalize(gobject);
 }
-
-// static GParamSpec* obj_properties[N_PROPS];
 
 static void
 set_monitor(PsyWindow *self, gint nth_monitor)
@@ -313,8 +523,11 @@ psy_gtk_window_class_init(PsyGtkWindowClass *klass)
 {
     GObjectClass *object_class = G_OBJECT_CLASS(klass);
 
-    object_class->dispose  = psy_gtk_window_dispose;
-    object_class->finalize = psy_gtk_window_finalize;
+    object_class->constructed  = psy_gtk_window_constructed;
+    object_class->dispose      = psy_gtk_window_dispose;
+    object_class->finalize     = psy_gtk_window_finalize;
+    object_class->get_property = psy_gtk_window_get_property;
+    object_class->set_property = psy_gtk_window_set_property;
 
     PsyWindowClass *psy_window_class = PSY_WINDOW_CLASS(klass);
     psy_window_class->set_monitor    = set_monitor;
@@ -322,6 +535,64 @@ psy_gtk_window_class_init(PsyGtkWindowClass *klass)
     psy_window_class->draw_stimuli   = draw_stimuli;
 
     psy_window_class->upload_projection_matrices = upload_projection_matrices;
+
+    /**
+     * PsyGtkWindow:enable-debug:
+     *
+     * This boolean may be set when constructing the window. This enables
+     * some extra debugging features at the expense of runtime performance.
+     *
+     * It may be handy, to put a breakpoint in a debugger at gl_debug_cb in
+     * this file. Additionally, the SIG_DEBUG signal will be emitted when
+     * something is happening, so than one can get some extra information
+     * about the error that occurs.
+     */
+    gtk_window_props[PROP_ENABLE_DEBUG] = g_param_spec_boolean(
+        "enable-debug",
+        "EnableDebug",
+        "optionally obtain extra debugging info from OpenGL calls.",
+        FALSE,
+        G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY);
+
+    g_object_class_install_properties(
+        object_class, NUM_PROPS, gtk_window_props);
+
+    /**
+     * PsyGtkWindow::debug-message:
+     * @self: An instance of `PsyGtkWindow`
+     * @source: A GLenum that specifies the source of the error
+     * @type: A GLenum that specifies the type of the error
+     * @id: The OpenGL id of the object where an error occurred.
+     * @severity: The severity of the error
+     * @message:the error message in string format
+     * @source_str: The string version of @source
+     * @type_str: The string version of @type
+     * @severity_str: The string version of @severity
+     * @data: a user specified pointer to data when the signal was connected
+     *
+     * This signal is emitted when the window is created with the "enable-debug"
+     * property set to true. This signal is raised when the OpenGL debugging
+     * context encounters something weird. It is mostly useful for debugging
+     * errors related to opengl.
+     */
+    gtk_window_signals[SIG_DEBUG_MESSAGE]
+        = g_signal_new("debug-message",
+                       G_TYPE_FROM_CLASS(klass),
+                       G_SIGNAL_RUN_FIRST | G_SIGNAL_NO_RECURSE,
+                       0,
+                       NULL,
+                       NULL,
+                       NULL,
+                       G_TYPE_NONE,
+                       8,
+                       G_TYPE_UINT,
+                       G_TYPE_UINT,
+                       G_TYPE_UINT,
+                       G_TYPE_UINT,
+                       G_TYPE_STRING,
+                       G_TYPE_STRING,
+                       G_TYPE_STRING,
+                       G_TYPE_STRING);
 }
 
 /**

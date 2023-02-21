@@ -19,8 +19,10 @@
  * render pictures or shapes in an arbitrary color.
  */
 
-G_DEFINE_QUARK(psy - drawing - context - error - quark,
+// clang-format off
+G_DEFINE_QUARK(psy-drawing-context-error-quark,
                psy_drawing_context_error)
+// clang-format on
 
 /**
  * PSY_UNIFORM_COLOR_PROGRAM_NAME:

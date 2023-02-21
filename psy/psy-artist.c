@@ -19,13 +19,19 @@
  * OpenGL style of stimuli, whereas an other artist knows Vulcan or Direct3D.
  */
 
+#include <epoxy/gl.h>
+
 #include "psy-artist.h"
+#include "psy-matrix4.h"
+#include "psy-vector3.h"
 #include "psy-visual-stimulus.h"
 #include "psy-window.h"
 
 typedef struct _PsyArtistPrivate {
     PsyWindow         *window;
+    PsyDrawingContext *context;
     PsyVisualStimulus *stimulus;
+    PsyMatrix4        *model;
 } PsyArtistPrivate;
 
 G_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE(PsyArtist, psy_artist, G_TYPE_OBJECT)
@@ -45,16 +51,24 @@ artist_dispose(GObject *object)
     PsyArtistPrivate *priv
         = psy_artist_get_instance_private(PSY_ARTIST(object));
 
-    if (priv->window) {
-        g_object_unref(priv->window);
-        priv->window = NULL;
-    }
-    if (priv->stimulus) {
-        g_object_unref(priv->stimulus);
-        priv->window = NULL;
-    }
+    g_clear_object(&priv->window);
+    g_clear_object(&priv->stimulus);
+    g_clear_object(&priv->model);
+    g_clear_object(&priv->context);
 
     G_OBJECT_CLASS(psy_artist_parent_class)->dispose(object);
+}
+
+static void
+artist_constructed(GObject *obj)
+{
+    PsyArtist        *self = PSY_ARTIST(obj);
+    PsyArtistPrivate *priv = psy_artist_get_instance_private(self);
+
+    priv->context = psy_window_get_context(priv->window);
+    g_object_ref(priv->context);
+
+    G_OBJECT_CLASS(psy_artist_parent_class)->constructed(obj);
 }
 
 static void
@@ -98,26 +112,92 @@ artist_get_property(GObject    *object,
     }
 }
 
+static PsyProgram *
+artist_get_program(PsyArtist *self)
+{
+    PsyArtistPrivate *priv = psy_artist_get_instance_private(self);
+    return psy_drawing_context_get_program(priv->context,
+                                           PSY_UNIFORM_COLOR_PROGRAM_NAME);
+}
+
 static void
 psy_artist_init(PsyArtist *self)
 {
-    (void) self;
+    PsyArtistPrivate *priv = psy_artist_get_instance_private(self);
+
+    priv->model = psy_matrix4_new_identity();
+}
+
+static void
+artist_draw(PsyArtist *self)
+{
+    PsyArtistPrivate *priv       = psy_artist_get_instance_private(self);
+    PsyProgram       *program    = psy_artist_get_program(self);
+    GError           *error      = NULL;
+    const gchar      *model_name = "model";
+
+    gdouble x = psy_visual_stimulus_get_x(priv->stimulus);
+    gdouble y = psy_visual_stimulus_get_y(priv->stimulus);
+    gdouble z = psy_visual_stimulus_get_z(priv->stimulus);
+
+    PsyVector3 *translation
+        = g_object_new(PSY_TYPE_VECTOR3, "x", x, "y", y, "z", z, NULL);
+
+    gdouble scale_x = psy_visual_stimulus_get_scale_x(priv->stimulus);
+    gdouble scale_y = psy_visual_stimulus_get_scale_y(priv->stimulus);
+
+    PsyVector3 *scale_vec
+        = g_object_new(PSY_TYPE_VECTOR3, "x", scale_x, "y", scale_y, NULL);
+
+    gdouble rotation_degrees = psy_visual_stimulus_get_rotation(priv->stimulus);
+    PsyVector3 *z_axis
+        = g_object_new(PSY_TYPE_VECTOR3, "x", 0.0, "y", 0.0, "z", -1.0, NULL);
+
+    psy_matrix4_set_identity(priv->model);
+
+    psy_matrix4_translate(priv->model, translation);
+    psy_matrix4_rotate(priv->model, rotation_degrees, z_axis);
+    psy_matrix4_scale(priv->model, scale_vec);
+
+    psy_program_set_uniform_matrix4(program, model_name, priv->model, &error);
+    if (error) {
+        static int once = 0;
+        if (!once) {
+            once = 1;
+            g_critical("Unable to set the %s matrix: '%s'. "
+                       "This warning is emitted only once. "
+                       "The Artist.draw expects the shader program to define "
+                       "a 4*4 matrix that handles the model transformations",
+                       model_name,
+                       error->message);
+            g_error_free(error);
+            error = NULL;
+        }
+    }
+
+    g_object_unref(translation);
+    g_object_unref(scale_vec);
+    g_object_unref(z_axis);
 }
 
 static void
 psy_artist_class_init(PsyArtistClass *klass)
 {
     GObjectClass *object_class = G_OBJECT_CLASS(klass);
+
     object_class->get_property = artist_get_property;
     object_class->set_property = artist_set_property;
+    object_class->dispose      = artist_dispose;
+    object_class->constructed  = artist_constructed;
 
-    object_class->dispose = artist_dispose;
+    klass->draw        = artist_draw;
+    klass->get_program = artist_get_program;
 
     /**
      * Artist:stimulus:
      *
-     * This is the `PsyVisualStimulus` that this instance of PsyArtist is
-     * responsible of drawing.
+     * This is the `PsyVisualStimulus` that this instance of PsyArtist
+     * is responsible of drawing.
      */
     artist_properties[PROP_STIMULUS]
         = g_param_spec_object("stimulus",
@@ -214,6 +294,12 @@ psy_artist_get_window(PsyArtist *self)
     return priv->window;
 }
 
+/**
+ * psy_artist_draw:
+ * @self: an instance of `PsyArtist`
+ *
+ * This is the function that draws the stimulus
+ */
 void
 psy_artist_draw(PsyArtist *self)
 {
@@ -223,4 +309,47 @@ psy_artist_draw(PsyArtist *self)
     g_return_if_fail(klass->draw);
 
     klass->draw(self);
+}
+
+/**
+ * psy_artist_get_program:
+ * @self: an instance of `PsyArtist`
+ *
+ * This function calls the virtual get_shader_program function from the
+ * class. It is designed to fetch a default shader, or deriving class,
+ * might want a shader of there own. Deriving class may choose to use
+ * for there own drawing.
+ *
+ * Returns:(transfer none): The shader for this object, deriving classes
+ * may pick a shader to there suiting.
+ */
+PsyProgram *
+psy_artist_get_program(PsyArtist *self)
+{
+    g_return_val_if_fail(PSY_IS_ARTIST(self), NULL);
+    PsyArtistClass *cls = PSY_ARTIST_GET_CLASS(self);
+
+    g_return_val_if_fail(cls->get_program, NULL);
+    return cls->get_program(self);
+}
+
+/**
+ * psy_artist_get_context:
+ * @self: an instance of `PsyArtist`
+ *
+ * This function returns the drawing context for this artist, it is
+ * mainly intended for deriving classes to get a reference to the
+ * context.
+ *
+ * Returns:(transfer none): the instance of [class@DrawingContext] that
+ * belongs to this visual stimulus.
+ */
+PsyDrawingContext *
+psy_artist_get_context(PsyArtist *self)
+{
+    PsyArtistPrivate *priv = psy_artist_get_instance_private(self);
+
+    g_return_val_if_fail(PSY_IS_ARTIST(self), NULL);
+
+    return priv->context;
 }

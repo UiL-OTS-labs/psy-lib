@@ -69,6 +69,7 @@ libpsy_headers = files(
     'psy-trial.h',
     'psy-vbuffer.h',
     'psy-vector.h',
+    'psy-vector3.h',
     'psy-vector4.h',
     'psy-visual-stimulus.h',
     'psy-widget.h',
@@ -77,7 +78,8 @@ libpsy_headers = files(
 )
 
 libpsy_header_private = files(
-    'psy-safe-int-private.h'
+    'psy-safe-int-private.h',
+    'psy-vector3-private.h'
 )
 
 libpsyfiles = files (
@@ -105,6 +107,7 @@ libpsyfiles = files (
     'psy-trial.c',
     'psy-vbuffer.c',
     'psy-vector.c',
+    'psy-vector3.cpp',
     'psy-vector4.cpp',
     'psy-visual-stimulus.c',
     'psy-widget.c',
