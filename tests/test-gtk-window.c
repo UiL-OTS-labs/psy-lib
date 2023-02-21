@@ -1,15 +1,7 @@
 
 #include "psy-visual-stimulus.h"
-#include <backend_gtk/psy-gtk-window.h>
 #include <math.h>
-#include <psy-circle.h>
-#include <psy-clock.h>
-#include <psy-color.h>
-#include <psy-cross.h>
-#include <psy-duration.h>
-#include <psy-stimulus.h>
-#include <psy-time-point.h>
-#include <psy-window.h>
+#include <psylib.h>
 #include <stdlib.h>
 
 // Global variable
@@ -28,9 +20,10 @@ gdouble g_x         = 0.0;
 gdouble g_y         = 0.0;
 gdouble g_z         = 0.0;
 
-char    *g_origin     = "center";
-char    *g_units      = "pixels";
-gboolean circle_first = FALSE;
+char    *g_origin       = "center";
+char    *g_units        = "pixels";
+gboolean g_circle_first = FALSE;
+gboolean g_opengl_debug = FALSE;
 
 // clang-format off
 static GOptionEntry entries[] = {
@@ -45,7 +38,8 @@ static GOptionEntry entries[] = {
     {"x", 'x', G_OPTION_FLAG_NONE, G_OPTION_ARG_DOUBLE, &g_x, "The x-coordinate of the circle", "units depends on projection"},
     {"y", 'y', G_OPTION_FLAG_NONE, G_OPTION_ARG_DOUBLE, &g_y, "The y-coordinate of the circle", "units depends on projection"},
     {"z", 'z', G_OPTION_FLAG_NONE, G_OPTION_ARG_DOUBLE, &g_z, "The z-coordinate of the circle", "units depends on projection"},
-    {"circle-first", 'c', G_OPTION_FLAG_NONE, G_OPTION_ARG_NONE, &circle_first, "Whether or not to present the circle first", NULL},
+    {"circle-first", 'c', G_OPTION_FLAG_NONE, G_OPTION_ARG_NONE, &g_circle_first, "Whether or not to present the circle first", NULL},
+    {"debug", 'D', G_OPTION_FLAG_NONE, G_OPTION_ARG_NONE, &g_opengl_debug, "Use a add extra OpenGL debugging calls", NULL},
     {0}
 };
 
@@ -73,6 +67,22 @@ update_circle(PsyVisualStimulus *stim,
                    * g_amplitude;
 
     psy_circle_set_radius(circle, radius);
+    g_object_unref(dur);
+}
+
+void
+update_rect(PsyVisualStimulus *stim,
+            PsyTimePoint      *tp,
+            gint64             nth_frame,
+            gpointer           data)
+{
+    (void) nth_frame;
+    PsyTimePoint *start = data;
+    PsyDuration  *dur   = psy_time_point_subtract(start, tp);
+
+    gdouble seconds = psy_duration_get_seconds(dur);
+    psy_visual_stimulus_set_rotation(stim, seconds);
+    psy_visual_stimulus_set_scale_y(stim, 4 + sin(seconds * 2) * 2);
     g_object_unref(dur);
 }
 
@@ -152,6 +162,37 @@ get_window_style(void)
     return style;
 }
 
+static void
+open_gl_error_cb(PsyGtkWindow *self,
+                 guint         source,
+                 guint         type,
+                 guint         id,
+                 guint         severity,
+                 gchar        *message,
+                 gchar        *source_str,
+                 gchar        *type_str,
+                 gchar        *severity_str,
+                 gpointer      user_data)
+{
+    (void) self;
+    (void) source;
+    (void) severity;
+    (void) type;
+    GMainLoop *loop = user_data;
+
+    g_printerr("-----------------------------\n");
+    g_printerr("OpenGL error id = %u\n", id);
+    g_printerr("OpenGL error source = %s\n", source_str);
+    g_printerr("OpenGL error type = %s\n", type_str);
+    g_printerr("OpenGL error severity = %s\n", severity_str);
+    g_printerr("OpenGL error message = \"%s\"\n", message);
+    g_printerr("-----------------------------\n\n");
+
+    (void) loop;
+    // g_printerr("Exiting");
+    // g_main_loop_quit(loop);
+}
+
 int
 main(int argc, char **argv)
 {
@@ -162,6 +203,7 @@ main(int argc, char **argv)
     gint          window_style;
     PsyColor     *circle_color = psy_color_new_rgb(1.0, 0, 0);
     PsyColor     *cross_color  = psy_color_new_rgb(1.0, 1.0, 0);
+    PsyColor     *rect_color   = psy_color_new_rgb(0.0, 1.0, 0.5);
 
     GOptionContext *context = g_option_context_new("");
     g_option_context_add_main_entries(context, entries, NULL);
@@ -181,17 +223,28 @@ main(int argc, char **argv)
 
     GMainLoop *loop = g_main_loop_new(NULL, FALSE);
 
-    PsyGtkWindow *window = psy_gtk_window_new_for_monitor(n_monitor);
+    PsyGtkWindow *window = g_object_new(PSY_TYPE_GTK_WINDOW,
+                                        "n-monitor",
+                                        n_monitor,
+                                        "enable-debug",
+                                        g_opengl_debug,
+                                        NULL);
+    g_signal_connect(
+        window, "debug-message", G_CALLBACK(open_gl_error_cb), loop);
 
     window_style = get_window_style();
     psy_window_set_projection_style(PSY_WINDOW(window), window_style);
 
     PsyCircle *circle = psy_circle_new_full(
         PSY_WINDOW(window), g_x, g_y, g_radius, g_nvertices);
-    PsyCross *cross = psy_cross_new_full(PSY_WINDOW(window), 0, 0, 200, 10);
+    PsyCross     *cross = psy_cross_new_full(PSY_WINDOW(window), 0, 0, 200, 10);
+    PsyRectangle *rect
+        = psy_rectangle_new_full(PSY_WINDOW(window), 200, 200, 50, 50);
 
     psy_visual_stimulus_set_color(PSY_VISUAL_STIMULUS(circle), circle_color);
     g_object_set(cross, "color", cross_color, NULL);
+    g_object_set(rect, "color", rect_color, NULL);
+    g_object_unref(rect_color);
 
     g_signal_connect(circle, "update", G_CALLBACK(update_circle), tp);
     g_signal_connect(circle, "started", G_CALLBACK(circle_started), tp);
@@ -201,7 +254,9 @@ main(int argc, char **argv)
 
     start = psy_time_point_add(tp, start_dur);
 
-    if (circle_first) {
+    g_signal_connect(rect, "update", G_CALLBACK(update_rect), start);
+
+    if (g_circle_first) {
         psy_stimulus_play_for(PSY_STIMULUS(circle), start, dur);
         psy_stimulus_play_for(PSY_STIMULUS(cross), start, dur);
     }
@@ -209,10 +264,14 @@ main(int argc, char **argv)
         psy_stimulus_play_for(PSY_STIMULUS(cross), start, dur);
         psy_stimulus_play_for(PSY_STIMULUS(circle), start, dur);
     }
+    psy_stimulus_play_for(PSY_STIMULUS(rect), start, dur);
 
     g_main_loop_run(loop);
 
-    PsyDuration *diff = psy_time_point_subtract(g_tstop, g_tstart);
+    PsyDuration *diff = NULL;
+
+    if (g_tstop && g_tstart)
+        diff = psy_time_point_subtract(g_tstop, g_tstart);
 
     g_print("The width = %d mm and height = %d mm\n",
             psy_window_get_width_mm(PSY_WINDOW(window)),
@@ -221,15 +280,17 @@ main(int argc, char **argv)
     g_print("circle->num_frames = %ld\n",
             psy_visual_stimulus_get_num_frames(PSY_VISUAL_STIMULUS(circle)));
 
-    g_print("Difference between start and stop = %lf\n",
-            psy_duration_get_seconds(diff));
+    if (diff)
+        g_print("Difference between start and stop = %lf\n",
+                psy_duration_get_seconds(diff));
 
     g_main_loop_unref(loop);
     g_object_unref(window);
     g_object_unref(clk);
     g_object_unref(dur);
     g_object_unref(start_dur);
-    g_object_unref(diff);
+    if (diff)
+        g_object_unref(diff);
     g_object_unref(start);
 
     return ret;

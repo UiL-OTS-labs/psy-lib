@@ -25,11 +25,12 @@ psy_circle_artist_init(PsyCircleArtist *self)
 }
 
 static void
-psy_cirlcle_artist_constructed(GObject *self)
+psy_circle_artist_constructed(GObject *self)
 {
+    G_OBJECT_CLASS(psy_circle_artist_parent_class)->constructed(self);
+
     PsyCircleArtist   *ca      = PSY_CIRCLE_ARTIST(self);
-    PsyWindow         *window  = psy_artist_get_window(PSY_ARTIST(self));
-    PsyDrawingContext *context = psy_window_get_context(window);
+    PsyDrawingContext *context = psy_artist_get_context(PSY_ARTIST(self));
     ca->vertices               = psy_drawing_context_create_vbuffer(context);
 }
 
@@ -52,7 +53,9 @@ psy_circle_artist_finalize(GObject *object)
 static void
 circle_artist_draw(PsyArtist *self)
 {
-    gfloat       x, y, z;
+    // First let the psy artist setup the model matrix
+    PSY_ARTIST_CLASS(psy_circle_artist_parent_class)->draw(self);
+
     gfloat       rgba[4]        = {0.0, 0.0, 0.0, 1.0};
     PsyColor    *color          = NULL;
     GError      *error          = NULL;
@@ -78,9 +81,6 @@ circle_artist_draw(PsyArtist *self)
 
     // clang-format off
     g_object_get(circle,
-            "x", &x,
-            "y", &y,
-            "z", &z,
             "num-vertices", &num_vertices,
             "radius", &radius,
             "color", &color,
@@ -109,13 +109,6 @@ circle_artist_draw(PsyArtist *self)
         store_vertices = TRUE;
     }
 
-    if (x != artist->x || y != artist->y || z != artist->z) {
-        artist->x      = x;
-        artist->y      = y;
-        artist->z      = z;
-        store_vertices = TRUE;
-    }
-
     radius = psy_circle_get_radius(circle);
     if (radius != artist->radius) {
         artist->radius = radius;
@@ -126,9 +119,9 @@ circle_artist_draw(PsyArtist *self)
         gfloat twopi = M_PI * 2.0;
         gfloat nx, ny;
         for (gsize i = 0; i < num_vertices; i++) {
-            nx = x + cos(i * twopi / num_vertices) * radius;
-            ny = y + sin(i * twopi / num_vertices) * radius;
-            psy_vbuffer_set_xyz(artist->vertices, i, nx, ny, z);
+            nx = cos(i * twopi / num_vertices) * radius;
+            ny = sin(i * twopi / num_vertices) * radius;
+            psy_vbuffer_set_xyz(artist->vertices, i, nx, ny, 0);
         }
         psy_vbuffer_upload(artist->vertices, &error);
         if (error) {
@@ -153,7 +146,7 @@ psy_circle_artist_class_init(PsyCircleArtistClass *class)
 
     gobject_class->finalize    = psy_circle_artist_finalize;
     gobject_class->dispose     = psy_circle_artist_dispose;
-    gobject_class->constructed = psy_cirlcle_artist_constructed;
+    gobject_class->constructed = psy_circle_artist_constructed;
 
     artist_class->draw = circle_artist_draw;
 }

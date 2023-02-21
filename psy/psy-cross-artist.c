@@ -28,10 +28,12 @@ psy_cross_artist_init(PsyCrossArtist *self)
 static void
 psy_cross_artist_constructed(GObject *self)
 {
-    PsyCrossArtist    *ca      = PSY_CROSS_ARTIST(self);
-    PsyWindow         *window  = psy_artist_get_window(PSY_ARTIST(self));
-    PsyDrawingContext *context = psy_window_get_context(window);
-    ca->vertices               = psy_drawing_context_create_vbuffer(context);
+    G_OBJECT_CLASS(psy_cross_artist_parent_class)->constructed(self);
+
+    PsyArtist         *artist  = PSY_ARTIST(self);
+    PsyCrossArtist    *cross   = PSY_CROSS_ARTIST(self);
+    PsyDrawingContext *context = psy_artist_get_context(artist);
+    cross->vertices            = psy_drawing_context_create_vbuffer(context);
 }
 
 static void
@@ -53,17 +55,18 @@ psy_cross_artist_finalize(GObject *object)
 static void
 cross_artist_draw(PsyArtist *self)
 {
-    gfloat             rgba[4]    = {0, 0, 0, 1};
-    PsyCrossArtist    *artist     = PSY_CROSS_ARTIST(self);
-    PsyCross          *cross      = PSY_CROSS(psy_artist_get_stimulus(self));
-    PsyWindow         *window     = psy_artist_get_window(self);
-    PsyDrawingContext *context    = psy_window_get_context(window);
-    PsyColor          *color      = NULL;
-    GError            *error      = NULL;
-    const guint        nverts     = 14; // origin + 12 corners
+    PSY_ARTIST_CLASS(psy_cross_artist_parent_class)->draw(self);
+
+    gfloat             rgba[4] = {0, 0, 0, 1};
+    PsyCrossArtist    *artist  = PSY_CROSS_ARTIST(self);
+    PsyCross          *cross   = PSY_CROSS(psy_artist_get_stimulus(self));
+    PsyWindow         *window  = psy_artist_get_window(self);
+    PsyDrawingContext *context = psy_window_get_context(window);
+    PsyColor          *color   = NULL;
+    GError            *error   = NULL;
+    const guint        nverts  = 14; // origin + 12 corners + the first corner
     const gchar       *color_name = "ourColor";
 
-    gfloat   x, y, z;
     gboolean store_vertices = FALSE;
     gfloat   line_length_x, line_length_y;
     gfloat   line_width_x, line_width_y;
@@ -80,9 +83,6 @@ cross_artist_draw(PsyArtist *self)
 
     // clang-format off
     g_object_get(cross,
-            "x", &x,
-            "y", &y,
-            "z", &z,
             "line-length-x", &line_length_x,
             "line-length-y", &line_length_y,
             "line-width-x", &line_width_x,
@@ -113,13 +113,6 @@ cross_artist_draw(PsyArtist *self)
         store_vertices = TRUE;
     }
 
-    if (x != artist->x || y != artist->y || z != artist->z) {
-        artist->x      = x;
-        artist->y      = y;
-        artist->z      = z;
-        store_vertices = TRUE;
-    }
-
     if (artist->xwidth != line_width_x || artist->ywidth != line_length_x
         || artist->xlength != line_length_x
         || artist->ylength + line_length_y) {
@@ -127,64 +120,65 @@ cross_artist_draw(PsyArtist *self)
         artist->ylength = line_length_y;
         artist->xwidth  = line_width_x;
         artist->ywidth  = line_width_y;
+        store_vertices  = TRUE;
     }
 
     if (store_vertices) {
         // set origin and add 13 vertices in a clockwise manner
-        psy_vbuffer_set_xyz(artist->vertices, 0, x, y, z);
+        psy_vbuffer_set_xyz(artist->vertices, 0, 0, 0, 0);
 
         gfloat x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12;
         gfloat y1, y2, y3, y4, y5, y6, y7, y8, y9, y10, y11, y12;
 
-        x1 = x + artist->ywidth / 2.0;
-        y1 = y + artist->ylength / 2.0;
+        x1 = artist->ywidth / 2.0;
+        y1 = artist->ylength / 2.0;
 
-        x2 = x + artist->ywidth / 2.0;
-        y2 = y + artist->xwidth / 2.0;
+        x2 = artist->ywidth / 2.0;
+        y2 = artist->xwidth / 2.0;
 
-        x3 = x + artist->xlength / 2.0;
-        y3 = y + artist->xwidth / 2.0;
+        x3 = artist->xlength / 2.0;
+        y3 = artist->xwidth / 2.0;
 
-        x4 = x + artist->xlength / 2.0;
-        y4 = y - artist->xwidth / 2.0;
+        x4 = artist->xlength / 2.0;
+        y4 = -artist->xwidth / 2.0;
 
-        x5 = x + artist->ywidth / 2.0;
-        y5 = y - artist->xwidth / 2.0;
+        x5 = artist->ywidth / 2.0;
+        y5 = -artist->xwidth / 2.0;
 
-        x6 = x + artist->ywidth / 2.0;
-        y6 = y - artist->xlength / 2.0;
+        x6 = artist->ywidth / 2.0;
+        y6 = -artist->xlength / 2.0;
 
-        x7 = x - artist->ywidth / 2.0;
-        y7 = y - artist->xlength / 2.0;
+        x7 = -artist->ywidth / 2.0;
+        y7 = -artist->xlength / 2.0;
 
-        x8 = x - artist->ywidth / 2.0;
-        y8 = y - artist->xwidth / 2.0;
+        x8 = -artist->ywidth / 2.0;
+        y8 = -artist->xwidth / 2.0;
 
-        x9 = x - artist->xlength / 2.0;
-        y9 = y - artist->xwidth / 2.0;
+        x9 = -artist->xlength / 2.0;
+        y9 = -artist->xwidth / 2.0;
 
-        x10 = x - artist->xlength / 2.0;
-        y10 = y + artist->xwidth / 2.0;
+        x10 = -artist->xlength / 2.0;
+        y10 = artist->xwidth / 2.0;
 
-        x11 = x - artist->ywidth / 2.0;
-        y11 = y + artist->xwidth / 2.0;
+        x11 = -artist->ywidth / 2.0;
+        y11 = artist->xwidth / 2.0;
 
-        x12 = x - artist->ywidth / 2.0;
-        y12 = y + artist->ylength / 2.0;
+        x12 = -artist->ywidth / 2.0;
+        y12 = artist->ylength / 2.0;
 
-        psy_vbuffer_set_xyz(artist->vertices, 1, x1, y1, z);
-        psy_vbuffer_set_xyz(artist->vertices, 2, x2, y2, z);
-        psy_vbuffer_set_xyz(artist->vertices, 3, x3, y3, z);
-        psy_vbuffer_set_xyz(artist->vertices, 4, x4, y4, z);
-        psy_vbuffer_set_xyz(artist->vertices, 5, x5, y5, z);
-        psy_vbuffer_set_xyz(artist->vertices, 6, x6, y6, z);
-        psy_vbuffer_set_xyz(artist->vertices, 7, x7, y7, z);
-        psy_vbuffer_set_xyz(artist->vertices, 8, x8, y8, z);
-        psy_vbuffer_set_xyz(artist->vertices, 9, x9, y9, z);
-        psy_vbuffer_set_xyz(artist->vertices, 10, x10, y10, z);
-        psy_vbuffer_set_xyz(artist->vertices, 11, x11, y11, z);
-        psy_vbuffer_set_xyz(artist->vertices, 12, x12, y12, z);
-        psy_vbuffer_set_xyz(artist->vertices, 13, x1, y1, z); // close the loop
+        psy_vbuffer_set_xyz(artist->vertices, 1, x1, y1, 0);
+        psy_vbuffer_set_xyz(artist->vertices, 2, x2, y2, 0);
+        psy_vbuffer_set_xyz(artist->vertices, 3, x3, y3, 0);
+        psy_vbuffer_set_xyz(artist->vertices, 4, x4, y4, 0);
+        psy_vbuffer_set_xyz(artist->vertices, 5, x5, y5, 0);
+        psy_vbuffer_set_xyz(artist->vertices, 6, x6, y6, 0);
+        psy_vbuffer_set_xyz(artist->vertices, 7, x7, y7, 0);
+        psy_vbuffer_set_xyz(artist->vertices, 8, x8, y8, 0);
+        psy_vbuffer_set_xyz(artist->vertices, 9, x9, y9, 0);
+        psy_vbuffer_set_xyz(artist->vertices, 10, x10, y10, 0);
+        psy_vbuffer_set_xyz(artist->vertices, 11, x11, y11, 0);
+        psy_vbuffer_set_xyz(artist->vertices, 12, x12, y12, 0);
+        psy_vbuffer_set_xyz(artist->vertices, 13, x1, y1, 0); // close the loop
 
         psy_vbuffer_upload(artist->vertices, &error);
         if (error) {
