@@ -7,8 +7,8 @@
 #include "psy-vector3.h"
 
 typedef struct _PsyVector3 {
-    GObject     obj;
-    glm::dvec3 *vector;
+    GObject    obj;
+    glm::vec3 *vector;
 } PsyVector3;
 
 G_DEFINE_TYPE(PsyVector3, psy_vector3, G_TYPE_OBJECT)
@@ -31,7 +31,7 @@ static GParamSpec *obj_properties[N_PROPERTIES] = {
 static void
 psy_vector3_init(PsyVector3 *self)
 {
-    self->vector = new glm::dvec3();
+    self->vector = new glm::vec3();
 }
 
 static void
@@ -54,13 +54,13 @@ psy_vector3_set_property(GObject      *object,
 
     switch ((PsyVector3Property) prop_id) {
     case PROP_X:
-        (*self->vector)[0] = g_value_get_double(value);
+        (*self->vector)[0] = g_value_get_float(value);
         break;
     case PROP_Y:
-        (*self->vector)[1] = g_value_get_double(value);
+        (*self->vector)[1] = g_value_get_float(value);
         break;
     case PROP_Z:
-        (*self->vector)[2] = g_value_get_double(value);
+        (*self->vector)[2] = g_value_get_float(value);
         break;
         //        case PROP_VALUES:
         //            g_assert(G_VALUE_HOLDS_BOXED(value));
@@ -82,16 +82,16 @@ psy_vector3_get_property(GObject    *object,
 
     switch ((PsyVector3Property) prop_id) {
     case PROP_X:
-        g_value_set_double(value, (*self->vector)[0]);
+        g_value_set_float(value, (*self->vector)[0]);
         break;
     case PROP_Y:
-        g_value_set_double(value, (*self->vector)[1]);
+        g_value_set_float(value, (*self->vector)[1]);
         break;
     case PROP_Z:
-        g_value_set_double(value, (*self->vector)[2]);
+        g_value_set_float(value, (*self->vector)[2]);
         break;
     case PROP_MAGNITUDE:
-        g_value_set_double(value, psy_vector3_get_magnitude(self));
+        g_value_set_float(value, psy_vector3_get_magnitude(self));
         break;
     case PROP_UNIT:
         g_value_take_object(value, psy_vector3_unit(self));
@@ -115,38 +115,38 @@ psy_vector3_class_init(PsyVector3Class *klass)
     gobject_class->get_property = psy_vector3_get_property;
     gobject_class->finalize     = psy_vector3_finalize;
 
-    obj_properties[PROP_X] = g_param_spec_double("x",
-                                                 "X",
-                                                 "The x value of the vector",
-                                                 -G_MAXDOUBLE,
-                                                 G_MAXDOUBLE,
-                                                 0,
-                                                 G_PARAM_READWRITE);
+    obj_properties[PROP_X] = g_param_spec_float("x",
+                                                "X",
+                                                "The x value of the vector",
+                                                -G_MAXFLOAT,
+                                                G_MAXFLOAT,
+                                                0,
+                                                G_PARAM_READWRITE);
 
-    obj_properties[PROP_Y] = g_param_spec_double("y",
-                                                 "Y",
-                                                 "The y value of the vector",
-                                                 -G_MAXDOUBLE,
-                                                 G_MAXDOUBLE,
-                                                 0,
-                                                 G_PARAM_READWRITE);
+    obj_properties[PROP_Y] = g_param_spec_float("y",
+                                                "Y",
+                                                "The y value of the vector",
+                                                -G_MAXFLOAT,
+                                                G_MAXFLOAT,
+                                                0,
+                                                G_PARAM_READWRITE);
 
-    obj_properties[PROP_Z] = g_param_spec_double("z",
-                                                 "Z",
-                                                 "The z value of the vector",
-                                                 -G_MAXDOUBLE,
-                                                 G_MAXDOUBLE,
-                                                 0,
-                                                 G_PARAM_READWRITE);
+    obj_properties[PROP_Z] = g_param_spec_float("z",
+                                                "Z",
+                                                "The z value of the vector",
+                                                -G_MAXFLOAT,
+                                                G_MAXFLOAT,
+                                                0,
+                                                G_PARAM_READWRITE);
 
     obj_properties[PROP_MAGNITUDE]
-        = g_param_spec_double("magnitude",
-                              "magnitude",
-                              "The magnitude of the vector.",
-                              0,
-                              G_MAXDOUBLE,
-                              0,
-                              G_PARAM_READABLE);
+        = g_param_spec_float("magnitude",
+                             "magnitude",
+                             "The magnitude of the vector.",
+                             0,
+                             G_MAXFLOAT,
+                             0,
+                             G_PARAM_READABLE);
 
     obj_properties[PROP_UNIT]
         = g_param_spec_object("unit",
@@ -195,7 +195,7 @@ psy_vector3_new()
  *          will be set to 0.0, if n > 0 the values after 3 will be ignored.
  */
 PsyVector3 *
-psy_vector3_new_data(gsize n, gdouble *values)
+psy_vector3_new_data(gsize n, gfloat *values)
 {
     PsyVector3 *ret = psy_vector3_new();
     g_warn_if_fail(n <= 3);
@@ -229,7 +229,7 @@ psy_vector3_set_null(PsyVector3 *self)
 {
     g_return_if_fail(PSY_IS_VECTOR3(self));
 
-    *self->vector = glm::dvec3(0);
+    *self->vector = glm::vec3(0);
 }
 
 /**
@@ -245,7 +245,7 @@ psy_vector3_is_null(PsyVector3 *self)
 {
     g_return_val_if_fail(PSY_IS_VECTOR3(self), FALSE);
 
-    return *self->vector == glm::dvec3(0);
+    return *self->vector == glm::vec3(0);
 }
 
 /**
@@ -257,7 +257,7 @@ psy_vector3_is_null(PsyVector3 *self)
  * Returns: the maginitude of the vector
  */
 
-gdouble
+gfloat
 psy_vector3_get_magnitude(PsyVector3 *self)
 {
     g_return_val_if_fail(PSY_IS_VECTOR3(self), 0);
@@ -319,7 +319,7 @@ psy_vector3_negate(PsyVector3 *self)
  * Returns:(transfer full): a vector with @scalar.
  */
 PsyVector3 *
-psy_vector3_add_s(PsyVector3 *self, gdouble scalar)
+psy_vector3_add_s(PsyVector3 *self, gfloat scalar)
 {
     g_return_val_if_fail(PSY_IS_VECTOR3(self), NULL);
 
@@ -358,7 +358,7 @@ psy_vector3_add(PsyVector3 *self, PsyVector3 *other)
  * Returns:(transfer full): the result of @self - @scalar
  */
 PsyVector3 *
-psy_vector3_sub_s(PsyVector3 *self, gdouble scalar)
+psy_vector3_sub_s(PsyVector3 *self, gfloat scalar)
 {
     g_return_val_if_fail(PSY_IS_VECTOR3(self), NULL);
     PsyVector3 *ret = PSY_VECTOR3(psy_vector3_new());
@@ -395,7 +395,7 @@ psy_vector3_sub(PsyVector3 *self, PsyVector3 *other)
  * Returns:(transfer full): The result of @self * @scalar
  */
 PsyVector3 *
-psy_vector3_mul_s(PsyVector3 *self, gdouble scalar)
+psy_vector3_mul_s(PsyVector3 *self, gfloat scalar)
 {
     g_return_val_if_fail(PSY_IS_VECTOR3(self), NULL);
     PsyVector3 *ret = PSY_VECTOR3(psy_vector3_new());
@@ -435,7 +435,7 @@ psy_vector3_mul(PsyVector3 *self, PsyVector3 *other)
  *
  * Returns: The result of @self . @other
  */
-gdouble
+gfloat
 psy_vector3_dot(PsyVector3 *self, PsyVector3 *other)
 {
     g_return_val_if_fail(PSY_IS_VECTOR3(self), 0.0);
@@ -488,7 +488,7 @@ psy_vector3_not_equals(PsyVector3 *self, PsyVector3 *other)
  *
  * Returns: a pointer to the data
  */
-const gdouble *
+const gfloat *
 psy_vector3_ptr(PsyVector3 *self)
 {
     g_return_val_if_fail(PSY_IS_VECTOR3(self), NULL);
@@ -500,14 +500,14 @@ psy_vector3_ptr(PsyVector3 *self)
  * psy_vector3_get_values:
  * @self: An instance of `PsyVector` whose elements you'd like to get
  *
- * Returns:(transfer full)(element-type gdouble): the elements of the vector
+ * Returns:(transfer full)(element-type gfloat): the elements of the vector
  */
 GArray *
 psy_vector3_get_values(PsyVector3 *self)
 {
     g_return_val_if_fail(PSY_IS_VECTOR3(self), NULL);
 
-    GArray *ret = g_array_sized_new(FALSE, FALSE, sizeof(gdouble), 3);
+    GArray *ret = g_array_sized_new(FALSE, FALSE, sizeof(gfloat), 3);
     g_array_append_vals(ret, psy_vector3_ptr(self), 3);
 
     return ret;
@@ -516,7 +516,7 @@ psy_vector3_get_values(PsyVector3 *self)
 /**
  * psy_vector3_set_values:
  * @self: an instance of `PsyVector3` whose values to set
- * @array:(transfer none)(element-type gdouble): an
+ * @array:(transfer none)(element-type gfloat): an
  *        array with 3 value to set this array with
  *
  * Set the values of @self
@@ -527,8 +527,8 @@ psy_vector3_set_values(PsyVector3 *self, GArray *array)
     g_return_if_fail(PSY_IS_VECTOR3(self));
     g_return_if_fail(array);
 
-    gdouble *in  = reinterpret_cast<gdouble *>(array->data);
-    guint    min = array->len > 3 ? 3 : array->len;
+    gfloat *in  = reinterpret_cast<gfloat *>(array->data);
+    guint   min = array->len > 3 ? 3 : array->len;
 
     for (guint i = 0; i < min; i++)
         (*self->vector)[i] = in[i];
@@ -552,9 +552,9 @@ psy_vector3_as_string(PsyVector3 *self)
 /**
  * psy_vector3_get_priv_reference:(skip)
  *
- * Returns: the private implementation of the vector a glm::dvec3
+ * Returns: the private implementation of the vector a glm::vec3
  */
-glm::dvec3&
+glm::vec3&
 psy_vector3_get_priv_reference(PsyVector3 *self)
 {
     g_assert(PSY_IS_VECTOR3(self));
@@ -565,7 +565,7 @@ psy_vector3_get_priv_reference(PsyVector3 *self)
 /**
  * psy_vector3_get_priv_pointer:(skip)
  */
-glm::dvec3 *
+glm::vec3 *
 psy_vector3_get_priv_pointer(PsyVector3 *self)
 {
     g_assert(PSY_IS_VECTOR3(self));
