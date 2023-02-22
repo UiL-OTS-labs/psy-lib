@@ -19,8 +19,8 @@
 typedef struct _PsyMatrix4 PsyMatrix4;
 
 struct _PsyMatrix4 {
-    GObject       parent_instance;
-    glm::dmat4x4 *matrix;
+    GObject      parent_instance;
+    glm::mat4x4 *matrix;
 };
 
 G_DEFINE_TYPE(PsyMatrix4, psy_matrix4, G_TYPE_OBJECT)
@@ -39,7 +39,7 @@ static GParamSpec *obj_properties[N_PROPERTIES] = {
 static void
 psy_matrix4_init(PsyMatrix4 *self)
 {
-    self->matrix = new glm::dmat4x4();
+    self->matrix = new glm::mat4x4();
 }
 
 static void
@@ -127,7 +127,6 @@ psy_matrix4_class_init(PsyMatrix4Class *klass)
         gobject_class, N_PROPERTIES, obj_properties);
 }
 
-
 /* ************* public functions ************* */
 
 /**
@@ -181,12 +180,12 @@ psy_matrix4_new_identity()
  *          orthographic projection.
  */
 PsyMatrix4 *
-psy_matrix4_new_ortographic(gdouble left,
-                            gdouble right,
-                            gdouble bottom,
-                            gdouble top,
-                            gdouble z_near,
-                            gdouble z_far)
+psy_matrix4_new_ortographic(gfloat left,
+                            gfloat right,
+                            gfloat bottom,
+                            gfloat top,
+                            gfloat z_near,
+                            gfloat z_far)
 {
     PsyMatrix4 *ret = psy_matrix4_new();
 
@@ -211,10 +210,10 @@ psy_matrix4_new_ortographic(gdouble left,
  *          projection.
  */
 PsyMatrix4 *
-psy_matrix4_new_perspective(gdouble fovy,
-                            gdouble aspect,
-                            gdouble z_near,
-                            gdouble z_far)
+psy_matrix4_new_perspective(gfloat fovy,
+                            gfloat aspect,
+                            gfloat z_near,
+                            gfloat z_far)
 {
     PsyMatrix4 *ret = psy_matrix4_new();
 
@@ -248,7 +247,7 @@ psy_matrix4_set_identity(PsyMatrix4 *self)
 {
     g_return_if_fail(PSY_IS_MATRIX4(self));
 
-    *self->matrix = glm::dmat4x4(1);
+    *self->matrix = glm::mat4x4(1);
 }
 
 /**
@@ -266,7 +265,7 @@ psy_matrix4_is_identity(PsyMatrix4 *self)
 {
     g_return_val_if_fail(PSY_IS_MATRIX4(self), FALSE);
 
-    return *self->matrix == glm::dmat4x4(1);
+    return *self->matrix == glm::mat4x4(1);
 }
 
 /**
@@ -281,7 +280,7 @@ psy_matrix4_set_null(PsyMatrix4 *self)
 {
     g_return_if_fail(PSY_IS_MATRIX4(self));
 
-    *self->matrix = glm::dmat4x4(0);
+    *self->matrix = glm::mat4x4(0);
 }
 
 /**
@@ -299,7 +298,7 @@ psy_matrix4_is_null(PsyMatrix4 *self)
 {
     g_return_val_if_fail(PSY_IS_MATRIX4(self), FALSE);
 
-    return *self->matrix == glm::dmat4x4(0);
+    return *self->matrix == glm::mat4x4(0);
 }
 
 /**
@@ -310,7 +309,7 @@ psy_matrix4_is_null(PsyMatrix4 *self)
  * Returns :(transfer full): The result of self + s
  */
 PsyMatrix4 *
-psy_matrix4_add_s(PsyMatrix4 *self, gdouble scalar)
+psy_matrix4_add_s(PsyMatrix4 *self, gfloat scalar)
 {
     g_return_val_if_fail(PSY_IS_MATRIX4(self), NULL);
 
@@ -353,7 +352,7 @@ psy_matrix4_add(PsyMatrix4 *self, PsyMatrix4 *other)
  *         that is the result of self - scalar.
  */
 PsyMatrix4 *
-psy_matrix4_sub_s(PsyMatrix4 *self, gdouble scalar)
+psy_matrix4_sub_s(PsyMatrix4 *self, gfloat scalar)
 {
     g_return_val_if_fail(PSY_IS_MATRIX4(self), NULL);
 
@@ -399,7 +398,7 @@ psy_matrix4_sub(PsyMatrix4 *self, PsyMatrix4 *other)
  *         that is the result of self * scalar.
  */
 PsyMatrix4 *
-psy_matrix4_mul_s(PsyMatrix4 *self, gdouble scalar)
+psy_matrix4_mul_s(PsyMatrix4 *self, gfloat scalar)
 {
     g_return_val_if_fail(PSY_IS_MATRIX4(self), NULL);
     PsyMatrix4 *ret = psy_matrix4_new();
@@ -513,7 +512,7 @@ psy_matrix4_as_string(PsyMatrix4 *self)
  *
  * Returns (transfer none): a pointer to the data.
  */
-const gdouble *
+const gfloat *
 psy_matrix4_ptr(PsyMatrix4 *self)
 {
     g_return_val_if_fail(PSY_IS_MATRIX4(self), NULL);
@@ -529,11 +528,11 @@ psy_matrix4_ptr(PsyMatrix4 *self)
  * Returns the matrix in elements in column major order.
  */
 void
-psy_matrix4_get_elements(PsyMatrix4 *self, gdouble *elements)
+psy_matrix4_get_elements(PsyMatrix4 *self, gfloat *elements)
 {
     g_return_if_fail(PSY_IS_MATRIX4(self));
-    gdouble       *out = &elements[0];
-    const gdouble *in  = glm::value_ptr(*(self->matrix));
+    gfloat       *out = &elements[0];
+    const gfloat *in  = glm::value_ptr(*(self->matrix));
     for (; out < &elements[16]; in++, out++)
         *out = (gfloat) *in;
 }
@@ -547,12 +546,12 @@ psy_matrix4_get_elements(PsyMatrix4 *self, gdouble *elements)
  * Rotates @self @degrees around @axis
  */
 void
-psy_matrix4_rotate(PsyMatrix4 *self, gdouble degrees, PsyVector3 *axis)
+psy_matrix4_rotate(PsyMatrix4 *self, gfloat degrees, PsyVector3 *axis)
 {
     g_return_if_fail(PSY_IS_MATRIX4(self) && PSY_IS_VECTOR3(axis));
 
-    const glm::dvec3& vec = psy_vector3_get_priv_reference(axis);
-    *self->matrix         = glm::rotate(*self->matrix, degrees, vec);
+    const glm::vec3& vec = psy_vector3_get_priv_reference(axis);
+    *self->matrix        = glm::rotate(*self->matrix, degrees, vec);
 }
 
 /**
@@ -567,8 +566,8 @@ psy_matrix4_scale(PsyMatrix4 *self, PsyVector3 *vector)
 {
     g_return_if_fail(PSY_IS_MATRIX4(self) && PSY_IS_VECTOR3(vector));
 
-    const glm::dvec3& vec = psy_vector3_get_priv_reference(vector);
-    *self->matrix         = glm::scale(*self->matrix, vec);
+    const glm::vec3& vec = psy_vector3_get_priv_reference(vector);
+    *self->matrix        = glm::scale(*self->matrix, vec);
 }
 
 /**
@@ -583,6 +582,6 @@ psy_matrix4_translate(PsyMatrix4 *self, PsyVector3 *vector)
 {
     g_return_if_fail(PSY_IS_MATRIX4(self) && PSY_IS_VECTOR3(vector));
 
-    const glm::dvec3& vec = psy_vector3_get_priv_reference(vector);
-    *self->matrix         = glm::translate(*self->matrix, vec);
+    const glm::vec3& vec = psy_vector3_get_priv_reference(vector);
+    *self->matrix        = glm::translate(*self->matrix, vec);
 }
