@@ -14,8 +14,8 @@ test_create(void)
     CU_ASSERT_PTR_NOT_NULL_FATAL(vec);
     psy_vector4_destroy(vec);
 
-    gdouble data[4] = {1, 2, 3, 4};
-    gdouble x, y, z, w;
+    gfloat data[4] = {1, 2, 3, 4};
+    gfloat x, y, z, w;
     vec = psy_vector4_new_data(4, data);
     g_object_get(vec, "x", &x, "y", &y, "z", &z, "w", &w, NULL);
     CU_ASSERT_EQUAL(x, data[0]);
@@ -29,13 +29,13 @@ test_create(void)
 static void
 test_magnitude(void)
 {
-    gdouble     x = 10, y = 20, z = 40, w = 20;
-    gdouble     values[4] = {x, y, z, w};
+    gfloat      x = 10, y = 20, z = 40, w = 20;
+    gfloat      values[4] = {x, y, z, w};
     PsyVector4 *vec       = psy_vector4_new_data(4, values);
 
-    gdouble length, magnitude;
-    gdouble expected = sqrt(x * x + y * y + z * z + w * w);
-    magnitude        = psy_vector4_get_magnitude(vec);
+    gfloat length, magnitude;
+    gfloat expected = sqrt(x * x + y * y + z * z + w * w);
+    magnitude       = psy_vector4_get_magnitude(vec);
     g_object_get(vec, "magnitude", &length, NULL);
     CU_ASSERT_EQUAL(magnitude, expected);
     CU_ASSERT_EQUAL(length, magnitude);
@@ -46,8 +46,8 @@ test_magnitude(void)
 static void
 test_unit(void)
 {
-    gdouble     x = 10, y = 20, z = 40;
-    gdouble     length;
+    gfloat      x = 10, y = 20, z = 40;
+    gfloat      length;
     PsyVector4 *vec
         = g_object_new(PSY_TYPE_VECTOR4, "x", x, "y", y, "z", z, NULL);
     PsyVector4 *unit = NULL;
@@ -68,8 +68,8 @@ test_unit(void)
 static void
 test_negate(void)
 {
-    gdouble     x = 10, y = 20, z = 40, w = 1;
-    gdouble     mx, my, mz, mw;
+    gfloat      x = 10, y = 20, z = 40, w = 1;
+    gfloat      mx, my, mz, mw;
     PsyVector4 *vec
         = g_object_new(PSY_TYPE_VECTOR4, "x", x, "y", y, "z", z, "w", w, NULL);
 
@@ -91,9 +91,9 @@ test_negate(void)
 static void
 test_add_scalar(void)
 {
-    gdouble     x = 10, y = 20, z = 40, w = -50;
-    gdouble     scalar = 2;
-    gdouble     rx, ry, rz, rw;
+    gfloat      x = 10, y = 20, z = 40, w = -50;
+    gfloat      scalar = 2;
+    gfloat      rx, ry, rz, rw;
     PsyVector4 *vec
         = g_object_new(PSY_TYPE_VECTOR4, "x", x, "y", y, "z", z, "w", w, NULL);
 
@@ -111,7 +111,7 @@ test_add_scalar(void)
 static void
 test_add_vector(void)
 {
-    gdouble     x = 10, y = 20, z = 40, w = -50;
+    gfloat      x = 10, y = 20, z = 40, w = -50;
     PsyVector4 *v1
         = g_object_new(PSY_TYPE_VECTOR4, "x", x, "y", y, "z", z, "w", w, NULL);
     PsyVector4 *v2
@@ -129,9 +129,9 @@ test_add_vector(void)
 static void
 test_sub_scalar(void)
 {
-    gdouble     x = 10, y = 20, z = 40, w = -50;
-    gdouble     scalar = 2;
-    gdouble     rx, ry, rz, rw;
+    gfloat      x = 10, y = 20, z = 40, w = -50;
+    gfloat      scalar = 2;
+    gfloat      rx, ry, rz, rw;
     PsyVector4 *vec
         = g_object_new(PSY_TYPE_VECTOR4, "x", x, "y", y, "z", z, "w", w, NULL);
     PsyVector4 *result = psy_vector4_sub_s(vec, scalar);
@@ -148,7 +148,7 @@ test_sub_scalar(void)
 static void
 test_sub_vector(void)
 {
-    gdouble     x = 10, y = 20, z = 40, w = -40;
+    gfloat      x = 10, y = 20, z = 40, w = -40;
     PsyVector4 *v1
         = g_object_new(PSY_TYPE_VECTOR4, "x", x, "y", y, "z", z, "w", w, NULL);
     PsyVector4 *result = psy_vector4_sub(v1, v1);
@@ -161,8 +161,8 @@ test_sub_vector(void)
 static void
 test_mul_scalar(void)
 {
-    gdouble     x = 10, y = 20, z = 40, w = -50;
-    gdouble     scalar = 2.0;
+    gfloat      x = 10, y = 20, z = 40, w = -50;
+    gfloat      scalar = 2.0;
     PsyVector4 *v1
         = g_object_new(PSY_TYPE_VECTOR4, "x", x, "y", y, "z", z, "w", w, NULL);
     PsyVector4 *result = psy_vector4_mul_s(v1, scalar);
@@ -186,11 +186,11 @@ test_mul_scalar(void)
 static void
 test_vector_dot(void)
 {
-    gdouble     x = 1, y = 1;
+    gfloat      x = 1, y = 1;
     PsyVector4 *v1, *v2;
-    v1          = g_object_new(PSY_TYPE_VECTOR4, "x", x, NULL);
-    v2          = g_object_new(PSY_TYPE_VECTOR4, "y", y, NULL);
-    gdouble cos = psy_vector4_dot(v1, v2);
+    v1         = g_object_new(PSY_TYPE_VECTOR4, "x", x, NULL);
+    v2         = g_object_new(PSY_TYPE_VECTOR4, "y", y, NULL);
+    gfloat cos = psy_vector4_dot(v1, v2);
     CU_ASSERT_EQUAL(cos, 0.0f);
 
     cos = psy_vector4_dot(v2, v1);

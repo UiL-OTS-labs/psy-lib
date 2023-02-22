@@ -13,12 +13,12 @@ G_DECLARE_FINAL_TYPE(PsyVector4, psy_vector4, PSY, VECTOR4, GObject)
 G_MODULE_EXPORT PsyVector4 *
 psy_vector4_new(void);
 G_MODULE_EXPORT PsyVector4 *
-psy_vector4_new_data(gsize n, gdouble *values);
+psy_vector4_new_data(gsize n, gfloat *values);
 
 G_MODULE_EXPORT void
 psy_vector4_destroy(PsyVector4 *self);
 
-G_MODULE_EXPORT gdouble
+G_MODULE_EXPORT gfloat
 psy_vector4_get_magnitude(PsyVector4 *self);
 
 G_MODULE_EXPORT PsyVector4 *
@@ -32,20 +32,20 @@ G_MODULE_EXPORT gboolean
 psy_vector4_is_null(PsyVector4 *self);
 
 G_MODULE_EXPORT PsyVector4 *
-psy_vector4_add_s(PsyVector4 *self, gdouble scalar);
+psy_vector4_add_s(PsyVector4 *self, gfloat scalar);
 G_MODULE_EXPORT PsyVector4 *
 psy_vector4_add(PsyVector4 *self, PsyVector4 *other);
 
 G_MODULE_EXPORT PsyVector4 *
-psy_vector4_sub_s(PsyVector4 *self, gdouble scalar);
+psy_vector4_sub_s(PsyVector4 *self, gfloat scalar);
 G_MODULE_EXPORT PsyVector4 *
 psy_vector4_sub(PsyVector4 *self, PsyVector4 *other);
 
 G_MODULE_EXPORT PsyVector4 *
-psy_vector4_mul_s(PsyVector4 *self, gdouble scalar);
+psy_vector4_mul_s(PsyVector4 *self, gfloat scalar);
 G_MODULE_EXPORT PsyVector4 *
 psy_vector4_mul(PsyVector4 *self, PsyVector4 *other);
-G_MODULE_EXPORT gdouble
+G_MODULE_EXPORT gfloat
 psy_vector4_dot(PsyVector4 *self, PsyVector4 *other);
 
 G_MODULE_EXPORT gboolean
@@ -53,7 +53,7 @@ psy_vector4_equals(PsyVector4 *self, PsyVector4 *other);
 G_MODULE_EXPORT gboolean
 psy_vector4_not_equals(PsyVector4 *self, PsyVector4 *other);
 
-G_MODULE_EXPORT G_MODULE_EXPORT const gdouble *
+G_MODULE_EXPORT G_MODULE_EXPORT const gfloat *
 psy_vector4_ptr(PsyVector4 *self);
 
 G_MODULE_EXPORT GArray *
