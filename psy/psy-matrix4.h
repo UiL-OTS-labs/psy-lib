@@ -19,18 +19,18 @@ G_MODULE_EXPORT PsyMatrix4 *
 psy_matrix4_new_identity(void);
 
 G_MODULE_EXPORT PsyMatrix4 *
-psy_matrix4_new_ortographic(gdouble left,
-                            gdouble right,
-                            gdouble bottom,
-                            gdouble top,
-                            gdouble z_near,
-                            gdouble z_far);
+psy_matrix4_new_ortographic(gfloat left,
+                            gfloat right,
+                            gfloat bottom,
+                            gfloat top,
+                            gfloat z_near,
+                            gfloat z_far);
 
 G_MODULE_EXPORT PsyMatrix4 *
-psy_matrix4_new_perspective(gdouble fovy,
-                            gdouble aspect,
-                            gdouble near,
-                            gdouble far);
+psy_matrix4_new_perspective(gfloat fovy,
+                            gfloat aspect,
+                            gfloat near,
+                            gfloat far);
 
 G_MODULE_EXPORT void
 psy_matrix4_destroy(PsyMatrix4 *v);
@@ -47,17 +47,17 @@ G_MODULE_EXPORT gboolean
 psy_matrix4_is_null(PsyMatrix4 *self);
 
 G_MODULE_EXPORT PsyMatrix4 *
-psy_matrix4_add_s(PsyMatrix4 *self, gdouble scalar);
+psy_matrix4_add_s(PsyMatrix4 *self, gfloat scalar);
 G_MODULE_EXPORT PsyMatrix4 *
 psy_matrix4_add(PsyMatrix4 *self, PsyMatrix4 *other);
 
 G_MODULE_EXPORT PsyMatrix4 *
-psy_matrix4_sub_s(PsyMatrix4 *self, gdouble scalar);
+psy_matrix4_sub_s(PsyMatrix4 *self, gfloat scalar);
 G_MODULE_EXPORT PsyMatrix4 *
 psy_matrix4_sub(PsyMatrix4 *self, PsyMatrix4 *other);
 
 G_MODULE_EXPORT PsyMatrix4 *
-psy_matrix4_mul_s(PsyMatrix4 *self, gdouble scalar);
+psy_matrix4_mul_s(PsyMatrix4 *self, gfloat scalar);
 G_MODULE_EXPORT PsyMatrix4 *
 psy_matrix4_mul(PsyMatrix4 *self, PsyMatrix4 *other);
 
@@ -69,14 +69,14 @@ psy_matrix4_not_equals(PsyMatrix4 *self, PsyMatrix4 *other);
 G_MODULE_EXPORT gchar *
 psy_matrix4_as_string(PsyMatrix4 *self);
 
-G_MODULE_EXPORT const gdouble *
+G_MODULE_EXPORT const gfloat *
 psy_matrix4_ptr(PsyMatrix4 *self);
 
 G_MODULE_EXPORT void
-psy_matrix4_get_elements(PsyMatrix4 *self, gdouble *elements);
+psy_matrix4_get_elements(PsyMatrix4 *self, gfloat *elements);
 
 G_MODULE_EXPORT void
-psy_matrix4_rotate(PsyMatrix4 *self, gdouble degrees, PsyVector3 *axis);
+psy_matrix4_rotate(PsyMatrix4 *self, gfloat degrees, PsyVector3 *axis);
 
 G_MODULE_EXPORT void
 psy_matrix4_scale(PsyMatrix4 *self, PsyVector3 *vector);

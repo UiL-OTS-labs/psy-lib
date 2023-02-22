@@ -7,8 +7,8 @@
 #include "psy-vector4.h"
 
 typedef struct _PsyVector4 {
-    GObject     obj;
-    glm::dvec4 *vector;
+    GObject    obj;
+    glm::vec4 *vector;
 } PsyVector4;
 
 G_DEFINE_TYPE(PsyVector4, psy_vector4, G_TYPE_OBJECT)
@@ -32,7 +32,7 @@ static GParamSpec *obj_properties[N_PROPERTIES] = {
 static void
 psy_vector4_init(PsyVector4 *self)
 {
-    self->vector = new glm::dvec4();
+    self->vector = new glm::vec4();
 }
 
 static void
@@ -55,16 +55,16 @@ psy_vector4_set_property(GObject      *object,
 
     switch ((PsyVector4Property) prop_id) {
     case PROP_X:
-        (*self->vector)[0] = g_value_get_double(value);
+        (*self->vector)[0] = g_value_get_float(value);
         break;
     case PROP_Y:
-        (*self->vector)[1] = g_value_get_double(value);
+        (*self->vector)[1] = g_value_get_float(value);
         break;
     case PROP_Z:
-        (*self->vector)[2] = g_value_get_double(value);
+        (*self->vector)[2] = g_value_get_float(value);
         break;
     case PROP_W:
-        (*self->vector)[3] = g_value_get_double(value);
+        (*self->vector)[3] = g_value_get_float(value);
         break;
         //        case PROP_VALUES:
         //            g_assert(G_VALUE_HOLDS_BOXED(value));
@@ -86,19 +86,19 @@ psy_vector4_get_property(GObject    *object,
 
     switch ((PsyVector4Property) prop_id) {
     case PROP_X:
-        g_value_set_double(value, (*self->vector)[0]);
+        g_value_set_float(value, (*self->vector)[0]);
         break;
     case PROP_Y:
-        g_value_set_double(value, (*self->vector)[1]);
+        g_value_set_float(value, (*self->vector)[1]);
         break;
     case PROP_Z:
-        g_value_set_double(value, (*self->vector)[2]);
+        g_value_set_float(value, (*self->vector)[2]);
         break;
     case PROP_W:
-        g_value_set_double(value, (*self->vector)[3]);
+        g_value_set_float(value, (*self->vector)[3]);
         break;
     case PROP_MAGNITUDE:
-        g_value_set_double(value, psy_vector4_get_magnitude(self));
+        g_value_set_float(value, psy_vector4_get_magnitude(self));
         break;
     case PROP_UNIT:
         g_value_take_object(value, psy_vector4_unit(self));
@@ -122,46 +122,46 @@ psy_vector4_class_init(PsyVector4Class *klass)
     gobject_class->get_property = psy_vector4_get_property;
     gobject_class->finalize     = psy_vector4_finalize;
 
-    obj_properties[PROP_X] = g_param_spec_double("x",
-                                                 "X",
-                                                 "The x value of the vector",
-                                                 -G_MAXDOUBLE,
-                                                 G_MAXDOUBLE,
-                                                 0,
-                                                 G_PARAM_READWRITE);
+    obj_properties[PROP_X] = g_param_spec_float("x",
+                                                "X",
+                                                "The x value of the vector",
+                                                -G_MAXFLOAT,
+                                                G_MAXFLOAT,
+                                                0,
+                                                G_PARAM_READWRITE);
 
-    obj_properties[PROP_Y] = g_param_spec_double("y",
-                                                 "Y",
-                                                 "The y value of the vector",
-                                                 -G_MAXDOUBLE,
-                                                 G_MAXDOUBLE,
-                                                 0,
-                                                 G_PARAM_READWRITE);
+    obj_properties[PROP_Y] = g_param_spec_float("y",
+                                                "Y",
+                                                "The y value of the vector",
+                                                -G_MAXFLOAT,
+                                                G_MAXFLOAT,
+                                                0,
+                                                G_PARAM_READWRITE);
 
-    obj_properties[PROP_Z] = g_param_spec_double("z",
-                                                 "Z",
-                                                 "The z value of the vector",
-                                                 -G_MAXDOUBLE,
-                                                 G_MAXDOUBLE,
-                                                 0,
-                                                 G_PARAM_READWRITE);
+    obj_properties[PROP_Z] = g_param_spec_float("z",
+                                                "Z",
+                                                "The z value of the vector",
+                                                -G_MAXFLOAT,
+                                                G_MAXFLOAT,
+                                                0,
+                                                G_PARAM_READWRITE);
 
-    obj_properties[PROP_W] = g_param_spec_double("w",
-                                                 "W",
-                                                 "The w value of the vector",
-                                                 -G_MAXDOUBLE,
-                                                 G_MAXDOUBLE,
-                                                 0,
-                                                 G_PARAM_READWRITE);
+    obj_properties[PROP_W] = g_param_spec_float("w",
+                                                "W",
+                                                "The w value of the vector",
+                                                -G_MAXFLOAT,
+                                                G_MAXFLOAT,
+                                                0,
+                                                G_PARAM_READWRITE);
 
     obj_properties[PROP_MAGNITUDE]
-        = g_param_spec_double("magnitude",
-                              "magnitude",
-                              "The magnitude of the vector.",
-                              0,
-                              G_MAXDOUBLE,
-                              0,
-                              G_PARAM_READABLE);
+        = g_param_spec_float("magnitude",
+                             "magnitude",
+                             "The magnitude of the vector.",
+                             0,
+                             G_MAXFLOAT,
+                             0,
+                             G_PARAM_READABLE);
 
     obj_properties[PROP_UNIT]
         = g_param_spec_object("unit",
@@ -210,7 +210,7 @@ psy_vector4_new()
  *          will be set to 0.0, if n > 0 the values after 4 will be ignored.
  */
 PsyVector4 *
-psy_vector4_new_data(gsize n, gdouble *values)
+psy_vector4_new_data(gsize n, gfloat *values)
 {
     PsyVector4 *ret = psy_vector4_new();
     g_warn_if_fail(n <= 4);
@@ -244,7 +244,7 @@ psy_vector4_set_null(PsyVector4 *self)
 {
     g_return_if_fail(PSY_IS_VECTOR4(self));
 
-    *self->vector = glm::dvec4(0);
+    *self->vector = glm::vec4(0);
 }
 
 /**
@@ -260,7 +260,7 @@ psy_vector4_is_null(PsyVector4 *self)
 {
     g_return_val_if_fail(PSY_IS_VECTOR4(self), FALSE);
 
-    return *self->vector == glm::dvec4(0);
+    return *self->vector == glm::vec4(0);
 }
 
 /**
@@ -272,7 +272,7 @@ psy_vector4_is_null(PsyVector4 *self)
  * Returns: the maginitude of the vector
  */
 
-gdouble
+gfloat
 psy_vector4_get_magnitude(PsyVector4 *self)
 {
     g_return_val_if_fail(PSY_IS_VECTOR4(self), 0);
@@ -334,7 +334,7 @@ psy_vector4_negate(PsyVector4 *self)
  * Returns:(transfer full): a vector with @scalar.
  */
 PsyVector4 *
-psy_vector4_add_s(PsyVector4 *self, gdouble scalar)
+psy_vector4_add_s(PsyVector4 *self, gfloat scalar)
 {
     g_return_val_if_fail(PSY_IS_VECTOR4(self), NULL);
 
@@ -373,7 +373,7 @@ psy_vector4_add(PsyVector4 *self, PsyVector4 *other)
  * Returns:(transfer full): the result of @self - @scalar
  */
 PsyVector4 *
-psy_vector4_sub_s(PsyVector4 *self, gdouble scalar)
+psy_vector4_sub_s(PsyVector4 *self, gfloat scalar)
 {
     g_return_val_if_fail(PSY_IS_VECTOR4(self), NULL);
     PsyVector4 *ret = PSY_VECTOR4(psy_vector4_new());
@@ -410,7 +410,7 @@ psy_vector4_sub(PsyVector4 *self, PsyVector4 *other)
  * Returns:(transfer full): The result of @self * @scalar
  */
 PsyVector4 *
-psy_vector4_mul_s(PsyVector4 *self, gdouble scalar)
+psy_vector4_mul_s(PsyVector4 *self, gfloat scalar)
 {
     g_return_val_if_fail(PSY_IS_VECTOR4(self), NULL);
     PsyVector4 *ret = PSY_VECTOR4(psy_vector4_new());
@@ -450,7 +450,7 @@ psy_vector4_mul(PsyVector4 *self, PsyVector4 *other)
  *
  * Returns: The result of @self . @other
  */
-gdouble
+gfloat
 psy_vector4_dot(PsyVector4 *self, PsyVector4 *other)
 {
     g_return_val_if_fail(PSY_IS_VECTOR4(self), 0.0);
@@ -503,7 +503,7 @@ psy_vector4_not_equals(PsyVector4 *self, PsyVector4 *other)
  *
  * Returns: a pointer to the data
  */
-const gdouble *
+const gfloat *
 psy_vector4_ptr(PsyVector4 *self)
 {
     g_return_val_if_fail(PSY_IS_VECTOR4(self), NULL);
@@ -515,14 +515,14 @@ psy_vector4_ptr(PsyVector4 *self)
  * psy_vector4_get_values:
  * @self: An instance of `PsyVector` whose elements you'd like to get
  *
- * Returns:(transfer full)(element-type gdouble): the elements of the vector
+ * Returns:(transfer full)(element-type gfloat): the elements of the vector
  */
 GArray *
 psy_vector4_get_values(PsyVector4 *self)
 {
     g_return_val_if_fail(PSY_IS_VECTOR4(self), NULL);
 
-    GArray *ret = g_array_sized_new(FALSE, FALSE, sizeof(gdouble), 4);
+    GArray *ret = g_array_sized_new(FALSE, FALSE, sizeof(gfloat), 4);
     g_array_append_vals(ret, psy_vector4_ptr(self), 4);
 
     return ret;
@@ -531,7 +531,7 @@ psy_vector4_get_values(PsyVector4 *self)
 /**
  * psy_vector4_set_values:
  * @self: an instance of `PsyVector4` whose values to set
- * @array:(transfer none)(element-type gdouble): an
+ * @array:(transfer none)(element-type gfloat): an
  *        array with 4 value to set this array with
  *
  * Set the values of @self
@@ -542,8 +542,8 @@ psy_vector4_set_values(PsyVector4 *self, GArray *array)
     g_return_if_fail(PSY_IS_VECTOR4(self));
     g_return_if_fail(array);
 
-    gdouble *in  = reinterpret_cast<gdouble *>(array->data);
-    guint    min = array->len > 4 ? 4 : array->len;
+    gfloat *in  = reinterpret_cast<gfloat *>(array->data);
+    guint   min = array->len > 4 ? 4 : array->len;
 
     for (guint i = 0; i < min; i++)
         (*self->vector)[i] = in[i];
