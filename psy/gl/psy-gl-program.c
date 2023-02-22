@@ -318,7 +318,7 @@ psy_gl_program_set_uniform_matrix_4(PsyProgram  *self,
                                     GError     **error)
 {
     PsyGlProgram *program = PSY_GL_PROGRAM(self);
-    GLdouble      elements[16];
+    GLfloat       elements[16];
     psy_matrix4_get_elements(matrix, elements);
 
     GLint location = glGetUniformLocation(program->object_id, name);
@@ -333,7 +333,7 @@ psy_gl_program_set_uniform_matrix_4(PsyProgram  *self,
         return;
     }
 
-    glUniformMatrix4dv(location, 1, GL_FALSE, elements);
+    glUniformMatrix4fv(location, 1, GL_FALSE, elements);
 }
 
 static void

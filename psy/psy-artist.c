@@ -136,20 +136,20 @@ artist_draw(PsyArtist *self)
     GError           *error      = NULL;
     const gchar      *model_name = "model";
 
-    gdouble x = psy_visual_stimulus_get_x(priv->stimulus);
-    gdouble y = psy_visual_stimulus_get_y(priv->stimulus);
-    gdouble z = psy_visual_stimulus_get_z(priv->stimulus);
+    gfloat x = psy_visual_stimulus_get_x(priv->stimulus);
+    gfloat y = psy_visual_stimulus_get_y(priv->stimulus);
+    gfloat z = psy_visual_stimulus_get_z(priv->stimulus);
 
     PsyVector3 *translation
         = g_object_new(PSY_TYPE_VECTOR3, "x", x, "y", y, "z", z, NULL);
 
-    gdouble scale_x = psy_visual_stimulus_get_scale_x(priv->stimulus);
-    gdouble scale_y = psy_visual_stimulus_get_scale_y(priv->stimulus);
+    gfloat scale_x = psy_visual_stimulus_get_scale_x(priv->stimulus);
+    gfloat scale_y = psy_visual_stimulus_get_scale_y(priv->stimulus);
 
     PsyVector3 *scale_vec
         = g_object_new(PSY_TYPE_VECTOR3, "x", scale_x, "y", scale_y, NULL);
 
-    gdouble rotation_degrees = psy_visual_stimulus_get_rotation(priv->stimulus);
+    gfloat rotation_degrees = psy_visual_stimulus_get_rotation(priv->stimulus);
     PsyVector3 *z_axis
         = g_object_new(PSY_TYPE_VECTOR3, "x", 0.0, "y", 0.0, "z", -1.0, NULL);
 

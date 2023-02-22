@@ -416,14 +416,12 @@ create_projection_matrix(PsyWindow *self)
             "width_mm", &w_mm,
             "height_mm", &h_mm,
             NULL);
-    // clang-format onn
+    // clang-format on
 
-    width = (gfloat)w;
-    height= (gfloat)h;
-    width_mm = (gfloat) w_mm;
+    width     = (gfloat) w;
+    height    = (gfloat) h;
+    width_mm  = (gfloat) w_mm;
     height_mm = (gfloat) h_mm;
-    bottom    = height;
-    top       = 0.0;
 
     gint style = psy_window_get_projection_style(self);
 
