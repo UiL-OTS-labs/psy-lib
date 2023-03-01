@@ -6,12 +6,12 @@
  * canvas will be the surface of a window, or theoretically an other type of
  * buffer (in memory or file e.g.) To which this specific artist is drawing.
  *
- * The difference between a `PsyVisualStimulus` and an `PsyArtist` is that the
- * stimulus, contains the parameters about how, when and where a stimulus should
- * be presented, whereas an Artist is the one that is actually doing the work of
- * converting those parameters to the drawing on the canvas. You could see it
- * as the that a `PsyStimulus` is the set of instructions that a `PsyArtist`
- * gets in order to draw its work of art.
+ * The difference between a [class@VisualStimulus] and an [class@Artist] is
+ * that the stimulus, contains the parameters about how, when and where a
+ * stimulus should be presented, whereas an Artist is the one that is actually
+ * doing the work of converting those parameters to the drawing on the canvas.
+ * You could see it as the that a `PsyStimulus` is the set of instructions that
+ * a `PsyArtist` gets in order to draw its work of art.
  *
  * So a `PsyVisualStimulus` is a kind of a general description of a stimulus,
  * whereas a `PsyArtist` knows how to transform these descriptions to the actual
