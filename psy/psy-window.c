@@ -34,6 +34,8 @@
 #include "psy-drawing-context.h"
 #include "psy-duration.h"
 #include "psy-matrix4.h"
+#include "psy-picture-artist.h"
+#include "psy-picture.h"
 #include "psy-program.h"
 #include "psy-rectangle-artist.h"
 #include "psy-rectangle.h"
@@ -258,13 +260,20 @@ create_artist(PsyWindow *self, PsyVisualStimulus *stimulus)
     PsyArtist *artist = NULL;
 
     if (type == psy_circle_get_type()) {
+        g_debug("creating circle artist");
         artist = PSY_ARTIST(psy_circle_artist_new(self, stimulus));
     }
-    else if (PSY_IS_CROSS(stimulus)) {
+    else if (type == psy_cross_get_type()) {
+        g_debug("creating cross artist");
         artist = PSY_ARTIST(psy_cross_artist_new(self, stimulus));
     }
-    else if (PSY_IS_RECTANGLE(stimulus)) {
+    else if (type == psy_rectangle_get_type()) {
+        g_debug("creating rectangle artist");
         artist = PSY_ARTIST(psy_rectangle_artist_new(self, stimulus));
+    }
+    else if (type == psy_picture_get_type()) {
+        g_debug("creating picture artist");
+        artist = PSY_ARTIST(psy_picture_artist_new(self, stimulus));
     }
     else {
         g_warning("PsyWindow hasn't got an Artist for %s",
