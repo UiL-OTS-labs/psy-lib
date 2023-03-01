@@ -3,16 +3,19 @@
 
 /**
  * PsyDrawingContextError:
- * @PSY_DRAWING_CONTEXT_ERROR_NAME_EXISTS: A shader program with that name has
- * already been registered.
+ * @PSY_DRAWING_CONTEXT_ERROR_NAME_EXISTS: A resouce with that name has
+ *      already been registered.
+ * @PSY_DRAWING_CONTEXT_ERROR_BUSY: Can't do this operation as it is already
+ *      in progress
  * @PSY_DRAWING_CONTEXT_ERROR_NAME_FAILED: Some less specified error regarding
- * the context occured.
+ *      the context occured.
  *
  * These errors may be the result of invalid operations on an instance
  * of `PsyDrawingContext`
  */
 typedef enum {
     PSY_DRAWING_CONTEXT_ERROR_NAME_EXISTS,
+    PSY_DRAWING_CONTEXT_ERROR_BUSY,
     PSY_DRAWING_CONTEXT_ERROR_FAILED
 } PsyDrawingContextError;
 

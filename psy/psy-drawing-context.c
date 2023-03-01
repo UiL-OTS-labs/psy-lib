@@ -15,6 +15,9 @@
  * to send geometry and textures to the hardware backend whether the backend is
  * OpenGL or Direct3D. The client also doesn't need to know.
  *
+ * Also the drawing context contains a cache of programs, textures or some
+ * other resources that could be shared among PsyArtists.
+ *
  * The drawing context may contain some general shader programs in order to
  * render pictures or shapes in an arbitrary color.
  */
@@ -40,8 +43,16 @@ const gchar *PSY_UNIFORM_COLOR_PROGRAM_NAME = "uniform-color-program";
  */
 const gchar *PSY_PICTURE_PROGRAM_NAME = "picture-program";
 
+typedef struct TextureAsyncLoad {
+    GCancellable *cancelable;
+    gsize         num_to_load;
+    gsize         num_loaded;
+} TextureAsyncLoad;
+
 typedef struct _PsyDrawingContextPrivate {
-    GHashTable *shader_programs;
+    GHashTable      *shader_programs;
+    GHashTable      *textures;
+    TextureAsyncLoad tload_info;
 } PsyDrawingContextPrivate;
 
 G_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE(PsyDrawingContext,
@@ -95,6 +106,8 @@ psy_drawing_context_init(PsyDrawingContext *self)
         = psy_drawing_context_get_instance_private(self);
     priv->shader_programs = g_hash_table_new_full(
         g_str_hash, g_str_equal, g_free, g_object_unref);
+    priv->textures = g_hash_table_new_full(
+        g_str_hash, g_str_equal, g_free, g_object_unref);
 }
 
 static void
@@ -108,6 +121,8 @@ psy_drawing_context_dispose(GObject *object)
         g_hash_table_destroy(priv->shader_programs);
         priv->shader_programs = NULL;
     }
+    if (priv->textures)
+        g_clear_pointer(&priv->textures, g_hash_table_destroy);
 
     G_OBJECT_CLASS(psy_drawing_context_parent_class)->dispose(object);
 }
@@ -157,6 +172,10 @@ psy_drawing_context_free_resources(PsyDrawingContext *self)
         g_hash_table_destroy(priv->shader_programs);
         priv->shader_programs = NULL;
     }
+    if (priv->textures) {
+        g_hash_table_destroy(priv->textures);
+        priv->textures = NULL;
+    }
 }
 
 /**
@@ -201,11 +220,133 @@ psy_drawing_context_register_program(PsyDrawingContext *self,
 }
 
 /**
+ * psy_drawing_context_register_texture:
+ * @self: An instance of [class@DrawingContext]
+ * @texture_name: The name the texture to use when retrieving the texture.
+ * @texture:(transfer full): The texture to store inside of this context. We
+ *          advise to use a Texture returned by
+ *          psy_drawing_context_create_texture.
+ * @error:(out): Errors might be returned here.
+ *
+ * Register a shader by name for future use. You are free to choose any name
+ * not yet used by this context. Psy-lib might use absolute path names of
+ * images etc.
+ */
+void
+psy_drawing_context_register_texture(PsyDrawingContext *self,
+                                     const gchar       *texture_name,
+                                     PsyTexture        *texture,
+                                     GError           **error)
+{
+    g_return_if_fail(PSY_IS_DRAWING_CONTEXT(self));
+    g_return_if_fail(texture_name);
+    g_return_if_fail(PSY_IS_TEXTURE(texture));
+    g_return_if_fail(error == NULL || *error == NULL);
+
+    PsyDrawingContextPrivate *priv
+        = psy_drawing_context_get_instance_private(self);
+
+    if (g_hash_table_lookup(priv->shader_programs, texture_name) != NULL) {
+        g_set_error(error,
+                    PSY_DRAWING_CONTEXT_ERROR,
+                    PSY_DRAWING_CONTEXT_ERROR_NAME_EXISTS,
+                    "A texture with the name %s has already been registered.",
+                    texture_name);
+        return;
+    }
+    g_hash_table_insert(priv->textures, g_strdup(texture_name), texture);
+}
+
+/**
+ * psy_drawing_context_load_files_as_texture:
+ * @self: an instance of [class@PsyDrawingContext]
+ * @files:(array length=num_files)(transfer none): An array with filenames in
+ *       utf8
+ * @num_files: The number fo files.
+ * @error: Errors may be returned here.
+ *
+ * This functions loads the files, into memory and will decode them.
+ * TODO, also upload the files to GPU if possible.
+ * The files should be unique and the will be stored inside of this drawing
+ * context. They will be registered with a full canonical file name, but
+ * The names may be relative. If files would have the same full path name,
+ * the latter might override the first, although, the file presumably will not
+ * change between
+ *
+ * When this is done, the texture-uploaded signal will be emitted.
+ */
+void
+psy_drawing_context_load_files_as_texture(PsyDrawingContext *self,
+                                          const gchar       *files[],
+                                          gsize              num_files,
+                                          GError           **error)
+{
+    g_return_if_fail(PSY_IS_DRAWING_CONTEXT(self));
+    g_return_if_fail(files);
+
+    GHashTable *uniques
+        = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, NULL);
+
+    for (gsize i = 0; i < num_files; i++) {
+
+        GFile     *file = g_file_new_for_path(files[i]);
+        GFileInfo *info = g_file_query_info(
+            file, "standard::*", G_FILE_QUERY_INFO_NONE, NULL, error);
+
+        if (error && *error == NULL) {
+            g_object_unref(file);
+            if (info)
+                g_object_unref(info);
+        }
+        else {
+            const gchar *path = g_file_info_get_display_name(info);
+            if (path)
+                g_hash_table_insert(uniques, g_strdup(path), NULL);
+            else
+                g_warning("Couldn't get a display name for file %lu: %s",
+                          i,
+                          files[i]);
+        }
+
+        g_object_unref(info);
+        g_object_unref(file);
+    }
+
+    GHashTableIter iter;
+    gpointer       key;
+    g_hash_table_iter_init(&iter, uniques);
+
+    while (g_hash_table_iter_next(&iter, &key, NULL)) {
+
+        if (error && *error != NULL)
+            break;
+
+        gchar      *path    = key;
+        PsyTexture *texture = psy_drawing_context_create_texture(self);
+
+        psy_texture_set_path(texture, path);
+        psy_texture_upload(texture, error);
+
+        if (error && *error) {
+            g_object_unref(texture);
+            continue;
+        }
+
+        psy_drawing_context_register_texture(self, path, texture, error);
+        g_object_unref(texture);
+    }
+
+error:
+
+    g_hash_table_destroy(uniques);
+}
+
+/**
  * psy_drawing_context_get_program:
  * @self: an instance of `PsyDrawingContext`
  * @name: the name used to register the Program
  *
- * Obtain a PsyProgram previously that was previously registered.
+ * Obtain a PsyProgram that was previously registered.
  *
  * Returns:(transfer none): an Instance of `PsyProgram` or NULL
  */
@@ -219,6 +360,27 @@ psy_drawing_context_get_program(PsyDrawingContext *self, const gchar *name)
         = psy_drawing_context_get_instance_private(self);
 
     return g_hash_table_lookup(priv->shader_programs, name);
+}
+
+/**
+ * psy_drawing_context_get_texture:
+ * @self: an instance of [class@PsyDrawingContext]
+ * @name: the name used to register the Program
+ *
+ * Obtain a PsyTexture that was previously registered.
+ *
+ * Returns:(transfer none): an Instance of [class@PsyTexture] or NULL
+ */
+PsyTexture *
+psy_drawing_context_get_texture(PsyDrawingContext *self, const gchar *name)
+{
+    g_return_val_if_fail(PSY_IS_DRAWING_CONTEXT(self), NULL);
+    g_return_val_if_fail(name, NULL);
+
+    PsyDrawingContextPrivate *priv
+        = psy_drawing_context_get_instance_private(self);
+
+    return g_hash_table_lookup(priv->textures, name);
 }
 
 /**
@@ -270,6 +432,27 @@ psy_drawing_context_create_fragment_shader(PsyDrawingContext *self)
 
     g_return_val_if_fail(cls->create_fragment_shader, NULL);
     return cls->create_fragment_shader(self);
+}
+
+/**
+ * psy_drawing_context_create_texture:
+ * @self: An instance of [class@DrawingContext] that will allocate a
+ * [class@Texture]
+ *
+ * Requests the backend of this drawing context to allocate a
+ * [class@Texture] that is compatible with this context.
+ *
+ * Returns:(transfer none): An instance of [class@Texture]
+ */
+PsyTexture *
+psy_drawing_context_create_texture(PsyDrawingContext *self)
+{
+    g_return_val_if_fail(PSY_IS_DRAWING_CONTEXT(self), NULL);
+
+    PsyDrawingContextClass *cls = PSY_DRAWING_CONTEXT_GET_CLASS(self);
+
+    g_return_val_if_fail(cls->create_texture, NULL);
+    return cls->create_texture(self);
 }
 
 /**
