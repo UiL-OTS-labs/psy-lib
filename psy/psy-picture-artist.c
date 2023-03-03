@@ -69,29 +69,52 @@ picture_artist_draw(PsyArtist *self)
     gboolean    store_vertices = FALSE;
     gfloat      width, height;
     const guint num_vertices = 4;
+    gchar      *fn           = NULL;
 
     PsyPictureArtist  *artist  = PSY_PICTURE_ARTIST(self);
     PsyPicture        *picture = PSY_PICTURE(psy_artist_get_stimulus(self));
     PsyWindow         *window  = psy_artist_get_window(self);
     PsyDrawingContext *context = psy_window_get_context(window);
 
-    PsyProgram *program = psy_drawing_context_get_program(
-        context, PSY_UNIFORM_COLOR_PROGRAM_NAME);
-
-    psy_program_use(program, &error);
-    if (error) {
-        g_critical("PsyPicture unable to use program: %s", error->message);
-        g_error_free(error);
-        error = NULL;
-    }
-
     // clang-format off
     g_object_get(picture,
             "width", &width,
             "height", &height,
+            "filename", &fn,
             NULL
             );
     // clang-format on
+
+    PsyTexture *texture = psy_drawing_context_get_texture(context, fn);
+    if (!texture) {
+        g_critical("Unable to obtain texture \"%s\"from drawing context", fn);
+        g_free(fn);
+        return;
+    }
+    g_free(fn);
+
+    if (!psy_texture_is_uploaded(texture)) {
+        static int warn_once = 0;
+        if (!warn_once) {
+            g_warning("Texture %s is not uploaded, we recommend to do so "
+                      "this warning is emitted once.",
+                      psy_texture_get_filename(texture));
+            warn_once = 1;
+        }
+        psy_texture_upload(texture, &error);
+        if (error) {
+            g_critical("Unable to upload texture %s",
+                       psy_texture_get_filename(texture));
+            g_clear_error(&error);
+        }
+    }
+
+    psy_texture_bind(texture, &error);
+    if (error) {
+        g_critical("Unable to bind texture %s",
+                   psy_texture_get_filename(texture));
+        g_clear_error(&error);
+    }
 
     if (psy_vbuffer_get_nvertices(artist->vertices) != num_vertices) {
         psy_vbuffer_set_nvertices(artist->vertices, num_vertices);
