@@ -17,54 +17,57 @@ G_DECLARE_DERIVABLE_TYPE(PsyTexture, psy_texture, PSY, TEXTURE, GObject)
 typedef struct _PsyTextureClass {
     GObjectClass parent_class;
 
-    void (*upload)(PsyTexture *texture, GError **error);
-    gboolean (*is_uploaded)(PsyTexture *texture);
-    void (*bind)(PsyTexture *texture, GError **error);
+    void (*upload)(PsyTexture *self, GError **error);
+    gboolean (*is_uploaded)(PsyTexture *self);
+    void (*bind)(PsyTexture *self, GError **error);
 } PsyTextureClass;
 
 G_MODULE_EXPORT void
-psy_texture_set_path(PsyTexture *texture, const char *path);
+psy_texture_set_path(PsyTexture *self, const char *path);
 
 G_MODULE_EXPORT void
-psy_texture_set_file(PsyTexture *texture, GFile *file);
+psy_texture_set_file(PsyTexture *self, GFile *file);
 
 G_MODULE_EXPORT void
-psy_texture_set_file_async(PsyTexture         *texture,
+psy_texture_set_file_async(PsyTexture         *self,
                            GFile              *file,
                            GCancellable       *cancellable,
                            GAsyncReadyCallback callback,
                            gpointer            data);
 
 G_MODULE_EXPORT void
-psy_texture_set_path_async(PsyTexture         *texture,
+psy_texture_set_path_async(PsyTexture         *self,
                            const gchar        *path,
                            GCancellable       *cancellable,
                            GAsyncReadyCallback callback,
                            gpointer            data);
 
 G_MODULE_EXPORT guint
-psy_texture_get_num_channels(PsyTexture *texture);
+psy_texture_get_num_channels(PsyTexture *self);
 
 G_MODULE_EXPORT void
-psy_texture_set_num_channels(PsyTexture *texture, guint num_channels);
+psy_texture_set_num_channels(PsyTexture *self, guint num_channels);
 
 G_MODULE_EXPORT guint
-psy_texture_get_width(PsyTexture *texture);
+psy_texture_get_width(PsyTexture *self);
 
 G_MODULE_EXPORT guint
-psy_texture_get_height(PsyTexture *texture);
+psy_texture_get_height(PsyTexture *self);
 
 G_MODULE_EXPORT void
-psy_texture_upload(PsyTexture *texture, GError **error);
+psy_texture_upload(PsyTexture *self, GError **error);
 
 G_MODULE_EXPORT gboolean
-psy_texture_is_uploaded(PsyTexture *texture);
+psy_texture_is_uploaded(PsyTexture *self);
 
 G_MODULE_EXPORT void
-psy_texture_bind(PsyTexture *texture, GError **error);
+psy_texture_bind(PsyTexture *self, GError **error);
 
 G_MODULE_EXPORT guint8 *
-psy_texture_get_data();
+psy_texture_get_data(PsyTexture *self);
+
+G_MODULE_EXPORT const gchar *
+psy_texture_get_filename(PsyTexture *self);
 
 G_END_DECLS
 
