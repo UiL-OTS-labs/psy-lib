@@ -242,7 +242,7 @@ main(int argc, char **argv)
     PsyRectangle *rect
         = psy_rectangle_new_full(PSY_WINDOW(window), 200, 200, 50, 50);
     PsyPicture *picture = psy_picture_new_full(
-        PSY_WINDOW(window), -200, 200, 50, 50, g_texture_fn);
+        PSY_WINDOW(window), 300, 0, 1968 / 8, 1712 / 8, g_texture_fn);
 
     PsyDrawingContext *drawing_context
         = psy_window_get_context(PSY_WINDOW(window));
