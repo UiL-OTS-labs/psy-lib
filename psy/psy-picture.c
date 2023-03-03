@@ -60,8 +60,10 @@ psy_picture_init(PsyPicture *self)
 static void
 psy_picture_finalize(GObject *obj)
 {
-    PsyPicture *self = PSY_PICTURE(obj);
-    g_clear_pointer(&self, g_free);
+    PsyPicture        *self = PSY_PICTURE(obj);
+    PsyPicturePrivate *priv = psy_picture_get_instance_private(self);
+
+    g_clear_pointer(&priv->fn, g_free);
 }
 
 static void
@@ -175,8 +177,11 @@ psy_picture_set_filename(PsyPicture *self, const gchar *filename)
     g_return_if_fail(PSY_IS_PICTURE(self));
     g_return_if_fail(filename != NULL);
 
+    GFile *file = g_file_new_for_path(filename);
+
     g_free(priv->fn);
-    priv->fn = g_strdup(filename);
+    priv->fn = g_file_get_path(file);
+    g_object_unref(file);
 }
 
 /**
