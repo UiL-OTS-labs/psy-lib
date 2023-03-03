@@ -55,7 +55,8 @@ tick_callback(GtkWidget *darea, GdkFrameClock *clock, gpointer data)
     if (gl_error != GL_NO_ERROR)
         return G_SOURCE_CONTINUE;
 
-    gint color_id = glGetUniformLocation(
+    PsyMatrix4 *identity = psy_matrix4_new_identity();
+    gint        color_id = glGetUniformLocation(
         psy_gl_program_get_object_id(PSY_GL_PROGRAM(win3d->gl_program)),
         "ourColor");
 
@@ -68,6 +69,11 @@ tick_callback(GtkWidget *darea, GdkFrameClock *clock, gpointer data)
     // tc = sinf(seconds * 2.0f * 3.141592654f) / 2.0 + .5f;
     tc = sinf(seconds) * .25 / 2.0 + .5f;
     glUniform4f(color_id, tc, tc, tc, 1.0f);
+    psy_program_set_uniform_matrix4(
+        win3d->gl_picture_program, "projection", identity, &error);
+    g_assert(error == NULL);
+    psy_program_set_uniform_matrix4(
+        win3d->gl_picture_program, "model", identity, &error);
 
     psy_vbuffer_draw_triangles(win3d->vertices, &error);
     if (error) {
@@ -80,6 +86,14 @@ tick_callback(GtkWidget *darea, GdkFrameClock *clock, gpointer data)
         gtk_gl_area_set_error(GTK_GL_AREA(darea), error);
         return G_SOURCE_REMOVE;
     }
+    psy_program_set_uniform_matrix4(
+        win3d->gl_program, "projection", identity, &error);
+    g_assert(error == NULL);
+    psy_program_set_uniform_matrix4(
+        win3d->gl_program, "model", identity, &error);
+    g_assert(error == NULL);
+
+    g_object_unref(identity);
 
     psy_texture_bind(win3d->gl_texture, &error);
     if (error) {
@@ -121,7 +135,7 @@ init_textures(PsyWindowToy *self, GError **error)
     gtk_gl_area_make_current(GTK_GL_AREA(self->darea));
     PsyGlTexture *texture = psy_gl_texture_new();
     const gchar  *path    = "./share/Itálica_Owl.jpg";
-    psy_texture_set_num_channels(PSY_TEXTURE(texture), 3);
+    psy_texture_set_num_channels(PSY_TEXTURE(texture), 4);
     psy_texture_set_path(PSY_TEXTURE(texture), path);
     psy_texture_upload(PSY_TEXTURE(texture), error);
 
