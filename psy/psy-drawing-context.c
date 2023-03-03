@@ -183,8 +183,8 @@ psy_drawing_context_free_resources(PsyDrawingContext *self)
  * @self: an instance of `PsyDrawingContext`
  * @name: the name to use to register the program, it should not have been used
  *        to register a `PsyProgram` before.
- * @program: The program which you'd like to have registered. To make sure
- *           the program works with this context, you should use
+ * @program:(transfer full):The program which you'd like to have registered. To
+ *           make sure the program works with this context, you should use
  *           `psy_drawing_context_create` to make it.
  * @error:(out):If an error occurs such as using the same name twice will be
  *              returned here.
@@ -217,6 +217,7 @@ psy_drawing_context_register_program(PsyDrawingContext *self,
         return;
     }
     g_hash_table_insert(priv->shader_programs, g_strdup(name), program);
+    g_object_ref(program);
 }
 
 /**
@@ -305,6 +306,7 @@ psy_drawing_context_load_files_as_texture(PsyDrawingContext *self,
     while (g_hash_table_iter_next(&iter, &key, NULL)) {
         gchar      *path    = key;
         PsyTexture *texture = psy_drawing_context_create_texture(self);
+        psy_texture_set_num_channels(texture, 4);
 
         psy_texture_set_path(texture, path);
         // psy_texture_upload(texture, error);
