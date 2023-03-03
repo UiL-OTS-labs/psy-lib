@@ -242,7 +242,12 @@ main(int argc, char **argv)
     PsyRectangle *rect
         = psy_rectangle_new_full(PSY_WINDOW(window), 200, 200, 50, 50);
     PsyPicture *picture = psy_picture_new_full(
-        PSY_WINDOW(window), 200, 200, 50, 50, g_texture_fn);
+        PSY_WINDOW(window), -200, 200, 50, 50, g_texture_fn);
+
+    PsyDrawingContext *drawing_context
+        = psy_window_get_context(PSY_WINDOW(window));
+    psy_drawing_context_load_files_as_texture(
+        drawing_context, &g_texture_fn, 1, NULL);
 
     psy_visual_stimulus_set_color(PSY_VISUAL_STIMULUS(circle), circle_color);
     g_object_set(cross, "color", cross_color, NULL);
