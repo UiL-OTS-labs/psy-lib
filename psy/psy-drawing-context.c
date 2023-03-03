@@ -255,6 +255,7 @@ psy_drawing_context_register_texture(PsyDrawingContext *self,
         return;
     }
     g_hash_table_insert(priv->textures, g_strdup(texture_name), texture);
+    g_object_ref(texture);
 }
 
 /**
@@ -288,27 +289,12 @@ psy_drawing_context_load_files_as_texture(PsyDrawingContext *self,
         = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, NULL);
 
     for (gsize i = 0; i < num_files; i++) {
-
-        GFile     *file = g_file_new_for_path(files[i]);
-        GFileInfo *info = g_file_query_info(
-            file, "standard::*", G_FILE_QUERY_INFO_NONE, NULL, error);
-
-        if (error && *error == NULL) {
-            g_object_unref(file);
-            if (info)
-                g_object_unref(info);
-        }
-        else {
-            const gchar *path = g_file_info_get_display_name(info);
-            if (path)
-                g_hash_table_insert(uniques, g_strdup(path), NULL);
-            else
-                g_warning("Couldn't get a display name for file %lu: %s",
-                          i,
-                          files[i]);
-        }
-
-        g_object_unref(info);
+        GFile *file      = g_file_new_for_path(files[i]);
+        char  *canonical = g_file_get_path(file);
+        if (canonical)
+            g_hash_table_insert(uniques, canonical, NULL);
+        else
+            g_warning("Unable to get canonical path for %s", files[i]);
         g_object_unref(file);
     }
 
@@ -317,10 +303,6 @@ psy_drawing_context_load_files_as_texture(PsyDrawingContext *self,
     g_hash_table_iter_init(&iter, uniques);
 
     while (g_hash_table_iter_next(&iter, &key, NULL)) {
-
-        if (error && *error != NULL)
-            break;
-
         gchar      *path    = key;
         PsyTexture *texture = psy_drawing_context_create_texture(self);
 
@@ -335,9 +317,6 @@ psy_drawing_context_load_files_as_texture(PsyDrawingContext *self,
         psy_drawing_context_register_texture(self, path, texture, error);
         g_object_unref(texture);
     }
-
-error:
-
     g_hash_table_destroy(uniques);
 }
 
