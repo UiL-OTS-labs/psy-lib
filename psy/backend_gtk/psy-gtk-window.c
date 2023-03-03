@@ -177,6 +177,8 @@ init_shaders(PsyGtkWindow *self, GError **error)
     if (*error)
         return;
 
+    g_clear_object(&program);
+
     // Picture program
     program = psy_drawing_context_create_program(context);
 
@@ -196,6 +198,8 @@ init_shaders(PsyGtkWindow *self, GError **error)
 
     psy_drawing_context_register_program(
         context, PSY_PICTURE_PROGRAM_NAME, program, error);
+
+    g_clear_object(&program);
     return;
 
 fail:
@@ -497,8 +501,8 @@ upload_projection_matrices(PsyWindow *self)
             error = NULL;
         }
     }
-    program = psy_drawing_context_get_program(context,
-                                              PSY_UNIFORM_COLOR_PROGRAM_NAME);
+    program
+        = psy_drawing_context_get_program(context, PSY_PICTURE_PROGRAM_NAME);
     if (program) {
         psy_program_use(program, &error);
         if (error) {
