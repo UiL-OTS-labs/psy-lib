@@ -74,7 +74,7 @@ psy_gl_texture_finalize(GObject *object)
         self->object_id = 0;
     }
 
-    G_OBJECT_CLASS(psy_gl_texture_parent_class)->dispose(object);
+    G_OBJECT_CLASS(psy_gl_texture_parent_class)->finalize(object);
 }
 
 static void
@@ -238,7 +238,7 @@ psy_gl_texture_class_init(PsyGlTextureClass *class)
 /* ************ public functions ******************** */
 
 PsyGlTexture *
-psy_gl_texture_new()
+psy_gl_texture_new(void)
 {
     return g_object_new(PSY_TYPE_GL_TEXTURE, NULL);
 }

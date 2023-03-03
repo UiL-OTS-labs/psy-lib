@@ -16,13 +16,16 @@ typedef struct _PsyGlTextureClass {
 */
 
 G_MODULE_EXPORT PsyGlTexture *
-psy_gl_texture_new();
+psy_gl_texture_new(void);
 
 G_MODULE_EXPORT PsyGlTexture *
 psy_gl_texture_new_for_file(GFile *file);
 
 G_MODULE_EXPORT PsyGlTexture *
 psy_gl_texture_new_for_path(const gchar *path);
+
+G_MODULE_EXPORT guint
+psy_gl_texture_get_object_id(PsyGlTexture *self);
 
 G_END_DECLS
 
