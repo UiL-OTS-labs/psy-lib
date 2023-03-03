@@ -159,19 +159,28 @@ artist_draw(PsyArtist *self)
     psy_matrix4_rotate(priv->model, rotation_degrees, z_axis);
     psy_matrix4_scale(priv->model, scale_vec);
 
-    psy_program_set_uniform_matrix4(program, model_name, priv->model, &error);
+    psy_program_use(psy_artist_get_program(self), &error);
     if (error) {
-        static int once = 0;
-        if (!once) {
-            once = 1;
-            g_critical("Unable to set the %s matrix: '%s'. "
-                       "This warning is emitted only once. "
-                       "The Artist.draw expects the shader program to define "
-                       "a 4*4 matrix that handles the model transformations",
-                       model_name,
-                       error->message);
-            g_error_free(error);
-            error = NULL;
+        g_critical("Unable to use program: %s", error->message);
+        g_clear_error(&error);
+    }
+    else {
+        psy_program_set_uniform_matrix4(
+            program, model_name, priv->model, &error);
+        if (error) {
+            static int once = 0;
+            if (!once) {
+                once = 1;
+                g_critical(
+                    "Unable to set the %s matrix: '%s'. "
+                    "This warning is emitted only once. "
+                    "The Artist.draw expects the shader program to define "
+                    "a 4*4 matrix that handles the model transformations",
+                    model_name,
+                    error->message);
+                g_error_free(error);
+                error = NULL;
+            }
         }
     }
 
