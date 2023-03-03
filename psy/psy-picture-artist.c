@@ -136,19 +136,19 @@ picture_artist_draw(PsyArtist *self)
         // clang-format off
         PsyVertex vertices[4] = {
             {
-                .pos = {-half_width, half_width, 0},
+                .pos = {-half_width, half_height, 0}, // left top
                 .texture_pos = {0.0, 0.0}
             },
             {
-                .pos = {half_width, half_height, 0},
+                .pos = {half_width, half_height, 0}, // right top
                 .texture_pos = {1.0, 0.0}
             },
             {
-                .pos = {half_width, -half_height, 0},
+                .pos = {half_width, -half_height, 0}, // right bottom
                 .texture_pos = {1.0, 1.0}
             },
             {
-                .pos = {-half_width, -half_height, 0},
+                .pos = {-half_width, -half_height, 0}, // left bottom
                 .texture_pos = {0.0, 1.0}
             }
         };

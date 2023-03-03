@@ -13,9 +13,6 @@ G_DECLARE_FINAL_TYPE(
 G_MODULE_EXPORT PsyPictureArtist *
 psy_picture_artist_new(PsyWindow *window, PsyVisualStimulus *stimulus);
 
-G_MODULE_EXPORT guint
-psy_picture_artist_get_object_id(PsyPictureArtist *picture);
-
 G_END_DECLS
 
 #endif
