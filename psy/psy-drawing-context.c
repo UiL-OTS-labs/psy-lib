@@ -309,7 +309,7 @@ psy_drawing_context_load_files_as_texture(PsyDrawingContext *self,
         psy_texture_set_num_channels(texture, 4);
 
         psy_texture_set_path(texture, path);
-        // psy_texture_upload(texture, error);
+        psy_texture_upload(texture, error);
 
         if (error && *error) {
             g_object_unref(texture);
