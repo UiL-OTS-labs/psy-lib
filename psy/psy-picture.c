@@ -1,8 +1,10 @@
 
 #include "psy-picture.h"
+#include "enum-types.h"
 
 typedef struct _PsyPicturePrivate {
-    gchar *fn;
+    gchar                 *fn;
+    PsyPictureSizeStrategy strategy;
 } PsyPicturePrivate;
 
 G_DEFINE_TYPE_WITH_PRIVATE(PsyPicture, psy_picture, PSY_TYPE_RECTANGLE)
@@ -10,6 +12,7 @@ G_DEFINE_TYPE_WITH_PRIVATE(PsyPicture, psy_picture, PSY_TYPE_RECTANGLE)
 typedef enum {
     PROP_NULL, // not used required by GObject
     PROP_FILENAME,
+    PROP_STRATEGY,
     NUM_PROPERTIES
 } PictureProperty;
 
@@ -26,6 +29,9 @@ picture_set_property(GObject      *object,
     switch ((PictureProperty) property_id) {
     case PROP_FILENAME:
         psy_picture_set_filename(self, g_value_get_string(value));
+        break;
+    case PROP_STRATEGY:
+        psy_picture_set_strategy(self, g_value_get_enum(value));
         break;
     default:
         G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
@@ -44,6 +50,9 @@ picture_get_property(GObject    *object,
     switch ((PictureProperty) property_id) {
     case PROP_FILENAME:
         g_value_set_string(value, priv->fn);
+        break;
+    case PROP_STRATEGY:
+        g_value_set_enum(value, priv->strategy);
         break;
     default:
         G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
@@ -67,12 +76,36 @@ psy_picture_finalize(GObject *obj)
 }
 
 static void
+set_width(PsyRectangle *self, gfloat width)
+{
+    PSY_RECTANGLE_CLASS(psy_picture_parent_class)->set_width(self, width);
+
+    PsyPicturePrivate *priv
+        = psy_picture_get_instance_private(PSY_PICTURE(self));
+    priv->strategy = PSY_PICTURE_STRATEGY_MANUAL;
+}
+
+static void
+set_height(PsyRectangle *self, gfloat height)
+{
+    PSY_RECTANGLE_CLASS(psy_picture_parent_class)->set_height(self, height);
+
+    PsyPicturePrivate *priv
+        = psy_picture_get_instance_private(PSY_PICTURE(self));
+    priv->strategy = PSY_PICTURE_STRATEGY_MANUAL;
+}
+
+static void
 psy_picture_class_init(PsyPictureClass *klass)
 {
     GObjectClass *object_class = G_OBJECT_CLASS(klass);
     object_class->get_property = picture_get_property;
     object_class->set_property = picture_set_property;
     object_class->finalize     = psy_picture_finalize;
+
+    PsyRectangleClass *rect_class = PSY_RECTANGLE_CLASS(klass);
+    rect_class->set_width         = set_width;
+    rect_class->set_height        = set_height;
 
     /**
      * Picture:filename:
@@ -85,6 +118,24 @@ psy_picture_class_init(PsyPictureClass *klass)
                               "The name of the file to read/display",
                               "",
                               G_PARAM_READWRITE);
+
+    /**
+     * Picture:size-strategy:
+     *
+     * This is strategy used for the initial size of the stimulus. When
+     * size-strategy is [enum@PSY_PICTURE_STRATEGY_AUTO] The size of the
+     * stimulus will be set when it is drawn for the first time.
+     * When someone manually changes the size, e.g. using
+     * [method@VisualStimulus.set_width] or [method@VisualStimulus.set_height]
+     * it will be set to PSY_PICTURE_STRATEGY_MANUAL.
+     */
+    picture_properties[PROP_STRATEGY]
+        = g_param_spec_enum("size-strategy",
+                            "SizeStrategy",
+                            "Sets the size strategy of this picture",
+                            psy_picture_size_strategy_get_type(),
+                            PSY_PICTURE_STRATEGY_AUTOMATIC,
+                            G_PARAM_READWRITE | G_PARAM_CONSTRUCT);
 
     g_object_class_install_properties(
         object_class, NUM_PROPERTIES, picture_properties);
@@ -103,6 +154,20 @@ psy_picture_new(PsyWindow *window)
 }
 
 /**
+ * psy_picture_new_filename:(constructor)
+ * @window: an instance of `PsyWindow` on which this stimulus should be drawn
+ * @filename: the name of the file to load as image
+ *
+ * Returns: a new instance of `PsyPicture` with default values.
+ */
+PsyPicture *
+psy_picture_new_filename(PsyWindow *window, const gchar *filename)
+{
+    return g_object_new(
+        PSY_TYPE_PICTURE, "window", window, "filename", filename, NULL);
+}
+
+/**
  * psy_picture_new_xy_name:(constructor)
  * @window: an instance of `PsyWindow` on which this stimulus should be drawn
  * @x: The x coordinate of the window
@@ -112,10 +177,10 @@ psy_picture_new(PsyWindow *window)
  * Returns: a new instance of `PsyPicture` with default values.
  */
 PsyPicture *
-psy_picture_new_xy_name(PsyWindow   *window,
-                        gfloat       x,
-                        gfloat       y,
-                        const gchar *filename)
+psy_picture_new_xy_filename(PsyWindow   *window,
+                            gfloat       x,
+                            gfloat       y,
+                            const gchar *filename)
 {
     return g_object_new(PSY_TYPE_PICTURE,
                         "window",
@@ -199,4 +264,24 @@ psy_picture_get_filename(PsyPicture *self)
 
     g_return_val_if_fail(PSY_IS_PICTURE(self), NULL);
     return priv->fn;
+}
+
+PsyPictureSizeStrategy
+psy_picture_get_strategy(PsyPicture *self)
+{
+    PsyPicturePrivate *priv = psy_picture_get_instance_private(self);
+
+    g_return_val_if_fail(PSY_IS_PICTURE(self), PSY_PICTURE_STRATEGY_AUTOMATIC);
+
+    return priv->strategy;
+}
+
+void
+psy_picture_set_strategy(PsyPicture *self, PsyPictureSizeStrategy strategy)
+{
+    PsyPicturePrivate *priv = psy_picture_get_instance_private(self);
+
+    g_return_if_fail(PSY_IS_PICTURE(self));
+
+    priv->strategy = strategy;
 }

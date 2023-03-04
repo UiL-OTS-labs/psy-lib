@@ -69,25 +69,46 @@ psy_rectangle_init(PsyRectangle *self)
 }
 
 static void
+set_width(PsyRectangle *self, gfloat width)
+{
+    PsyRectanglePrivate *priv = psy_rectangle_get_instance_private(self);
+
+    priv->width = width;
+}
+
+static void
+set_height(PsyRectangle *self, gfloat height)
+{
+    PsyRectanglePrivate *priv = psy_rectangle_get_instance_private(self);
+
+    priv->height = height;
+}
+
+static void
 psy_rectangle_class_init(PsyRectangleClass *klass)
 {
     GObjectClass *object_class = G_OBJECT_CLASS(klass);
     object_class->get_property = rectangle_get_property;
     object_class->set_property = rectangle_set_property;
 
+    klass->set_width  = set_width;
+    klass->set_height = set_height;
+
     /**
      * Rectangle:width:
      *
-     * This is the width of the rectangle
+     * This is the width of the rectangle. The width may be negative, which
+     * will reflect the image around the y-axis, however, it's recommended
+     * to use psy_visual_stimulus_set_scale_x() to a negative value instead.
      */
     rectangle_properties[PROP_WIDTH]
         = g_param_spec_float("width",
                              "Width",
                              "The width of the rectangle",
-                             0,
+                             -G_MAXFLOAT,
                              G_MAXFLOAT,
-                             10,
-                             G_PARAM_READWRITE | G_PARAM_CONSTRUCT);
+                             0,
+                             G_PARAM_READWRITE);
 
     /**
      * Rectangle:height:
@@ -100,10 +121,10 @@ psy_rectangle_class_init(PsyRectangleClass *klass)
         = g_param_spec_float("height",
                              "Height",
                              "The height of the rectangle",
-                             0,
+                             -G_MAXFLOAT,
                              G_MAXFLOAT,
-                             10,
-                             G_PARAM_READWRITE | G_PARAM_CONSTRUCT);
+                             0,
+                             G_PARAM_READWRITE);
 
     g_object_class_install_properties(
         object_class, NUM_PROPERTIES, rectangle_properties);
@@ -149,60 +170,62 @@ psy_rectangle_new_full(
 
 /**
  * psy_rectangle_set_width:
- * @rectangle: an instance of %PsyRectangle
+ * @self: an instance of [class@PsyRectangle]
  * @width: a positive number that is the width of the rectangle
  *
  * Set the width of the rectangle
  */
 void
-psy_rectangle_set_width(PsyRectangle *rectangle, gfloat width)
+psy_rectangle_set_width(PsyRectangle *self, gfloat width)
 {
-    g_return_if_fail(PSY_IS_RECTANGLE(rectangle));
+    g_return_if_fail(PSY_IS_RECTANGLE(self));
 
-    PsyRectanglePrivate *priv = psy_rectangle_get_instance_private(rectangle);
-    priv->width               = width;
+    PsyRectangleClass *cls = PSY_RECTANGLE_GET_CLASS(self);
+    g_assert(cls->set_width);
+    cls->set_width(self, width);
 }
 
 /**
  * psy_rectangle_get_width:
- * @rectangle: an instance of %PsyRectangle
+ * @self: an instance of [class@PsyRectangle]
  *
  * Returns: The width of the rectangle.
  */
 gfloat
-psy_rectangle_get_width(PsyRectangle *rectangle)
+psy_rectangle_get_width(PsyRectangle *self)
 {
-    g_return_val_if_fail(PSY_IS_RECTANGLE(rectangle), 0.0);
-    PsyRectanglePrivate *priv = psy_rectangle_get_instance_private(rectangle);
+    g_return_val_if_fail(PSY_IS_RECTANGLE(self), 0.0);
+    PsyRectanglePrivate *priv = psy_rectangle_get_instance_private(self);
     return priv->width;
 }
 
 /**
  * psy_rectangle_set_height:
- * @rectangle: an instance of %PsyRectangle
+ * @self: an instance of [class@PsyRectangle]
  * @height: a positive number that is the height of the rectangle
  *
  * Set the height of the rectangle
  */
 void
-psy_rectangle_set_height(PsyRectangle *rectangle, gfloat height)
+psy_rectangle_set_height(PsyRectangle *self, gfloat height)
 {
-    g_return_if_fail(PSY_IS_RECTANGLE(rectangle));
+    g_return_if_fail(PSY_IS_RECTANGLE(self));
 
-    PsyRectanglePrivate *priv = psy_rectangle_get_instance_private(rectangle);
-    priv->height              = height;
+    PsyRectangleClass *cls = PSY_RECTANGLE_GET_CLASS(self);
+    g_assert(cls->set_width);
+    cls->set_height(self, height);
 }
 
 /**
  * psy_rectangle_get_height:
- * @rectangle: an instance of %PsyRectangle
+ * @self: an instance of [class@PsyRectangle]
  *
  * Returns: The height of the rectangle.
  */
 gfloat
-psy_rectangle_get_height(PsyRectangle *rectangle)
+psy_rectangle_get_height(PsyRectangle *self)
 {
-    g_return_val_if_fail(PSY_IS_RECTANGLE(rectangle), 0.0);
-    PsyRectanglePrivate *priv = psy_rectangle_get_instance_private(rectangle);
+    g_return_val_if_fail(PSY_IS_RECTANGLE(self), 0.0);
+    PsyRectanglePrivate *priv = psy_rectangle_get_instance_private(self);
     return priv->height;
 }
