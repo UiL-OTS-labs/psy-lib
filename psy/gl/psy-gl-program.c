@@ -394,11 +394,13 @@ psy_gl_program_class_init(PsyGlProgramClass *class)
     program_class->set_uniform_4f      = psy_gl_program_set_uniform_4f;
 
     gl_program_properties[PROP_OBJECT_ID]
-        = g_param_spec_string("object-id",
-                              "Object ID",
-                              "The OpenGL id of the object",
-                              0,
-                              G_PARAM_READWRITE);
+        = g_param_spec_uint("object-id",
+                            "Object ID",
+                            "The OpenGL id of the object",
+                            0,
+                            G_MAXUINT,
+                            0,
+                            G_PARAM_READABLE);
 
     gl_program_properties[PROP_IS_LINKED] = g_param_spec_boolean(
         "is-linked",

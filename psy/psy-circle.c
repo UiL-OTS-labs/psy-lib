@@ -2,6 +2,15 @@
 #include "psy-circle.h"
 #include "glibconfig.h"
 
+/**
+ * PsyCircle:
+ *
+ * A PsyCircle is a stimulus that is mostly characterised by it's positition
+ * which it derives from [class@VisualStimulus] and it's radius. The circle
+ * is rendered by a number of triangles, the more triangles are used the
+ * better the set of triangles aproaches a circle
+ */
+
 typedef struct _PsyCirclePrivate {
     gfloat radius;
     guint  num_vertices;
@@ -77,7 +86,7 @@ psy_circle_class_init(PsyCircleClass *klass)
     /**
      * Circle:radius:
      *
-     * This is the radius of the circle
+     * This is the radius of the circle.
      */
     circle_properties[PROP_RADIUS]
         = g_param_spec_float("radius",
@@ -92,8 +101,13 @@ psy_circle_class_init(PsyCircleClass *klass)
      * Circle:num-vertices:
      *
      * The number of vertices used for the outside of the circle. At least
-     * three vertices are required. There is also one in the center of the
-     * circle but that one is counted separately
+     * three vertices are required. If the circle is approximated by so using
+     * the smallest number of vertices (3) actually gives you a triangle, using
+     * 8 vertices gives you an octagon. If you can see straight edges at the
+     * edge of your circle, you might want to increase the number of vertices.
+     *
+     * Larger circles might need more vertices in order to look circular instead
+     * of hex-, octa-, x-agon.
      */
     circle_properties[PROP_NUM_VERTICES] = g_param_spec_uint(
         "num-vertices",

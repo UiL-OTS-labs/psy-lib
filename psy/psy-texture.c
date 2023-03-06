@@ -45,6 +45,7 @@ typedef struct PsyTexturePrivate {
     ImageDescription image;
     GMutex           lock;
     PictureState     state;
+    gchar           *path;
 } PsyTexturePrivate;
 
 G_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE(PsyTexture, psy_texture, G_TYPE_OBJECT)
@@ -116,8 +117,10 @@ psy_texture_get_property(GObject    *object,
     case PROP_HEIGHT:
         g_value_set_uint(value, priv->image.height);
         break;
-    case PROP_FILE:
     case PROP_PATH:
+        g_value_set_string(value, psy_texture_get_filename(self));
+        break;
+    case PROP_FILE:
     default:
         G_OBJECT_WARN_INVALID_PROPERTY_ID(object, prop_id, pspec);
     }
@@ -144,6 +147,8 @@ psy_texture_finalize(GObject *object)
 
     if (priv->image.image_data)
         stbi_image_free(priv->image.image_data);
+    if (priv->path)
+        g_free(priv->path);
 
     g_mutex_clear(&priv->lock);
 }
@@ -169,7 +174,7 @@ psy_texture_class_init(PsyTextureClass *klass)
                               "Path",
                               "The utf8 encoded path name of an image file",
                               "",
-                              G_PARAM_WRITABLE);
+                              G_PARAM_READWRITE);
 
     /**
      * PsyTexture:file
@@ -183,6 +188,7 @@ psy_texture_class_init(PsyTextureClass *klass)
         "A GIO file whose path/uri etc is already specified.",
         G_TYPE_FILE,
         G_PARAM_WRITABLE);
+
     /**
      * PsyTexture:num-channels:
      *
@@ -447,6 +453,7 @@ psy_texture_bind(PsyTexture *self, GError **error)
 void
 psy_texture_set_file(PsyTexture *self, GFile *file)
 {
+    PsyTexturePrivate *priv = psy_texture_get_instance_private(self);
     g_return_if_fail(PSY_IS_TEXTURE(self));
     g_return_if_fail(G_IS_FILE(file));
 
@@ -459,6 +466,10 @@ psy_texture_set_file(PsyTexture *self, GFile *file)
         g_error_free(error);
         return;
     }
+
+    if (priv->path)
+        g_free(priv->path);
+    priv->path = g_file_get_path(file);
 }
 
 void
@@ -492,6 +503,22 @@ psy_texture_set_path(PsyTexture *self, const gchar *path)
     GFile *file = g_file_new_for_path(path);
     psy_texture_set_file(self, file);
     g_object_unref(file);
+}
+
+/**
+ * psy_texture_get_filename:
+ * @self: an instance of [class@Texture]
+ *
+ * Returns:(nullable): the canonical path name of the texture.
+ */
+const gchar *
+psy_texture_get_filename(PsyTexture *self)
+{
+    PsyTexturePrivate *priv = psy_texture_get_instance_private(self);
+
+    g_return_val_if_fail(PSY_IS_TEXTURE(self), NULL);
+
+    return priv->path;
 }
 
 void

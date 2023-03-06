@@ -57,6 +57,8 @@ libpsy_headers = files(
     'psy-enums.h',
     'psy-loop.h',
     'psy-matrix4.h',
+    'psy-picture-artist.h',
+    'psy-picture.h',
     'psy-program.h',
     'psy-rectangle.h',
     'psy-rectangle-artist.h',
@@ -94,6 +96,8 @@ libpsyfiles = files (
     'psy-duration.c',
     'psy-loop.c',
     'psy-matrix4.cpp',
+    'psy-picture.c',
+    'psy-picture-artist.c',
     'psy-program.c',
     'psy-rectangle.c',
     'psy-rectangle-artist.c',
@@ -139,12 +143,19 @@ configure_file(input : 'picture.frag',
                output: 'picture.frag',
                copy : true)
 
+#preprocessor args
+CPP_ARGS = [
+      '-DG_LOG_DOMAIN="Psy"',
+      '-DG_LOG_USE_STRUCTURED'
+  ]
+
 libpsy = library (
     'psy',
     libpsyfiles + enum_files,
     dependencies : [gtk_dep, epoxy_dep, m_dep],
     include_directories : [libpsy_incdirs, config_incdirs],
-    c_args : '-DG_LOG_DOMAIN="Psy"',
+    c_args : CPP_ARGS,
+    cpp_args : CPP_ARGS,
     install: true
 )
 

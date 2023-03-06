@@ -3,16 +3,19 @@
 
 /**
  * PsyDrawingContextError:
- * @PSY_DRAWING_CONTEXT_ERROR_NAME_EXISTS: A shader program with that name has
- * already been registered.
+ * @PSY_DRAWING_CONTEXT_ERROR_NAME_EXISTS: A resouce with that name has
+ *      already been registered.
+ * @PSY_DRAWING_CONTEXT_ERROR_BUSY: Can't do this operation as it is already
+ *      in progress
  * @PSY_DRAWING_CONTEXT_ERROR_NAME_FAILED: Some less specified error regarding
- * the context occured.
+ *      the context occured.
  *
  * These errors may be the result of invalid operations on an instance
  * of `PsyDrawingContext`
  */
 typedef enum {
     PSY_DRAWING_CONTEXT_ERROR_NAME_EXISTS,
+    PSY_DRAWING_CONTEXT_ERROR_BUSY,
     PSY_DRAWING_CONTEXT_ERROR_FAILED
 } PsyDrawingContextError;
 
@@ -120,3 +123,21 @@ typedef enum {
     PSY_WINDOW_PROJECTION_STYLE_MILLIMETER     = 1 << 4,
     PSY_WINDOW_PROJECTION_STYLE_VISUAL_DEGREES = 1 << 5
 } PsyWindowProjectionStyle;
+
+/**
+ * PsyPictureSizeStrategy:
+ * @PSY_PICTURE_STRATEGY_AUTOMATIC: The size of the stimulus will be set
+ *                                  automatically.
+ * @PSY_PICTURE_STRATEGY_MANUAL: The size of the stimulus is set manually.
+ *
+ * This enum allows specify the desired sizing strategy of a stimulus. By
+ * default, one doesn't have to specify the size of the as the size can be
+ * determined by the size of the image. This may not always be desirable as
+ * the window-style is chosen for metric units instead of pixels.
+ * Once the stimulus is resized, it's strategy will be set to manual, so
+ * this resize is only requested once.
+ */
+typedef enum PsyPictureSizeStrategy {
+    PSY_PICTURE_STRATEGY_AUTOMATIC,
+    PSY_PICTURE_STRATEGY_MANUAL
+} PsyPictureSizeStrategy;

@@ -1,5 +1,4 @@
 
-#include "psy-visual-stimulus.h"
 #include <math.h>
 #include <psylib.h>
 #include <stdlib.h>
@@ -11,14 +10,15 @@ PsyTimePoint *g_tstop  = NULL;
 
 // related to option parsing
 gint    n_monitor;
-gdouble g_duration  = 4.0f;
-int     g_nvertices = 10;
-gdouble g_radius    = 50;
-gdouble g_amplitude = 25;
-gdouble g_frequency = 0.5;
-gdouble g_x         = 0.0;
-gdouble g_y         = 0.0;
-gdouble g_z         = 0.0;
+gdouble g_duration   = 4.0f;
+int     g_nvertices  = 10;
+gdouble g_radius     = 50;
+gdouble g_amplitude  = 25;
+gdouble g_frequency  = 0.5;
+gdouble g_x          = 0.0;
+gdouble g_y          = 0.0;
+gdouble g_z          = 0.0;
+gchar  *g_texture_fn = "./share/Itálica_Owl.jpg";
 
 char    *g_origin       = "center";
 char    *g_units        = "pixels";
@@ -39,6 +39,7 @@ static GOptionEntry entries[] = {
     {"y", 'y', G_OPTION_FLAG_NONE, G_OPTION_ARG_DOUBLE, &g_y, "The y-coordinate of the circle", "units depends on projection"},
     {"z", 'z', G_OPTION_FLAG_NONE, G_OPTION_ARG_DOUBLE, &g_z, "The z-coordinate of the circle", "units depends on projection"},
     {"circle-first", 'c', G_OPTION_FLAG_NONE, G_OPTION_ARG_NONE, &g_circle_first, "Whether or not to present the circle first", NULL},
+    {"texture-fn", 't', G_OPTION_FLAG_NONE, G_OPTION_ARG_STRING, &g_texture_fn, "The filename of the texture", "utf8"},
     {"debug", 'D', G_OPTION_FLAG_NONE, G_OPTION_ARG_NONE, &g_opengl_debug, "Use a add extra OpenGL debugging calls", NULL},
     {0}
 };
@@ -108,6 +109,19 @@ circle_stopped(PsyCircle *circle, PsyTimePoint *tstop, gpointer data)
     g_print("Circle stopped after %lf seconds\n",
             psy_duration_get_seconds(dur));
     g_object_unref(dur);
+}
+
+void
+on_picture_auto_size(PsyPicture *picture,
+                     gfloat      width,
+                     gfloat      height,
+                     gpointer    data)
+{
+    (void) data;
+    gfloat new_width = width / 8.0, new_height = height / 8.0;
+    psy_rectangle_set_size(PSY_RECTANGLE(picture), new_width, new_height);
+    g_print("Initial picture size is %d*%d, ", (int) width, (int) height);
+    g_print("after picture custom resize it is %f*%f\n", new_width, new_height);
 }
 
 void
@@ -240,6 +254,13 @@ main(int argc, char **argv)
     PsyCross     *cross = psy_cross_new_full(PSY_WINDOW(window), 0, 0, 200, 10);
     PsyRectangle *rect
         = psy_rectangle_new_full(PSY_WINDOW(window), 200, 200, 50, 50);
+    PsyPicture *picture
+        = psy_picture_new_xy_filename(PSY_WINDOW(window), 300, 0, g_texture_fn);
+
+    PsyDrawingContext *drawing_context
+        = psy_window_get_context(PSY_WINDOW(window));
+    psy_drawing_context_load_files_as_texture(
+        drawing_context, &g_texture_fn, 1, NULL);
 
     psy_visual_stimulus_set_color(PSY_VISUAL_STIMULUS(circle), circle_color);
     g_object_set(cross, "color", cross_color, NULL);
@@ -251,6 +272,8 @@ main(int argc, char **argv)
     g_signal_connect(circle, "stopped", G_CALLBACK(circle_stopped), tp);
     g_signal_connect(
         circle, "stopped", G_CALLBACK(stop_loop), loop); // stop the loop
+    g_signal_connect_after(
+        picture, "auto-resize", G_CALLBACK(on_picture_auto_size), NULL);
 
     start = psy_time_point_add(tp, start_dur);
 
@@ -265,6 +288,7 @@ main(int argc, char **argv)
         psy_stimulus_play_for(PSY_STIMULUS(circle), start, dur);
     }
     psy_stimulus_play_for(PSY_STIMULUS(rect), start, dur);
+    psy_stimulus_play_for(PSY_STIMULUS(picture), start, dur);
 
     g_main_loop_run(loop);
 

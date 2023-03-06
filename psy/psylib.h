@@ -14,6 +14,8 @@
 #include "psy-enums.h"
 #include "psy-loop.h"
 #include "psy-matrix4.h"
+#include "psy-picture-artist.h"
+#include "psy-picture.h"
 #include "psy-program.h"
 #include "psy-rectangle-artist.h"
 #include "psy-rectangle.h"

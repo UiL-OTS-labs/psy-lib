@@ -3,6 +3,7 @@
 #include "psy-gl-context.h"
 #include "psy-gl-fragment-shader.h"
 #include "psy-gl-program.h"
+#include "psy-gl-texture.h"
 #include "psy-gl-vbuffer.h"
 #include "psy-gl-vertex-shader.h"
 #include "psy-program.h"
@@ -63,6 +64,13 @@ psy_gl_create_vbuffer(PsyDrawingContext *self)
     return PSY_VBUFFER(psy_gl_vbuffer_new());
 }
 
+static PsyTexture *
+psy_gl_create_texture(PsyDrawingContext *self)
+{
+    g_assert(PSY_IS_GL_CONTEXT(self));
+    return PSY_TEXTURE(psy_gl_texture_new());
+}
+
 static void
 psy_gl_context_class_init(PsyGlContextClass *class)
 {
@@ -77,6 +85,7 @@ psy_gl_context_class_init(PsyGlContextClass *class)
     drawing_context_class->create_fragment_shader
         = psy_gl_create_fragment_shader;
     drawing_context_class->create_vbuffer = psy_gl_create_vbuffer;
+    drawing_context_class->create_texture = psy_gl_create_texture;
 }
 
 /* ************ public functions ******************** */
