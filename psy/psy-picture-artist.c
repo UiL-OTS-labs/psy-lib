@@ -76,11 +76,14 @@ picture_artist_draw(PsyArtist *self)
     PsyWindow         *window  = psy_artist_get_window(self);
     PsyDrawingContext *context = psy_window_get_context(window);
 
+    gint strategy;
+
     // clang-format off
     g_object_get(picture,
             "width", &width,
             "height", &height,
             "filename", &fn,
+            "size-strategy", &strategy,
             NULL
             );
     // clang-format on
@@ -114,6 +117,16 @@ picture_artist_draw(PsyArtist *self)
         g_critical("Unable to bind texture %s",
                    psy_texture_get_filename(texture));
         g_clear_error(&error);
+    }
+
+    if (strategy == PSY_PICTURE_STRATEGY_AUTOMATIC) {
+        g_debug("Texture size = %d * %d",
+                psy_texture_get_width(texture),
+                psy_texture_get_height(texture));
+        g_signal_emit_by_name(picture,
+                              "auto-resize",
+                              (float) psy_texture_get_width(texture),
+                              (float) psy_texture_get_height(texture));
     }
 
     if (psy_vbuffer_get_nvertices(artist->vertices) != num_vertices) {

@@ -11,6 +11,7 @@ G_DECLARE_DERIVABLE_TYPE(PsyPicture, psy_picture, PSY, PICTURE, PsyRectangle)
 
 typedef struct _PsyPictureClass {
     PsyRectangleClass parent;
+    void (*auto_resize)(PsyPicture *self, gfloat width, gfloat height);
 } PsyPictureClass;
 
 G_MODULE_EXPORT PsyPicture *

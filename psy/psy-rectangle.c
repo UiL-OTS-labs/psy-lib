@@ -229,3 +229,20 @@ psy_rectangle_get_height(PsyRectangle *self)
     PsyRectanglePrivate *priv = psy_rectangle_get_instance_private(self);
     return priv->height;
 }
+
+/**
+ * psy_rectangle_get_size:
+ * @self: an instance of [class@Rectangle]
+ * @width: The desired width of the rectangle
+ * @height: The desired height of the rectanle
+ *
+ * Set the width and height of the window.
+ */
+void
+psy_rectangle_set_size(PsyRectangle *self, gfloat width, gfloat height)
+{
+    g_return_if_fail(PSY_IS_RECTANGLE(self));
+
+    psy_rectangle_set_width(self, width);
+    psy_rectangle_set_height(self, height);
+}

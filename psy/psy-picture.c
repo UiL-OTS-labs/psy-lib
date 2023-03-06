@@ -16,7 +16,13 @@ typedef enum {
     NUM_PROPERTIES
 } PictureProperty;
 
+typedef enum {
+    SIG_AUTO_RESIZE,
+    NUM_SIGNALS,
+} PictureSignals;
+
 static GParamSpec *picture_properties[NUM_PROPERTIES] = {0};
+static guint       picture_signals[NUM_SIGNALS]       = {0};
 
 static void
 picture_set_property(GObject      *object,
@@ -96,6 +102,13 @@ set_height(PsyRectangle *self, gfloat height)
 }
 
 static void
+auto_resize(PsyPicture *picture, gfloat width, gfloat height)
+{
+    g_print("%s:%s %f * %f\n", __FILE__, __func__, width, height);
+    psy_rectangle_set_size(PSY_RECTANGLE(picture), width, height);
+}
+
+static void
 psy_picture_class_init(PsyPictureClass *klass)
 {
     GObjectClass *object_class = G_OBJECT_CLASS(klass);
@@ -107,8 +120,10 @@ psy_picture_class_init(PsyPictureClass *klass)
     rect_class->set_width         = set_width;
     rect_class->set_height        = set_height;
 
+    klass->auto_resize = auto_resize;
+
     /**
-     * Picture:filename:
+     * PsyPicture:filename:
      *
      * This is the width of the picture
      */
@@ -120,14 +135,14 @@ psy_picture_class_init(PsyPictureClass *klass)
                               G_PARAM_READWRITE);
 
     /**
-     * Picture:size-strategy:
+     * PsyPicture:size-strategy:
      *
      * This is strategy used for the initial size of the stimulus. When
-     * size-strategy is [enum@PSY_PICTURE_STRATEGY_AUTO] The size of the
+     * size-strategy is `PSY_PICTURE_STRATEGY_AUTO` The size of the
      * stimulus will be set when it is drawn for the first time.
      * When someone manually changes the size, e.g. using
-     * [method@VisualStimulus.set_width] or [method@VisualStimulus.set_height]
-     * it will be set to PSY_PICTURE_STRATEGY_MANUAL.
+     * [method@Psy.Rectangle.set_width] or [method@Psy.Rectangle.set_height] it
+     * will be set to PSY_PICTURE_STRATEGY_MANUAL.
      */
     picture_properties[PROP_STRATEGY]
         = g_param_spec_enum("size-strategy",
@@ -139,6 +154,34 @@ psy_picture_class_init(PsyPictureClass *klass)
 
     g_object_class_install_properties(
         object_class, NUM_PROPERTIES, picture_properties);
+
+    /**
+     * PsyPicture::auto-resize:
+     * @self:The instance of [class@Picture] on which this signal is emitted
+     * @width:The width of of the [class@Texture] used as information for the
+     * width
+     * @height:The height of of the [class@Texture] used as information for the
+     * height
+     *
+     * This signal is emitted when the stimulus is first rendered, the client
+     * may use this signal to obtain the size of the texture that was use as
+     * source for the set width and height. The class hander will update the
+     * size of the picture in order to match the size of the texture. Hence,
+     * If you would like change the size based on the size once known, you
+     * might want to connect to this signal using `g_signal_connect_after()`
+     */
+    picture_signals[SIG_AUTO_RESIZE]
+        = g_signal_new("auto-resize",
+                       PSY_TYPE_PICTURE,
+                       G_SIGNAL_RUN_LAST,
+                       G_STRUCT_OFFSET(PsyPictureClass, auto_resize),
+                       NULL,
+                       NULL,
+                       NULL,
+                       G_TYPE_NONE,
+                       2,
+                       G_TYPE_FLOAT,
+                       G_TYPE_FLOAT);
 }
 
 /**

@@ -46,4 +46,7 @@ psy_rectangle_set_height(PsyRectangle *self, gfloat height);
 G_MODULE_EXPORT gfloat
 psy_rectangle_get_height(PsyRectangle *self);
 
+G_MODULE_EXPORT void
+psy_rectangle_set_size(PsyRectangle *self, gfloat width, gfloat height);
+
 G_END_DECLS
