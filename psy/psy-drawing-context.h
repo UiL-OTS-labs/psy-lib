@@ -63,7 +63,7 @@ psy_drawing_context_register_texture(PsyDrawingContext *self,
 
 G_MODULE_EXPORT void
 psy_drawing_context_load_files_as_texture(PsyDrawingContext *self,
-                                          const gchar       *files[],
+                                          gchar            **files,
                                           gsize              num_files,
                                           GError           **error);
 
