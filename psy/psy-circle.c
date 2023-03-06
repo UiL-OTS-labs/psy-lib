@@ -2,6 +2,15 @@
 #include "psy-circle.h"
 #include "glibconfig.h"
 
+/**
+ * PsyCircle:
+ *
+ * A PsyCircle is a stimulus that is mostly characterised by it's positition
+ * which it derives from [class@VisualStimulus] and it's radius. The circle
+ * is rendered by a number of triangles, the more triangles are used the
+ * better the set of triangles aproaches a circle
+ */
+
 typedef struct _PsyCirclePrivate {
     gfloat radius;
     guint  num_vertices;
@@ -77,7 +86,7 @@ psy_circle_class_init(PsyCircleClass *klass)
     /**
      * Circle:radius:
      *
-     * This is the radius of the circle
+     * This is the radius of the circle.
      */
     circle_properties[PROP_RADIUS]
         = g_param_spec_float("radius",

@@ -2,6 +2,19 @@
 #include "psy-picture.h"
 #include "enum-types.h"
 
+/**
+ * PsyPicture:
+ *
+ * A psy picture is a stimulus that can display an image from a file.
+ * The file chosen is set to the [property@Psy.Picture:filename] property.
+ * This setter sets the key to look up a texture in the [class@DrawingContext]
+ * for this stimulus. The [class@PictureArtist] will try to upload the stimulus
+ * when it hasn't been uploaded, but this takes time, hence you should try
+ * to use a method like [method@Psy.DrawingContext.load_files_as_texture] in
+ * advance. This will load, decode and turn a file into a texture. Then drawing
+ * is very fast.
+ */
+
 typedef struct _PsyPicturePrivate {
     gchar                 *fn;
     PsyPictureSizeStrategy strategy;
@@ -125,7 +138,13 @@ psy_picture_class_init(PsyPictureClass *klass)
     /**
      * PsyPicture:filename:
      *
-     * This is the width of the picture
+     * The filename property represents the filename of the image. The filename
+     * is a name that is used to register a [class@Texture] with the
+     * [class@DrawingContext]. So we recommend to first register the file
+     * using [method@Psy.DrawingContext.load_files_as_texture] or similar
+     * name. This avoids that the file needs to be loaded, decoded and Turned
+     * into a PsyTexture, these methods take some time and could lead to
+     * dropping frames.
      */
     picture_properties[PROP_FILENAME]
         = g_param_spec_string("filename",
@@ -142,7 +161,7 @@ psy_picture_class_init(PsyPictureClass *klass)
      * stimulus will be set when it is drawn for the first time.
      * When someone manually changes the size, e.g. using
      * [method@Psy.Rectangle.set_width] or [method@Psy.Rectangle.set_height] it
-     * will be set to PSY_PICTURE_STRATEGY_MANUAL.
+     * will be set to `PSY_PICTURE_STRATEGY_MANUAL`.
      */
     picture_properties[PROP_STRATEGY]
         = g_param_spec_enum("size-strategy",
@@ -225,16 +244,14 @@ psy_picture_new_xy_filename(PsyWindow   *window,
                             gfloat       y,
                             const gchar *filename)
 {
+    // clang-format off
     return g_object_new(PSY_TYPE_PICTURE,
-                        "window",
-                        window,
-                        "x",
-                        x,
-                        "y",
-                        y,
-                        "filename",
-                        filename,
+                        "window", window,
+                        "x", x,
+                        "y", y,
+                        "filename",filename,
                         NULL);
+    // clang-format on
 }
 
 /**
@@ -309,6 +326,14 @@ psy_picture_get_filename(PsyPicture *self)
     return priv->fn;
 }
 
+/**
+ * psy_picture_get_strategy:
+ * @self: an instance of [class@Picture]
+ *
+ * See [property@Psy.Picture:size-strategy]
+ *
+ * Returns: the strategy used to auto size the picture on the next draw.
+ */
 PsyPictureSizeStrategy
 psy_picture_get_strategy(PsyPicture *self)
 {
@@ -319,6 +344,14 @@ psy_picture_get_strategy(PsyPicture *self)
     return priv->strategy;
 }
 
+/**
+ * psy_picture_set_strategy:
+ * @self: an instance of [class@Picture]
+ * @strategy: the strategy used for resizing the stimulus at next draw.
+ *
+ * Sets the strategy used to resize the @self
+ * See [property@Psy.Picture:size-strategy]
+ */
 void
 psy_picture_set_strategy(PsyPicture *self, PsyPictureSizeStrategy strategy)
 {

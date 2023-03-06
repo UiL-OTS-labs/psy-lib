@@ -8,6 +8,13 @@
 #include "psy-vbuffer.h"
 #include "psy-window.h"
 
+/**
+ * PsyPictureArtist:
+ *
+ * The artist that is capable of drawing instances of [class@Picture]
+ * to a canvas.
+ */
+
 typedef struct _PsyPictureArtist {
     PsyArtist   parent_instance;
     PsyVBuffer *vertices;
@@ -200,6 +207,14 @@ psy_picture_artist_class_init(PsyPictureArtistClass *class)
 
 /* ************ public functions ******************** */
 
+/**
+ * psy_picture_artist_new:
+ * @window: The window on which this picture artist will draw its[class@Picture]
+ *          stimuli
+ * @stimulus: An instance of [class@Picture], which this artist will be drawing
+ *
+ * Create a new [class@PsyPictureArtist] that is going to draw @stimulus.
+ */
 PsyPictureArtist *
 psy_picture_artist_new(PsyWindow *window, PsyVisualStimulus *stimulus)
 {
