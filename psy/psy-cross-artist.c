@@ -57,29 +57,19 @@ cross_artist_draw(PsyArtist *self)
 {
     PSY_ARTIST_CLASS(psy_cross_artist_parent_class)->draw(self);
 
-    gfloat             rgba[4] = {0, 0, 0, 1};
-    PsyCrossArtist    *artist  = PSY_CROSS_ARTIST(self);
-    PsyCross          *cross   = PSY_CROSS(psy_artist_get_stimulus(self));
-    PsyWindow         *window  = psy_artist_get_window(self);
-    PsyDrawingContext *context = psy_window_get_context(window);
-    PsyColor          *color   = NULL;
-    GError            *error   = NULL;
-    const guint        nverts  = 14; // origin + 12 corners + the first corner
-    const gchar       *color_name = "ourColor";
+    gfloat          rgba[4]    = {0, 0, 0, 1};
+    PsyCrossArtist *artist     = PSY_CROSS_ARTIST(self);
+    PsyCross       *cross      = PSY_CROSS(psy_artist_get_stimulus(self));
+    PsyColor       *color      = NULL;
+    GError         *error      = NULL;
+    const guint     nverts     = 14; // origin + 12 corners + the first corner
+    const gchar    *color_name = "ourColor";
 
     gboolean store_vertices = FALSE;
     gfloat   line_length_x, line_length_y;
     gfloat   line_width_x, line_width_y;
 
-    PsyProgram *program = psy_drawing_context_get_program(
-        context, PSY_UNIFORM_COLOR_PROGRAM_NAME);
-
-    psy_program_use(program, &error);
-    if (error) {
-        g_critical("PsyCross unable to use program: %s", error->message);
-        g_error_free(error);
-        error = NULL;
-    }
+    PsyProgram *program = psy_artist_get_program(self);
 
     // clang-format off
     g_object_get(cross,

@@ -63,20 +63,10 @@ rectangle_artist_draw(PsyArtist *self)
     const gchar *color_name   = "ourColor";
     const guint  num_vertices = 4;
 
-    PsyRectangleArtist *artist   = PSY_RECTANGLE_ARTIST(self);
-    PsyRectangle      *rectangle = PSY_RECTANGLE(psy_artist_get_stimulus(self));
-    PsyWindow         *window    = psy_artist_get_window(self);
-    PsyDrawingContext *context   = psy_window_get_context(window);
+    PsyRectangleArtist *artist = PSY_RECTANGLE_ARTIST(self);
+    PsyRectangle *rectangle    = PSY_RECTANGLE(psy_artist_get_stimulus(self));
 
-    PsyProgram *program = psy_drawing_context_get_program(
-        context, PSY_UNIFORM_COLOR_PROGRAM_NAME);
-
-    psy_program_use(program, &error);
-    if (error) {
-        g_critical("PsyRectangle unable to use program: %s", error->message);
-        g_error_free(error);
-        error = NULL;
-    }
+    PsyProgram *program = psy_artist_get_program(self);
 
     // clang-format off
     g_object_get(rectangle,
