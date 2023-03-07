@@ -64,20 +64,10 @@ circle_artist_draw(PsyArtist *self)
     guint        num_vertices;
     const gchar *color_name = "ourColor";
 
-    PsyCircleArtist   *artist  = PSY_CIRCLE_ARTIST(self);
-    PsyCircle         *circle  = PSY_CIRCLE(psy_artist_get_stimulus(self));
-    PsyWindow         *window  = psy_artist_get_window(self);
-    PsyDrawingContext *context = psy_window_get_context(window);
+    PsyCircleArtist *artist = PSY_CIRCLE_ARTIST(self);
+    PsyCircle       *circle = PSY_CIRCLE(psy_artist_get_stimulus(self));
 
-    PsyProgram *program = psy_drawing_context_get_program(
-        context, PSY_UNIFORM_COLOR_PROGRAM_NAME);
-
-    psy_program_use(program, &error);
-    if (error) {
-        g_critical("PsyCircle unable to use program: %s", error->message);
-        g_error_free(error);
-        error = NULL;
-    }
+    PsyProgram *program = psy_artist_get_program(self);
 
     // clang-format off
     g_object_get(circle,
@@ -98,6 +88,7 @@ circle_artist_draw(PsyArtist *self)
                 NULL);
         // clang-format on
     }
+
     psy_program_set_uniform_4f(program, color_name, rgba, &error);
     if (error) {
         g_critical("%s: Unable to set the color: %s", __func__, error->message);
