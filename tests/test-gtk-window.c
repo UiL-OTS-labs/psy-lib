@@ -146,23 +146,23 @@ get_window_style(void)
 
     gint style = 0;
     if (g_strcmp0(g_origin, center) == 0)
-        style |= PSY_WINDOW_PROJECTION_STYLE_CENTER;
+        style |= PSY_CANVAS_PROJECTION_STYLE_CENTER;
     else if (g_strcmp0(g_origin, c) == 0)
-        style |= PSY_WINDOW_PROJECTION_STYLE_C;
+        style |= PSY_CANVAS_PROJECTION_STYLE_C;
     else {
         g_warning(
             "The origin wasn't %s nor %s, defaulting to %s", center, c, center);
-        style |= PSY_WINDOW_PROJECTION_STYLE_CENTER;
+        style |= PSY_CANVAS_PROJECTION_STYLE_CENTER;
     }
 
     if (g_strcmp0(g_units, pixels) == 0)
-        style |= PSY_WINDOW_PROJECTION_STYLE_PIXELS;
+        style |= PSY_CANVAS_PROJECTION_STYLE_PIXELS;
     else if (g_strcmp0(g_units, m) == 0)
-        style |= PSY_WINDOW_PROJECTION_STYLE_METER;
+        style |= PSY_CANVAS_PROJECTION_STYLE_METER;
     else if (g_strcmp0(g_units, mm) == 0)
-        style |= PSY_WINDOW_PROJECTION_STYLE_MILLIMETER;
+        style |= PSY_CANVAS_PROJECTION_STYLE_MILLIMETER;
     else if (g_strcmp0(g_units, visdeg) == 0)
-        style |= PSY_WINDOW_PROJECTION_STYLE_VISUAL_DEGREES;
+        style |= PSY_CANVAS_PROJECTION_STYLE_VISUAL_DEGREES;
     else {
         g_warning("The units wasn't one of: %s, %s or %s, %s, defaulting to %s",
                   pixels,
@@ -170,7 +170,7 @@ get_window_style(void)
                   mm,
                   visdeg,
                   pixels);
-        style |= PSY_WINDOW_PROJECTION_STYLE_PIXELS;
+        style |= PSY_CANVAS_PROJECTION_STYLE_PIXELS;
     }
 
     return style;
@@ -247,18 +247,18 @@ main(int argc, char **argv)
         window, "debug-message", G_CALLBACK(open_gl_error_cb), loop);
 
     window_style = get_window_style();
-    psy_window_set_projection_style(PSY_WINDOW(window), window_style);
+    psy_canvas_set_projection_style(PSY_CANVAS(window), window_style);
 
     PsyCircle *circle = psy_circle_new_full(
-        PSY_WINDOW(window), g_x, g_y, g_radius, g_nvertices);
-    PsyCross     *cross = psy_cross_new_full(PSY_WINDOW(window), 0, 0, 200, 10);
+        PSY_CANVAS(window), g_x, g_y, g_radius, g_nvertices);
+    PsyCross     *cross = psy_cross_new_full(PSY_CANVAS(window), 0, 0, 200, 10);
     PsyRectangle *rect
-        = psy_rectangle_new_full(PSY_WINDOW(window), 200, 200, 50, 50);
+        = psy_rectangle_new_full(PSY_CANVAS(window), 200, 200, 50, 50);
     PsyPicture *picture
-        = psy_picture_new_xy_filename(PSY_WINDOW(window), 300, 0, g_texture_fn);
+        = psy_picture_new_xy_filename(PSY_CANVAS(window), 300, 0, g_texture_fn);
 
     PsyDrawingContext *drawing_context
-        = psy_window_get_context(PSY_WINDOW(window));
+        = psy_canvas_get_context(PSY_CANVAS(window));
     psy_drawing_context_load_files_as_texture(
         drawing_context, &g_texture_fn, 1, NULL);
 
@@ -298,8 +298,8 @@ main(int argc, char **argv)
         diff = psy_time_point_subtract(g_tstop, g_tstart);
 
     g_print("The width = %d mm and height = %d mm\n",
-            psy_window_get_width_mm(PSY_WINDOW(window)),
-            psy_window_get_height_mm(PSY_WINDOW(window)));
+            psy_canvas_get_width_mm(PSY_CANVAS(window)),
+            psy_canvas_get_height_mm(PSY_CANVAS(window)));
 
     g_print("circle->num_frames = %ld\n",
             psy_visual_stimulus_get_num_frames(PSY_VISUAL_STIMULUS(circle)));
