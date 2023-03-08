@@ -2,8 +2,8 @@
 #define PSY_RECTANGLE_ARTIST_H
 
 #include <psy-artist.h>
+#include <psy-canvas.h>
 #include <psy-rectangle.h>
-#include <psy-window.h>
 
 G_BEGIN_DECLS
 
@@ -12,7 +12,7 @@ G_DECLARE_FINAL_TYPE(
     PsyRectangleArtist, psy_rectangle_artist, PSY, RECTANGLE_ARTIST, PsyArtist)
 
 G_MODULE_EXPORT PsyRectangleArtist *
-psy_rectangle_artist_new(PsyWindow *window, PsyVisualStimulus *stimulus);
+psy_rectangle_artist_new(PsyCanvas *canvas, PsyVisualStimulus *stimulus);
 
 G_MODULE_EXPORT guint
 psy_rectangle_artist_get_object_id(PsyRectangleArtist *rectangle);

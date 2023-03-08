@@ -13,11 +13,11 @@ typedef struct _PsyCrossClass {
 } PsyCrossClass;
 
 G_MODULE_EXPORT PsyCross *
-psy_cross_new(PsyWindow *window);
+psy_cross_new(PsyCanvas *canvas);
 
 G_MODULE_EXPORT PsyCross *
 psy_cross_new_full(
-    PsyWindow *window, gfloat x, gfloat y, gfloat length, gfloat line_width);
+    PsyCanvas *canvas, gfloat x, gfloat y, gfloat length, gfloat line_width);
 
 G_MODULE_EXPORT void
 psy_cross_set_line_length_x(PsyCross *cross, gfloat length);

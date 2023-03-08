@@ -28,11 +28,11 @@ typedef struct _PsyRectangleClass {
 } PsyRectangleClass;
 
 G_MODULE_EXPORT PsyRectangle *
-psy_rectangle_new(PsyWindow *window);
+psy_rectangle_new(PsyCanvas *canvas);
 
 G_MODULE_EXPORT PsyRectangle *
 psy_rectangle_new_full(
-    PsyWindow *window, gfloat x, gfloat y, gfloat width, gfloat height);
+    PsyCanvas *canvas, gfloat x, gfloat y, gfloat width, gfloat height);
 
 G_MODULE_EXPORT void
 psy_rectangle_set_width(PsyRectangle *self, gfloat width);

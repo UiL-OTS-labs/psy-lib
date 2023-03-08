@@ -13,11 +13,11 @@ typedef struct _PsyCircleClass {
 } PsyCircleClass;
 
 G_MODULE_EXPORT PsyCircle *
-psy_circle_new(PsyWindow *window);
+psy_circle_new(PsyCanvas *canvas);
 
 G_MODULE_EXPORT PsyCircle *
 psy_circle_new_full(
-    PsyWindow *window, gfloat x, gfloat y, gfloat radius, guint num_vertices);
+    PsyCanvas *canvas, gfloat x, gfloat y, gfloat radius, guint num_vertices);
 
 G_MODULE_EXPORT void
 psy_circle_set_radius(PsyCircle *circle, gfloat radius);

@@ -1,6 +1,7 @@
 
 #pragma once
 
+#include "psy-canvas.h"
 #include "psy-drawing-context.h"
 #include "psy-program.h"
 #include "psy-visual-stimulus.h"
@@ -41,10 +42,10 @@ G_MODULE_EXPORT PsyArtist *
 psy_artist_new(PsyVisualStimulus *stimulus);
 
 G_MODULE_EXPORT void
-psy_artist_set_window(PsyArtist *self, PsyWindow *window);
+psy_artist_set_canvas(PsyArtist *self, PsyCanvas *canvas);
 
-G_MODULE_EXPORT PsyWindow *
-psy_artist_get_window(PsyArtist *self);
+G_MODULE_EXPORT PsyCanvas *
+psy_artist_get_canvas(PsyArtist *self);
 
 G_MODULE_EXPORT void
 psy_artist_set_stimulus(PsyArtist *self, PsyVisualStimulus *stimulus);

@@ -15,19 +15,19 @@ typedef struct _PsyPictureClass {
 } PsyPictureClass;
 
 G_MODULE_EXPORT PsyPicture *
-psy_picture_new(PsyWindow *window);
+psy_picture_new(PsyCanvas *canvas);
 
 G_MODULE_EXPORT PsyPicture *
-psy_picture_new_filename(PsyWindow *window, const gchar *filename);
+psy_picture_new_filename(PsyCanvas *canvas, const gchar *filename);
 
 G_MODULE_EXPORT PsyPicture *
-psy_picture_new_xy_filename(PsyWindow   *window,
+psy_picture_new_xy_filename(PsyCanvas   *canvas,
                             gfloat       x,
                             gfloat       y,
                             const gchar *filename);
 
 G_MODULE_EXPORT PsyPicture *
-psy_picture_new_full(PsyWindow   *window,
+psy_picture_new_full(PsyCanvas   *canvas,
                      gfloat       x,
                      gfloat       y,
                      gfloat       width,

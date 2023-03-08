@@ -205,48 +205,49 @@ psy_picture_class_init(PsyPictureClass *klass)
 
 /**
  * psy_picture_new:(constructor)
- * @window: an instance of `PsyWindow` on which this stimulus should be drawn
+ * @canvas: an instance of [class@PsyCanvas] on which this stimulus should be
+ * drawn
  *
  * Returns: a new instance of `PsyPicture` with default values.
  */
 PsyPicture *
-psy_picture_new(PsyWindow *window)
+psy_picture_new(PsyCanvas *canvas)
 {
-    return g_object_new(PSY_TYPE_PICTURE, "window", window, NULL);
+    return g_object_new(PSY_TYPE_PICTURE, "canvas", canvas, NULL);
 }
 
 /**
  * psy_picture_new_filename:(constructor)
- * @window: an instance of `PsyWindow` on which this stimulus should be drawn
+ * @canvas: an instance of `PsyCanvas` on which this stimulus should be drawn
  * @filename: the name of the file to load as image
  *
  * Returns: a new instance of `PsyPicture` with default values.
  */
 PsyPicture *
-psy_picture_new_filename(PsyWindow *window, const gchar *filename)
+psy_picture_new_filename(PsyCanvas *canvas, const gchar *filename)
 {
     return g_object_new(
-        PSY_TYPE_PICTURE, "window", window, "filename", filename, NULL);
+        PSY_TYPE_PICTURE, "canvas", canvas, "filename", filename, NULL);
 }
 
 /**
  * psy_picture_new_xy_name:(constructor)
- * @window: an instance of `PsyWindow` on which this stimulus should be drawn
- * @x: The x coordinate of the window
- * @y: The y coordinate of the window
+ * @canvas: an instance of `PsyCanvas` on which this stimulus should be drawn
+ * @x: The x coordinate of the center of the Picture
+ * @y: The y coordinate of the center of the Picture
  * @filename: the name of the file to load as image
  *
  * Returns: a new instance of `PsyPicture` with default values.
  */
 PsyPicture *
-psy_picture_new_xy_filename(PsyWindow   *window,
+psy_picture_new_xy_filename(PsyCanvas   *canvas,
                             gfloat       x,
                             gfloat       y,
                             const gchar *filename)
 {
     // clang-format off
     return g_object_new(PSY_TYPE_PICTURE,
-                        "window", window,
+                        "canvas", canvas,
                         "x", x,
                         "y", y,
                         "filename",filename,
@@ -256,7 +257,7 @@ psy_picture_new_xy_filename(PsyWindow   *window,
 
 /**
  * psy_picture_new_full:(constructor)
- * @window:the window on which we would like to draw this picture
+ * @canvas:the canvas on which we would like to draw this picture
  * @x:the x position of the center of the picture
  * @y:the y position of the center of the picture
  * @width: the width of the picture (along y-axis)
@@ -266,7 +267,7 @@ psy_picture_new_xy_filename(PsyWindow   *window,
  * Returns: a new instance of [class@Picture] with the provided values.
  */
 PsyPicture *
-psy_picture_new_full(PsyWindow   *window,
+psy_picture_new_full(PsyCanvas   *canvas,
                      gfloat       x,
                      gfloat       y,
                      gfloat       width,
@@ -276,7 +277,7 @@ psy_picture_new_full(PsyWindow   *window,
     // clang-format off
     return g_object_new(
             PSY_TYPE_PICTURE,
-            "window", window,
+            "canvas", canvas,
             "x", x,
             "y", y,
             "width", width,

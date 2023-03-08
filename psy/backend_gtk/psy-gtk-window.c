@@ -4,6 +4,7 @@
 
 #include "../gl/psy-gl-context.h"
 #include "../gl/psy-gl-program.h"
+#include "psy-artist.h"
 #include "psy-circle.h"
 #include "psy-clock.h"
 #include "psy-drawing-context.h"
@@ -11,8 +12,6 @@
 #include "psy-gtk-window.h"
 #include "psy-program.h"
 #include "psy-window.h"
-#include <psy-artist.h>
-#include <psy-drawing-context.h>
 
 /* forward declarations */
 static void GLAPIENTRY
@@ -109,7 +108,7 @@ tick_callback(GtkWidget *d_area, GdkFrameClock *clock, gpointer data)
         return G_SOURCE_REMOVE;
     }
 
-    PsyWindowClass *window_class = PSY_WINDOW_GET_CLASS(window);
+    PsyCanvasClass *canvas_class = PSY_CANVAS_GET_CLASS(window);
 
     GdkFrameTimings *timings = gdk_frame_clock_get_current_timings(clock);
     gint64           predicted
@@ -118,7 +117,7 @@ tick_callback(GtkWidget *d_area, GdkFrameClock *clock, gpointer data)
 
     PsyTimePoint *tp = psy_time_point_new(predicted);
 
-    window_class->draw(PSY_WINDOW(window), frame_count, tp);
+    canvas_class->draw(PSY_CANVAS(window), frame_count, tp);
 
     g_object_unref(tp);
 
@@ -147,14 +146,14 @@ static void
 create_drawing_context(PsyGtkWindow *window)
 {
     PsyGlContext *context = psy_gl_context_new();
-    psy_window_set_context(PSY_WINDOW(window), PSY_DRAWING_CONTEXT(context));
+    psy_canvas_set_context(PSY_CANVAS(window), PSY_DRAWING_CONTEXT(context));
 }
 
 static void
 init_shaders(PsyGtkWindow *self, GError **error)
 {
     // Uniform color program
-    PsyDrawingContext *context = psy_window_get_context(PSY_WINDOW(self));
+    PsyDrawingContext *context = psy_canvas_get_context(PSY_CANVAS(self));
 
     PsyProgram *program = psy_drawing_context_create_program(context);
 
@@ -239,7 +238,7 @@ static void
 on_canvas_unrealize(GtkGLArea *area, PsyGtkWindow *self)
 {
     gtk_gl_area_make_current(area);
-    PsyDrawingContext *context = psy_window_get_context(PSY_WINDOW(self));
+    PsyDrawingContext *context = psy_canvas_get_context(PSY_CANVAS(self));
     psy_drawing_context_free_resources(context);
 }
 
@@ -447,40 +446,49 @@ set_monitor(PsyWindow *self, gint nth_monitor)
     PsyDuration *frame_duration = psy_duration_new(1 / Hz);
 
     gtk_window_fullscreen_on_monitor(GTK_WINDOW(psywindow->window), monitor);
-    psy_window_set_width_mm(self, width_mm);
-    psy_window_set_height_mm(self, height_mm);
+    psy_canvas_set_width_mm(PSY_CANVAS(self), width_mm);
+    psy_canvas_set_height_mm(PSY_CANVAS(self), height_mm);
+
+    PSY_CANVAS_CLASS(psy_gtk_window_parent_class)
+        ->set_frame_dur(PSY_CANVAS(self), frame_duration);
 
     PSY_WINDOW_CLASS(psy_gtk_window_parent_class)
-        ->set_frame_dur(self, frame_duration);
-
-    PSY_WINDOW_CLASS(psy_gtk_window_parent_class)
-        ->set_monitor(self, nth_monitor);
+        ->set_monitor(PSY_WINDOW(self), nth_monitor);
 }
 
 static void
-clear(PsyWindow *self)
+clear(PsyCanvas *self)
 {
-    gfloat bg_color[4];
-    psy_window_get_background_color_values(self, bg_color);
+    gfloat    r, b, g, a;
+    PsyColor *color = psy_canvas_get_background_color(self);
 
-    glClearColor(bg_color[0], bg_color[1], bg_color[2], bg_color[3]);
+    // clang-format off
+    g_object_get(color,
+                 "r", &r,
+                 "g", &b,
+                 "b", &g,
+                 "a", &a,
+                 NULL);
+    // clang-format on
+
+    glClearColor(r, g, b, a);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
 static void
-draw_stimuli(PsyWindow *self, guint64 nth_frame, PsyTimePoint *tp)
+draw_stimuli(PsyCanvas *self, guint64 nth_frame, PsyTimePoint *tp)
 {
-    PSY_WINDOW_CLASS(psy_gtk_window_parent_class)
+    PSY_CANVAS_CLASS(psy_gtk_window_parent_class)
         ->draw_stimuli(self, nth_frame, tp);
 }
 
 static void
-upload_projection_matrices(PsyWindow *self)
+upload_projection_matrices(PsyCanvas *self)
 {
-    PsyMatrix4 *projection = psy_window_get_projection(self);
+    PsyMatrix4 *projection = psy_canvas_get_projection(self);
     GError     *error      = NULL;
 
-    PsyDrawingContext *context = psy_window_get_context(PSY_WINDOW(self));
+    PsyDrawingContext *context = psy_canvas_get_context(self);
     PsyProgram        *program = psy_drawing_context_get_program(
         context, PSY_UNIFORM_COLOR_PROGRAM_NAME);
 
@@ -535,10 +543,11 @@ psy_gtk_window_class_init(PsyGtkWindowClass *klass)
 
     PsyWindowClass *psy_window_class = PSY_WINDOW_CLASS(klass);
     psy_window_class->set_monitor    = set_monitor;
-    psy_window_class->clear          = clear;
-    psy_window_class->draw_stimuli   = draw_stimuli;
 
-    psy_window_class->upload_projection_matrices = upload_projection_matrices;
+    PsyCanvasClass *psy_canvas_class             = PSY_CANVAS_CLASS(klass);
+    psy_canvas_class->clear                      = clear;
+    psy_canvas_class->draw_stimuli               = draw_stimuli;
+    psy_canvas_class->upload_projection_matrices = upload_projection_matrices;
 
     /**
      * PsyGtkWindow:enable-debug:
