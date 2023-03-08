@@ -11,7 +11,7 @@
  *
  * 1. Clear the background.
  * 2. Draw the stimuli.
- *    The [method@Psy.Canvas.draw_stimuli] method does two things:
+ *    The [method@Psy.CanvasClass.draw_stimuli] method does two things:
  *      1. It will check the scheduled stimuli, to see whether there is
  *         a stimulus ready to present.
  *      2. It will allow the client to update the stimuli that should be
@@ -144,15 +144,16 @@ psy_canvas_get_property(GObject    *object,
 static void
 psy_canvas_init(PsyCanvas *self)
 {
-    PsyCanvasPrivate *priv          = psy_canvas_get_instance_private(self);
-    gfloat            default_bg[4] = {0.5, 0.5, 0.5, 1.0};
+    PsyCanvasPrivate *priv = psy_canvas_get_instance_private(self);
+
+    gfloat r = 0.5, g = 0.5, b = 0.5;
 
     // Both the stimuli and artist own a reference
     priv->stimuli = g_ptr_array_new_with_free_func(g_object_unref);
     priv->artists = g_hash_table_new_full(
         g_direct_hash, g_direct_equal, g_object_unref, g_object_unref);
 
-    memcpy(priv->back_ground_color, default_bg, sizeof(default_bg));
+    priv->back_ground_color = psy_color_new_rgb(r, g, b);
 }
 
 static void
@@ -729,7 +730,6 @@ psy_canvas_set_background_color(PsyCanvas *self, PsyColor *color)
 /**
  * psy_canvas_get_background_color:
  * @self: a #PsyCanvas instance
- * @color:(transfer none): The background color of this canvas.
  *
  * Get the background color of this canvas.
  *

@@ -3,6 +3,7 @@
 
 #include <glib-object.h>
 
+#include "psy-color.h"
 #include "psy-drawing-context.h"
 #include "psy-enums.h"
 #include "psy-program.h"
@@ -14,14 +15,13 @@ G_BEGIN_DECLS
 #define PSY_TYPE_CANVAS psy_canvas_get_type()
 G_DECLARE_DERIVABLE_TYPE(PsyCanvas, psy_canvas, PSY, CANVAS, GObject)
 
-/* Forward declaration of PsyArtist */
-typedef struct _PsyArtist PsyArtist;
+/* Forward declaration of PsyArtist and PsyVisualStimulus*/
+typedef struct _PsyArtist         PsyArtist;
+typedef struct _PsyVisualStimulus PsyVisualStimulus;
 
 /**
  * PsyCanvasClass:
  * @parent_class: The parent class
- * @set_monitor: Set the window at monitor x.
- * @get_monitor: Retrieve the number of the monitor
  * @get_width: Get the canvas width in pixels
  * @get_height: Get the canvas height in pixels
  * @draw: clears the canvas, than draws the stimuli.
@@ -42,9 +42,6 @@ typedef struct _PsyCanvasClass {
     GObjectClass parent_class;
 
     /*< public >*/
-
-    void (*set_monitor)(PsyCanvas *self, gint nth_monitor);
-    gint (*get_monitor)(PsyCanvas *self);
 
     void (*resize)(PsyCanvas *self, gint width, gint height);
 
@@ -80,7 +77,7 @@ G_MODULE_EXPORT void
 psy_canvas_set_background_color(PsyCanvas *self, PsyColor *color);
 
 G_MODULE_EXPORT PsyColor *
-psy_canvas_get_background_color_values(PsyCanvas *self);
+psy_canvas_get_background_color(PsyCanvas *self);
 
 G_MODULE_EXPORT void
 psy_canvas_get_width_height_mm(PsyCanvas *self,

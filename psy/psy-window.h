@@ -2,11 +2,7 @@
 #pragma once
 
 #include "psy-canvas.h"
-#include "psy-drawing-context.h"
 #include "psy-enums.h"
-#include "psy-program.h"
-#include "psy-time-point.h"
-#include "psy-visual-stimulus.h"
 #include <glib-object.h>
 
 G_BEGIN_DECLS

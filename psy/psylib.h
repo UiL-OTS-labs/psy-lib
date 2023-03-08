@@ -9,6 +9,7 @@
 #include "psy-color.h"
 #include "psy-cross-artist.h"
 #include "psy-cross.h"
+#include "psy-canvas.h"
 #include "psy-drawing-context.h"
 #include "psy-duration.h"
 #include "psy-enums.h"
