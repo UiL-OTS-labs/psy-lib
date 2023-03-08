@@ -11,7 +11,7 @@
  *
  * 1. Clear the background.
  * 2. Draw the stimuli.
- *    The [method@Psy.CanvasClass.draw_stimuli] method does two things:
+ *    The [vfunc@Psy.Canvas.draw_stimuli] method should do two things:
  *      1. It will check the scheduled stimuli, to see whether there is
  *         a stimulus ready to present.
  *      2. It will allow the client to update the stimuli that should be
