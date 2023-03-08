@@ -47,7 +47,7 @@ typedef struct PsyWindowPrivate {
     gint monitor;
 } PsyWindowPrivate;
 
-G_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE(PsyWindow, psy_window, G_TYPE_OBJECT)
+G_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE(PsyWindow, psy_window, PSY_TYPE_CANVAS)
 
 typedef enum { N_MONITOR = 1, N_PROPS } PsyWindowProperty;
 
