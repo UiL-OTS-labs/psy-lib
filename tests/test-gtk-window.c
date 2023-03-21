@@ -303,6 +303,11 @@ main(int argc, char **argv)
 
     g_print("circle->num_frames = %ld\n",
             psy_visual_stimulus_get_num_frames(PSY_VISUAL_STIMULUS(circle)));
+    g_print("cavas->num_frames = %ld, num_frames_missed  = %ld, num_frames_tot "
+            "=  %ld\n",
+            psy_canvas_get_num_frames(PSY_CANVAS(window)),
+            psy_canvas_get_num_frames_missed(PSY_CANVAS(window)),
+            psy_canvas_get_num_frames_total(PSY_CANVAS(window)));
 
     if (diff)
         g_print("Difference between start and stop = %lf\n",

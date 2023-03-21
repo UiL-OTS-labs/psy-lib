@@ -312,3 +312,19 @@ psy_time_point_greater(PsyTimePoint *self, PsyTimePoint *other)
     return !psy_time_point_equal(self, other)
            && !psy_time_point_less(self, other);
 }
+
+/**
+ * psy_time_point_dup:
+ * @self: An instance of #PsyTimePoint.
+ *
+ * Creates a new copy of self
+ *
+ * Returns:(transfer full): a new copy of @self.
+ */
+PsyTimePoint *
+psy_time_point_dup(PsyTimePoint *self)
+{
+    PsyTimePoint *copy      = g_object_new(PSY_TYPE_TIME_POINT, NULL);
+    copy->ticks_since_start = self->ticks_since_start;
+    return copy;
+}

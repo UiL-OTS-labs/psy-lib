@@ -4,6 +4,7 @@
 
 #include "../gl/psy-gl-context.h"
 #include "../gl/psy-gl-program.h"
+#include "../gl/psy-gl-utilities.h"
 #include "psy-artist.h"
 #include "psy-circle.h"
 #include "psy-clock.h"
@@ -23,11 +24,22 @@ gl_debug_cb(GLenum        source,
             const GLchar *message,
             const void   *object);
 
+static void
+psy_gtk_window_set_last_frame_time(PsyGtkWindow *self,
+                                   PsyTimePoint *frame_time);
+static void
+psy_gtk_window_compute_frame_stats(PsyGtkWindow *self,
+                                   PsyTimePoint *frame_time);
+
 struct _PsyGtkWindow {
     PsyWindow  parent;
     GtkWidget *window;
     GtkWidget *darea;
     bool       enable_debug;
+
+    gint frames_lapsed; // number of frames lapsed since the last frame
+
+    PsyTimePoint *frame_time;
 };
 
 G_DEFINE_TYPE_WITH_CODE(PsyGtkWindow, psy_gtk_window, PSY_TYPE_WINDOW, {
@@ -90,10 +102,8 @@ psy_gtk_window_get_property(GObject    *object,
 static gboolean
 tick_callback(GtkWidget *d_area, GdkFrameClock *clock, gpointer data)
 {
-    (void) clock;
     PsyGtkWindow *window = PSY_GTK_WINDOW(data);
-    (void) window;
-    GtkGLArea *canvas = GTK_GL_AREA(d_area);
+    GtkGLArea    *canvas = GTK_GL_AREA(d_area);
     gtk_gl_area_make_current(canvas);
 
     // Check if there is anything to draw to
@@ -101,6 +111,7 @@ tick_callback(GtkWidget *d_area, GdkFrameClock *clock, gpointer data)
         != GL_FRAMEBUFFER_COMPLETE) {
         return G_SOURCE_CONTINUE;
     }
+
     // gtk_gl_area_attach_buffers(canvas); // yields OpenGL error within Gtk
     GError *error = gtk_gl_area_get_error(GTK_GL_AREA(canvas));
     if (error) {
@@ -119,9 +130,10 @@ tick_callback(GtkWidget *d_area, GdkFrameClock *clock, gpointer data)
 
     canvas_class->draw(PSY_CANVAS(window), frame_count, tp);
 
-    g_object_unref(tp);
+    psy_gtk_window_compute_frame_stats(window, tp);
+    psy_gtk_window_set_last_frame_time(window, tp);
 
-    //    // Queues a new frame. Otherwise the frame clock doesn't update
+    // Queues a new frame. Otherwise the frame clock doesn't update
     gtk_widget_queue_draw(GTK_WIDGET(canvas));
 
     return G_SOURCE_CONTINUE;
@@ -284,7 +296,7 @@ gl_debug_cb(GLenum        source,
         type_str = "ERROR";
         break;
     case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR:
-        type_str = "DEPRECATED_BAHAVIOR";
+        type_str = "DEPRECATED_BEHAVIOR";
         break;
     case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:
         type_str = "UNDEFINED_BEHAVIOR";
@@ -408,6 +420,7 @@ psy_gtk_window_dispose(GObject *gobject)
     PsyGtkWindow *self = PSY_GTK_WINDOW(gobject);
 
     g_clear_object(&self->window);
+    g_clear_object(&self->frame_time);
 
     G_OBJECT_CLASS(psy_gtk_window_parent_class)->dispose(gobject);
 }
@@ -424,7 +437,6 @@ psy_gtk_window_finalize(GObject *gobject)
 static void
 set_monitor(PsyWindow *self, gint nth_monitor)
 {
-
     gint width_mm, height_mm;
 
     g_return_if_fail(PSY_IS_GTK_WINDOW(self));
@@ -483,51 +495,22 @@ draw_stimuli(PsyCanvas *self, guint64 nth_frame, PsyTimePoint *tp)
 }
 
 static void
+update_frame_stats(PsyCanvas *canvas, PsyFrameCount *stats)
+{
+    PsyGtkWindow *self = PSY_GTK_WINDOW(canvas);
+
+    stats->missed_frames += (self->frames_lapsed - 1);
+    stats->tot_frames += (self->frames_lapsed);
+    stats->num_frames++;
+
+    self->frames_lapsed = 0;
+}
+
+static void
 upload_projection_matrices(PsyCanvas *self)
 {
-    PsyMatrix4 *projection = psy_canvas_get_projection(self);
-    GError     *error      = NULL;
-
-    PsyDrawingContext *context = psy_canvas_get_context(self);
-    PsyProgram        *program = psy_drawing_context_get_program(
-        context, PSY_UNIFORM_COLOR_PROGRAM_NAME);
-
-    if (program) {
-        psy_program_use(program, &error);
-        if (error) {
-            g_critical("Unable to set picture projection matrix: %s",
-                       error->message);
-            g_error_free(error);
-            error = NULL;
-        }
-        psy_program_set_uniform_matrix4(
-            program, "projection", projection, &error);
-        if (error) {
-            g_critical("Unable to set picture projection matrix: %s",
-                       error->message);
-            g_error_free(error);
-            error = NULL;
-        }
-    }
-    program
-        = psy_drawing_context_get_program(context, PSY_PICTURE_PROGRAM_NAME);
-    if (program) {
-        psy_program_use(program, &error);
-        if (error) {
-            g_critical("Unable to set picture projection matrix: %s",
-                       error->message);
-            g_error_free(error);
-            error = NULL;
-        }
-        psy_program_set_uniform_matrix4(
-            program, "projection", projection, &error);
-        if (error) {
-            g_critical("Unable to set picture projection matrix: %s",
-                       error->message);
-            g_error_free(error);
-            error = NULL;
-        }
-    }
+    // In psy-gl-utilities as PsyGlCanvas also needs it.
+    psy_gl_canvas_upload_projection_matrices(self);
 }
 
 static void
@@ -547,6 +530,7 @@ psy_gtk_window_class_init(PsyGtkWindowClass *klass)
     PsyCanvasClass *psy_canvas_class             = PSY_CANVAS_CLASS(klass);
     psy_canvas_class->clear                      = clear;
     psy_canvas_class->draw_stimuli               = draw_stimuli;
+    psy_canvas_class->update_frame_stats         = update_frame_stats;
     psy_canvas_class->upload_projection_matrices = upload_projection_matrices;
 
     /**
@@ -642,4 +626,42 @@ psy_gtk_window_new_for_monitor(gint n)
         = g_object_new(PSY_TYPE_GTK_WINDOW, "n-monitor", n, NULL);
 
     return window;
+}
+
+/**
+ * psy_gtk_window_set_last_frame_time:
+ * @self: An instance of [class@PsyGtkWindow]
+ * @frame_time:(transfer full): The time of the current frame.
+ *
+ * Stores the frame time of the current frame. This may be used by next
+ * iteration of the tick call back to determine whether frames are being missed.
+ */
+static void
+psy_gtk_window_set_last_frame_time(PsyGtkWindow *self, PsyTimePoint *frame_time)
+{
+    g_clear_object(&self->frame_time);
+    self->frame_time = frame_time;
+}
+
+/**
+ * psy_gtk_window_compute_frame_stats:
+ * @self: An instance of [class@PsyGtkWindow]
+ * @frame_time:(transfer none): The time of the current frame.
+ *
+ * This clears and sets the internal statistics.
+ */
+static void
+psy_gtk_window_compute_frame_stats(PsyGtkWindow *self, PsyTimePoint *tp_new)
+{
+    if (self->frame_time) { // there was a previous frame
+        PsyDuration *time_lapsed
+            = psy_time_point_subtract(tp_new, self->frame_time);
+        PsyDuration *frame_dur = psy_canvas_get_frame_dur(PSY_CANVAS(self));
+
+        gint64 num_frames = psy_duration_divide_rounded(time_lapsed, frame_dur);
+        self->frames_lapsed = num_frames;
+    }
+    else {
+        self->frames_lapsed = 1;
+    }
 }

@@ -246,6 +246,25 @@ psy_duration_new_s(gint64 s)
 }
 
 /**
+ * psy_duration_dup:
+ * @self: an instace of [class@Duration]
+ *
+ * Copies a duration
+ *
+ * Returns:(transfer full): a new copy of `self`
+ */
+PsyDuration *
+psy_duration_dup(PsyDuration *self)
+{
+    g_return_val_if_fail(PSY_IS_DURATION(self), NULL);
+
+    PsyDuration *dup = g_object_new(PSY_TYPE_DURATION, NULL);
+
+    dup->us = self->us;
+    return dup;
+}
+
+/**
  * psy_duration_get_us:
  * @self: a `PsyDuration` instance
  *

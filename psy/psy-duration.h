@@ -21,6 +21,9 @@ psy_duration_new_ms(gint64 ms);
 G_MODULE_EXPORT PsyDuration *
 psy_duration_new_s(gint64 s);
 
+G_MODULE_EXPORT PsyDuration *
+psy_duration_dup(PsyDuration *self);
+
 G_MODULE_EXPORT gint64
 psy_duration_get_us(PsyDuration *self);
 

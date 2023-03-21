@@ -33,6 +33,8 @@ unit_test = executable (
     files (
         'main.c',
         'test-color.c',
+        'test-image.c',
+        'test-gl-canvas.c',
         'test-parallel.c',
         'test-ref-count.c',
         'test-stepping.c',

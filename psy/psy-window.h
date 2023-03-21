@@ -3,7 +3,6 @@
 
 #include "psy-canvas.h"
 #include "psy-enums.h"
-#include <glib-object.h>
 
 G_BEGIN_DECLS
 

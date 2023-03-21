@@ -39,9 +39,10 @@
 #include "psy-visual-stimulus.h"
 
 typedef struct PsyCanvasPrivate {
-    guint n_frames;
-    gint  width, height;
-    gint  width_mm, height_mm;
+    gint width, height;
+    gint width_mm, height_mm;
+
+    PsyFrameCount frame_count;
 
     PsyColor          *back_ground_color;
     GPtrArray         *stimuli; // owns a ref on the PsyStimulus
@@ -84,6 +85,12 @@ psy_canvas_set_property(GObject      *object,
     PsyCanvas *self = PSY_CANVAS(object);
 
     switch ((PsyCanvasProperty) property_id) {
+    case WIDTH:
+        psy_canvas_set_width(self, g_value_get_int(value));
+        break;
+    case HEIGHT:
+        psy_canvas_set_height(self, g_value_get_int(value));
+        break;
     case BACKGROUND_COLOR_VALUES:
         psy_canvas_set_background_color(self, g_value_get_object(value));
         break;
@@ -154,6 +161,9 @@ psy_canvas_init(PsyCanvas *self)
         g_direct_hash, g_direct_equal, g_object_unref, g_object_unref);
 
     priv->back_ground_color = psy_color_new_rgb(r, g, b);
+
+    // Assume a default frame dur based on 60Hz frame rate
+    priv->frame_dur = psy_duration_new(1.0 / 60);
 }
 
 static void
@@ -175,6 +185,7 @@ psy_canvas_dispose(GObject *gobject)
     g_clear_object(&priv->frame_dur);
     g_clear_object(&priv->context);
     g_clear_object(&priv->projection_matrix);
+    g_clear_object(&priv->back_ground_color);
 
     G_OBJECT_CLASS(psy_canvas_parent_class)->dispose(gobject);
 }
@@ -214,14 +225,16 @@ static void
 set_height(PsyCanvas *self, gint height)
 {
     PsyCanvasPrivate *priv = psy_canvas_get_instance_private(self);
-    priv->width            = height;
+    priv->height           = height;
 }
 
 static void
 set_frame_dur(PsyCanvas *self, PsyDuration *dur)
 {
     PsyCanvasPrivate *priv = psy_canvas_get_instance_private(self);
-    priv->frame_dur        = dur;
+    g_clear_object(&priv->frame_dur);
+
+    priv->frame_dur = psy_duration_dup(dur);
 }
 
 static PsyArtist *
@@ -287,15 +300,18 @@ remove_stimulus(PsyCanvas *self, PsyVisualStimulus *stimulus)
 static void
 draw(PsyCanvas *self, guint64 frame_num, PsyTimePoint *tp)
 {
-    PsyCanvasClass *cls = PSY_CANVAS_GET_CLASS(self);
+    PsyCanvasClass   *cls  = PSY_CANVAS_GET_CLASS(self);
+    PsyCanvasPrivate *priv = psy_canvas_get_instance_private(self);
 
     // upload the default projection matrices.
     g_return_if_fail(cls->clear);
     g_return_if_fail(cls->draw_stimuli);
+    g_return_if_fail(cls->update_frame_stats);
 
     cls->clear(self);
     cls->upload_projection_matrices(self);
     cls->draw_stimuli(self, frame_num, tp);
+    cls->update_frame_stats(self, &priv->frame_count);
 }
 
 static void
@@ -372,13 +388,13 @@ draw_stimulus(PsyCanvas *self, PsyVisualStimulus *stimulus)
     psy_artist_draw(artist);
 }
 
-static void
-set_monitor_size_mm(PsyCanvas *self, gint width_mm, gint height_mm)
-{
-    PsyCanvasPrivate *priv = psy_canvas_get_instance_private(self);
-    priv->width_mm         = width_mm;
-    priv->height_mm        = height_mm;
-}
+// static void
+// set_monitor_size_mm(PsyCanvas *self, gint width_mm, gint height_mm)
+// {
+//     PsyCanvasPrivate *priv = psy_canvas_get_instance_private(self);
+//     priv->width_mm         = width_mm;
+//     priv->height_mm        = height_mm;
+// }
 
 PsyMatrix4 *
 create_projection_matrix(PsyCanvas *self)
@@ -468,6 +484,18 @@ set_projection_matrix(PsyCanvas *self, PsyMatrix4 *projection)
     priv->projection_matrix = projection;
 }
 
+static PsyImage *
+get_image(PsyCanvas *self)
+{
+    gint width, height, num_channels = 4;
+    width  = psy_canvas_get_width(self);
+    height = psy_canvas_get_height(self);
+    width  = psy_canvas_get_width(self);
+
+    PsyImage *image = psy_image_new(width, height, num_channels);
+    return image;
+}
+
 static void
 psy_canvas_class_init(PsyCanvasClass *klass)
 {
@@ -483,10 +511,10 @@ psy_canvas_class_init(PsyCanvasClass *klass)
     klass->set_width  = set_width;
     klass->set_height = set_height;
 
-    klass->draw                = draw;
-    klass->draw_stimuli        = draw_stimuli;
-    klass->draw_stimulus       = draw_stimulus;
-    klass->set_monitor_size_mm = set_monitor_size_mm;
+    klass->draw          = draw;
+    klass->draw_stimuli  = draw_stimuli;
+    klass->draw_stimulus = draw_stimulus;
+    // klass->set_monitor_size_mm = set_monitor_size_mm;
 
     klass->set_frame_dur = set_frame_dur;
 
@@ -497,8 +525,15 @@ psy_canvas_class_init(PsyCanvasClass *klass)
     klass->create_projection_matrix = create_projection_matrix;
     klass->set_projection_matrix    = set_projection_matrix;
 
+    klass->get_image = get_image;
+
     /**
      * PsyCanvas:width:
+     *
+     * The width of the canvas. When using windowed canvasses this property
+     * should be considered read only. When using off screen surfaces such
+     * as [class@PsyGlCanvas] it may be handy upon construction, as the
+     * surface needs some size.
      */
     obj_properties[WIDTH]
         = g_param_spec_int("width",
@@ -507,19 +542,24 @@ psy_canvas_class_init(PsyCanvasClass *klass)
                            0,
                            G_MAXINT32,
                            0,
-                           G_PARAM_READABLE);
+                           G_PARAM_READWRITE | G_PARAM_CONSTRUCT);
 
     /**
      * PsyCanvas:height:
+     *
+     * The height of the canvas. When using windowed canvasses this propety
+     * should be considered read only. When using off screen surfaces such
+     * as [class@PsyGlCanvas] it may be handy upon construction, as the
+     * surface needs some size.
      */
     obj_properties[HEIGHT]
         = g_param_spec_int("height",
-                           "",
+                           "Height",
                            "The height of the canvas in pixel.",
                            0,
                            G_MAXINT32,
                            0,
-                           G_PARAM_READABLE);
+                           G_PARAM_READWRITE | G_PARAM_CONSTRUCT);
 
     /**
      * PsyCanvas:bg-color-values
@@ -576,14 +616,21 @@ psy_canvas_class_init(PsyCanvasClass *klass)
      * PsyCanvas:frame-dur:
      *
      * The duration of one frame, this will be the reciprocal of the framerate
-     * of the monitor on which this canvas is presented.
+     * of the monitor on which this canvas is presented. Although, this
+     * property is writeable, you should take in mind that psylib tends
+     * to follow the system settings for the frame dur for one specific
+     * monitor. So when you set the frame dur, you should take in
+     * mind, that the window back end will overwrite what you put here.
+     * And if you overwrite it after the back end has set the value for
+     * this canvas, you'll most do not get what you bargain for. For example
+     * when the system
      */
     obj_properties[FRAME_DUR]
         = g_param_spec_object("frame-dur",
                               "FrameDur",
                               "The duration of one frame.",
                               PSY_TYPE_DURATION,
-                              G_PARAM_READABLE);
+                              G_PARAM_READWRITE);
 
     /**
      * PsyCanvas:projection-style:
@@ -713,7 +760,7 @@ psy_canvas_class_init(PsyCanvasClass *klass)
 /**
  * psy_canvas_set_background_color:
  * @self: a #PsyCanvas instance
- * @color:(transfer full): An instance of [class@Color].
+ * @color:(transfer none): An instance of [class@Color].
  *
  * set the background color of this canvas.
  */
@@ -724,7 +771,7 @@ psy_canvas_set_background_color(PsyCanvas *self, PsyColor *color)
     PsyCanvasPrivate *priv = psy_canvas_get_instance_private(self);
 
     g_clear_object(&priv->back_ground_color);
-    priv->back_ground_color = color;
+    priv->back_ground_color = psy_color_dup(color);
 }
 
 /**
@@ -754,10 +801,31 @@ gint
 psy_canvas_get_width(PsyCanvas *self)
 {
     PsyCanvasPrivate *priv = psy_canvas_get_instance_private(self);
-    ;
     g_return_val_if_fail(PSY_IS_CANVAS(self), -1);
 
     return priv->width;
+}
+
+/**
+ * psy_canvas_set_width:
+ * @self: an instance of [class@Canvas].
+ * @width: a width in pixels should be larger than 0.
+ *
+ * If possible it will set the width of the Canvas, this is mostly useful to
+ * determine the size when constructing a OffScreen canvas such as
+ * [class@GlCanvas], window canvases are full screen windows and they takeover
+ * the system settings and might ignore this call.
+ */
+void
+psy_canvas_set_width(PsyCanvas *self, gint width)
+{
+    g_return_if_fail(PSY_IS_CANVAS(self));
+    g_return_if_fail(width >= 0);
+
+    PsyCanvasClass *cls = PSY_CANVAS_GET_CLASS(self);
+    g_return_if_fail(cls->set_width != NULL);
+
+    cls->set_width(self, width);
 }
 
 /**
@@ -773,6 +841,28 @@ psy_canvas_get_height(PsyCanvas *self)
     g_return_val_if_fail(PSY_IS_CANVAS(self), -1);
 
     return priv->height;
+}
+
+/**
+ * psy_canvas_set_height:
+ * @self: an instance of [class@Canvas].
+ * @height: a height in pixels should be larger than 0.
+ *
+ * If possible it will set the height of the Canvas, this is mostly useful to
+ * determine the size when constructing a OffScreen canvas such as
+ * [class@GlCanvas], window canvases are fullscreen windows and they takeover
+ * the system settings and might ignore this call.
+ */
+void
+psy_canvas_set_height(PsyCanvas *self, gint height)
+{
+    g_return_if_fail(PSY_IS_CANVAS(self));
+    g_return_if_fail(height >= 0);
+
+    PsyCanvasClass *cls = PSY_CANVAS_GET_CLASS(self);
+    g_return_if_fail(cls->set_height != NULL);
+
+    cls->set_height(self, height);
 }
 
 /**
@@ -891,14 +981,39 @@ psy_canvas_get_frame_dur(PsyCanvas *self)
 }
 
 /**
+ * psy_canvas_set_frame_dur:
+ * @self: An instance of [class@PsyCanvas]
+ * @dur:(transfer none): A duration between two succesive frames.
+ *
+ * Sets the frame dur of the canvas. Note this may be discarded/overwritten
+ * by deriving classes as PsyLib generally takes over the system settings.
+ * This is possible for instances of [class@PsyImageCanvas], so that running
+ * an iteration of the canvas will make the canvas continue in time.
+ *
+ * So you should check whether you have gotten what you have asked for.
+ */
+void
+psy_canvas_set_frame_dur(PsyCanvas *self, PsyDuration *dur)
+{
+    PsyCanvasClass *cls;
+    g_return_if_fail(PSY_IS_CANVAS(self));
+    g_return_if_fail(PSY_IS_DURATION(dur));
+
+    cls = PSY_CANVAS_GET_CLASS(self);
+
+    g_return_if_fail(cls->set_frame_dur);
+    cls->set_frame_dur(self, dur);
+}
+
+/**
  * psy_canvas_remove_stimulus:
  * @self: A `PsyCanvas` instance.
  * @stimulus: A `PsyVisualStimulus` instance to be removed from the canvas
  *
  * In psy-lib, it's the canvas that initiates the drawing of stimuli. So
- * removing the stimulus from the canvas, means, it won't be scheduled anymore
- * Additionally this means that the `PsyStimulus::stopped` won't be scheduled
- * anymore.
+ * removing the stimulus from the canvas, means, it won't be scheduled
+ * anymore Additionally this means that the `PsyStimulus::stopped` won't be
+ * scheduled anymore.
  */
 void
 psy_canvas_remove_stimulus(PsyCanvas *self, PsyVisualStimulus *stimulus)
@@ -1081,4 +1196,82 @@ psy_canvas_get_num_stimuli(PsyCanvas *self)
     g_return_val_if_fail(PSY_CANVAS(self), 0);
 
     return priv->stimuli->len;
+}
+
+/**
+ * psy_canvas_get_image:
+ * @self: The canvas to take a picture of
+ *
+ * This method takes a snapshot of what is displayed after the current is
+ * drawing is done. So it waits until all drawing is finished and retrieves
+ * the pixel data of the, hence, it may be handy for getting an image of what
+ * you are drawing, but it might not be handy to do for your real experiment as
+ * this function may take quite some time.
+ *
+ * Returns:(transfer full): an instance of [class@PsyImage] with the same size
+ * as the canvas
+ */
+PsyImage *
+psy_canvas_get_image(PsyCanvas *self)
+{
+    g_return_val_if_fail(PSY_IS_CANVAS(self), NULL);
+
+    PsyCanvasClass *cls = PSY_CANVAS_GET_CLASS(self);
+
+    g_return_val_if_fail(cls->get_image, NULL);
+    return cls->get_image(self);
+}
+
+/**
+ * psy_canvas_get_num_frames:
+ * @self: an instance of [class@Canvas]
+ *
+ * The num frames is the number of frames that the canvas successfully presented
+ * a new frame.
+ *
+ * Returns: the number of frames we've presented.
+ */
+gint64
+psy_canvas_get_num_frames(PsyCanvas *self)
+{
+    g_return_val_if_fail(PSY_IS_CANVAS(self), -1);
+    PsyCanvasPrivate *priv = psy_canvas_get_instance_private(self);
+
+    return priv->frame_count.num_frames;
+}
+
+/**
+ * psy_canvas_get_num_frames_missed:
+ * @self: an instance of [class@Canvas]
+ *
+ * The num frames missed is the number of frames that the canvas somehow missed
+ *
+ * Returns: the number of frames we've missed.
+ */
+gint64
+psy_canvas_get_num_frames_missed(PsyCanvas *self)
+{
+    g_return_val_if_fail(PSY_IS_CANVAS(self), -1);
+    PsyCanvasPrivate *priv = psy_canvas_get_instance_private(self);
+
+    return priv->frame_count.missed_frames;
+}
+
+/**
+ * psy_canvas_get_num_frames_total:
+ * @self: an instance of [class@Canvas]
+ *
+ * The num frames is the sum of the number of frames we've missed and
+ * succesfully presented. So this figure is hopefully the same as the
+ * the result of [method@Psy.Canvas.get_num_frames]
+ *
+ * Returns: the number of frames we've that have elapsed.
+ */
+gint64
+psy_canvas_get_num_frames_total(PsyCanvas *self)
+{
+    g_return_val_if_fail(PSY_IS_CANVAS(self), -1);
+    PsyCanvasPrivate *priv = psy_canvas_get_instance_private(self);
+
+    return priv->frame_count.tot_frames;
 }

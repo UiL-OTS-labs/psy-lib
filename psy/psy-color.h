@@ -65,6 +65,69 @@ psy_color_new_rgbi(gint r, gint g, gint b);
 G_MODULE_EXPORT PsyColor *
 psy_color_new_rgbai(gint r, gint g, gint b, gint a);
 
+G_MODULE_EXPORT PsyColor *
+psy_color_dup(PsyColor *self);
+
+G_MODULE_EXPORT gfloat
+psy_color_get_red(PsyColor *self);
+
+G_MODULE_EXPORT gint
+psy_color_get_redi(PsyColor *self);
+
+G_MODULE_EXPORT void
+psy_color_set_red(PsyColor *self, gfloat red);
+
+G_MODULE_EXPORT void
+psy_color_set_redi(PsyColor *self, gint red);
+
+G_MODULE_EXPORT gfloat
+psy_color_get_green(PsyColor *self);
+
+G_MODULE_EXPORT gint
+psy_color_get_greeni(PsyColor *self);
+
+G_MODULE_EXPORT void
+psy_color_set_green(PsyColor *self, gfloat green);
+
+G_MODULE_EXPORT void
+psy_color_set_greeni(PsyColor *self, gint green);
+
+G_MODULE_EXPORT gfloat
+psy_color_get_blue(PsyColor *self);
+
+G_MODULE_EXPORT gint
+psy_color_get_bluei(PsyColor *self);
+
+G_MODULE_EXPORT void
+psy_color_set_blue(PsyColor *self, gfloat blue);
+
+G_MODULE_EXPORT void
+psy_color_set_bluei(PsyColor *self, gint blue);
+
+G_MODULE_EXPORT gfloat
+psy_color_get_alpha(PsyColor *self);
+
+G_MODULE_EXPORT gint
+psy_color_get_alphai(PsyColor *self);
+
+G_MODULE_EXPORT void
+psy_color_set_alpha(PsyColor *self, gfloat alpha);
+
+G_MODULE_EXPORT void
+psy_color_set_alphai(PsyColor *self, gint alpha);
+
+G_MODULE_EXPORT gboolean
+psy_color_equal(PsyColor *self, PsyColor *other);
+
+G_MODULE_EXPORT gboolean
+psy_color_not_equal(PsyColor *self, PsyColor *other);
+
+G_MODULE_EXPORT gboolean
+psy_color_equal_eps(PsyColor *self, PsyColor *other, gfloat eps);
+
+G_MODULE_EXPORT gboolean
+psy_color_not_equal_eps(PsyColor *self, PsyColor *other, gfloat eps);
+
 // G_MODULE_EXPORT PsyColor*
 // psy_color_new_hsv(guint8 h, guint8 s, guint8 v);
 
