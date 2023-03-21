@@ -201,13 +201,13 @@ psy_cross_artist_class_init(PsyCrossArtistClass *class)
 /* ************ public functions ******************** */
 
 PsyCrossArtist *
-psy_cross_artist_new(PsyWindow *window, PsyVisualStimulus *stimulus)
+psy_cross_artist_new(PsyCanvas *canvas, PsyVisualStimulus *stimulus)
 {
-    g_return_val_if_fail(PSY_IS_WINDOW(window), NULL);
+    g_return_val_if_fail(PSY_IS_CANVAS(canvas), NULL);
     g_return_val_if_fail(PSY_IS_VISUAL_STIMULUS(stimulus), NULL);
 
     PsyCrossArtist *cross_artist = g_object_new(
-        PSY_TYPE_CROSS_ARTIST, "window", window, "stimulus", stimulus, NULL);
+        PSY_TYPE_CROSS_ARTIST, "canvas", canvas, "stimulus", stimulus, NULL);
 
     return cross_artist;
 }

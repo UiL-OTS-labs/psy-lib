@@ -7,6 +7,12 @@ int
 add_color_suite(void);
 
 int
+add_image_suite(void);
+
+int
+add_gl_canvas_suite(void);
+
+int
 add_parallel_suite(gint port_num);
 
 int

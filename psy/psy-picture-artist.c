@@ -80,8 +80,8 @@ picture_artist_draw(PsyArtist *self)
 
     PsyPictureArtist  *artist  = PSY_PICTURE_ARTIST(self);
     PsyPicture        *picture = PSY_PICTURE(psy_artist_get_stimulus(self));
-    PsyWindow         *window  = psy_artist_get_window(self);
-    PsyDrawingContext *context = psy_window_get_context(window);
+    PsyCanvas         *canvas  = psy_artist_get_canvas(self);
+    PsyDrawingContext *context = psy_canvas_get_context(canvas);
 
     gint strategy;
 
@@ -209,22 +209,22 @@ psy_picture_artist_class_init(PsyPictureArtistClass *class)
 
 /**
  * psy_picture_artist_new:
- * @window: The window on which this picture artist will draw its[class@Picture]
+ * @canvas: The window on which this picture artist will draw its[class@Picture]
  *          stimuli
  * @stimulus: An instance of [class@Picture], which this artist will be drawing
  *
  * Create a new [class@PsyPictureArtist] that is going to draw @stimulus.
  */
 PsyPictureArtist *
-psy_picture_artist_new(PsyWindow *window, PsyVisualStimulus *stimulus)
+psy_picture_artist_new(PsyCanvas *canvas, PsyVisualStimulus *stimulus)
 {
-    g_return_val_if_fail(PSY_IS_WINDOW(window), NULL);
+    g_return_val_if_fail(PSY_IS_CANVAS(canvas), NULL);
     g_return_val_if_fail(PSY_IS_VISUAL_STIMULUS(stimulus), NULL);
 
     // clang-format off
     PsyPictureArtist *picture_artist = g_object_new(
           PSY_TYPE_PICTURE_ARTIST,
-          "window", window,
+          "canvas", canvas,
           "stimulus", stimulus,
           NULL
           );

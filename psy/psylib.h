@@ -3,6 +3,7 @@
 #define PSYLIB_H
 
 #include "psy-artist.h"
+#include "psy-canvas.h"
 #include "psy-circle-artist.h"
 #include "psy-circle.h"
 #include "psy-clock.h"
@@ -12,6 +13,7 @@
 #include "psy-drawing-context.h"
 #include "psy-duration.h"
 #include "psy-enums.h"
+#include "psy-image.h"
 #include "psy-loop.h"
 #include "psy-matrix4.h"
 #include "psy-picture-artist.h"
@@ -35,6 +37,7 @@
 
 #include "backend_gtk/psy-gtk-window.h"
 
+#include "gl/psy-gl-canvas.h"
 #include "gl/psy-gl-context.h"
 #include "gl/psy-gl-error.h"
 #include "gl/psy-gl-fragment-shader.h"

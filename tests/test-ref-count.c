@@ -32,7 +32,7 @@ destoy_window(void)
 static void
 ref_starts_with_one(void)
 {
-    PsyCircle *circle = g_object_new(PSY_TYPE_CIRCLE, "window", window, NULL);
+    PsyCircle *circle = g_object_new(PSY_TYPE_CIRCLE, "canvas", window, NULL);
     PsyColor  *color  = g_object_new(PSY_TYPE_COLOR, NULL);
     GObject   *circle_gobj = G_OBJECT(circle);
     GObject   *color_gobj  = G_OBJECT(color);
@@ -47,7 +47,7 @@ ref_starts_with_one(void)
 static void
 ref_set_method(void)
 {
-    PsyCircle *circle = g_object_new(PSY_TYPE_CIRCLE, "window", window, NULL);
+    PsyCircle *circle = g_object_new(PSY_TYPE_CIRCLE, "canvas", window, NULL);
     PsyColor  *color  = g_object_new(PSY_TYPE_COLOR, NULL);
 
     // Cast to conveniently obtain the reference count
@@ -75,7 +75,7 @@ ref_set_method(void)
 static void
 ref_set_property(void)
 {
-    PsyCircle *circle = g_object_new(PSY_TYPE_CIRCLE, "window", window, NULL);
+    PsyCircle *circle = g_object_new(PSY_TYPE_CIRCLE, "canvas", window, NULL);
     PsyColor  *color  = g_object_new(PSY_TYPE_COLOR, NULL);
     GObject   *circle_gobj = G_OBJECT(circle);
     GObject   *color_gobj  = G_OBJECT(color);

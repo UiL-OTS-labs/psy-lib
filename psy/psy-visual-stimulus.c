@@ -4,10 +4,9 @@
 #include "psy-color.h"
 #include "psy-stimulus.h"
 #include "psy-visual-stimulus.h"
-#include "psy-window.h"
 
 typedef struct PsyVisualStimulusPrivate {
-    PsyWindow *window;
+    PsyCanvas *canvas;
     gint64     nth_frame;
     gint64     num_frames;
     gint64     start_frame;
@@ -23,7 +22,7 @@ G_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE(PsyVisualStimulus,
 
 typedef enum {
     PROP_NULL,        // not used required by GObject
-    PROP_WINDOW,      // The window on which this stimulus should be drawn
+    PROP_CANVAS,      // The canvas on which this stimulus should be drawn
     PROP_NUM_FRAMES,  // The number of frames the stimulus will be presented
     PROP_NTH_FRAME,   // the frame for which we are rendering
     PROP_START_FRAME, // the frame at which this object should be first
@@ -56,8 +55,8 @@ psy_visual_stimulus_set_property(GObject      *object,
     PsyVisualStimulus *self = PSY_VISUAL_STIMULUS(object);
 
     switch ((VisualStimulusProperty) property_id) {
-    case PROP_WINDOW:
-        psy_visual_stimulus_set_window(self, g_value_get_object(value));
+    case PROP_CANVAS:
+        psy_visual_stimulus_set_canvas(self, g_value_get_object(value));
         break;
     case PROP_X:
         psy_visual_stimulus_set_x(self, g_value_get_float(value));
@@ -109,8 +108,8 @@ psy_visual_stimulus_get_property(GObject    *object,
     case PROP_NTH_FRAME:
         g_value_set_int64(value, priv->nth_frame);
         break;
-    case PROP_WINDOW:
-        g_value_set_object(value, priv->window);
+    case PROP_CANVAS:
+        g_value_set_object(value, priv->canvas);
         break;
     case PROP_START_FRAME:
         g_value_set_int64(value, priv->start_frame);
@@ -148,7 +147,7 @@ psy_visual_stimulus_dispose(GObject *object)
         = psy_visual_stimulus_get_instance_private(PSY_VISUAL_STIMULUS(object));
 
     g_clear_object(&priv->color);
-    g_clear_object(&priv->window);
+    g_clear_object(&priv->canvas);
 
     G_OBJECT_CLASS(psy_visual_stimulus_parent_class)->dispose(object);
 }
@@ -158,7 +157,7 @@ psy_visual_stimulus_init(PsyVisualStimulus *self)
 {
     PsyVisualStimulusPrivate *priv
         = psy_visual_stimulus_get_instance_private(self);
-    priv->window      = NULL;
+    priv->canvas      = NULL;
     priv->nth_frame   = 0;
     priv->num_frames  = -1;
     priv->start_frame = 0;
@@ -181,9 +180,9 @@ visual_stimulus_play(PsyStimulus *stimulus, PsyTimePoint *start_time)
 {
     PsyVisualStimulus *vstim = PSY_VISUAL_STIMULUS(stimulus);
 
-    PsyWindow *window = psy_visual_stimulus_get_window(vstim);
+    PsyCanvas *canvas = psy_visual_stimulus_get_canvas(vstim);
 
-    psy_window_schedule_stimulus(window, vstim);
+    psy_canvas_schedule_stimulus(canvas, vstim);
 
     PSY_STIMULUS_CLASS(psy_visual_stimulus_parent_class)
         ->play(stimulus, start_time);
@@ -195,7 +194,7 @@ visual_stimulus_set_duration(PsyStimulus *self, PsyDuration *stim_dur)
     PsyVisualStimulusPrivate *priv
         = psy_visual_stimulus_get_instance_private(PSY_VISUAL_STIMULUS(self));
 
-    PsyDuration *frame_dur = psy_window_get_frame_dur(priv->window);
+    PsyDuration *frame_dur = psy_canvas_get_frame_dur(priv->canvas);
 
     if (psy_duration_less(stim_dur, frame_dur)) {
         g_warning("Specified duration is less than one frame");
@@ -224,23 +223,23 @@ psy_visual_stimulus_class_init(PsyVisualStimulusClass *klass)
     klass->update = visual_stimulus_update;
 
     /**
-     * PsyVisualStimulus:window:
+     * PsyVisualStimulus:canvas:
      *
-     * The window on which this stimulus will be played/displays when it
+     * The stimulus on which this stimulus will be played/displays when it
      * is started as stimulus. It should not be NULL, so it should be specified
-     * when constructing the window.
+     * when constructing the stimulus.
      */
-    visual_stimulus_properties[PROP_WINDOW]
-        = g_param_spec_object("window",
-                              "Window",
-                              "The window on which this stimulus will be drawn",
-                              PSY_TYPE_WINDOW,
+    visual_stimulus_properties[PROP_CANVAS]
+        = g_param_spec_object("canvas",
+                              "Canvas",
+                              "The canvas on which this stimulus will be drawn",
+                              PSY_TYPE_CANVAS,
                               G_PARAM_WRITABLE | G_PARAM_CONSTRUCT);
 
     /**
      * PsyVisualStimulus:num-frames:
      *
-     * When a visual stimulus is played for an amount of time, the window
+     * When a visual stimulus is played for an amount of time, the stimulus
      * on which it will be drawn will be determine when it will be presented for
      * the first time.
      * This value will be most useful in the update signal handler or in
@@ -258,8 +257,8 @@ psy_visual_stimulus_class_init(PsyVisualStimulusClass *klass)
     /**
      * PsyVisualStimulus:nth-frame:
      *
-     * Everytime the window draws a stimulus, you'll get the time to update it.
-     * This value will be most useful in the update signal handler or in
+     * Everytime the stimulus draws a stimulus, you'll get the time to update
+     * it. This value will be most useful in the update signal handler or in
      * `psy_visual_stimulus_update`.
      */
     visual_stimulus_properties[PROP_NTH_FRAME]
@@ -427,43 +426,43 @@ psy_visual_stimulus_class_init(PsyVisualStimulusClass *klass)
 }
 
 /**
- * psy_visual_stimulus_get_window:
+ * psy_visual_stimulus_get_canvas:
  * @stimulus: a `PsyVisualStimulus`
  *
- * Get the window on which this stimulus should be drawn.
+ * Get the canvas on which this stimulus should be drawn.
  *
- * Returns: (nullable) (transfer none): The `PsyWindow` on which this stimulus
+ * Returns: (nullable) (transfer none): The `PsyCanvas` on which this stimulus
  *                                      should be drawn.
  */
-PsyWindow *
-psy_visual_stimulus_get_window(PsyVisualStimulus *stimulus)
+PsyCanvas *
+psy_visual_stimulus_get_canvas(PsyVisualStimulus *stimulus)
 {
     PsyVisualStimulusPrivate *priv
         = psy_visual_stimulus_get_instance_private(stimulus);
 
     g_return_val_if_fail(PSY_IS_VISUAL_STIMULUS(stimulus), NULL);
 
-    return priv->window;
+    return priv->canvas;
 }
 
 /**
- * psy_visual_stimulus_set_window:
+ * psy_visual_stimulus_set_canvas:
  * @stimulus: a `PsyVisualStimulus`
- * @window:(transfer full): a `PsyWindow` to draw this stimulus on.
+ * @canvas:(transfer full): a `PsyCanvas` to draw this stimulus on.
  *
- * Set the window on which this stimulus should be drawn.
+ * Set the canvas on which this stimulus should be drawn.
  */
 void
-psy_visual_stimulus_set_window(PsyVisualStimulus *stimulus, PsyWindow *window)
+psy_visual_stimulus_set_canvas(PsyVisualStimulus *stimulus, PsyCanvas *canvas)
 {
     PsyVisualStimulusPrivate *priv
         = psy_visual_stimulus_get_instance_private(stimulus);
 
     g_return_if_fail(PSY_IS_VISUAL_STIMULUS(stimulus));
-    g_return_if_fail(PSY_IS_WINDOW(window));
+    g_return_if_fail(PSY_IS_CANVAS(canvas));
 
-    g_clear_object(&priv->window);
-    priv->window = g_object_ref(window);
+    g_clear_object(&priv->canvas);
+    priv->canvas = g_object_ref(canvas);
 }
 
 /*
@@ -803,7 +802,7 @@ psy_visual_stimulus_set_rotation(PsyVisualStimulus *self, gfloat rotation)
  * psy_visual_stimulus_get_color:
  * @self: An instance of `PsyVisualStimulus`
  *
- * Get the color of the window.
+ * Get the color of the stimulus.
  *
  * Returns:(transfer none): the `PsyColor` of used to fill the stimuli
  */

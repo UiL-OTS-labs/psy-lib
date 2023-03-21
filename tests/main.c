@@ -34,6 +34,14 @@ add_suites_to_registry(void)
     if (error)
         return error;
 
+    error = add_image_suite();
+    if (error)
+        return error;
+
+    error = add_gl_canvas_suite();
+    if (error)
+        return error;
+
     error = add_parallel_suite(g_port_num);
     if (error)
         return error;

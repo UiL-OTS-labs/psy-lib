@@ -3,7 +3,7 @@
 # libpsy.
 
 cdata = configuration_data({
-    'PSY_VERSION'                   : meson.project_version()
+    'PSY_VERSION' : meson.project_version()
 })
 
 # check for compiler buildins
@@ -46,6 +46,7 @@ libpsy_incdirs = include_directories(
 
 libpsy_headers = files(
     'psy-artist.h',
+    'psy-canvas.h',
     'psy-circle.h',
     'psy-circle-artist.h',
     'psy-clock.h',
@@ -54,6 +55,8 @@ libpsy_headers = files(
     'psy-cross.h',
     'psy-drawing-context.h',
     'psy-duration.h',
+    'psy-image.h',
+    'psy-image-canvas.h',
     'psy-enums.h',
     'psy-loop.h',
     'psy-matrix4.h',
@@ -65,6 +68,7 @@ libpsy_headers = files(
     'psy-shader.h',
     'psy-step.h',
     'psy-stepping-stones.h',
+    'psy-canvas.h',
     'psy-stimulus.h',
     'psy-texture.h',
     'psy-time-point.h',
@@ -86,6 +90,7 @@ libpsy_header_private = files(
 
 libpsyfiles = files (
     'psy-artist.c',
+    'psy-canvas.c',
     'psy-circle.c',
     'psy-circle-artist.c',
     'psy-clock.c',
@@ -94,6 +99,8 @@ libpsyfiles = files (
     'psy-cross.c',
     'psy-drawing-context.c',
     'psy-duration.c',
+    'psy-image.c',
+    'psy-image-canvas.c',
     'psy-loop.c',
     'psy-matrix4.cpp',
     'psy-picture.c',

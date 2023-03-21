@@ -132,34 +132,34 @@ psy_rectangle_class_init(PsyRectangleClass *klass)
 
 /**
  * psy_rectangle_new:(constructor)
- * @window: an instance of `PsyWindow` on which this stimulus should be drawn
+ * @canvas: an instance of [class@Canvas] on which this stimulus should be drawn
  *
- * Returns: a new instance of `PsyRectangle` with default values.
+ * Returns: a new instance of [class@PsyRectangle] with default values.
  */
 PsyRectangle *
-psy_rectangle_new(PsyWindow *window)
+psy_rectangle_new(PsyCanvas *canvas)
 {
-    return g_object_new(PSY_TYPE_RECTANGLE, "window", window, NULL);
+    return g_object_new(PSY_TYPE_RECTANGLE, "canvas", canvas, NULL);
 }
 
 /**
  * psy_rectangle_new_full:(constructor)
- * @window:the window on which we would like to draw this rectangle
+ * @canvas:the canvas on which we would like to draw this rectangle
  * @x:the x position of the center of the rectangle
  * @y:the y position of the center of the rectangle
  * @width: the width of the rectangle (along y-axis)
  * @height: the height of the rectangle along(x-axis)
  *
- * Returns: a new instance of `PsyRectangle` with the provided values.
+ * Returns: a new instance of [class@Rectangle] with the provided values.
  */
 PsyRectangle *
 psy_rectangle_new_full(
-    PsyWindow *window, gfloat x, gfloat y, gfloat width, gfloat height)
+    PsyCanvas *canvas, gfloat x, gfloat y, gfloat width, gfloat height)
 {
     // clang-format off
     return g_object_new(
             PSY_TYPE_RECTANGLE,
-            "window", window,
+            "canvas", canvas,
             "x", x,
             "y", y,
             "width", width,

@@ -47,4 +47,7 @@ psy_time_point_greater_equal(PsyTimePoint *self, PsyTimePoint *other);
 G_MODULE_EXPORT gboolean
 psy_time_point_greater(PsyTimePoint *self, PsyTimePoint *other);
 
+G_MODULE_EXPORT PsyTimePoint *
+psy_time_point_dup(PsyTimePoint *self);
+
 G_END_DECLS

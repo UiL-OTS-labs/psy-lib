@@ -7,7 +7,6 @@
 #include "psy-rectangle-artist.h"
 #include "psy-rectangle.h"
 #include "psy-vbuffer.h"
-#include "psy-window.h"
 
 typedef struct _PsyRectangleArtist {
     PsyArtist   parent_instance;
@@ -146,15 +145,15 @@ psy_rectangle_artist_class_init(PsyRectangleArtistClass *class)
 /* ************ public functions ******************** */
 
 PsyRectangleArtist *
-psy_rectangle_artist_new(PsyWindow *window, PsyVisualStimulus *stimulus)
+psy_rectangle_artist_new(PsyCanvas *canvas, PsyVisualStimulus *stimulus)
 {
-    g_return_val_if_fail(PSY_IS_WINDOW(window), NULL);
+    g_return_val_if_fail(PSY_IS_CANVAS(canvas), NULL);
     g_return_val_if_fail(PSY_IS_VISUAL_STIMULUS(stimulus), NULL);
 
     // clang-format off
     PsyRectangleArtist *rectangle_artist = g_object_new(
           PSY_TYPE_RECTANGLE_ARTIST,
-          "window", window,
+          "canvas", canvas,
           "stimulus", stimulus,
           NULL
           );

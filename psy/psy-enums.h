@@ -76,20 +76,20 @@ typedef enum {
 
 /**
  * PsyWindowProjectionStyle:
- * @PSY_WINDOW_PROJECTION_STYLE_C: The origin is in the upper left corner of the
+ * @PSY_CANVAS_PROJECTION_STYLE_C: The origin is in the upper left corner of the
  *                                 window. With positive y coordinates going
  * down.
- * @PSY_WINDOW_PROJECTION_STYLE_CENTER: The origin is in the center of the
+ * @PSY_CANVAS_PROJECTION_STYLE_CENTER: The origin is in the center of the
  * window with positive y coordinates is going up.
- * @PSY_WINDOW_PROJECTION_STYLE_PIXELS: Create a projection matrix that makes
+ * @PSY_CANVAS_PROJECTION_STYLE_PIXELS: Create a projection matrix that makes
  * the screen as wide,tall as the dimensions of the number of pixels. Stimuli
  * may than also be specified in pixels.
- * @PSY_WINDOW_PROJECTION_STYLE_METER:  Create a projection matrix based on the
+ * @PSY_CANVAS_PROJECTION_STYLE_METER:  Create a projection matrix based on the
  * number meters the window is, the sizes of stimuli can be specified in meters.
- * @PSY_WINDOW_PROJECTION_STYLE_MILLIMETER: Create a projection matrix based on
+ * @PSY_CANVAS_PROJECTION_STYLE_MILLIMETER: Create a projection matrix based on
  * the number meters the window is tall. Stimuli may also be presented in
  * millimeters.
- * @PSY_WINDOW_PROJECTION_STYLE_VISUAL_DEGREES: Create a projection matrix based
+ * @PSY_CANVAS_PROJECTION_STYLE_VISUAL_DEGREES: Create a projection matrix based
  * on the number of visual degrees the window is tall. Stimuli should be
  * specified in visual degrees. NOT IMPLEMENTED YET.
  *
@@ -105,23 +105,23 @@ typedef enum {
  * #PsyProjectionStyleVisualDegrees.
  * When using these flags one should always specify exactly one of:
  *
- *  - PSY_WINDOW_PROJECTION_STYLE_C
- *  - PSY_WINDOW_PROJECTION_STYLE_CENTER
+ *  - PSY_CANVAS_PROJECTION_STYLE_C
+ *  - PSY_CANVAS_PROJECTION_STYLE_CENTER
  *
  * and exactly one of
  *
- *  - PSY_WINDOW_PROJECTION_STYLE_PIXELS
- *  - PSY_WINDOW_PROJECTION_STYLE_METER
- *  - PSY_WINDOW_PROJECTION_STYLE_MILLIMETER
- *  - PSY_WINDOW_PROJECTION_STYLE_VISUAL_DEGREES
+ *  - PSY_CANVAS_PROJECTION_STYLE_PIXELS
+ *  - PSY_CANVAS_PROJECTION_STYLE_METER
+ *  - PSY_CANVAS_PROJECTION_STYLE_MILLIMETER
+ *  - PSY_CANVAS_PROJECTION_STYLE_VISUAL_DEGREES
  */
 typedef enum {
-    PSY_WINDOW_PROJECTION_STYLE_C              = 1 << 0,
-    PSY_WINDOW_PROJECTION_STYLE_CENTER         = 1 << 1,
-    PSY_WINDOW_PROJECTION_STYLE_PIXELS         = 1 << 2,
-    PSY_WINDOW_PROJECTION_STYLE_METER          = 1 << 3,
-    PSY_WINDOW_PROJECTION_STYLE_MILLIMETER     = 1 << 4,
-    PSY_WINDOW_PROJECTION_STYLE_VISUAL_DEGREES = 1 << 5
+    PSY_CANVAS_PROJECTION_STYLE_C              = 1 << 0,
+    PSY_CANVAS_PROJECTION_STYLE_CENTER         = 1 << 1,
+    PSY_CANVAS_PROJECTION_STYLE_PIXELS         = 1 << 2,
+    PSY_CANVAS_PROJECTION_STYLE_METER          = 1 << 3,
+    PSY_CANVAS_PROJECTION_STYLE_MILLIMETER     = 1 << 4,
+    PSY_CANVAS_PROJECTION_STYLE_VISUAL_DEGREES = 1 << 5
 } PsyWindowProjectionStyle;
 
 /**

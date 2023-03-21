@@ -2,7 +2,7 @@
 #define PSY_PICTURE_ARTIST_H
 
 #include <psy-artist.h>
-#include <psy-window.h>
+#include <psy-canvas.h>
 
 G_BEGIN_DECLS
 
@@ -11,7 +11,7 @@ G_DECLARE_FINAL_TYPE(
     PsyPictureArtist, psy_picture_artist, PSY, PICTURE_ARTIST, PsyArtist)
 
 G_MODULE_EXPORT PsyPictureArtist *
-psy_picture_artist_new(PsyWindow *window, PsyVisualStimulus *stimulus);
+psy_picture_artist_new(PsyCanvas *canvas, PsyVisualStimulus *stimulus);
 
 G_END_DECLS
 

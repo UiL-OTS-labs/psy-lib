@@ -1,14 +1,13 @@
 
 #include "psy-circle.h"
-#include "glibconfig.h"
 
 /**
  * PsyCircle:
  *
- * A PsyCircle is a stimulus that is mostly characterised by it's positition
+ * A PsyCircle is a stimulus that is mostly characterized by it's position
  * which it derives from [class@VisualStimulus] and it's radius. The circle
  * is rendered by a number of triangles, the more triangles are used the
- * better the set of triangles aproaches a circle
+ * better the set of triangles approaches a circle
  */
 
 typedef struct _PsyCirclePrivate {
@@ -124,30 +123,41 @@ psy_circle_class_init(PsyCircleClass *klass)
 
 /**
  * psy_circle_new:(constructor)
- * @window: an instance of `PsyWindow` on which this stimulus should be drawn
+ * @canvas: an instance of [class@Canvas] on which this stimulus should be drawn
  *
  * Returns: a new instance of `PsyCircle` with default values.
  */
 PsyCircle *
-psy_circle_new(PsyWindow *window)
+psy_circle_new(PsyCanvas *canvas)
 {
-    return g_object_new(PSY_TYPE_CIRCLE, "window", window, NULL);
+    return g_object_new(PSY_TYPE_CIRCLE, "canvas", canvas, NULL);
 }
 
 /**
- * psy_circle:(method)
- * @circle: an instance of `PsyCircle`
+ * psy_circle_new_full:(constructor)
+ * @canvas: an instance of [class@Canvas] on which this stimulus should be drawn
+ * @x: the position on the x-axis
+ * @y: the position on the y-axis
+ * @radius: the radius of the circle
+ * @num_vertices: the number of vertices used to draw the circle
+ *
+ * Create new instance of [class@Circle] at a postion defined by @x and @y.
+ * The circle will have a radius. The number of vertices is used to approach
+ * a the form of a circle by drawing triangles. The lowest number 3 will draw
+ * a triangle instead of a circle. 6, a hexagon 8 an octagon. The number of
+ * vertices required depends a little on the radius of the triangle, the
+ * larger the circle, the larger the number of vertices is required.
  *
  * Returns: a new instance of `PsyCircle` with the provided values.
  */
 PsyCircle *
 psy_circle_new_full(
-    PsyWindow *window, gfloat x, gfloat y, gfloat radius, guint num_vertices)
+    PsyCanvas *canvas, gfloat x, gfloat y, gfloat radius, guint num_vertices)
 {
     // clang-format off
     return g_object_new(
             PSY_TYPE_CIRCLE,
-            "window", window,
+            "canvas", canvas,
             "x", x,
             "y", y,
             "radius", radius,

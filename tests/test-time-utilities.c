@@ -77,6 +77,20 @@ check_time_point_arithmetic(void)
 }
 
 static void
+test_psy_time_point_dup(void)
+{
+    PsyClock     *clk = psy_clock_new();
+    PsyTimePoint *now = psy_clock_now(clk);
+    PsyTimePoint *dup = psy_time_point_dup(now);
+
+    CU_ASSERT_TRUE(psy_time_point_equal(dup, now));
+
+    g_object_unref(clk);
+    g_object_unref(now);
+    g_object_unref(dup);
+}
+
+static void
 check_time_point_comparisons(void)
 {
     PsyClock     *clock = psy_clock_new();
@@ -264,6 +278,9 @@ add_time_utilities_suite(void)
         suite, "Test timepoint aritmetics", check_time_point_arithmetic);
     if (!test)
         return 1;
+
+    test = CU_ADD_TEST(suite, test_psy_time_point_dup);
+
     test = CU_add_test(
         suite, "Test time point comparisons", check_time_point_comparisons);
     if (!test)

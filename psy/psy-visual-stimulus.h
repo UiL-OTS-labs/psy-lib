@@ -1,6 +1,7 @@
 
 #pragma once
 
+#include "psy-canvas.h"
 #include "psy-color.h"
 #include "psy-stimulus.h"
 #include "psy-time-point.h"
@@ -10,8 +11,8 @@ G_BEGIN_DECLS
 /*
  * Forward declaration in order to avoid cyclic header inclusion.
  */
-struct _PsyWindow;
-typedef struct _PsyWindow PsyWindow;
+struct _PsyCanvas;
+typedef struct _PsyCanvas PsyCanvas;
 
 #define PSY_TYPE_VISUAL_STIMULUS psy_visual_stimulus_get_type()
 G_DECLARE_DERIVABLE_TYPE(
@@ -29,11 +30,11 @@ typedef struct _PsyVisualStimulusClass {
                    gint64             nth_frame);
 } PsyVisualStimulusClass;
 
-G_MODULE_EXPORT PsyWindow *
-psy_visual_stimulus_get_window(PsyVisualStimulus *stimulus);
+G_MODULE_EXPORT PsyCanvas *
+psy_visual_stimulus_get_canvas(PsyVisualStimulus *stimulus);
 
 G_MODULE_EXPORT void
-psy_visual_stimulus_set_window(PsyVisualStimulus *stimulus, PsyWindow *window);
+psy_visual_stimulus_set_canvas(PsyVisualStimulus *stimulus, PsyCanvas *canvas);
 
 G_MODULE_EXPORT gint64
 psy_visual_stimulus_get_num_frames(PsyVisualStimulus *self);

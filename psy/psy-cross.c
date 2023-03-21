@@ -194,30 +194,35 @@ psy_cross_class_init(PsyCrossClass *klass)
 
 /**
  * psy_cross_new:(constructor)
- * @window: an instance of `PsyWindow` on which this stimulus should be drawn
+ * @canvas: an instance of [class@PsyCanvas] on which this stimulus should be
+ * drawn.
  *
- * Returns: a new instance of `PsyCross` with default values.
+ * Returns: a new instance of [class@PsyCross] with default values.
  */
 PsyCross *
-psy_cross_new(PsyWindow *window)
+psy_cross_new(PsyCanvas *canvas)
 {
-    return g_object_new(PSY_TYPE_CROSS, "window", window, NULL);
+    return g_object_new(PSY_TYPE_CROSS, "canvas", canvas, NULL);
 }
 
 /**
- * psy_cross:(method)
- * @cross: an instance of `PsyCross`
+ * psy_cross_new_full:(constructor)
+ * @canvas: the canvas used for this window.
+ * @x: The x coordinate for the cross
+ * @y: The y coordinate for the cross
+ * @length: The length of the cross lines
+ * @line_width: The width of the line
  *
- * Returns: a new instance of `PsyCross` with the provided values.
+ * Returns: a new instance of [class@PsyCross] with the provided values.
  */
 PsyCross *
 psy_cross_new_full(
-    PsyWindow *window, gfloat x, gfloat y, gfloat length, gfloat line_width)
+    PsyCanvas *canvas, gfloat x, gfloat y, gfloat length, gfloat line_width)
 {
     // clang-format off
     return g_object_new(
             PSY_TYPE_CROSS,
-            "window", window,
+            "canvas", canvas,
             "x", x,
             "y", y,
             "line-length", length,
