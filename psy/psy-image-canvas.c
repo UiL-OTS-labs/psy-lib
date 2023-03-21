@@ -11,6 +11,7 @@
  */
 #include "psy-image-canvas.h"
 #include "psy-clock.h"
+#include "psy-gl-canvas.h"
 #include "psy-gl-context.h"
 
 typedef struct PsyImageCanvasPrivate {
@@ -149,6 +150,25 @@ psy_image_canvas_class_init(PsyImageCanvasClass *klass)
 }
 
 /* ************ public functions ******************* */
+
+/**
+ * psy_image_canvas_new:(constructor)
+ * @width: A number larger than 0
+ * @height: A number larger than 0
+ *
+ * Creates a possibly platform specific [class@PsyImageCanvas] instance.
+ * Currently it will in practice return an instance of [class@PsyGlCanvas]
+ * which is a derived instance of PsyImageCanvas. That supports the same
+ * methods. If in the future an instance of PsyD3dCanvas is retured on
+ * windows for example is yet to be determined.
+ *
+ * Returns: an instance of [class@ImageCanvas].
+ */
+PsyImageCanvas *
+psy_image_canvas_new(gint width, gint height)
+{
+    return PSY_IMAGE_CANVAS(psy_gl_canvas_new(width, height));
+}
 
 /**
  * psy_image_canvas_iterate:

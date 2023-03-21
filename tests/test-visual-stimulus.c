@@ -4,12 +4,14 @@
 
 #include "unit-test-utilities.h"
 
-static PsyImageCanvas *g_canvas;
+static const gint      WIDTH    = 640;
+static const gint      HEIGHT   = 480;
+static PsyImageCanvas *g_canvas = NULL;
 
 static int
 test_visual_stimulus_setup(void)
 {
-    g_canvas = psy_image_canvas_new();
+    g_canvas = psy_image_canvas_new(WIDTH, HEIGHT);
     if (!g_canvas)
         return 1;
 
@@ -24,13 +26,11 @@ test_visual_stimulus_teardown(void)
     return 0;
 }
 
-static int
-
-    static void
-    vstim_default_values(void)
+static void
+vstim_default_values(void)
 {
     // Warns about the window parameter is NULL;
-    PsyCircle *circle = psy_circle_new(NULL);
+    PsyCircle *circle = psy_circle_new(PSY_CANVAS(g_canvas));
 
     CU_ASSERT_PTR_NOT_NULL_FATAL(circle);
 
@@ -69,7 +69,7 @@ vstim_scale(void)
     const gfloat scale = (float) random_double_range(-10, 10);
     gfloat       x, y;
 
-    PsyCircle *circle = psy_circle_new(NULL);
+    PsyCircle *circle = psy_circle_new(PSY_CANVAS(g_canvas));
 
     g_object_set(circle, "scale", scale, NULL);
     g_object_get(circle, "scale_x", &x, "scale_y", &y, NULL);
@@ -91,21 +91,20 @@ vstim_scale(void)
 int
 add_visual_stimulus_suite(void)
 {
-    CU_Suite *suite = CU_add_suite("Visual stimulus suite", NULL, NULL);
+    CU_Suite *suite = CU_add_suite("Visual stimulus suite",
+                                   test_visual_stimulus_setup,
+                                   test_visual_stimulus_teardown);
 
     CU_Test *test = NULL;
 
     if (!suite)
         return 1;
 
-    test = CU_add_test(
-        suite,
-        "Test whether visual stimuli have sensible default values",
-        vstim_default_values);
+    test = CU_ADD_TEST(suite, vstim_default_values);
     if (!test)
         return 1;
 
-    test = CU_add_test(suite, "Test whether scale works", vstim_scale);
+    test = CU_ADD_TEST(suite, vstim_scale);
     if (!test)
         return 1;
 

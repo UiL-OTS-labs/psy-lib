@@ -13,6 +13,7 @@
 #include "psy-drawing-context.h"
 #include "psy-duration.h"
 #include "psy-enums.h"
+#include "psy-image-canvas.h"
 #include "psy-image.h"
 #include "psy-loop.h"
 #include "psy-matrix4.h"
