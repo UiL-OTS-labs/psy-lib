@@ -6,16 +6,19 @@
 #include <stdlib.h>
 
 #include "suites.h"
+#include "unit-test-utilities.h"
 
 static gboolean verbose;
 static gint     g_port_num = -1;
 static gboolean skip_window;
+static gint64   g_seed = -1;
 
 /* clang-format off */
 GOptionEntry options[] = {
-    {"verbose",     'v', G_OPTION_FLAG_NONE, G_OPTION_ARG_NONE, &verbose,     "Run the suite verbosely",""},
-    {"port-num",    'p', G_OPTION_FLAG_NONE, G_OPTION_ARG_INT,  &g_port_num,  "Specify a port number to open for the parallel tests.",""},
-    {"skip-window", 's', G_OPTION_FLAG_NONE, G_OPTION_ARG_NONE, &skip_window, "Skip the test that need a window",""},
+    {"port-num",    'p', G_OPTION_FLAG_NONE, G_OPTION_ARG_INT,  &g_port_num,  "Specify a port number to open for the parallel tests.","-1"},
+    {"seed",        0,   G_OPTION_FLAG_NONE, G_OPTION_ARG_INT64, &g_seed,     "Seed for random functions [0 - 2^32)","-1"},
+    {"skip-window", 's', G_OPTION_FLAG_NONE, G_OPTION_ARG_NONE, &skip_window, "Skip the test that need a window", "false"},
+    {"verbose",     'v', G_OPTION_FLAG_NONE, G_OPTION_ARG_NONE, &verbose,     "Run the suite verbosely", "false"},
     {0,},
 };
 
@@ -87,6 +90,19 @@ main(int argc, char **argv)
         return EXIT_FAILURE;
     }
 
+    if (g_seed < 0) {
+        if (!init_random()) {
+            g_critical("Oops unable to init random");
+            return EXIT_FAILURE;
+        }
+    }
+    else {
+        if (!init_random_with_seed(g_seed)) {
+            g_critical("Oops unable to init random");
+            return EXIT_FAILURE;
+        }
+    }
+
     CU_initialize_registry();
 
     if (verbose)
@@ -102,6 +118,8 @@ main(int argc, char **argv)
     }
 
     CU_cleanup_registry();
+    g_print("\nRan with a seed of %u\n", random_seed());
+    deinitialize_random();
     g_option_context_free(context);
 
     return n_test_failed != 0;

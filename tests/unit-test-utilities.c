@@ -16,7 +16,6 @@ init_random(void)
     }
 
     g_seed = psy_random_uint32();
-    g_print("seed %u\n", g_seed);
 
     g_random_dev = g_rand_new_with_seed(g_seed);
     if (G_LIKELY(g_random_dev))
@@ -33,11 +32,23 @@ init_random_with_seed(guint32 seed)
     }
 
     g_seed = seed;
-    g_print("seed %u\n", seed);
+
     g_random_dev = g_rand_new_with_seed(seed);
     if (G_LIKELY(g_random_dev))
         return TRUE;
     return FALSE;
+}
+
+void
+deinitialize_random(void)
+{
+    g_clear_pointer(&g_random_dev, g_rand_free);
+}
+
+guint
+random_seed(void)
+{
+    return g_seed;
 }
 
 gint

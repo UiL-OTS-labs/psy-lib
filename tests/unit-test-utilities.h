@@ -10,6 +10,12 @@ init_random(void);
 gboolean
 init_random_with_seed(guint32 seed);
 
+void
+deinitialize_random(void);
+
+guint32
+random_seed(void);
+
 gint
 random_int(void);
 
