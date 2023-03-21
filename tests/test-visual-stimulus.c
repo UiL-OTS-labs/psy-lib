@@ -53,6 +53,8 @@ vstim_scale(void)
 
     CU_ASSERT_DOUBLE_EQUAL(x, scale, 0);
     CU_ASSERT_DOUBLE_EQUAL(y, scale, 0);
+
+    g_object_unref(circle);
 }
 
 int

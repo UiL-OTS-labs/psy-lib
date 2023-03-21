@@ -463,6 +463,7 @@ set_monitor(PsyWindow *self, gint nth_monitor)
 
     PSY_CANVAS_CLASS(psy_gtk_window_parent_class)
         ->set_frame_dur(PSY_CANVAS(self), frame_duration);
+    g_object_unref(frame_duration);
 
     PSY_WINDOW_CLASS(psy_gtk_window_parent_class)
         ->set_monitor(PSY_WINDOW(self), nth_monitor);
