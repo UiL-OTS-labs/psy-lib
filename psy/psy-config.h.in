@@ -9,6 +9,7 @@
 #mesondefine HAVE_BUILTIN_MUL_OVERFLOW
 
 // headers
-#mesondefine HAVE_UNISTD_H
 #mesondefine HAVE_LINUX_PARPORT_H
 #mesondefine HAVE_LINUX_PPDEV_H
+#mesondefine HAVE_SYS_RANDOM_H
+#mesondefine HAVE_UNISTD_H

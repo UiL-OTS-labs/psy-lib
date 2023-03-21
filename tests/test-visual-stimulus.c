@@ -1,10 +1,33 @@
 
-#include "psy-visual-stimulus.h"
 #include <CUnit/CUnit.h>
 #include <psylib.h>
 
-static void
-vstim_default_values(void)
+#include "unit-test-utilities.h"
+
+static PsyImageCanvas *g_canvas;
+
+static int
+test_visual_stimulus_setup(void)
+{
+    g_canvas = psy_image_canvas_new();
+    if (!g_canvas)
+        return 1;
+
+    return 0;
+}
+
+static int
+test_visual_stimulus_teardown(void)
+{
+    g_clear_object(&g_canvas);
+
+    return 0;
+}
+
+static int
+
+    static void
+    vstim_default_values(void)
 {
     // Warns about the window parameter is NULL;
     PsyCircle *circle = psy_circle_new(NULL);
@@ -43,7 +66,7 @@ vstim_default_values(void)
 static void
 vstim_scale(void)
 {
-    const gfloat scale = 2.0;
+    const gfloat scale = (float) random_double_range(-10, 10);
     gfloat       x, y;
 
     PsyCircle *circle = psy_circle_new(NULL);
@@ -53,6 +76,14 @@ vstim_scale(void)
 
     CU_ASSERT_DOUBLE_EQUAL(x, scale, 0);
     CU_ASSERT_DOUBLE_EQUAL(y, scale, 0);
+
+    g_object_set(circle, "scale_x", scale / 2, NULL);
+    g_object_set(circle, "scale_y", scale * 2, NULL);
+
+    g_object_get(circle, "scale_x", &x, "scale_y", &y, NULL);
+
+    CU_ASSERT_DOUBLE_EQUAL(x, scale / 2, 0);
+    CU_ASSERT_DOUBLE_EQUAL(y, scale * 2, 0);
 
     g_object_unref(circle);
 }
