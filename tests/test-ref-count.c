@@ -3,18 +3,15 @@
 
 #include <CUnit/CUError.h>
 #include <CUnit/CUnit.h>
+#include <psylib.h>
 
-#include <backend_gtk/psy-gtk-window.h>
-#include <psy-circle.h>
-#include <psy-color.h>
-
-static PsyWindow *window = NULL;
+static PsyCanvas *canvas = NULL;
 
 static int
 init_window(void)
 {
-    window = PSY_WINDOW(psy_gtk_window_new());
-    if (window)
+    canvas = PSY_CANVAS(psy_image_canvas_new(640, 480));
+    if (canvas)
         return 0;
     else
         return 1;
@@ -23,16 +20,16 @@ init_window(void)
 static int
 destoy_window(void)
 {
-    assert(G_OBJECT(window)->ref_count == 1);
-    g_object_unref(window);
-    window = NULL;
+    assert(G_OBJECT(canvas)->ref_count == 1);
+    g_object_unref(canvas);
+    canvas = NULL;
     return 0;
 }
 
 static void
 ref_starts_with_one(void)
 {
-    PsyCircle *circle = g_object_new(PSY_TYPE_CIRCLE, "canvas", window, NULL);
+    PsyCircle *circle = g_object_new(PSY_TYPE_CIRCLE, "canvas", canvas, NULL);
     PsyColor  *color  = g_object_new(PSY_TYPE_COLOR, NULL);
     GObject   *circle_gobj = G_OBJECT(circle);
     GObject   *color_gobj  = G_OBJECT(color);
@@ -47,7 +44,7 @@ ref_starts_with_one(void)
 static void
 ref_set_method(void)
 {
-    PsyCircle *circle = g_object_new(PSY_TYPE_CIRCLE, "canvas", window, NULL);
+    PsyCircle *circle = g_object_new(PSY_TYPE_CIRCLE, "canvas", canvas, NULL);
     PsyColor  *color  = g_object_new(PSY_TYPE_COLOR, NULL);
 
     // Cast to conveniently obtain the reference count
@@ -75,7 +72,7 @@ ref_set_method(void)
 static void
 ref_set_property(void)
 {
-    PsyCircle *circle = g_object_new(PSY_TYPE_CIRCLE, "canvas", window, NULL);
+    PsyCircle *circle = g_object_new(PSY_TYPE_CIRCLE, "canvas", canvas, NULL);
     PsyColor  *color  = g_object_new(PSY_TYPE_COLOR, NULL);
     GObject   *circle_gobj = G_OBJECT(circle);
     GObject   *color_gobj  = G_OBJECT(color);
