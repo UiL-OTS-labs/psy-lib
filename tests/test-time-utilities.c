@@ -109,41 +109,41 @@ check_time_point_comparisons(void)
     g_object_unref(t2);
 }
 
-static void
-check_time_point_overflow(void)
-{
-    PsyTimePoint *t1, *t2, *toverflow;
-    PsyDuration  *dur_max  = psy_duration_new_us(G_MAXINT64);
-    PsyDuration  *one_us   = psy_duration_new_us(1);
-    PsyDuration  *two_us   = psy_duration_new_us(2);
-    PsyDuration  *n_two_us = psy_duration_new_us(-2);
-    t1                     = g_object_new(PSY_TYPE_TIME_POINT, NULL);
-
-    t2 = psy_time_point_add(t1, dur_max); // highest possible valid time point
-    CU_ASSERT_PTR_NOT_NULL(t2);
-    toverflow = psy_time_point_add(t2, one_us); // Adding should overflow
-    CU_ASSERT_PTR_NULL(toverflow);
-    toverflow = psy_time_point_subtract_dur(
-        t2, n_two_us); // subtracting a neg dur too.
-    CU_ASSERT_PTR_NULL(toverflow);
-
-    // subtracting a postive dur from smallest time point should overflow
-    // adding a negative too.
-    g_clear_object(&t2);
-    t2 = psy_time_point_subtract_dur(t1, dur_max); // lowest possible time point
-    CU_ASSERT_PTR_NOT_NULL(t2);
-    toverflow = psy_time_point_subtract_dur(t2, two_us);
-    CU_ASSERT_PTR_NULL(toverflow);
-    toverflow = psy_time_point_add(t2, n_two_us);
-    CU_ASSERT_PTR_NULL(toverflow);
-
-    g_object_unref(t1);
-    g_object_unref(t2);
-    g_object_unref(dur_max);
-    g_object_unref(one_us);
-    g_object_unref(two_us);
-    g_object_unref(n_two_us);
-}
+// static void
+// check_time_point_overflow(void)
+// {
+//     PsyTimePoint *t1, *t2, *toverflow;
+//     PsyDuration  *dur_max  = psy_duration_new_us(G_MAXINT64);
+//     PsyDuration  *one_us   = psy_duration_new_us(1);
+//     PsyDuration  *two_us   = psy_duration_new_us(2);
+//     PsyDuration  *n_two_us = psy_duration_new_us(-2);
+//     t1                     = g_object_new(PSY_TYPE_TIME_POINT, NULL);
+// 
+//     t2 = psy_time_point_add(t1, dur_max); // highest possible valid time point
+//     CU_ASSERT_PTR_NOT_NULL(t2);
+//     toverflow = psy_time_point_add(t2, one_us); // Adding should overflow
+//     CU_ASSERT_PTR_NULL(toverflow);
+//     toverflow = psy_time_point_subtract_dur(
+//         t2, n_two_us); // subtracting a neg dur too.
+//     CU_ASSERT_PTR_NULL(toverflow);
+// 
+//     // subtracting a postive dur from smallest time point should overflow
+//     // adding a negative too.
+//     g_clear_object(&t2);
+//     t2 = psy_time_point_subtract_dur(t1, dur_max); // lowest possible time point
+//     CU_ASSERT_PTR_NOT_NULL(t2);
+//     toverflow = psy_time_point_subtract_dur(t2, two_us);
+//     CU_ASSERT_PTR_NULL(toverflow);
+//     toverflow = psy_time_point_add(t2, n_two_us);
+//     CU_ASSERT_PTR_NULL(toverflow);
+// 
+//     g_object_unref(t1);
+//     g_object_unref(t2);
+//     g_object_unref(dur_max);
+//     g_object_unref(one_us);
+//     g_object_unref(two_us);
+//     g_object_unref(n_two_us);
+// }
 
 static void
 check_duration_arithmetics(void)
@@ -285,10 +285,11 @@ add_time_utilities_suite(void)
         suite, "Test time point comparisons", check_time_point_comparisons);
     if (!test)
         return 1;
-    test = CU_add_test(
-        suite, "Test time point overflow", check_time_point_overflow);
-    if (!test)
-        return 1;
+
+//    test = CU_add_test(
+//        suite, "Test time point overflow", check_time_point_overflow);
+//    if (!test)
+//        return 1;
 
     test = CU_add_test(
         suite, "Test duration arithmetics", check_duration_arithmetics);

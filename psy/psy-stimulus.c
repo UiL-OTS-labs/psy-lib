@@ -103,7 +103,7 @@ stimulus_play(PsyStimulus *stim, PsyTimePoint *tp)
     PsyStimulusPrivate *priv = psy_stimulus_get_instance_private(stim);
     if (priv->start_time)
         g_object_unref(priv->start_time);
-    priv->start_time = psy_time_point_new_copy(tp);
+    priv->start_time = psy_time_point_dup(tp);
 }
 
 static void
