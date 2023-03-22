@@ -6,6 +6,9 @@
 G_BEGIN_DECLS
 
 void
+psy_gl_canvas_init_default_shaders(PsyCanvas *self, GError **error);
+
+void
 psy_gl_canvas_upload_projection_matrices(PsyCanvas *canvas);
 
 const gchar *

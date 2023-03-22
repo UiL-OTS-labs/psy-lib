@@ -226,6 +226,15 @@ psy_gl_canvas_constructed(GObject *obj)
         g_critical("Unable to enable depth testing: %s", error->message);
         g_clear_error(&error);
     }
+
+    PsyCanvasClass *cls;
+    cls = PSY_CANVAS_GET_CLASS(canvas);
+    cls->init_default_shaders(PSY_CANVAS(canvas), &error);
+
+    if (error) {
+        g_critical("Unable to initialize shaders: %s", error->message);
+        g_clear_error(&error);
+    }
 }
 
 static void
@@ -282,9 +291,15 @@ gl_canvas_clear(PsyCanvas *self)
 }
 
 static void
-gl_canvas_upload_projection_matrices(PsyCanvas *canvas)
+gl_canvas_upload_projection_matrices(PsyCanvas *self)
 {
-    psy_gl_canvas_upload_projection_matrices(canvas);
+    psy_gl_canvas_upload_projection_matrices(self);
+}
+
+static void
+gl_canvas_init_default_shaders(PsyCanvas *self, GError **error)
+{
+    psy_gl_canvas_init_default_shaders(self, error);
 }
 
 static PsyImage *
@@ -443,7 +458,8 @@ psy_gl_canvas_class_init(PsyGlCanvasClass *klass)
     psy_canvas_class->draw           = gl_canvas_draw;
     psy_canvas_class->upload_projection_matrices
         = gl_canvas_upload_projection_matrices;
-    psy_canvas_class->get_image = gl_canvas_get_image;
+    psy_canvas_class->init_default_shaders = gl_canvas_init_default_shaders;
+    psy_canvas_class->get_image            = gl_canvas_get_image;
 
     /**
      * PsyGlCanvas:enable-debug:

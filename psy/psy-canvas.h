@@ -62,6 +62,7 @@ typedef struct _PsyCanvasClass {
     void (*draw_stimuli)(PsyCanvas *self, guint64 frame_num, PsyTimePoint *tp);
     void (*draw_stimulus)(PsyCanvas *self, PsyVisualStimulus *stimulus);
     void (*update_frame_stats)(PsyCanvas *self, PsyFrameCount *stats);
+    void (*init_default_shaders)(PsyCanvas *self, GError **error);
 
     //    void (*set_monitor_size_mm)(PsyCanvas *monitor,
     //                                gint       width_mm,
