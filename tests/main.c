@@ -10,15 +10,13 @@
 
 static gboolean verbose;
 static gint     g_port_num = -1;
-static gboolean skip_window;
-static gint64   g_seed = -1;
+static gint64   g_seed     = -1;
 
 /* clang-format off */
 GOptionEntry options[] = {
-    {"port-num",    'p', G_OPTION_FLAG_NONE, G_OPTION_ARG_INT,  &g_port_num,  "Specify a port number to open for the parallel tests.","-1"},
-    {"seed",        0,   G_OPTION_FLAG_NONE, G_OPTION_ARG_INT64, &g_seed,     "Seed for random functions [0 - 2^32)","-1"},
-    {"skip-window", 's', G_OPTION_FLAG_NONE, G_OPTION_ARG_NONE, &skip_window, "Skip the test that need a window", "false"},
-    {"verbose",     'v', G_OPTION_FLAG_NONE, G_OPTION_ARG_NONE, &verbose,     "Run the suite verbosely", "false"},
+    {"port-num", 'p', G_OPTION_FLAG_NONE, G_OPTION_ARG_INT,  &g_port_num,  "Specify a port number to open for the parallel tests.","-1"},
+    {"seed",     's',   G_OPTION_FLAG_NONE, G_OPTION_ARG_INT64, &g_seed,   "Seed for random functions [0 - 2^32)","-1"},
+    {"verbose",  'v', G_OPTION_FLAG_NONE, G_OPTION_ARG_NONE, &verbose,     "Run the suite verbosely", "false"},
     {0,},
 };
 
