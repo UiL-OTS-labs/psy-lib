@@ -66,10 +66,7 @@ psy_image_canvas_init(PsyImageCanvas *self)
     psy_canvas_set_context(PSY_CANVAS(self),
                            PSY_DRAWING_CONTEXT(drawing_context));
 
-    PsyClock *clk = psy_clock_new();
-    priv->time    = psy_clock_now(clk);
-
-    g_object_unref(clk);
+    priv->time = psy_time_point_new();
 }
 
 static void
