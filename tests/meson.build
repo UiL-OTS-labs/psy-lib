@@ -15,6 +15,12 @@ test_gtk_window = executable(
     dependencies : [psy_dep]
 )
 
+test_image_canvas = executable(
+    'test_image_canvas',
+    files('test-image-canvas.c'),
+    dependencies : [psy_dep]
+)
+
 parallel_write = executable(
     'parallel_write',
     files('parallel_write.c'),
