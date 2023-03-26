@@ -108,11 +108,11 @@ psy_time_point_new(void)
 }
 
 /**
- * psy_time_point_new_monotonic:
+ * psy_time_point_new_monotonic:(constructor)
  * @monotonic_time:(in): A timevalue obtained with g_get_monotonic_time() or
  *                       some method that in synchronous to that function.
  *
- * Glib e.g. returns monotonic time with [method@Glib.get_monotonic_time]. You
+ * GLib e.g. returns monotonic time with [func@GLib.get_monotonic_time]. You
  * can use this function to get a timepoint that is equivalent to psylib's
  * time. The time by psylib starts at 0 when the first clock is loaded.
  *
