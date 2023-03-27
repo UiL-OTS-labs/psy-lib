@@ -477,7 +477,7 @@ void
 psy_color_set_redi(PsyColor *self, gint red)
 {
     g_return_if_fail(PSY_IS_COLOR(self));
-    self->values.colors.red = red;
+    self->values.colors.red = red / 255.0;
 }
 
 /**
@@ -535,7 +535,7 @@ void
 psy_color_set_greeni(PsyColor *self, gint green)
 {
     g_return_if_fail(PSY_IS_COLOR(self));
-    self->values.colors.green = green;
+    self->values.colors.green = green / 255.0;
 }
 
 /**
@@ -593,7 +593,7 @@ void
 psy_color_set_bluei(PsyColor *self, gint blue)
 {
     g_return_if_fail(PSY_IS_COLOR(self));
-    self->values.colors.blue = blue;
+    self->values.colors.blue = blue / 255.0;
 }
 
 /**
@@ -651,7 +651,7 @@ void
 psy_color_set_alphai(PsyColor *self, gint alpha)
 {
     g_return_if_fail(PSY_IS_COLOR(self));
-    self->values.colors.alpha = alpha;
+    self->values.colors.alpha = alpha / 255.0;
 }
 
 /**
