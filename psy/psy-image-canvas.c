@@ -111,6 +111,23 @@ image_canvas_iterate(PsyImageCanvas *self)
     PSY_CANVAS_GET_CLASS(self)->draw(PSY_CANVAS(self), 0, new_time);
 }
 
+/**
+ * psy_image_canvas_reset:
+ * @self: an instance of [class@ImageCanvas]
+ *
+ * Does a partial reset of the canvas, so that the time is back to zero
+ * It does not reallocate images and other stuff, nor clear or touches the
+ * content of the buffers.
+ */
+static void
+image_canvas_reset(PsyCanvas *self)
+{
+    PSY_CANVAS_CLASS(psy_image_canvas_parent_class)->reset(self);
+
+    PsyTimePoint *new_time = psy_time_point_new();
+    psy_image_canvas_set_time(PSY_IMAGE_CANVAS(self), new_time);
+}
+
 static GParamSpec *obj_properties[N_PROPS];
 
 // static guint       canvas_signals[LAST_SIGNAL];
@@ -127,6 +144,7 @@ psy_image_canvas_class_init(PsyImageCanvasClass *klass)
     object_class->finalize     = psy_image_canvas_finalize;
 
     canvas_class->update_frame_stats = psy_image_canvas_update_frame_stats;
+    canvas_class->reset              = image_canvas_reset;
 
     klass->iterate = image_canvas_iterate;
 

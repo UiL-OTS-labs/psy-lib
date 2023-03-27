@@ -46,6 +46,8 @@ typedef struct PsyFrameCount {
  *                    for this canvas.
  * @create_projection_matrix: create an projection matrix that is suitable
  *                            for the current value of
+ * @reset: Clears the canvas, remove scheduled stimuli and allow extra clearing
+ *         in deriving classes(e.g. ImageCanvas will reset its time).
  */
 typedef struct _PsyCanvasClass {
     GObjectClass parent_class;
@@ -80,6 +82,8 @@ typedef struct _PsyCanvasClass {
     void (*upload_projection_matrices)(PsyCanvas *self);
 
     PsyImage *(*get_image)(PsyCanvas *self);
+
+    void (*reset)(PsyCanvas *self);
 
     /*< private >*/
 
@@ -165,5 +169,8 @@ psy_canvas_get_num_frames_missed(PsyCanvas *self);
 
 G_MODULE_EXPORT gint64
 psy_canvas_get_num_frames_total(PsyCanvas *self);
+
+G_MODULE_EXPORT void
+psy_canvas_reset(PsyCanvas *self);
 
 G_END_DECLS

@@ -497,6 +497,32 @@ get_image(PsyCanvas *self)
 }
 
 static void
+reset(PsyCanvas *self)
+{
+    PsyCanvasPrivate *priv = psy_canvas_get_instance_private(self);
+
+    // Don't touch width, height as they are most likely determined by deriving
+    // classes.
+
+    memset(&priv->frame_count, 0, sizeof(priv->frame_count));
+
+    const gfloat rgba[] = {0.5, 0.5, 0.5, 1.0};
+    // clang-format off
+    g_object_set(priv->back_ground_color,
+                 "r", rgba[0],
+                 "g", rgba[1],
+                 "b", rgba[2],
+                 "a", rgba[3],
+                 NULL);
+    // clang-format on
+
+    g_ptr_array_set_size(priv->stimuli, 0);
+    g_hash_table_remove_all(priv->artists);
+    priv->projection_style = PSY_CANVAS_PROJECTION_STYLE_CENTER
+                             | PSY_CANVAS_PROJECTION_STYLE_PIXELS;
+}
+
+static void
 psy_canvas_class_init(PsyCanvasClass *klass)
 {
     GObjectClass *object_class = G_OBJECT_CLASS(klass);
@@ -526,6 +552,8 @@ psy_canvas_class_init(PsyCanvasClass *klass)
     klass->set_projection_matrix    = set_projection_matrix;
 
     klass->get_image = get_image;
+
+    klass->reset = reset;
 
     /**
      * PsyCanvas:width:
@@ -1274,4 +1302,22 @@ psy_canvas_get_num_frames_total(PsyCanvas *self)
     PsyCanvasPrivate *priv = psy_canvas_get_instance_private(self);
 
     return priv->frame_count.tot_frames;
+}
+
+/**
+ * psy_canvas_reset:
+ * @self the canvas to be reset
+ *
+ * Removes all scheduled stimuli from the canvas. This method tries to
+ * reset properties from the canvas to it's original values.
+ */
+void
+psy_canvas_reset(PsyCanvas *self)
+{
+    g_return_if_fail(PSY_IS_CANVAS(self));
+
+    PsyCanvasClass *cls = PSY_CANVAS_GET_CLASS(self);
+    g_assert(cls->reset);
+
+    cls->reset(self);
 }
