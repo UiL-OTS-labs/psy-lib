@@ -1,7 +1,7 @@
 
 #pragma once
 
-#include <glib.h>
+#include <psylib.h>
 
 G_BEGIN_DECLS
 gboolean
@@ -27,5 +27,14 @@ random_double(void);
 
 gdouble
 random_double_range(gdouble lower_inclusive, gdouble upper_exclusive);
+
+void
+set_save_images(gboolean save);
+
+gboolean
+save_images(void);
+
+void
+save_image_tmp_png(PsyImage *image, const char *name_fmt, ...);
 
 G_END_DECLS

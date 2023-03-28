@@ -8,15 +8,23 @@
 #include "suites.h"
 #include "unit-test-utilities.h"
 
+#define VAL_FALSE "false"
+
 static gboolean verbose;
-static gint     g_port_num = -1;
-static gint64   g_seed     = -1;
+static gboolean g_save_images = FALSE;
+static gint     g_port_num    = -1;
+static gint64   g_seed        = -1;
 
 /* clang-format off */
 GOptionEntry options[] = {
-    {"port-num", 'p', G_OPTION_FLAG_NONE, G_OPTION_ARG_INT,  &g_port_num,  "Specify a port number to open for the parallel tests.","-1"},
-    {"seed",     's',   G_OPTION_FLAG_NONE, G_OPTION_ARG_INT64, &g_seed,   "Seed for random functions [0 - 2^32)","-1"},
-    {"verbose",  'v', G_OPTION_FLAG_NONE, G_OPTION_ARG_NONE, &verbose,     "Run the suite verbosely", "false"},
+    {"port-num", 'p',    G_OPTION_FLAG_NONE, G_OPTION_ARG_INT,   &g_port_num,
+        "Specify a port number to open for the parallel tests.","-1"},
+    {"save-images", 'S', G_OPTION_FLAG_NONE, G_OPTION_ARG_NONE,  &g_save_images,
+        "Save images int /tmp_folder/psy-unit-tests/", NULL},
+    {"seed",     's',    G_OPTION_FLAG_NONE, G_OPTION_ARG_INT64, &g_seed,
+        "Seed for random functions [0 - 2^32)","-1"},
+    {"verbose",  'v',    G_OPTION_FLAG_NONE, G_OPTION_ARG_NONE,  &verbose,
+        "Run the suite verbosely", NULL},
     {0,},
 };
 
@@ -100,6 +108,8 @@ main(int argc, char **argv)
             return EXIT_FAILURE;
         }
     }
+
+    set_save_images(g_save_images ? TRUE : FALSE);
 
     CU_initialize_registry();
 

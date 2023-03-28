@@ -237,7 +237,10 @@ vstim_scale(void)
 
     psy_image_canvas_iterate(g_canvas);
 
-    image            = psy_canvas_get_image(PSY_CANVAS(g_canvas));
+    image = psy_canvas_get_image(PSY_CANVAS(g_canvas));
+    if (save_images())
+        save_image_tmp_png(image, "%s-scale-%d.png", __func__, 1);
+
     gint64 area      = compute_surface_area_by_color(image, g_stim_color);
     gfloat comp_area = circle_area(radius);
     // allow half a pixel radius margin
@@ -257,10 +260,8 @@ vstim_scale(void)
 
     CU_ASSERT_DOUBLE_EQUAL(area, comp_area, margin);
 
-    char path[128];
-    g_snprintf(path, sizeof(path), "%s/%s.png", g_get_tmp_dir(), __func__);
-
-    psy_image_save_path(image, path, "png", NULL);
+    if (save_images())
+        save_image_tmp_png(image, "%s-scale-%d.png", __func__, 2);
 
     g_object_unref(image);
     g_object_unref(circle);
@@ -307,10 +308,13 @@ vstim_translate(void)
     CU_ASSERT_DOUBLE_EQUAL(avg_x, tx, 1);
     CU_ASSERT_DOUBLE_EQUAL(avg_y, ty, 1);
 
-    char path[128];
-    g_snprintf(path, sizeof(path), "%s/%s.png", g_get_tmp_dir(), __func__);
-
-    psy_image_save_path(image, path, "png", NULL);
+    if (save_images()) {
+        save_image_tmp_png(image,
+                           "%s-x%d-y%d.png",
+                           __func__,
+                           (int) round(tx),
+                           (int) round(ty));
+    }
 
     g_object_unref(tstart);
     g_object_unref(image);
@@ -326,9 +330,15 @@ vstim_rotate(void)
     psy_canvas_reset(PSY_CANVAS(g_canvas));
     psy_canvas_set_background_color(PSY_CANVAS(g_canvas), g_bg_color);
 
+    gint   angle_0 = 0, angle_45 = 45, angle_m45 = -45;
+    gfloat radians, expected = 0.0;
+
     PsyRectangle *rect
         = psy_rectangle_new_full(PSY_CANVAS(g_canvas), 0, 0, 10, 200);
     psy_visual_stimulus_set_color(PSY_VISUAL_STIMULUS(rect), g_stim_color);
+    psy_visual_stimulus_set_rotation_deg(PSY_VISUAL_STIMULUS(rect), angle_0);
+    g_object_get(rect, "rotation", &radians, NULL);
+    CU_ASSERT_DOUBLE_EQUAL(radians, expected, 1e-9);
 
     PsyTimePoint *tstart = psy_time_point_add(
         g_tp_null, psy_canvas_get_frame_dur(PSY_CANVAS(g_canvas)));
@@ -354,7 +364,8 @@ vstim_rotate(void)
     psy_image_canvas_iterate(g_canvas);
 
     PsyImage *image = psy_canvas_get_image(PSY_CANVAS(g_canvas));
-    psy_image_save_path(image, "/tmp/vstim_rotate_0.png", "png", NULL);
+    if (save_images())
+        save_image_tmp_png(image, "%s_%d.png", __func__, angle_0);
 
     gint x1, y1, x2, y2, x3, y3, x4, y4, x5, y5, x6, y6, x7, y7, x8, y8, x9, y9;
     center_to_c(image, 50, -50, &y1, &x1);
@@ -410,12 +421,15 @@ vstim_rotate(void)
     //    *  *  *
     //           \
     //
-    psy_visual_stimulus_set_rotation(PSY_VISUAL_STIMULUS(rect),
-                                     1.0 / 8.0 * 2 * M_PI);
+    psy_visual_stimulus_set_rotation_deg(PSY_VISUAL_STIMULUS(rect), angle_45);
+    g_object_get(rect, "rotation", &radians, NULL);
+    expected = 1.0 / 4 * M_PI;
+    CU_ASSERT_DOUBLE_EQUAL(radians, expected, 1e-9);
 
     psy_image_canvas_iterate(g_canvas);
     image = psy_canvas_get_image(PSY_CANVAS(g_canvas));
-    psy_image_save_path(image, "/tmp/vstim_rotate_45.png", "png", NULL);
+    if (save_images())
+        save_image_tmp_png(image, "%s_%d.png", __func__, angle_45);
 
     c1 = psy_image_get_pixel(image, y1, x1);
     c2 = psy_image_get_pixel(image, y2, x2);
@@ -460,12 +474,16 @@ vstim_rotate(void)
     //     *  *  *
     //    /
     //
-    psy_visual_stimulus_set_rotation(PSY_VISUAL_STIMULUS(rect),
-                                     -1.0 / 8.0 * 2 * M_PI);
+    psy_visual_stimulus_set_rotation_deg(PSY_VISUAL_STIMULUS(rect), angle_m45);
+
+    g_object_get(rect, "rotation", &radians, NULL);
+    expected = -1.0 / 4 * M_PI;
+    CU_ASSERT_DOUBLE_EQUAL(radians, expected, 1e-9);
 
     psy_image_canvas_iterate(g_canvas);
     image = psy_canvas_get_image(PSY_CANVAS(g_canvas));
-    psy_image_save_path(image, "/tmp/vstim_rotate_m45.png", "png", NULL);
+    if (save_images())
+        save_image_tmp_png(image, "%s_%d.png", __func__, angle_m45);
 
     c1 = psy_image_get_pixel(image, y1, x1);
     c2 = psy_image_get_pixel(image, y2, x2);
