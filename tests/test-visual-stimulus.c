@@ -237,9 +237,8 @@ vstim_scale(void)
 
     psy_image_canvas_iterate(g_canvas);
 
-    image       = psy_canvas_get_image(PSY_CANVAS(g_canvas));
-    gint64 area = compute_surface_area_by_color(image, g_stim_color);
-    g_print("area = %d\n", (int) area);
+    image            = psy_canvas_get_image(PSY_CANVAS(g_canvas));
+    gint64 area      = compute_surface_area_by_color(image, g_stim_color);
     gfloat comp_area = circle_area(radius);
     // allow half a pixel radius margin
     gfloat margin    = circle_area(radius) - circle_area(radius - .5);
@@ -307,9 +306,6 @@ vstim_translate(void)
     avg_y = avg_y - HEIGHT / 2.0;
     CU_ASSERT_DOUBLE_EQUAL(avg_x, tx, 1);
     CU_ASSERT_DOUBLE_EQUAL(avg_y, ty, 1);
-
-    g_print("x = %f, avg_x = %f\n", tx, avg_x);
-    g_print("y = %f, avg_y = %f\n", ty, avg_y);
 
     char path[128];
     g_snprintf(path, sizeof(path), "%s/%s.png", g_get_tmp_dir(), __func__);
