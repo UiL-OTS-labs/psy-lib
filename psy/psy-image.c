@@ -554,7 +554,9 @@ psy_image_save(PsyImage *self, GFile *file, const gchar *type, GError **error)
 
     char    *path = g_file_get_path(file);
     gboolean ret  = gdk_pixbuf_save(pixbuf, path, type, error, NULL);
+
     g_free(path);
+    g_object_unref(pixbuf);
     return ret;
 }
 
