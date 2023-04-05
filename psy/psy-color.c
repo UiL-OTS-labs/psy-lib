@@ -735,7 +735,7 @@ psy_color_equal_eps(PsyColor *self, PsyColor *other, gfloat eps)
  * @other: another instance of [class@PsyColor]
  *
  * This function checks whether self != other.
- * See the discussion of [method@Psy.Color.is_equal] why an _eps version of
+ * See the discussion of [method@Color.equal_eps] why an _eps version of
  * this function exists.
  *
  * Returns: `TRUE` is @self != @other, `FALSE` otherwise
