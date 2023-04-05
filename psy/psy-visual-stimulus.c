@@ -895,7 +895,7 @@ psy_visual_stimulus_get_color(PsyVisualStimulus *self)
 /**
  * psy_visual_stimulus_set_color:
  * @self: an instance of `PsyVisualStimulus`
- * @color: An instance of `PsyVisualStimulus` that is going to
+ * @color:(transfer none): An instance of `PsyVisualStimulus` that is going to
  *         be used in order to fill the shape of the stimulus
  *
  * Set the fill color of the stimulus, this color is used to fill the stimulus
@@ -909,7 +909,7 @@ psy_visual_stimulus_set_color(PsyVisualStimulus *self, PsyColor *color)
     g_return_if_fail(PSY_IS_VISUAL_STIMULUS(self) && PSY_IS_COLOR(color));
 
     g_clear_object(&priv->color);
-    priv->color = g_object_ref(color);
+    priv->color = psy_color_dup(color);
 }
 
 /* ************ utility functions for unit conversions ************** */
