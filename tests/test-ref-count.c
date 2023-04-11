@@ -52,14 +52,12 @@ ref_set_method(void)
     GObject *color_gobj  = G_OBJECT(color);
 
     /*
-     * This is (transfer none), so the circle does not own the reference,
-     * but has a reference to it.
-     * Both we and the Circle should free it.
+     * This is (transfer none), so we should free it.
      */
     psy_visual_stimulus_set_color(PSY_VISUAL_STIMULUS(circle), color);
 
     CU_ASSERT_EQUAL(circle_gobj->ref_count, 1);
-    CU_ASSERT_EQUAL(color_gobj->ref_count, 2);
+    CU_ASSERT_EQUAL(color_gobj->ref_count, 1);
 
     // The circle disposes its reference to color
     g_object_unref(circle);
@@ -80,11 +78,11 @@ ref_set_property(void)
     CU_ASSERT_EQUAL(circle_gobj->ref_count, 1);
     CU_ASSERT_EQUAL(color_gobj->ref_count, 1);
 
-    // Circle is owning a reference
+    // Circle is owning a duplicate
     g_object_set(circle, "color", color, NULL);
 
     CU_ASSERT_EQUAL(circle_gobj->ref_count, 1);
-    CU_ASSERT_EQUAL(color_gobj->ref_count, 2);
+    CU_ASSERT_EQUAL(color_gobj->ref_count, 1);
 
     g_object_unref(circle); // Circle disposes its reference on color
     CU_ASSERT_EQUAL(color_gobj->ref_count, 1);
