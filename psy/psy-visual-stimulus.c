@@ -6,14 +6,17 @@
 #include "psy-visual-stimulus.h"
 
 typedef struct PsyVisualStimulusPrivate {
-    PsyCanvas *canvas;
-    gint64     nth_frame;
-    gint64     num_frames;
-    gint64     start_frame;
-    gfloat     x, y, z;
-    gfloat     scale_x, scale_y;
-    gfloat     rotation;
-    PsyColor  *color;
+    PsyCanvas *canvas; // The canvas on which this stimulus should be presented
+
+    gint64 nth_frame;
+    gint64 num_frames;  // Total number of frames for stimulus duration
+    gint64 start_frame; // When the stimulus should start, negative when not
+                        // started.
+    gfloat x, y, z;
+    gfloat scale_x, scale_y;
+    gfloat rotation; // Positive rotation follows the angle on the unit
+                     // circle, so rotation is applied counter clockwise.
+    PsyColor *color; // The default fill color of the stimulus
 } PsyVisualStimulusPrivate;
 
 G_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE(PsyVisualStimulus,
@@ -21,20 +24,21 @@ G_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE(PsyVisualStimulus,
                                     PSY_TYPE_STIMULUS)
 
 typedef enum {
-    PROP_NULL,        // not used required by GObject
-    PROP_CANVAS,      // The canvas on which this stimulus should be drawn
-    PROP_NUM_FRAMES,  // The number of frames the stimulus will be presented
-    PROP_NTH_FRAME,   // the frame for which we are rendering
-    PROP_START_FRAME, // the frame at which this object should be first
-                      // presented
-    PROP_X,           // the x coordinate of the stimulus
-    PROP_Y,           // the y coordinate of the stimulus
-    PROP_Z,           // the z coordinate of the stimulus
-    PROP_SCALE_X,     // scaling along the x axis
-    PROP_SCALE_Y,     // scaling along the y axis
-    PROP_SCALE,       // scaling along the x and y axis
-    PROP_ROTATION,    // Rotation around the z axis
-    PROP_COLOR,       // the fill color of the stimulus.
+    PROP_NULL,         // not used required by GObject
+    PROP_CANVAS,       // The canvas on which this stimulus should be drawn
+    PROP_NUM_FRAMES,   // The number of frames the stimulus will be presented
+    PROP_NTH_FRAME,    // the frame for which we are rendering
+    PROP_START_FRAME,  // the frame at which this object should be first
+                       // presented
+    PROP_X,            // the x coordinate of the stimulus
+    PROP_Y,            // the y coordinate of the stimulus
+    PROP_Z,            // the z coordinate of the stimulus
+    PROP_SCALE_X,      // scaling along the x axis
+    PROP_SCALE_Y,      // scaling along the y axis
+    PROP_SCALE,        // scaling along the x and y axis
+    PROP_ROTATION,     // Rotation around the z axis
+    PROP_ROTATION_DEG, // Rotation around the z axis
+    PROP_COLOR,        // the fill color of the stimulus.
     NUM_PROPERTIES
 } VisualStimulusProperty;
 
@@ -79,6 +83,9 @@ psy_visual_stimulus_set_property(GObject      *object,
         break;
     case PROP_ROTATION:
         psy_visual_stimulus_set_rotation(self, g_value_get_float(value));
+        break;
+    case PROP_ROTATION_DEG:
+        psy_visual_stimulus_set_rotation_deg(self, g_value_get_float(value));
         break;
     case PROP_COLOR:
         psy_visual_stimulus_set_color(self, g_value_get_object(value));
@@ -132,6 +139,9 @@ psy_visual_stimulus_get_property(GObject    *object,
     case PROP_ROTATION:
         g_value_set_float(value, priv->rotation);
         break;
+    case PROP_ROTATION_DEG:
+        g_value_set_float(value, psy_visual_stimulus_get_rotation_deg(self));
+        break;
     case PROP_COLOR:
         g_value_set_object(value, psy_visual_stimulus_get_color(self));
         break;
@@ -160,7 +170,7 @@ psy_visual_stimulus_init(PsyVisualStimulus *self)
     priv->canvas      = NULL;
     priv->nth_frame   = 0;
     priv->num_frames  = -1;
-    priv->start_frame = 0;
+    priv->start_frame = -1;
 }
 
 static void
@@ -373,7 +383,13 @@ psy_visual_stimulus_class_init(PsyVisualStimulusClass *klass)
     /**
      * PsyVisualStimulus:rotation:
      *
-     * The rotation quantity about the z axis.
+     * The rotation quantity about the z axis. Rotations for visual stimuli
+     * go around the z-axis. Rotations follow the rotation of a point
+     * around the unit circle, hence positive rotations rotate counter clockwise
+     * and negative rotations are clockwise.
+     * This property is also available in degrees
+     * [property@PsyVisualStimulus:rotation-deg], internally, psylib uses
+     * radians.
      */
     visual_stimulus_properties[PROP_ROTATION]
         = g_param_spec_float("rotation",
@@ -383,6 +399,22 @@ psy_visual_stimulus_class_init(PsyVisualStimulusClass *klass)
                              G_MAXFLOAT,
                              0.0,
                              G_PARAM_READWRITE | G_PARAM_CONSTRUCT);
+
+    /**
+     * PsyVisualStimulus:rotation_deg:
+     *
+     * The rotation quantity about the z axis. This rotation is the same
+     * ratotation as the [property@VisualStimulus:rotation] The difference
+     * is that this one is in degrees.
+     */
+    visual_stimulus_properties[PROP_ROTATION_DEG]
+        = g_param_spec_float("rotation-deg",
+                             "RotationDegrees",
+                             "The rotation around the z-axis in degrees",
+                             psy_degrees_to_radians(-G_MAXFLOAT),
+                             psy_degrees_to_radians(G_MAXFLOAT),
+                             0.0,
+                             G_PARAM_READWRITE);
 
     /**
      * PsyVisualStimulus:color
@@ -545,7 +577,7 @@ psy_visual_stimulus_is_scheduled(PsyVisualStimulus *self)
         = psy_visual_stimulus_get_instance_private(self);
     g_return_val_if_fail(PSY_IS_VISUAL_STIMULUS(self), FALSE);
 
-    return priv->start_frame > 0;
+    return priv->start_frame >= 0;
 }
 
 /**
@@ -767,9 +799,10 @@ psy_visual_stimulus_set_scale_y(PsyVisualStimulus *self, gfloat y)
  * psy_visual_stimulus_get_rotation:
  * @self: an instance of `PsyVisualStimulus`
  *
- * Get the rotation along the z axis.
+ * Get the rotation along the z axis. For an more elaborate meaning of rotating
+ * a stimulus see [method@VisualStimulus.set_rotation]
  *
- * Returns: the rotation along the z axis
+ * Returns: the rotation along the z axis in radians
  */
 gfloat
 psy_visual_stimulus_get_rotation(PsyVisualStimulus *self)
@@ -784,9 +817,18 @@ psy_visual_stimulus_get_rotation(PsyVisualStimulus *self)
 /**
  * psy_visual_stimulus_set_rotation:
  * @self: an instance of `PsyVisualStimulus`
- * @rotation: a `gfloat` representing the amount of rotation
+ * @rotation: a `gfloat` representing the amount of rotation in radians
  *
- * Set the new value for the rotation along the z axis
+ * Set the new value for the rotation along the z axis. Rotations follow
+ * rotation around the unit circle. Hence, when applying a positive rotation,
+ * the stimulus is rotated in a counter clockwise fashion and negative rotations
+ * follow clockwise direction. The default rotations are in radians, you may
+ * use the
+ * [method@VisualStimulus.set_rotation-deg],
+ * [method@VisualStimulus.get_rotation-deg] and
+ * [property@PsyVisualStimulus:rotation-deg] to operate with degrees.
+ * Internally, psylib uses radians, so operations in degrees are mapped to
+ * radians.
  */
 void
 psy_visual_stimulus_set_rotation(PsyVisualStimulus *self, gfloat rotation)
@@ -796,6 +838,43 @@ psy_visual_stimulus_set_rotation(PsyVisualStimulus *self, gfloat rotation)
     g_return_if_fail(PSY_IS_VISUAL_STIMULUS(self));
 
     priv->rotation = rotation;
+}
+
+/**
+ * psy_visual_stimulus_get_rotation_deg:
+ * @self: an instance of `PsyVisualStimulus`
+ *
+ * See [method@VisualStimulus.set_rotation] for an elaborate discussion on
+ * rotation. This method gets the rotation in degrees.
+ *
+ * Returns: the rotation along the z axis in degrees
+ */
+gfloat
+psy_visual_stimulus_get_rotation_deg(PsyVisualStimulus *self)
+{
+    PsyVisualStimulusPrivate *priv
+        = psy_visual_stimulus_get_instance_private(self);
+    g_return_val_if_fail(PSY_IS_VISUAL_STIMULUS(self), NAN);
+
+    return psy_radians_to_degrees(priv->rotation);
+}
+
+/**
+ * psy_visual_stimulus_set_rotation_deg:
+ * @self: an instance of `PsyVisualStimulus`
+ * @rotation: a `gfloat` representing the amount of rotation in degrees
+ *
+ * See [method@VisualStimulus.set_rotation] for an elaborate discussion on
+ * rotation. This method sets the rotation in degrees.
+ */
+void
+psy_visual_stimulus_set_rotation_deg(PsyVisualStimulus *self, gfloat rotation)
+{
+    PsyVisualStimulusPrivate *priv
+        = psy_visual_stimulus_get_instance_private(self);
+    g_return_if_fail(PSY_IS_VISUAL_STIMULUS(self));
+
+    priv->rotation = psy_degrees_to_radians(rotation);
 }
 
 /**
@@ -819,7 +898,7 @@ psy_visual_stimulus_get_color(PsyVisualStimulus *self)
 /**
  * psy_visual_stimulus_set_color:
  * @self: an instance of `PsyVisualStimulus`
- * @color: An instance of `PsyVisualStimulus` that is going to
+ * @color:(transfer none): An instance of `PsyVisualStimulus` that is going to
  *         be used in order to fill the shape of the stimulus
  *
  * Set the fill color of the stimulus, this color is used to fill the stimulus
@@ -833,5 +912,35 @@ psy_visual_stimulus_set_color(PsyVisualStimulus *self, PsyColor *color)
     g_return_if_fail(PSY_IS_VISUAL_STIMULUS(self) && PSY_IS_COLOR(color));
 
     g_clear_object(&priv->color);
-    priv->color = g_object_ref(color);
+    priv->color = psy_color_dup(color);
+}
+
+/* ************ utility functions for unit conversions ************** */
+
+/**
+ * psy_degrees_to_radians:
+ * @degrees: An input angle in degrees
+ *
+ * utility function to convert degrees to radians.
+ *
+ * Returns: the angle in radians
+ */
+gfloat
+psy_degrees_to_radians(gfloat degrees)
+{
+    return degrees * (M_PI / 180.0);
+}
+
+/**
+ * psy_radians_to_degrees:
+ * @radians: The input angle in radians.
+ *
+ * utility function to convert radians to degrees
+ *
+ * Returns: the angle in degrees
+ */
+gfloat
+psy_radians_to_degrees(gfloat radians)
+{
+    return radians * (180.0 / M_PI);
 }

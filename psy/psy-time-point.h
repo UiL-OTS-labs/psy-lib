@@ -12,10 +12,13 @@ G_BEGIN_DECLS
 G_DECLARE_FINAL_TYPE(PsyTimePoint, psy_time_point, PSY, TIME_POINT, GObject)
 
 G_MODULE_EXPORT PsyTimePoint *
-psy_time_point_new_copy(PsyTimePoint *other);
+psy_time_point_new(void);
 
 G_MODULE_EXPORT PsyTimePoint *
-psy_time_point_new(gint64 monotonic_time);
+psy_time_point_new_monotonic(gint64 monotonic_time);
+
+G_MODULE_EXPORT PsyTimePoint *
+psy_time_point_dup(PsyTimePoint *self);
 
 G_MODULE_EXPORT PsyTimePoint *
 psy_time_point_add(PsyTimePoint *self, PsyDuration *dur);
@@ -46,8 +49,5 @@ psy_time_point_greater_equal(PsyTimePoint *self, PsyTimePoint *other);
 
 G_MODULE_EXPORT gboolean
 psy_time_point_greater(PsyTimePoint *self, PsyTimePoint *other);
-
-G_MODULE_EXPORT PsyTimePoint *
-psy_time_point_dup(PsyTimePoint *self);
 
 G_END_DECLS

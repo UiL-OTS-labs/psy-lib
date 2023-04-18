@@ -127,6 +127,8 @@ rectangle_artist_draw(PsyArtist *self)
                    error->message);
         g_error_free(error);
     }
+
+    g_object_unref(color);
 }
 
 static void

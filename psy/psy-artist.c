@@ -138,7 +138,7 @@ artist_draw(PsyArtist *self)
 
     gfloat x = psy_visual_stimulus_get_x(priv->stimulus);
     gfloat y = psy_visual_stimulus_get_y(priv->stimulus);
-    gfloat z = psy_visual_stimulus_get_z(priv->stimulus);
+    gfloat z = -psy_visual_stimulus_get_z(priv->stimulus);
 
     PsyVector3 *translation
         = g_object_new(PSY_TYPE_VECTOR3, "x", x, "y", y, "z", z, NULL);

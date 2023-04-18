@@ -87,10 +87,22 @@ psy_visual_stimulus_get_rotation(PsyVisualStimulus *self);
 G_MODULE_EXPORT void
 psy_visual_stimulus_set_rotation(PsyVisualStimulus *self, gfloat rotation);
 
+G_MODULE_EXPORT gfloat
+psy_visual_stimulus_get_rotation_deg(PsyVisualStimulus *self);
+G_MODULE_EXPORT void
+psy_visual_stimulus_set_rotation_deg(PsyVisualStimulus *self, gfloat rotation);
+
 G_MODULE_EXPORT PsyColor *
 psy_visual_stimulus_get_color(PsyVisualStimulus *self);
-
 G_MODULE_EXPORT void
 psy_visual_stimulus_set_color(PsyVisualStimulus *self, PsyColor *color);
+
+/* utility functions to convert degrees to radians and vice versa */
+
+G_MODULE_EXPORT gfloat
+psy_degrees_to_radians(gfloat degrees);
+
+G_MODULE_EXPORT gfloat
+psy_radians_to_degrees(gfloat radians);
 
 G_END_DECLS

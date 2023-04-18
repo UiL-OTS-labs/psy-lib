@@ -92,14 +92,34 @@ psy_time_point_class_init(PsyTimePointClass *klass)
 }
 
 /**
- * psy_time_point_new:
+ * psy_time_point_new:(constructor)
+ *
+ * Creates a timepoint that reflects the time that the first clock was created.
+ * You should take care that if no clock has been created. It only makes sense
+ * after an instance of [class@Clock] is created.
+ *
+ * Returns:An instance of [class@TimePoint] that reflects the start of the
+ *         experiment.
+ */
+PsyTimePoint *
+psy_time_point_new(void)
+{
+    return g_object_new(PSY_TYPE_TIME_POINT, NULL);
+}
+
+/**
+ * psy_time_point_new_monotonic:(constructor)
  * @monotonic_time:(in): A timevalue obtained with g_get_monotonic_time() or
  *                       some method that in synchronous to that function.
+ *
+ * GLib e.g. returns monotonic time with [func@GLib.get_monotonic_time]. You
+ * can use this function to get a timepoint that is equivalent to psylib's
+ * time. The time by psylib starts at 0 when the first clock is loaded.
  *
  * Returns: a `PsyTimePoint` obtained from the monotonic clock of glib.
  */
 PsyTimePoint *
-psy_time_point_new(gint64 monotonic_time)
+psy_time_point_new_monotonic(gint64 monotonic_time)
 {
     gint zero_time = psy_clock_get_zero_time();
     gint num_ticks = monotonic_time - zero_time;
@@ -107,19 +127,19 @@ psy_time_point_new(gint64 monotonic_time)
 }
 
 /**
- * psy_time_point_new_copy:(constructor)
- * @other:(transfer none): the `PsyTimePoint` instance of which to make a copy
+ * psy_time_point_dup:
+ * @self: An instance of #PsyTimePoint.
  *
- * Make a deep copy of a PsyTimePoint instance
+ * Creates a new copy of self
  *
- * Returns: a new instance of `PsyTimePoint`
+ * Returns:(transfer full): a new copy of @self.
  */
 PsyTimePoint *
-psy_time_point_new_copy(PsyTimePoint *other)
+psy_time_point_dup(PsyTimePoint *self)
 {
-    PsyTimePoint *tp      = g_object_new(PSY_TYPE_TIME_POINT, NULL);
-    tp->ticks_since_start = other->ticks_since_start;
-    return tp;
+    PsyTimePoint *copy      = g_object_new(PSY_TYPE_TIME_POINT, NULL);
+    copy->ticks_since_start = self->ticks_since_start;
+    return copy;
 }
 
 /**
@@ -311,20 +331,4 @@ psy_time_point_greater(PsyTimePoint *self, PsyTimePoint *other)
 {
     return !psy_time_point_equal(self, other)
            && !psy_time_point_less(self, other);
-}
-
-/**
- * psy_time_point_dup:
- * @self: An instance of #PsyTimePoint.
- *
- * Creates a new copy of self
- *
- * Returns:(transfer full): a new copy of @self.
- */
-PsyTimePoint *
-psy_time_point_dup(PsyTimePoint *self)
-{
-    PsyTimePoint *copy      = g_object_new(PSY_TYPE_TIME_POINT, NULL);
-    copy->ticks_since_start = self->ticks_since_start;
-    return copy;
 }

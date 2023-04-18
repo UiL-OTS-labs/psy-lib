@@ -48,6 +48,15 @@ psy_image_set_pixel(PsyImage *self, guint row, guint column, PsyColor *color);
 G_MODULE_EXPORT PsyColor *
 psy_image_get_pixel(PsyImage *self, guint row, guint column);
 
+G_MODULE_EXPORT gboolean
+psy_image_save(PsyImage *self, GFile *file, const gchar *type, GError **error);
+
+G_MODULE_EXPORT gboolean
+psy_image_save_path(PsyImage    *self,
+                    const gchar *path,
+                    const gchar *type,
+                    GError     **error);
+
 guint8 *
 psy_image_get_ptr(PsyImage *self);
 

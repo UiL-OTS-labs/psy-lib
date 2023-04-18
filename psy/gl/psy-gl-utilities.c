@@ -1,15 +1,78 @@
 
 #include <epoxy/egl.h>
 
+#include "psy-gl-program.h"
 #include "psy-gl-utilities.h"
 
 /**
- * psy_gl_canas_upload_projection_matrices:
+ * psy_gl_canvas_init_default_shaders:
+ *
+ * Takes care that the default shaders are uploaded.
+ *
+ * Stability: private
+ */
+void
+psy_gl_canvas_init_default_shaders(PsyCanvas *self, GError **error)
+{
+    // Uniform color program
+    PsyDrawingContext *context = psy_canvas_get_context(PSY_CANVAS(self));
+
+    PsyProgram *program = psy_drawing_context_create_program(context);
+
+    psy_program_set_vertex_shader_from_path(
+        program, "./psy/uniform-color.vert", error);
+    if (*error)
+        goto fail;
+
+    psy_program_set_fragment_shader_from_path(
+        program, "./psy/uniform-color.frag", error);
+    if (*error)
+        goto fail;
+
+    psy_program_link(program, error);
+    if (*error)
+        goto fail;
+
+    psy_drawing_context_register_program(
+        context, PSY_UNIFORM_COLOR_PROGRAM_NAME, program, error);
+    if (*error)
+        return;
+
+    g_clear_object(&program);
+
+    // Picture program
+    program = psy_drawing_context_create_program(context);
+
+    psy_program_set_vertex_shader_from_path(
+        program, "./psy/picture.vert", error);
+    if (*error)
+        goto fail;
+
+    psy_program_set_fragment_shader_from_path(
+        program, "./psy/picture.frag", error);
+    if (*error)
+        goto fail;
+
+    psy_program_link(program, error);
+    if (*error)
+        goto fail;
+
+    psy_drawing_context_register_program(
+        context, PSY_PICTURE_PROGRAM_NAME, program, error);
+
+    g_clear_object(&program);
+    return;
+
+fail:
+    g_object_unref(program);
+}
+
+/**
+ * psy_gl_canvas_upload_projection_matrices:
  *
  *
  * Stability: private
  */
-
 void
 psy_gl_canvas_upload_projection_matrices(PsyCanvas *self)
 {

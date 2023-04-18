@@ -1,4 +1,6 @@
 
+#include <gdk-pixbuf/gdk-pixbuf.h>
+
 #include "psy-image.h"
 
 /**
@@ -112,8 +114,8 @@ psy_image_alloc(PsyImage *self, gsize size)
 static guint8 *
 image_get_pixel(PsyImage *self, guint row, guint column)
 {
-    guint stride = self->width * self->num_channnels;
-    return self->image_data + row * stride + column;
+    guint stride = psy_image_get_stride(self);
+    return self->image_data + ((row * stride) + column * self->num_channnels);
 }
 
 static void
@@ -522,6 +524,64 @@ psy_image_get_pixel(PsyImage *self, guint row, guint column)
         color = psy_color_new_rgbai(pixel[0], pixel[1], pixel[2], pixel[3]);
 
     return color;
+}
+
+/**
+ * psy_image_save:
+ * @self: An instance of [class@PsyImage]
+ * @file:(transfer none): A file describing where to save the image
+ * @type: A the type of image format e.g. "jpeg", "png", "ico", "bmp"
+ * @error: If something goes wrong an error will be returned here.
+ *
+ * Save the image to a file.
+ */
+G_MODULE_EXPORT gboolean
+psy_image_save(PsyImage *self, GFile *file, const gchar *type, GError **error)
+{
+    g_return_val_if_fail(PSY_IS_IMAGE(self), FALSE);
+    g_return_val_if_fail(G_IS_FILE(file), FALSE);
+    g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
+
+    GdkPixbuf *pixbuf = gdk_pixbuf_new_from_data(psy_image_get_ptr(self),
+                                                 GDK_COLORSPACE_RGB,
+                                                 TRUE,
+                                                 8,
+                                                 psy_image_get_width(self),
+                                                 psy_image_get_height(self),
+                                                 psy_image_get_stride(self),
+                                                 NULL,
+                                                 NULL);
+
+    char    *path = g_file_get_path(file);
+    gboolean ret  = gdk_pixbuf_save(pixbuf, path, type, error, NULL);
+
+    g_free(path);
+    g_object_unref(pixbuf);
+    return ret;
+}
+
+/**
+ * psy_image_save_path:
+ * @self: An instance of [class@PsyImage]
+ * @path: A file describing where to save the image
+ * @error: If something goes wrong an error will be returned here.
+ *
+ * Save the image to a file.
+ */
+G_MODULE_EXPORT gboolean
+psy_image_save_path(PsyImage    *self,
+                    const gchar *path,
+                    const char  *type,
+                    GError     **error)
+{
+    g_return_val_if_fail(PSY_IS_IMAGE(self), FALSE);
+    g_return_val_if_fail(path, FALSE);
+
+    GFile *file = g_file_new_for_path(path);
+
+    gboolean ret = psy_image_save(self, file, type, error);
+    g_object_unref(file);
+    return ret;
 }
 
 /**

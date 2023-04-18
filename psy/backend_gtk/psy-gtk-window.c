@@ -126,7 +126,7 @@ tick_callback(GtkWidget *d_area, GdkFrameClock *clock, gpointer data)
         = gdk_frame_timings_get_predicted_presentation_time(timings);
     gint64 frame_count = gdk_frame_timings_get_frame_counter(timings);
 
-    PsyTimePoint *tp = psy_time_point_new(predicted);
+    PsyTimePoint *tp = psy_time_point_new_monotonic(predicted);
 
     canvas_class->draw(PSY_CANVAS(window), frame_count, tp);
 

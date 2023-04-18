@@ -27,6 +27,9 @@ endif
 if cc.has_header('linux/ppdev.h')
     cdata.set('HAVE_LINUX_PPDEV_H', true)
 endif
+if cc.has_header('sys/random.h')
+    cdata.set('HAVE_SYS_RANDOM_H', true)
+endif
 
 
 configure_file (
@@ -106,6 +109,7 @@ libpsyfiles = files (
     'psy-picture.c',
     'psy-picture-artist.c',
     'psy-program.c',
+    'psy-random.c',
     'psy-rectangle.c',
     'psy-rectangle-artist.c',
     'psy-safe-int-private.c',
