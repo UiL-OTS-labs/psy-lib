@@ -6,14 +6,17 @@
 #include "psy-visual-stimulus.h"
 
 typedef struct PsyVisualStimulusPrivate {
-    PsyCanvas *canvas;
-    gint64     nth_frame;
-    gint64     num_frames;
-    gint64     start_frame;
-    gfloat     x, y, z;
-    gfloat     scale_x, scale_y;
-    gfloat     rotation;
-    PsyColor  *color;
+    PsyCanvas *canvas; // The canvas on which this stimulus should be presented
+
+    gint64 nth_frame;
+    gint64 num_frames;  // Total number of frames for stimulus duration
+    gint64 start_frame; // When the stimulus should start, negative when not
+                        // started.
+    gfloat x, y, z;
+    gfloat scale_x, scale_y;
+    gfloat rotation; // Positive rotation follows the angle on the unit
+                     // circle, so rotation is applied counter clockwise.
+    PsyColor *color; // The default fill color of the stimulus
 } PsyVisualStimulusPrivate;
 
 G_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE(PsyVisualStimulus,
@@ -167,7 +170,7 @@ psy_visual_stimulus_init(PsyVisualStimulus *self)
     priv->canvas      = NULL;
     priv->nth_frame   = 0;
     priv->num_frames  = -1;
-    priv->start_frame = 0;
+    priv->start_frame = -1;
 }
 
 static void
@@ -574,7 +577,7 @@ psy_visual_stimulus_is_scheduled(PsyVisualStimulus *self)
         = psy_visual_stimulus_get_instance_private(self);
     g_return_val_if_fail(PSY_IS_VISUAL_STIMULUS(self), FALSE);
 
-    return priv->start_frame > 0;
+    return priv->start_frame >= 0;
 }
 
 /**

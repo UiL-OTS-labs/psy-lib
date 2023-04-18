@@ -216,6 +216,8 @@ vstim_scale(void)
 
     gfloat x, y;
 
+    psy_canvas_reset(PSY_CANVAS(g_canvas));
+
     PsyCircle *circle
         = psy_circle_new_full(PSY_CANVAS(g_canvas), 0, 0, radius, num_vertices);
     psy_visual_stimulus_set_color(PSY_VISUAL_STIMULUS(circle), g_stim_color);
