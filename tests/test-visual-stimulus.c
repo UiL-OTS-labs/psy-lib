@@ -11,7 +11,9 @@ static const gint HEIGHT = 480;
 static PsyImageCanvas *g_canvas     = NULL;
 static PsyColor       *g_stim_color = NULL;
 static PsyColor       *g_bg_color   = NULL;
-static PsyTimePoint   *g_tp_null    = NULL;
+// a convenient start time  start + 16.67 ms otherwise stimuli are
+// scheduled to a frame that has already been drawn.
+static PsyTimePoint *g_tp_start     = NULL;
 
 static int
 test_visual_stimulus_setup(void)
@@ -24,9 +26,11 @@ test_visual_stimulus_setup(void)
     g_bg_color   = psy_color_new_rgbi(random_int_range(0, 255),
                                     random_int_range(0, 255),
                                     random_int_range(0, 255));
-    g_tp_null    = psy_time_point_new();
+    g_tp_start
+        = psy_time_point_add(psy_image_canvas_get_time(g_canvas),
+                             psy_canvas_get_frame_dur(PSY_CANVAS(g_canvas)));
 
-    if (!g_canvas || !g_stim_color || !g_bg_color || !g_tp_null)
+    if (!g_canvas || !g_stim_color || !g_bg_color || !g_tp_start)
         return 1;
 
     // make random but significantly different colors
@@ -46,7 +50,7 @@ test_visual_stimulus_teardown(void)
     g_clear_object(&g_canvas);
     g_clear_object(&g_stim_color);
     g_clear_object(&g_bg_color);
-    g_clear_object(&g_tp_null);
+    g_clear_object(&g_tp_start);
 
     return 0;
 }
@@ -203,13 +207,12 @@ vstim_default_values(void)
 static void
 vstim_scale(void)
 {
-    const gfloat  radius       = 50;
-    const gfloat  num_vertices = 100;
-    const gfloat  scale        = (float) random_double_range(1.5, 2.5);
-    PsyDuration  *frame_dur    = psy_canvas_get_frame_dur(PSY_CANVAS(g_canvas));
-    PsyDuration  *stim_dur     = psy_duration_multiply_scalar(frame_dur, 10);
-    PsyTimePoint *tp_start     = psy_time_point_add(g_tp_null, frame_dur);
-    PsyImage     *image        = NULL;
+    const gfloat radius       = 50;
+    const gfloat num_vertices = 100;
+    const gfloat scale        = (float) random_double_range(1.5, 2.5);
+    PsyDuration *frame_dur    = psy_canvas_get_frame_dur(PSY_CANVAS(g_canvas));
+    PsyDuration *stim_dur     = psy_duration_multiply_scalar(frame_dur, 10);
+    PsyImage    *image        = NULL;
 
     gfloat x, y;
 
@@ -233,7 +236,7 @@ vstim_scale(void)
     CU_ASSERT_DOUBLE_EQUAL(y, scale * 2, 0);
 
     g_object_set(circle, "scale", 1.0, NULL);
-    psy_stimulus_play_for(PSY_STIMULUS(circle), tp_start, stim_dur);
+    psy_stimulus_play_for(PSY_STIMULUS(circle), g_tp_start, stim_dur);
 
     psy_image_canvas_iterate(g_canvas);
 
@@ -265,7 +268,6 @@ vstim_scale(void)
 
     g_object_unref(image);
     g_object_unref(circle);
-    g_object_unref(tp_start);
     g_object_unref(stim_dur);
 }
 
@@ -287,11 +289,9 @@ vstim_translate(void)
 
     psy_visual_stimulus_set_color(PSY_VISUAL_STIMULUS(circle), g_stim_color);
     psy_canvas_set_background_color(PSY_CANVAS(g_canvas), g_bg_color);
-    PsyTimePoint *tstart = psy_time_point_add(
-        g_tp_null, psy_canvas_get_frame_dur(PSY_CANVAS(g_canvas)));
 
     psy_stimulus_play_for(PSY_STIMULUS(circle),
-                          tstart,
+                          g_tp_start,
                           psy_canvas_get_frame_dur(PSY_CANVAS(g_canvas)));
 
     g_object_get(circle, "x", &obtain_x, "y", &obtain_y, NULL);
@@ -316,7 +316,6 @@ vstim_translate(void)
                            (int) round(ty));
     }
 
-    g_object_unref(tstart);
     g_object_unref(image);
     g_object_unref(circle);
 }
@@ -340,11 +339,9 @@ vstim_rotate(void)
     g_object_get(rect, "rotation", &radians, NULL);
     CU_ASSERT_DOUBLE_EQUAL(radians, expected, 1e-9);
 
-    PsyTimePoint *tstart = psy_time_point_add(
-        g_tp_null, psy_canvas_get_frame_dur(PSY_CANVAS(g_canvas)));
     PsyDuration *dur = psy_duration_new_ms(50); // 3 frames
 
-    psy_stimulus_play_for(PSY_STIMULUS(rect), tstart, dur);
+    psy_stimulus_play_for(PSY_STIMULUS(rect), g_tp_start, dur);
 
     // Run for image iteration with no rotation.
     //
@@ -519,11 +516,192 @@ vstim_rotate(void)
     g_object_unref(image);
 
     g_object_unref(dur);
-    g_object_unref(tstart);
     g_object_unref(rect);
 }
 
 #pragma GCC diagnostic push
+
+static void
+vstim_draworder_same_z(void)
+{
+    psy_canvas_reset(PSY_CANVAS(g_canvas));
+    psy_canvas_set_background_color(PSY_CANVAS(g_canvas), g_bg_color);
+    PsyImage    *image = NULL;
+    PsyDuration *dur   = psy_duration_new_ms(50);
+
+    gfloat z1, z2;
+
+    PsyColor *rect1_color
+        = g_object_new(PSY_TYPE_COLOR, "r", 1.0f, "g", 0.0f, "b", 0.0f, NULL);
+    PsyColor *rect2_color
+        = g_object_new(PSY_TYPE_COLOR, "r", 1.0f, "g", 1.0f, "b", 0.0f, NULL);
+
+    // clang-format off
+
+    // foreground
+    PsyRectangle *rect1 = g_object_new(PSY_TYPE_RECTANGLE,
+                                       "canvas", g_canvas,
+                                       "x", 0.f,
+                                       "y", 0.f,
+                                       "width", 100.0f,
+                                       "height", 100.0f,
+                                       "color", rect1_color,
+                                       NULL);
+    // background
+    PsyRectangle *rect2 = g_object_new(PSY_TYPE_RECTANGLE,
+                                       "canvas", g_canvas,
+                                       "x", 0.f,
+                                       "y", 0.f,
+                                       "width", 150.0f,
+                                       "height", 150.0f,
+                                       "color", rect2_color,
+                                       NULL);
+    // clang-format on
+
+    g_object_get(rect1, "z", &z1, NULL);
+    g_object_get(rect2, "z", &z2, NULL);
+
+    CU_ASSERT_DOUBLE_EQUAL(z1, 0.0f, 0);
+    CU_ASSERT_DOUBLE_EQUAL(z2, 0.0f, 0);
+
+    // The order matters of the next two is significant as both should have
+    // equal z values. According to the philosophy of psylib, visual stimuli
+    // that are played last are drawn on top, just like stacking playing cards,
+    // the one that is played last, is drawn on top.
+
+    psy_stimulus_play_for(PSY_STIMULUS(rect1), g_tp_start, dur);
+    psy_stimulus_play_for(PSY_STIMULUS(rect2), g_tp_start, dur);
+
+    psy_image_canvas_iterate(g_canvas);
+
+    image = psy_canvas_get_image(PSY_CANVAS(g_canvas));
+    if (save_images())
+        save_image_tmp_png(image, "%s_%d.png", __func__, 1);
+
+    PsyColor *test_color = psy_image_get_pixel(image, HEIGHT / 2, WIDTH / 2);
+
+    CU_ASSERT_TRUE(psy_color_equal_eps(test_color, rect2_color, 1.0 / 255));
+
+    // Test in reverse order.
+
+    psy_canvas_reset(PSY_CANVAS(g_canvas));
+    psy_canvas_set_background_color(PSY_CANVAS(g_canvas), g_bg_color);
+    g_object_unref(test_color);
+
+    psy_stimulus_play_for(PSY_STIMULUS(rect2), g_tp_start, dur);
+    psy_stimulus_play_for(PSY_STIMULUS(rect1), g_tp_start, dur);
+
+    psy_image_canvas_iterate(g_canvas);
+
+    image = psy_canvas_get_image(PSY_CANVAS(g_canvas));
+    if (save_images())
+        save_image_tmp_png(image, "%s_%d.png", __func__, 2);
+
+    test_color = psy_image_get_pixel(image, HEIGHT / 2, WIDTH / 2);
+
+    CU_ASSERT_TRUE(psy_color_equal_eps(test_color, rect1_color, 1.0 / 255));
+
+    g_object_unref(test_color);
+    g_object_unref(rect2);
+    g_object_unref(rect1);
+    g_object_unref(rect2_color);
+    g_object_unref(rect1_color);
+}
+
+static void
+vstim_draworder_different_z(void)
+{
+    psy_canvas_reset(PSY_CANVAS(g_canvas));
+    psy_canvas_set_background_color(PSY_CANVAS(g_canvas), g_bg_color);
+    PsyImage    *image = NULL;
+    PsyDuration *dur   = psy_duration_new_ms(50);
+
+    gfloat z1 = 0, z2 = 1;
+    gfloat z1out, z2out;
+
+    PsyColor *rect1_color
+        = g_object_new(PSY_TYPE_COLOR, "r", 1.0f, "g", 0.0f, "b", 0.0f, NULL);
+    PsyColor *rect2_color
+        = g_object_new(PSY_TYPE_COLOR, "r", 1.0f, "g", 1.0f, "b", 0.0f, NULL);
+
+    // clang-format off
+
+    // foreground
+    PsyRectangle *rect1 = g_object_new(PSY_TYPE_RECTANGLE,
+                                       "canvas", g_canvas,
+                                       "x", 0.f,
+                                       "y", 0.f,
+                                       "z", z1,
+                                       "width", 100.0f,
+                                       "height", 100.0f,
+                                       "color", rect1_color,
+                                       NULL);
+    // background
+    PsyRectangle *rect2 = g_object_new(PSY_TYPE_RECTANGLE,
+                                       "canvas", g_canvas,
+                                       "x", 0.f,
+                                       "y", 0.f,
+                                       "z", z2,
+                                       "width", 150.0f,
+                                       "height", 150.0f,
+                                       "color", rect2_color,
+                                       NULL);
+    // clang-format on
+
+    g_object_get(rect1, "z", &z1out, NULL);
+    g_object_get(rect2, "z", &z2out, NULL);
+
+    CU_ASSERT_DOUBLE_EQUAL(z1, z1out, 0);
+    CU_ASSERT_DOUBLE_EQUAL(z2, z2out, 0);
+
+    // When the z-values are different, the one with the highest value
+    // is "closer" to the user, and will be displayed.
+
+    psy_stimulus_play_for(PSY_STIMULUS(rect1), g_tp_start, dur);
+    psy_stimulus_play_for(PSY_STIMULUS(rect2), g_tp_start, dur);
+
+    psy_image_canvas_iterate(g_canvas);
+
+    image = psy_canvas_get_image(PSY_CANVAS(g_canvas));
+    if (save_images())
+        save_image_tmp_png(image, "%s_%d.png", __func__, 1);
+
+    PsyColor *test_color = psy_image_get_pixel(image, HEIGHT / 2, WIDTH / 2);
+
+    CU_ASSERT_TRUE(psy_color_equal_eps(test_color, rect2_color, 1.0 / 255));
+
+    psy_canvas_reset(PSY_CANVAS(g_canvas));
+    psy_canvas_set_background_color(PSY_CANVAS(g_canvas), g_bg_color);
+    g_object_unref(test_color);
+
+    psy_visual_stimulus_set_z(PSY_VISUAL_STIMULUS(rect1), z2);
+    psy_visual_stimulus_set_z(PSY_VISUAL_STIMULUS(rect2), z1);
+
+    g_object_get(rect1, "z", &z1out, NULL);
+    g_object_get(rect2, "z", &z2out, NULL);
+
+    CU_ASSERT_DOUBLE_EQUAL(z1, z2out, 0);
+    CU_ASSERT_DOUBLE_EQUAL(z2, z1out, 0);
+
+    psy_stimulus_play_for(PSY_STIMULUS(rect1), g_tp_start, dur);
+    psy_stimulus_play_for(PSY_STIMULUS(rect2), g_tp_start, dur);
+
+    psy_image_canvas_iterate(g_canvas);
+
+    image = psy_canvas_get_image(PSY_CANVAS(g_canvas));
+    if (save_images())
+        save_image_tmp_png(image, "%s_%d.png", __func__, 2);
+
+    test_color = psy_image_get_pixel(image, HEIGHT / 2, WIDTH / 2);
+
+    CU_ASSERT_TRUE(psy_color_equal_eps(test_color, rect1_color, 1.0 / 255));
+
+    g_object_unref(test_color);
+    g_object_unref(rect2);
+    g_object_unref(rect1);
+    g_object_unref(rect2_color);
+    g_object_unref(rect1_color);
+}
 
 int
 add_visual_stimulus_suite(void)
@@ -550,6 +728,14 @@ add_visual_stimulus_suite(void)
         return 1;
 
     test = CU_ADD_TEST(suite, vstim_rotate);
+    if (!test)
+        return 1;
+
+    test = CU_ADD_TEST(suite, vstim_draworder_same_z);
+    if (!test)
+        return 1;
+
+    test = CU_ADD_TEST(suite, vstim_draworder_different_z);
     if (!test)
         return 1;
 
