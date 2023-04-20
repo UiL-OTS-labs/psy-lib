@@ -1,6 +1,7 @@
 
 #include "psy-picture.h"
 #include "enum-types.h"
+#include "psy-picture-artist.h"
 
 /**
  * PsyPicture:
@@ -121,6 +122,13 @@ auto_resize(PsyPicture *picture, gfloat width, gfloat height)
     psy_rectangle_set_size(PSY_RECTANGLE(picture), width, height);
 }
 
+static PsyArtist *
+picture_create_artist(PsyVisualStimulus *self)
+{
+    return PSY_ARTIST(
+        psy_picture_artist_new(psy_visual_stimulus_get_canvas(self), self));
+}
+
 static void
 psy_picture_class_init(PsyPictureClass *klass)
 {
@@ -128,6 +136,9 @@ psy_picture_class_init(PsyPictureClass *klass)
     object_class->get_property = picture_get_property;
     object_class->set_property = picture_set_property;
     object_class->finalize     = psy_picture_finalize;
+
+    PsyVisualStimulusClass *vstim_class = PSY_VISUAL_STIMULUS_CLASS(klass);
+    vstim_class->create_artist          = picture_create_artist;
 
     PsyRectangleClass *rect_class = PSY_RECTANGLE_CLASS(klass);
     rect_class->set_width         = set_width;

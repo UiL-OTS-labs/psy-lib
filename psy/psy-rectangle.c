@@ -1,6 +1,6 @@
 
 #include "psy-rectangle.h"
-#include "glibconfig.h"
+#include "psy-rectangle-artist.h"
 
 typedef struct _PsyRectanglePrivate {
     gfloat width;
@@ -84,12 +84,22 @@ set_height(PsyRectangle *self, gfloat height)
     priv->height = height;
 }
 
+static PsyArtist *
+rectangle_create_artist(PsyVisualStimulus *self)
+{
+    return PSY_ARTIST(
+        psy_rectangle_artist_new(psy_visual_stimulus_get_canvas(self), self));
+}
+
 static void
 psy_rectangle_class_init(PsyRectangleClass *klass)
 {
     GObjectClass *object_class = G_OBJECT_CLASS(klass);
     object_class->get_property = rectangle_get_property;
     object_class->set_property = rectangle_set_property;
+
+    PsyVisualStimulusClass *vstim_cls = PSY_VISUAL_STIMULUS_CLASS(klass);
+    vstim_cls->create_artist          = rectangle_create_artist;
 
     klass->set_width  = set_width;
     klass->set_height = set_height;

@@ -915,6 +915,31 @@ psy_visual_stimulus_set_color(PsyVisualStimulus *self, PsyColor *color)
     priv->color = psy_color_dup(color);
 }
 
+/**
+ * psy_visual_stimulus_create_artist:
+ * @self: an instance of [class@VisualStimulus]
+ *
+ * This method creates a new visual stimulus for this specific stimulus. The
+ * artist should be able to draw this stimulus. It is intended to be called by
+ * an instance of [class@PsyCanvas] when this stimulus is scheduled. The
+ * created artist is responsible to draw this stimulus on the canvas.
+ * Deriving classes must override the [method@Psy.VisualStimulus.create_artist].
+ *
+ * Returns:(transfer full): An instance of [class@Psy.Artist] that will be used
+ * to draw this stimulus
+ */
+PsyArtist *
+psy_visual_stimulus_create_artist(PsyVisualStimulus *self)
+{
+    g_return_val_if_fail(PSY_IS_VISUAL_STIMULUS(self), NULL);
+
+    PsyVisualStimulusClass *cls = PSY_VISUAL_STIMULUS_GET_CLASS(self);
+
+    g_return_val_if_fail(cls->create_artist, NULL);
+
+    return cls->create_artist(self);
+}
+
 /* ************ utility functions for unit conversions ************** */
 
 /**

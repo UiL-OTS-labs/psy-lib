@@ -1,5 +1,6 @@
 
 #include "psy-circle.h"
+#include "psy-circle-artist.h"
 
 /**
  * PsyCircle:
@@ -75,12 +76,22 @@ psy_circle_init(PsyCircle *self)
     priv->radius           = 1;
 }
 
+static PsyArtist *
+circle_create_artist(PsyVisualStimulus *self)
+{
+    return PSY_ARTIST(
+        psy_circle_artist_new(psy_visual_stimulus_get_canvas(self), self));
+}
+
 static void
 psy_circle_class_init(PsyCircleClass *klass)
 {
     GObjectClass *object_class = G_OBJECT_CLASS(klass);
     object_class->get_property = circle_get_property;
     object_class->set_property = circle_set_property;
+
+    PsyVisualStimulusClass *vstim_cls = PSY_VISUAL_STIMULUS_CLASS(klass);
+    vstim_cls->create_artist          = circle_create_artist;
 
     /**
      * Circle:radius:

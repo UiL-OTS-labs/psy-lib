@@ -1,6 +1,6 @@
 
 #include "psy-cross.h"
-#include "glibconfig.h"
+#include "psy-cross-artist.h"
 
 typedef struct _PsyCrossPrivate {
     gfloat x_length;
@@ -91,12 +91,22 @@ psy_cross_init(PsyCross *self)
     (void) self;
 }
 
+static PsyArtist *
+cross_create_artist(PsyVisualStimulus *self)
+{
+    return PSY_ARTIST(
+        psy_cross_artist_new(psy_visual_stimulus_get_canvas(self), self));
+}
+
 static void
 psy_cross_class_init(PsyCrossClass *klass)
 {
     GObjectClass *object_class = G_OBJECT_CLASS(klass);
     object_class->get_property = cross_get_property;
     object_class->set_property = cross_set_property;
+
+    PsyVisualStimulusClass *vstim_cls = PSY_VISUAL_STIMULUS_CLASS(klass);
+    vstim_cls->create_artist          = cross_create_artist;
 
     /**
      * Cross:line-length:
