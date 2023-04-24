@@ -26,9 +26,11 @@ test_visual_stimulus_setup(void)
     g_bg_color   = psy_color_new_rgbi(random_int_range(0, 255),
                                     random_int_range(0, 255),
                                     random_int_range(0, 255));
-    g_tp_start
-        = psy_time_point_add(psy_image_canvas_get_time(g_canvas),
-                             psy_canvas_get_frame_dur(PSY_CANVAS(g_canvas)));
+
+    PsyTimePoint *temp = psy_image_canvas_get_time(g_canvas);
+    g_tp_start         = psy_time_point_add(
+        temp, psy_canvas_get_frame_dur(PSY_CANVAS(g_canvas)));
+    g_object_unref(temp);
 
     if (!g_canvas || !g_stim_color || !g_bg_color || !g_tp_start)
         return 1;
@@ -584,6 +586,8 @@ vstim_draworder_same_z(void)
 
     CU_ASSERT_TRUE(psy_color_equal_eps(test_color, rect2_color, 1.0 / 255));
 
+    g_clear_object(&image);
+
     // Test in reverse order.
 
     psy_canvas_reset(PSY_CANVAS(g_canvas));
@@ -603,11 +607,13 @@ vstim_draworder_same_z(void)
 
     CU_ASSERT_TRUE(psy_color_equal_eps(test_color, rect1_color, 1.0 / 255));
 
+    g_object_unref(image);
     g_object_unref(test_color);
     g_object_unref(rect2);
     g_object_unref(rect1);
     g_object_unref(rect2_color);
     g_object_unref(rect1_color);
+    g_object_unref(dur);
 }
 
 static void
@@ -671,6 +677,7 @@ vstim_draworder_different_z(void)
     PsyColor *test_color = psy_image_get_pixel(image, HEIGHT / 2, WIDTH / 2);
 
     CU_ASSERT_TRUE(psy_color_equal_eps(test_color, rect2_color, 1.0 / 255));
+    g_clear_object(&image);
 
     psy_canvas_reset(PSY_CANVAS(g_canvas));
     psy_canvas_set_background_color(PSY_CANVAS(g_canvas), g_bg_color);
@@ -698,11 +705,13 @@ vstim_draworder_different_z(void)
 
     CU_ASSERT_TRUE(psy_color_equal_eps(test_color, rect1_color, 1.0 / 255));
 
+    g_object_unref(image);
     g_object_unref(test_color);
     g_object_unref(rect2);
     g_object_unref(rect1);
     g_object_unref(rect2_color);
     g_object_unref(rect1_color);
+    g_object_unref(dur);
 }
 
 int
