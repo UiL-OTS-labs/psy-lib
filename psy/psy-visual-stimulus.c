@@ -5,6 +5,30 @@
 #include "psy-stimulus.h"
 #include "psy-visual-stimulus.h"
 
+/**
+ * PsyVisualStimulus:
+ *
+ * This is the base class for visual stimuli. A PsyVisualStimulus is a stimulus
+ * that is going to be presented at an instance of [class@PsyCanvas]. The
+ * Base class sets up the frame work for when a stimulus is presented and
+ * also where. Additionally it supports, some scaling and rotation of a
+ * stimulus. This contains all the parameters to setup a Model matrix for this
+ * stimulus. A visual stimulus also supports a color, so that artist know
+ * in what color stimuli should be presented.
+ *
+ * Instances of [class@VisualStimulus] are scheduled when the stimulus is
+ * played. When, the stimulus is scheduled, the canvas will call the
+ * [method@Psy.VisualStimulus.create_artist], which should instantiate the
+ * artist. The artist will be responsible for drawing the stimulus. The
+ * PsyVisualStimulus is merely a dataholder.
+ *
+ * Derived instances may use the framework setup by [class@VisualStimulus]
+ * and [class@Artist] to do drawing. The base class PsyVisualStimulus and
+ * PsyArtist work together, so that deriving class can draw around the origin,
+ * PsyVisualStimulus and PsyArtist make sure that the stimuli are positioned
+ * on the right place.
+ */
+
 typedef struct PsyVisualStimulusPrivate {
     PsyCanvas *canvas; // The canvas on which this stimulus should be presented
 

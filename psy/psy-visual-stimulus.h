@@ -24,7 +24,9 @@ G_DECLARE_DERIVABLE_TYPE(
 /**
  * PsyVisualStimulusClass:
  * @parent: the parentclass of PsyVisualStimulus it derives form PsyStimulus.
- * @update: signal emitted just prior to the object should be painted again
+ * @update: signal emitted just prior to the object should be painted again.
+ * @create_artist: Pure virtual method, deriving classes should implement this
+ *                 It is called by a canvas when the stimulus is scheduled.
  */
 typedef struct _PsyVisualStimulusClass {
     PsyStimulusClass parent;
