@@ -5,6 +5,30 @@
 #include "psy-stimulus.h"
 #include "psy-visual-stimulus.h"
 
+/**
+ * PsyVisualStimulus:
+ *
+ * This is the base class for visual stimuli. A PsyVisualStimulus is a stimulus
+ * that is going to be presented at an instance of [class@PsyCanvas]. The
+ * Base class sets up the frame work for when a stimulus is presented and
+ * also where. Additionally it supports, some scaling and rotation of a
+ * stimulus. This contains all the parameters to setup a Model matrix for this
+ * stimulus. A visual stimulus also supports a color, so that artist know
+ * in what color stimuli should be presented.
+ *
+ * Instances of [class@VisualStimulus] are scheduled when the stimulus is
+ * played. When, the stimulus is scheduled, the canvas will call the
+ * [method@Psy.VisualStimulus.create_artist], which should instantiate the
+ * artist. The artist will be responsible for drawing the stimulus. The
+ * PsyVisualStimulus is merely a dataholder.
+ *
+ * Derived instances may use the framework setup by [class@VisualStimulus]
+ * and [class@Artist] to do drawing. The base class PsyVisualStimulus and
+ * PsyArtist work together, so that deriving class can draw around the origin,
+ * PsyVisualStimulus and PsyArtist make sure that the stimuli are positioned
+ * on the right place.
+ */
+
 typedef struct PsyVisualStimulusPrivate {
     PsyCanvas *canvas; // The canvas on which this stimulus should be presented
 
@@ -913,6 +937,31 @@ psy_visual_stimulus_set_color(PsyVisualStimulus *self, PsyColor *color)
 
     g_clear_object(&priv->color);
     priv->color = psy_color_dup(color);
+}
+
+/**
+ * psy_visual_stimulus_create_artist:
+ * @self: an instance of [class@VisualStimulus]
+ *
+ * This method creates a new visual stimulus for this specific stimulus. The
+ * artist should be able to draw this stimulus. It is intended to be called by
+ * an instance of [class@PsyCanvas] when this stimulus is scheduled. The
+ * created artist is responsible to draw this stimulus on the canvas.
+ * Deriving classes must override the [method@Psy.VisualStimulus.create_artist].
+ *
+ * Returns:(transfer full): An instance of [class@Psy.Artist] that will be used
+ * to draw this stimulus
+ */
+PsyArtist *
+psy_visual_stimulus_create_artist(PsyVisualStimulus *self)
+{
+    g_return_val_if_fail(PSY_IS_VISUAL_STIMULUS(self), NULL);
+
+    PsyVisualStimulusClass *cls = PSY_VISUAL_STIMULUS_GET_CLASS(self);
+
+    g_return_val_if_fail(cls->create_artist, NULL);
+
+    return cls->create_artist(self);
 }
 
 /* ************ utility functions for unit conversions ************** */

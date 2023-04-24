@@ -237,41 +237,10 @@ set_frame_dur(PsyCanvas *self, PsyDuration *dur)
     priv->frame_dur = psy_duration_dup(dur);
 }
 
-static PsyArtist *
-create_artist(PsyCanvas *self, PsyVisualStimulus *stimulus)
-{
-    GType      type   = G_OBJECT_TYPE(stimulus);
-    PsyArtist *artist = NULL;
-
-    if (type == psy_circle_get_type()) {
-        g_debug("creating circle artist");
-        artist = PSY_ARTIST(psy_circle_artist_new(self, stimulus));
-    }
-    else if (type == psy_cross_get_type()) {
-        g_debug("creating cross artist");
-        artist = PSY_ARTIST(psy_cross_artist_new(self, stimulus));
-    }
-    else if (type == psy_rectangle_get_type()) {
-        g_debug("creating rectangle artist");
-        artist = PSY_ARTIST(psy_rectangle_artist_new(self, stimulus));
-    }
-    else if (type == psy_picture_get_type()) {
-        g_debug("creating picture artist");
-        artist = PSY_ARTIST(psy_picture_artist_new(self, stimulus));
-    }
-    else {
-        g_warning("PsyCanvas hasn't got an Artist for %s",
-                  G_OBJECT_TYPE_NAME(stimulus));
-    }
-
-    return artist;
-}
-
 static void
 schedule_stimulus(PsyCanvas *self, PsyVisualStimulus *stimulus)
 {
     PsyCanvasPrivate *priv = psy_canvas_get_instance_private(self);
-    PsyCanvasClass   *cls  = PSY_CANVAS_GET_CLASS(self);
 
     // Check if the stimulus is already scheduled
     if (g_hash_table_contains(priv->artists, stimulus)) {
@@ -279,7 +248,7 @@ schedule_stimulus(PsyCanvas *self, PsyVisualStimulus *stimulus)
         return;
     }
 
-    PsyArtist *artist = cls->create_artist(self, stimulus);
+    PsyArtist *artist = psy_visual_stimulus_create_artist(stimulus);
 
     // add a reference for insertion in array and hashtable
     g_object_ref(stimulus);
@@ -544,7 +513,6 @@ psy_canvas_class_init(PsyCanvasClass *klass)
 
     klass->set_frame_dur = set_frame_dur;
 
-    klass->create_artist     = create_artist;
     klass->schedule_stimulus = schedule_stimulus;
     klass->remove_stimulus   = remove_stimulus;
 

@@ -1,6 +1,7 @@
 
 #pragma once
 
+#include "psy-artist.h"
 #include "psy-canvas.h"
 #include "psy-color.h"
 #include "psy-stimulus.h"
@@ -13,6 +14,8 @@ G_BEGIN_DECLS
  */
 struct _PsyCanvas;
 typedef struct _PsyCanvas PsyCanvas;
+struct _PsyArtist;
+typedef struct _PsyArtist PsyArtist;
 
 #define PSY_TYPE_VISUAL_STIMULUS psy_visual_stimulus_get_type()
 G_DECLARE_DERIVABLE_TYPE(
@@ -21,13 +24,17 @@ G_DECLARE_DERIVABLE_TYPE(
 /**
  * PsyVisualStimulusClass:
  * @parent: the parentclass of PsyVisualStimulus it derives form PsyStimulus.
- * @update: signal emitted just prior to the object should be painted again
+ * @update: signal emitted just prior to the object should be painted again.
+ * @create_artist: Pure virtual method, deriving classes should implement this
+ *                 It is called by a canvas when the stimulus is scheduled.
  */
 typedef struct _PsyVisualStimulusClass {
     PsyStimulusClass parent;
     void (*update)(PsyVisualStimulus *stim,
                    PsyTimePoint      *frame_time,
                    gint64             nth_frame);
+    PsyArtist *(*create_artist)(PsyVisualStimulus *self);
+
 } PsyVisualStimulusClass;
 
 G_MODULE_EXPORT PsyCanvas *
@@ -96,6 +103,9 @@ G_MODULE_EXPORT PsyColor *
 psy_visual_stimulus_get_color(PsyVisualStimulus *self);
 G_MODULE_EXPORT void
 psy_visual_stimulus_set_color(PsyVisualStimulus *self, PsyColor *color);
+
+G_MODULE_EXPORT PsyArtist *
+psy_visual_stimulus_create_artist(PsyVisualStimulus *self);
 
 /* utility functions to convert degrees to radians and vice versa */
 

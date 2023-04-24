@@ -73,7 +73,6 @@ typedef struct _PsyCanvasClass {
     PsyDuration *(*get_frame_dur)(PsyCanvas *self);
     void (*set_frame_dur)(PsyCanvas *self, PsyDuration *dur);
 
-    PsyArtist *(*create_artist)(PsyCanvas *self, PsyVisualStimulus *stimulus);
     void (*schedule_stimulus)(PsyCanvas *self, PsyVisualStimulus *stimulus);
     void (*remove_stimulus)(PsyCanvas *self, PsyVisualStimulus *stimulus);
 
