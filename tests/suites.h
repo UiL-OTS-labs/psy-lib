@@ -4,6 +4,9 @@
 #include <glib.h>
 
 int
+add_canvas_suite(void);
+
+int
 add_color_suite(void);
 
 int

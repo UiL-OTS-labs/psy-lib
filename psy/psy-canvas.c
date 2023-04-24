@@ -44,7 +44,7 @@ typedef struct PsyCanvasPrivate {
 
     PsyFrameCount frame_count;
 
-    PsyColor          *back_ground_color;
+    PsyColor          *background_color;
     GPtrArray         *stimuli; // owns a ref on the PsyStimulus
     GHashTable        *artists; // owns a ref on the PsyStimulus and PsyArtist
     PsyDuration       *frame_dur;
@@ -64,7 +64,7 @@ typedef enum {
 } PsyCanvasSignal;
 
 typedef enum {
-    BACKGROUND_COLOR_VALUES = 1,
+    BACKGROUND_COLOR = 1,
     WIDTH,
     HEIGHT,
     WIDTH_MM,
@@ -91,9 +91,12 @@ psy_canvas_set_property(GObject      *object,
     case HEIGHT:
         psy_canvas_set_height(self, g_value_get_int(value));
         break;
-    case BACKGROUND_COLOR_VALUES:
-        psy_canvas_set_background_color(self, g_value_get_object(value));
-        break;
+    case BACKGROUND_COLOR:
+    {
+        PsyColor *color = g_value_get_object(value);
+        g_assert(PSY_IS_COLOR(color));
+        psy_canvas_set_background_color(self, color);
+    } break;
     case WIDTH_MM:
         psy_canvas_set_width_mm(self, g_value_get_int(value));
         break;
@@ -128,6 +131,9 @@ psy_canvas_get_property(GObject    *object,
     case WIDTH_MM:
         g_value_set_int(value, psy_canvas_get_width_mm(self));
         break;
+    case BACKGROUND_COLOR:
+        g_value_set_object(value, psy_canvas_get_background_color(self));
+        break;
     case HEIGHT_MM:
         g_value_set_int(value, psy_canvas_get_height_mm(self));
         break;
@@ -160,7 +166,7 @@ psy_canvas_init(PsyCanvas *self)
     priv->artists = g_hash_table_new_full(
         g_direct_hash, g_direct_equal, g_object_unref, g_object_unref);
 
-    priv->back_ground_color = psy_color_new_rgb(r, g, b);
+    priv->background_color = psy_color_new_rgb(r, g, b);
 
     // Assume a default frame dur based on 60Hz frame rate
     priv->frame_dur = psy_duration_new(1.0 / 60);
@@ -185,7 +191,7 @@ psy_canvas_dispose(GObject *gobject)
     g_clear_object(&priv->frame_dur);
     g_clear_object(&priv->context);
     g_clear_object(&priv->projection_matrix);
-    g_clear_object(&priv->back_ground_color);
+    g_clear_object(&priv->background_color);
 
     G_OBJECT_CLASS(psy_canvas_parent_class)->dispose(gobject);
 }
@@ -477,7 +483,7 @@ reset(PsyCanvas *self)
 
     const gfloat rgba[] = {0.5, 0.5, 0.5, 1.0};
     // clang-format off
-    g_object_set(priv->back_ground_color,
+    g_object_set(priv->background_color,
                  "r", rgba[0],
                  "g", rgba[1],
                  "b", rgba[2],
@@ -564,11 +570,12 @@ psy_canvas_class_init(PsyCanvasClass *klass)
      * the background color of the canvas. It is basically, an array of 4 floats
      * in RGBA format where the color values range between 0.0 and 1.0.
      */
-    obj_properties[BACKGROUND_COLOR_VALUES] = g_param_spec_pointer(
-        "bg-color-values",
-        "BackgroundColorValues",
-        "An array with 4 floats representing RGBA color of the background",
-        G_PARAM_READWRITE);
+    obj_properties[BACKGROUND_COLOR]
+        = g_param_spec_object("background-color",
+                              "BackgroundColor",
+                              "The color used as background for the canvas.",
+                              PSY_TYPE_COLOR,
+                              G_PARAM_READWRITE);
 
     /**
      * PsyCanvas:width-mm:
@@ -766,8 +773,8 @@ psy_canvas_set_background_color(PsyCanvas *self, PsyColor *color)
     g_return_if_fail(PSY_IS_CANVAS(self));
     PsyCanvasPrivate *priv = psy_canvas_get_instance_private(self);
 
-    g_clear_object(&priv->back_ground_color);
-    priv->back_ground_color = psy_color_dup(color);
+    g_clear_object(&priv->background_color);
+    priv->background_color = psy_color_dup(color);
 }
 
 /**
@@ -784,7 +791,7 @@ psy_canvas_get_background_color(PsyCanvas *self)
     g_return_val_if_fail(PSY_IS_CANVAS(self), NULL);
     PsyCanvasPrivate *priv = psy_canvas_get_instance_private(self);
 
-    return priv->back_ground_color;
+    return priv->background_color;
 }
 
 /**
