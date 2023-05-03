@@ -27,9 +27,10 @@ tear_down_gl_canvas_suite(void)
     return 0;
 }
 
-void
+static void
 gl_canvas_debug_message(PsyGlCanvas *self,
                         guint        source,
+                        guint        type,
                         guint        id,
                         guint        severity,
                         gchar       *message,
@@ -38,10 +39,11 @@ gl_canvas_debug_message(PsyGlCanvas *self,
                         gchar       *severity_str,
                         gpointer     user_data)
 {
+    (void) self;
     (void) source;
+    (void) type;
     (void) id;
     (void) severity;
-    (void) self;
 
     g_critical(
         "%s: OpenGl debug message: %s, source='%s', type='%s', severity='%s'",
