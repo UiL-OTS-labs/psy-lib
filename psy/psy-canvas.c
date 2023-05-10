@@ -462,12 +462,13 @@ set_projection_matrix(PsyCanvas *self, PsyMatrix4 *projection)
 static PsyImage *
 get_image(PsyCanvas *self)
 {
-    gint width, height, num_channels = 4;
+    gint width, height;
     width  = psy_canvas_get_width(self);
     height = psy_canvas_get_height(self);
-    width  = psy_canvas_get_width(self);
 
-    PsyImage *image = psy_image_new(width, height, num_channels);
+    PsyImageFormat format = PSY_IMAGE_FORMAT_RGBA;
+    PsyImage      *image  = psy_image_new(width, height, format);
+
     return image;
 }
 

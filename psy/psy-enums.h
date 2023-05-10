@@ -20,6 +20,38 @@ typedef enum {
 } PsyDrawingContextError;
 
 /**
+ * PsyImageFormat:
+ * @PSY_IMAGE_FORMAT_LUM:         a 1 byte per pixel corresponding with
+ *                                luminance each pixels is in the range 0-255.
+ * @PSY_IMAGE_FORMAT_RGB:         a 3 byte per pixel corresponding with RGB
+ *                                luminance
+ * @PSY_IMAGE_FORMAT_RGBA:        A 4 byte per pixel corresponding with the
+ *                                three channels for RGB and an alpha channel.
+ * @PSY_IMAGE_FORMAT_CAIRO_ARGB32:A format compatible with cairo's image
+ *                                CAIRO_FORMAT_ARGB32 each pixels occupies 32
+ *                                bit, the alpha channel comes first.
+ * @PSY_IMAGE_FORMAT_CAIRO_RGB24: A format compatible with cairo's image
+ *                                CAIRO_FORMAT_RGB24 each pixels occupies 32
+ *                                bit, but the first 8 bits are not used.
+ * @PSY_IMAGE_FORMAT_INVALID:     Don't use, it is returned on a error.
+ *
+ * This enumeration may be used to determine the image format of the
+ * If a channel for, red, green, blue or alpha exists it will be a 8 bit
+ * quantity ranging [0-255]. Generally, there are 8 bits per channel, however,
+ * in some cases https://www.cairograhpics.org is used to draw on a stimulus.
+ * Cairo has it's own image formats, notably in the RGB24 case a pixel still
+ * occupies 32 bits, but ignore the first 8 bits or or first byte.
+ */
+typedef enum {
+    PSY_IMAGE_FORMAT_LUM,
+    PSY_IMAGE_FORMAT_RGB,
+    PSY_IMAGE_FORMAT_RGBA,
+    PSY_IMAGE_FORMAT_CAIRO_ARGB32,
+    PSY_IMAGE_FORMAT_CAIRO_RGB24,
+    PSY_IMAGE_FORMAT_INVALID,
+} PsyImageFormat;
+
+/**
  * PsyLoopCondition:
  * @PSY_LOOP_CONDITION_LESS:  The loop continues while :
  *                            `PsyLoop:index` < `PsyLoop:stop`

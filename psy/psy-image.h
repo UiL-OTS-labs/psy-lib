@@ -3,6 +3,7 @@
 #include <glib-object.h>
 
 #include "psy-color.h"
+#include "psy-enums.h"
 
 G_BEGIN_DECLS
 
@@ -10,7 +11,7 @@ G_BEGIN_DECLS
 G_DECLARE_FINAL_TYPE(PsyImage, psy_image, PSY, IMAGE, GObject)
 
 G_MODULE_EXPORT PsyImage *
-psy_image_new(guint width, guint height, guint num_channels);
+psy_image_new(guint width, guint height, PsyImageFormat format);
 
 G_MODULE_EXPORT void
 psy_image_set_width(PsyImage *self, guint width);
@@ -56,6 +57,12 @@ psy_image_save_path(PsyImage    *self,
                     const gchar *path,
                     const gchar *type,
                     GError     **error);
+
+G_MODULE_EXPORT PsyImageFormat
+psy_image_get_format(PsyImage *self);
+
+G_MODULE_EXPORT void
+psy_image_set_format(PsyImage *self, PsyImageFormat format);
 
 guint8 *
 psy_image_get_ptr(PsyImage *self);
