@@ -64,6 +64,9 @@ psy_image_get_format(PsyImage *self);
 G_MODULE_EXPORT void
 psy_image_set_format(PsyImage *self, PsyImageFormat format);
 
+G_MODULE_EXPORT guint
+psy_image_pixel_num_bytes(PsyImage *self);
+
 guint8 *
 psy_image_get_ptr(PsyImage *self);
 

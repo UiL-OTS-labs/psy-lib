@@ -663,13 +663,15 @@ psy_image_get_format(PsyImage *self)
  *
  * See [enum@Psy.ImageFormat] for details.
  *
- * Returns the used memory layout of this image.
+ * Changing the format of an image will likely invalidate it's contents.
  */
 void
 psy_image_set_format(PsyImage *self, PsyImageFormat format)
 {
     g_return_if_fail(PSY_IS_IMAGE(self));
     g_return_if_fail(format != PSY_IMAGE_FORMAT_INVALID);
+
+    gsize after, start = psy_image_get_num_bytes(self);
 
     self->format = format;
     switch (format) {
@@ -687,4 +689,22 @@ psy_image_set_format(PsyImage *self, PsyImageFormat format)
     default:
         g_warn_if_reached();
     }
+
+    after = psy_image_get_num_bytes(self);
+    if (after != start)
+        psy_image_alloc(self, after);
+}
+
+/**
+ * psy_image_pixel_num_bytes:
+ * @self: an instance of [class@Image]
+ *
+ * Get the number of bytes that one pixel occupies
+ */
+guint
+psy_image_pixel_num_bytes(PsyImage *self)
+{
+    g_return_val_if_fail(PSY_IS_IMAGE(self), 0);
+
+    return self->bytes_per_pixel;
 }

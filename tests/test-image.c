@@ -79,6 +79,28 @@ test_image_create2(void)
     g_object_unref(img);
 }
 
+static void
+test_image_change_format(void)
+{
+    const guint WIDTH = 1280, HEIGHT = 640;
+
+    PsyImage *img = psy_image_new(WIDTH, HEIGHT, PSY_IMAGE_FORMAT_RGB);
+
+    CU_ASSERT_PTR_NOT_NULL_FATAL(img);
+
+    CU_ASSERT_EQUAL(psy_image_pixel_num_bytes(img), 3);
+    CU_ASSERT_EQUAL(psy_image_get_num_bytes(img),
+                    WIDTH * HEIGHT * psy_image_pixel_num_bytes(img));
+
+    psy_image_set_format(img, PSY_IMAGE_FORMAT_RGBA);
+
+    CU_ASSERT_EQUAL(psy_image_pixel_num_bytes(img), 4);
+    CU_ASSERT_EQUAL(psy_image_get_num_bytes(img),
+                    WIDTH * HEIGHT * psy_image_pixel_num_bytes(img));
+
+    g_object_unref(img);
+}
+
 int
 add_image_suite(void)
 {
@@ -92,6 +114,10 @@ add_image_suite(void)
         return 1;
 
     test = CU_add_test(suite, "Image Create2", test_image_create2);
+    if (!test)
+        return 1;
+
+    test = CU_ADD_TEST(suite, test_image_change_format);
     if (!test)
         return 1;
 
