@@ -85,7 +85,7 @@ canvas_size_vd(void)
         height_vd,
         2 * psy_radians_to_degrees(atan(height_mm / 2.0 / distance_mm)));
 
-    g_print("width_vd = %f\t height_vd = %f\n", width_vd, height_vd);
+    g_object_unref(canvas);
 }
 
 int
