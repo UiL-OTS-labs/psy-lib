@@ -195,6 +195,7 @@ psy_visual_stimulus_init(PsyVisualStimulus *self)
     priv->nth_frame   = 0;
     priv->num_frames  = -1;
     priv->start_frame = -1;
+    priv->color       = psy_color_new();
 }
 
 static void

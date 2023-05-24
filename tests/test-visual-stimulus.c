@@ -173,7 +173,8 @@ circle_area(gdouble radius)
 static void
 vstim_default_values(void)
 {
-    PsyCircle *circle = psy_circle_new(PSY_CANVAS(g_canvas));
+    PsyCircle *circle        = psy_circle_new(PSY_CANVAS(g_canvas));
+    PsyColor  *default_color = psy_color_new();
 
     CU_ASSERT_PTR_NOT_NULL_FATAL(circle);
 
@@ -201,9 +202,11 @@ vstim_default_values(void)
 
     PsyColor *color
         = psy_visual_stimulus_get_color(PSY_VISUAL_STIMULUS(circle));
-    CU_ASSERT_PTR_NULL(color);
+    CU_ASSERT_PTR_NOT_NULL_FATAL(color);
+    CU_ASSERT_TRUE(psy_color_equal(default_color, color));
 
     g_object_unref(circle);
+    g_object_unref(default_color);
 }
 
 static void
