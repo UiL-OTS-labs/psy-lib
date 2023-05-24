@@ -4,6 +4,7 @@
 #include <glm/gtx/string_cast.hpp>
 #include <string>
 
+#include "psy-matrix4-private.h"
 #include "psy-vector4.h"
 
 typedef struct _PsyVector4 {
@@ -442,6 +443,28 @@ psy_vector4_mul(PsyVector4 *self, PsyVector4 *other)
 }
 
 /**
+ * psy_vector4_mul_matrix4:
+ * @self: an instance of [class@Vector4]
+ * @other: an instance of [class@Matrix4]
+ *
+ * performs vector matrix multiplication of a vector with length = 4 with a
+ * matrix with a 4*4 size.
+ *
+ * Returns:(transfer full): The result of
+ */
+PsyVector4 *
+psy_vector4_mul_matrix4(PsyVector4 *self, PsyMatrix4 *other)
+{
+    g_return_val_if_fail(PSY_IS_VECTOR4(self), NULL);
+    g_return_val_if_fail(PSY_IS_MATRIX4(other), NULL);
+
+    PsyVector4 *ret = PSY_VECTOR4(psy_vector4_new());
+
+    *ret->vector = (*self->vector) * (psy_matrix4_get_priv_reference(other));
+    return ret;
+}
+
+/**
  * psy_vector4_dot:
  * @self: A instance of `PsyVector4` to be scaled by @scalar
  * @other: The factor to scale @self with
@@ -549,6 +572,12 @@ psy_vector4_set_values(PsyVector4 *self, GArray *array)
         (*self->vector)[i] = in[i];
 }
 
+/**
+ * psy_vector4_as_string:
+ * @self: an instance of [class@Vector4]
+ *
+ * Returns: (transfer full): a string representation of @self
+ */
 gchar *
 psy_vector4_as_string(PsyVector4 *self)
 {
@@ -556,4 +585,34 @@ psy_vector4_as_string(PsyVector4 *self)
 
     std::string output = glm::to_string(*self->vector);
     return g_strdup(output.c_str());
+}
+
+/*
+ * private functions
+ *
+ * see psy-vector4-private.h
+ */
+
+/**
+ * psy_vector4_get_priv_reference:(skip)
+ *
+ * Returns: the private implementation of the vector a glm::vec4
+ */
+glm::vec4&
+psy_vector4_get_priv_reference(PsyVector4 *self)
+{
+    g_assert(PSY_IS_VECTOR4(self));
+
+    return *self->vector;
+}
+
+/**
+ * psy_vector4_get_priv_pointer:(skip)
+ */
+glm::vec4 *
+psy_vector4_get_priv_pointer(PsyVector4 *self)
+{
+    g_assert(PSY_IS_VECTOR4(self));
+
+    return self->vector;
 }
