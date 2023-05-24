@@ -210,6 +210,15 @@ visual_stimulus_update(PsyVisualStimulus *self,
 }
 
 static void
+visual_stimulus_set_color(PsyVisualStimulus *self, PsyColor *color)
+{
+    PsyVisualStimulusPrivate *priv
+        = psy_visual_stimulus_get_instance_private(self);
+    g_clear_object(&priv->color);
+    priv->color = psy_color_dup(color);
+}
+
+static void
 visual_stimulus_play(PsyStimulus *stimulus, PsyTimePoint *start_time)
 {
     PsyVisualStimulus *vstim = PSY_VISUAL_STIMULUS(stimulus);
@@ -254,7 +263,8 @@ psy_visual_stimulus_class_init(PsyVisualStimulusClass *klass)
     stimulus_class->play             = visual_stimulus_play;
     stimulus_class->set_duration     = visual_stimulus_set_duration;
 
-    klass->update = visual_stimulus_update;
+    klass->update    = visual_stimulus_update;
+    klass->set_color = visual_stimulus_set_color;
 
     /**
      * PsyVisualStimulus:canvas:
@@ -930,13 +940,10 @@ psy_visual_stimulus_get_color(PsyVisualStimulus *self)
 void
 psy_visual_stimulus_set_color(PsyVisualStimulus *self, PsyColor *color)
 {
-    PsyVisualStimulusPrivate *priv
-        = psy_visual_stimulus_get_instance_private(self);
-
     g_return_if_fail(PSY_IS_VISUAL_STIMULUS(self) && PSY_IS_COLOR(color));
 
-    g_clear_object(&priv->color);
-    priv->color = psy_color_dup(color);
+    PsyVisualStimulusClass *cls = PSY_VISUAL_STIMULUS_GET_CLASS(self);
+    cls->set_color(self, color);
 }
 
 /**
