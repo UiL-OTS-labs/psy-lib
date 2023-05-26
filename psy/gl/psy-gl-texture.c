@@ -285,51 +285,6 @@ psy_gl_texture_upload_image(PsyTexture *self, PsyImage *image, GError **error)
                      GL_RGB,
                      GL_UNSIGNED_BYTE,
                      psy_image_get_ptr(image));
-    else if (PSY_IMAGE_FORMAT_CAIRO_RGB24) {
-        guint8       *data       = g_malloc(width * height * 3);
-        const guint8 *img_data   = psy_image_get_ptr(image);
-        gsize         num_pixels = width * height;
-        guint8       *ptr_out    = data;
-        const guint8 *ptr_in     = img_data;
-        for (; ptr_in < img_data + num_pixels * 4; ptr_out += 3, ptr_in += 4) {
-            ptr_out[0] = ptr_in[1];
-            ptr_out[1] = ptr_in[2];
-            ptr_out[2] = ptr_in[3];
-        }
-        glTexImage2D(GL_TEXTURE_2D,
-                     0,
-                     GL_RGB,
-                     width,
-                     height,
-                     0,
-                     GL_RGB,
-                     GL_UNSIGNED_BYTE,
-                     data);
-        g_free(data);
-    }
-    else if (PSY_IMAGE_FORMAT_CAIRO_ARGB32) {
-        guint8       *data       = g_malloc(width * height * 4);
-        const guint8 *img_data   = psy_image_get_ptr(image);
-        gsize         num_pixels = width * height;
-        guint8       *ptr_out    = data;
-        const guint8 *ptr_in     = img_data;
-        for (; ptr_in < img_data + num_pixels * 4; ptr_out += 4, ptr_in += 4) {
-            ptr_out[0] = ptr_in[1];
-            ptr_out[1] = ptr_in[2];
-            ptr_out[2] = ptr_in[3];
-            ptr_out[3] = ptr_in[0];
-        }
-        glTexImage2D(GL_TEXTURE_2D,
-                     0,
-                     GL_RGBA,
-                     width,
-                     height,
-                     0,
-                     GL_RGBA,
-                     GL_UNSIGNED_BYTE,
-                     data);
-        g_free(data);
-    }
     else {
         g_assert_not_reached();
     };

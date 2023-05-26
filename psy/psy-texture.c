@@ -171,11 +171,9 @@ texture_upload_image(PsyTexture *self, PsyImage *img, GError **error)
         priv->image.num_channels = 1;
         break;
     case PSY_IMAGE_FORMAT_RGB:
-    case PSY_IMAGE_FORMAT_CAIRO_RGB24:
         priv->image.num_channels = 3;
         break;
     case PSY_IMAGE_FORMAT_RGBA:
-    case PSY_IMAGE_FORMAT_CAIRO_ARGB32:
         priv->image.num_channels = 4;
         break;
     case PSY_IMAGE_FORMAT_INVALID:
@@ -632,7 +630,7 @@ psy_texture_upload_image(PsyTexture *self, PsyImage *image, GError **error)
 {
     g_return_if_fail(PSY_IS_TEXTURE(self));
     g_return_if_fail(PSY_IS_IMAGE(image));
-    g_return_if_fail(error == NULL || *error != NULL);
+    g_return_if_fail(error == NULL || *error == NULL);
 
     PsyTextureClass *cls = PSY_TEXTURE_GET_CLASS(self);
     cls->upload_image(self, image, error);

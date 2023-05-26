@@ -27,12 +27,6 @@ typedef enum {
  *                                luminance
  * @PSY_IMAGE_FORMAT_RGBA:        A 4 byte per pixel corresponding with the
  *                                three channels for RGB and an alpha channel.
- * @PSY_IMAGE_FORMAT_CAIRO_ARGB32:A format compatible with cairo's image
- *                                CAIRO_FORMAT_ARGB32 each pixels occupies 32
- *                                bit, the alpha channel comes first.
- * @PSY_IMAGE_FORMAT_CAIRO_RGB24: A format compatible with cairo's image
- *                                CAIRO_FORMAT_RGB24 each pixels occupies 32
- *                                bit, but the first 8 bits are not used.
  * @PSY_IMAGE_FORMAT_INVALID:     Don't use, it is returned on a error.
  *
  * This enumeration may be used to determine the image format of the
@@ -46,8 +40,6 @@ typedef enum {
     PSY_IMAGE_FORMAT_LUM,
     PSY_IMAGE_FORMAT_RGB,
     PSY_IMAGE_FORMAT_RGBA,
-    PSY_IMAGE_FORMAT_CAIRO_ARGB32,
-    PSY_IMAGE_FORMAT_CAIRO_RGB24,
     PSY_IMAGE_FORMAT_INVALID,
 } PsyImageFormat;
 
