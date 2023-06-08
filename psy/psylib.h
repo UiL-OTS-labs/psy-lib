@@ -28,6 +28,8 @@
 #include "psy-step.h"
 #include "psy-stepping-stones.h"
 #include "psy-stimulus.h"
+#include "psy-text-artist.h"
+#include "psy-text.h"
 #include "psy-texture.h"
 #include "psy-time-point.h"
 #include "psy-trial.h"

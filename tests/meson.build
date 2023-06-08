@@ -45,6 +45,7 @@ unit_test = executable (
         'test-parallel.c',
         'test-ref-count.c',
         'test-stepping.c',
+        'test-text.c',
         'test-time-utilities.c',
         'test-visual-stimulus.c',
         'unit-test-utilities.c',

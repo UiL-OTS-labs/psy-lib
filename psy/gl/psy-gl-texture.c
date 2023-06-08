@@ -224,8 +224,10 @@ psy_gl_texture_upload_image(PsyTexture *self, PsyImage *image, GError **error)
                     num_channels);
     }
 
-    if (gl_self->object_id)
+    if (gl_self->object_id) {
         glDeleteTextures(1, &gl_self->object_id);
+        gl_self->object_id = 0;
+    }
 
     glGenTextures(1, &gl_self->object_id);
     if (psy_gl_check_error(error))
@@ -238,6 +240,7 @@ psy_gl_texture_upload_image(PsyTexture *self, PsyImage *image, GError **error)
     glBindTexture(GL_TEXTURE_2D, gl_self->object_id);
     if (psy_gl_check_error(error))
         return;
+
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     if (psy_gl_check_error(error))
         return;
@@ -278,11 +281,11 @@ psy_gl_texture_upload_image(PsyTexture *self, PsyImage *image, GError **error)
     else if (format == PSY_IMAGE_FORMAT_RGBA)
         glTexImage2D(GL_TEXTURE_2D,
                      0,
-                     GL_RGB,
+                     GL_RGBA,
                      width,
                      height,
                      0,
-                     GL_RGB,
+                     GL_RGBA,
                      GL_UNSIGNED_BYTE,
                      psy_image_get_ptr(image));
     else {

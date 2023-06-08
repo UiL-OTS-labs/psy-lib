@@ -29,6 +29,4 @@ psy_enumerate_font_families(gchar ***families, gsize *n)
         ret[i]          = g_strdup(fam);
     }
     *families = ret;
-
-    g_free(families);
 }

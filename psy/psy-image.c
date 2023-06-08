@@ -365,11 +365,9 @@ psy_image_get_num_channels(PsyImage *self)
         n = 1;
         break;
     case PSY_IMAGE_FORMAT_RGB:
-    case PSY_IMAGE_FORMAT_CAIRO_RGB24: // note 4 bytes per pixel but 3 are used.
         n = 3;
         break;
     case PSY_IMAGE_FORMAT_RGBA:
-    case PSY_IMAGE_FORMAT_CAIRO_ARGB32:
         n = 4;
         break;
     case PSY_IMAGE_FORMAT_INVALID:
@@ -447,9 +445,7 @@ psy_image_clear(PsyImage *self, PsyColor *color)
 
     guint8 *data = self->image_data;
     if (self->format != PSY_IMAGE_FORMAT_RGB
-        && self->format != PSY_IMAGE_FORMAT_RGBA
-        && self->format != PSY_IMAGE_FORMAT_CAIRO_RGB24
-        && self->format != PSY_IMAGE_FORMAT_CAIRO_ARGB32) {
+        && self->format != PSY_IMAGE_FORMAT_RGBA) {
         g_critical(
             "Clearing an image with this format is currently not supported");
         return;
@@ -469,17 +465,6 @@ psy_image_clear(PsyImage *self, PsyColor *color)
             data[0] = (gint8) CLAMP(r, 0, 255);
             data[1] = (gint8) CLAMP(g, 0, 255);
             data[2] = (gint8) CLAMP(b, 0, 255);
-            break;
-        case PSY_IMAGE_FORMAT_CAIRO_ARGB32:
-            data[0] = (gint8) CLAMP(a, 0, 255);
-            data[1] = (gint8) CLAMP(r, 0, 255);
-            data[2] = (gint8) CLAMP(g, 0, 255);
-            data[3] = (gint8) CLAMP(b, 0, 255);
-            break;
-        case PSY_IMAGE_FORMAT_CAIRO_RGB24:
-            data[1] = (gint8) CLAMP(r, 0, 255);
-            data[2] = (gint8) CLAMP(g, 0, 255);
-            data[3] = (gint8) CLAMP(b, 0, 255);
             break;
         default:
             g_warn_if_reached(); // unsupported format
@@ -682,8 +667,6 @@ psy_image_set_format(PsyImage *self, PsyImageFormat format)
         self->bytes_per_pixel = 3;
         break;
     case PSY_IMAGE_FORMAT_RGBA:
-    case PSY_IMAGE_FORMAT_CAIRO_ARGB32:
-    case PSY_IMAGE_FORMAT_CAIRO_RGB24:
         self->bytes_per_pixel = 4;
         break;
     default:
