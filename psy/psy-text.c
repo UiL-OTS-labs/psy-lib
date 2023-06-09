@@ -552,8 +552,8 @@ psy_text_draw_stimulus(PsyText *text, PsyImage *img)
 
     pango_context_set_base_gravity(context, PANGO_GRAVITY_AUTO);
     g_print("width = %d    height = %d\n", width, height);
-    pango_layout_set_width(layout, width);
-    pango_layout_set_height(layout, height);
+    pango_layout_set_width(layout, width * PANGO_SCALE);
+    pango_layout_set_height(layout, height * PANGO_SCALE);
     g_print("width = %d    height = %d\n",
             pango_layout_get_width(layout),
             pango_layout_get_height(layout));
