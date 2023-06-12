@@ -8,17 +8,17 @@ PsyClock     *clk;
 PsyTimePoint *g_tstart = NULL;
 PsyTimePoint *g_tstop  = NULL;
 
-const gchar *g_markup_text = "<markup>"
-                             "<span font_desc=\"Dejavu Sans Mono 25\">"
-                             "Hello,"
+const gchar *g_markup_text = "<span font_desc=\"Dejavu Sans Mono 25\">"
+                             "Hello, "
                              "</span>"
                              "<span foreground=\"red\">"
                              "World<span font_desc=\"Dejavu Sans 32\" "
                              "background=\"yellow\">!<i>!</i>!</span>"
-                             "</span>"
-                             "</markup>";
+                             "</span> "
+                             "And this <b>text</b> continues for a bit";
 
-const char *g_no_markup_text = "Hello, World!";
+const char *g_no_markup_text = "Hello, World! We are checking whether "
+                               "this line wraps.";
 
 // related to option parsing
 gint    n_monitor;

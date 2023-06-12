@@ -75,10 +75,8 @@ text_artist_draw(PsyArtist *self)
     gboolean    store_vertices = FALSE;
     const guint num_vertices   = 4;
 
-    PsyTextArtist     *artist  = PSY_TEXT_ARTIST(self);
-    PsyText           *text    = PSY_TEXT(psy_artist_get_stimulus(self));
-    PsyCanvas         *canvas  = psy_artist_get_canvas(self);
-    PsyDrawingContext *context = psy_canvas_get_context(canvas);
+    PsyTextArtist *artist = PSY_TEXT_ARTIST(self);
+    PsyText       *text   = PSY_TEXT(psy_artist_get_stimulus(self));
 
     // clang-format off
     g_object_get(text,
