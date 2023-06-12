@@ -330,7 +330,7 @@ PsyColor *
 psy_color_new_rgb(gfloat r, gfloat g, gfloat b)
 {
 
-    return psy_color_new_rgba(r, b, g, 1.0);
+    return psy_color_new_rgba(r, g, b, 1.0);
 }
 
 /**

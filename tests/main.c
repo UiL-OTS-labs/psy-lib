@@ -63,6 +63,10 @@ add_suites_to_registry(void)
     if (error)
         return error;
 
+    error = add_text_suite();
+    if (error)
+        return error;
+
     error = add_time_utilities_suite();
     if (error)
         return error;

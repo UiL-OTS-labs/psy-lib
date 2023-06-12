@@ -4,6 +4,7 @@
 
 #include "psy-matrix4.h"
 #include "psy-vector3-private.h"
+#include "psy-vector4-private.h"
 
 /**
  * PsyMatrix4:
@@ -425,7 +426,30 @@ psy_matrix4_mul(PsyMatrix4 *self, PsyMatrix4 *other)
 
     PsyMatrix4 *ret = psy_matrix4_new();
 
-    *ret->matrix = (*self->matrix) - (*other->matrix);
+    *ret->matrix = (*self->matrix) * (*other->matrix);
+    return ret;
+}
+
+/**
+ * psy_matrix4_mul_vec4:
+ * @self: an instance of [class@Matrix4]
+ * @rhs: an instance pf [class@Vector4] to multiply with
+ *
+ * Performs matrix vector multiplication
+ *
+ * Returns:(transfer full): A newly inialized [class@Psy.Vector4]
+ *         that is the result of self * rhs.
+ */
+PsyVector4 *
+psy_matrix4_mul_vec4(PsyMatrix4 *self, PsyVector4 *rhs)
+{
+    g_return_val_if_fail(PSY_IS_MATRIX4(self), NULL);
+    g_return_val_if_fail(PSY_IS_MATRIX4(self), NULL);
+
+    PsyVector4 *ret = psy_vector4_new();
+    psy_vector4_get_priv_reference(ret)
+        = *self->matrix * psy_vector4_get_priv_reference(rhs);
+
     return ret;
 }
 
@@ -583,4 +607,52 @@ psy_matrix4_translate(PsyMatrix4 *self, PsyVector3 *vector)
 
     const glm::vec3& vec = psy_vector3_get_priv_reference(vector);
     *self->matrix        = glm::translate(*self->matrix, vec);
+}
+
+/**
+ * psy_matrix4_inverse:
+ * @self: An instance of [class@Matrix4]
+ *
+ * Obtain the inverse matrix of oneself if M is an matrix it returns M^-1.
+ *
+ * Returns:(transfer full): The inverse of @self.
+ */
+PsyMatrix4 *
+psy_matrix4_inverse(PsyMatrix4 *self)
+{
+    g_return_val_if_fail(PSY_IS_MATRIX4(self), NULL);
+
+    PsyMatrix4 *ret = psy_matrix4_new();
+    *ret->matrix    = glm::inverse(*self->matrix);
+    return ret;
+}
+
+/*
+ * Private functions exported in psy-matrix4-private.h
+ */
+
+/**
+ * psy_matrix4_get_priv_reference:(skip)
+ *
+ * Returns: the private implementation of the matrix a glm::mat4
+ */
+glm::mat4&
+psy_matrix4_get_priv_reference(PsyMatrix4 *self)
+{
+    g_assert(PSY_IS_MATRIX4(self));
+
+    return *self->matrix;
+}
+
+/**
+ * psy_matrix4_get_priv_pointer:(skip)
+ *
+ * Returns: the private implementation of the matrix a glm::mat4 as pointer
+ */
+glm::mat4 *
+psy_matrix4_get_priv_pointer(PsyMatrix4 *self)
+{
+    g_return_val_if_fail(PSY_IS_MATRIX4(self), NULL);
+
+    return self->matrix;
 }

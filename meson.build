@@ -62,6 +62,10 @@ gtk_dep = dependency(
 # OpenGL function loader helper
 epoxy_dep = dependency('epoxy', version : '>1.0')
 
+cairo_dep = dependency('cairo', version : '>1.0')
+pango_dep = dependency('pango', version : '>1.0')
+pangocairo_dep = dependency('pangocairo', version : '>1.0')
+
 gnome = import('gnome')
 
 subdir('psy')
@@ -75,6 +79,7 @@ psy_dep = declare_dependency(
 )
 
 subdir('tests')
+subdir('programs')
 
 if get_option('documentation')
     subdir('doc')

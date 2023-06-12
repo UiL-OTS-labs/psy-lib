@@ -1,6 +1,7 @@
 
 #include <gdk-pixbuf/gdk-pixbuf.h>
 
+#include "enum-types.h"
 #include "psy-image.h"
 
 /**
@@ -20,10 +21,11 @@
  */
 
 typedef struct _PsyImage {
-    GObject parent;
-    guint   width, height;
-    guint   num_channnels;
-    guint8 *image_data;
+    GObject        parent;
+    guint          width, height;
+    PsyImageFormat format;
+    guint          bytes_per_pixel;
+    guint8        *image_data;
 } PsyImage;
 
 G_DEFINE_FINAL_TYPE(PsyImage, psy_image, G_TYPE_OBJECT)
@@ -35,6 +37,7 @@ typedef enum ImageProperty {
     PROP_NUM_CHANNELS,
     PROP_NUM_BYTES,
     PROP_STRIDE,
+    PROP_FORMAT,
     NUM_PROPS,
 } ImageProperty;
 
@@ -55,8 +58,8 @@ psy_image_set_property(GObject      *object,
     case PROP_HEIGHT:
         psy_image_set_height(self, g_value_get_uint(value));
         break;
-    case PROP_NUM_CHANNELS:
-        psy_image_set_num_channels(self, g_value_get_uint(value));
+    case PROP_FORMAT:
+        psy_image_set_format(self, g_value_get_enum(value));
         break;
     default:
         /* We don't have any other property... */
@@ -81,13 +84,16 @@ psy_image_get_property(GObject    *object,
         g_value_set_uint(value, self->height);
         break;
     case PROP_NUM_CHANNELS:
-        g_value_set_uint(value, self->num_channnels);
+        g_value_set_uint(value, psy_image_get_num_channels(self));
         break;
     case PROP_NUM_BYTES:
         g_value_set_uint64(value, psy_image_get_num_bytes(self));
         break;
     case PROP_STRIDE:
         g_value_set_uint(value, psy_image_get_stride(self));
+        break;
+    case PROP_FORMAT:
+        g_value_set_enum(value, psy_image_get_format(self));
         break;
     default:
         /* We don't have any other property... */
@@ -115,7 +121,7 @@ static guint8 *
 image_get_pixel(PsyImage *self, guint row, guint column)
 {
     guint stride = psy_image_get_stride(self);
-    return self->image_data + ((row * stride) + column * self->num_channnels);
+    return self->image_data + ((row * stride) + column * self->bytes_per_pixel);
 }
 
 static void
@@ -187,7 +193,7 @@ psy_image_class_init(PsyImageClass *klass)
                             1,
                             4,
                             4,
-                            G_PARAM_READWRITE);
+                            G_PARAM_READABLE);
 
     /**
      * PsyImage:num-bytes:
@@ -218,6 +224,19 @@ psy_image_class_init(PsyImageClass *klass)
                             0,
                             G_PARAM_READABLE);
 
+    /**
+     * PsyImage:format
+     *
+     * Describes the memory format of the image.
+     */
+    properties[PROP_FORMAT]
+        = g_param_spec_enum("format",
+                            "Format",
+                            "The descriptor for the layout in memory.",
+                            PSY_TYPE_IMAGE_FORMAT,
+                            PSY_IMAGE_FORMAT_RGB,
+                            G_PARAM_CONSTRUCT | G_PARAM_READWRITE);
+
     g_object_class_install_properties(obj_klass, NUM_PROPS, properties);
 }
 
@@ -226,8 +245,8 @@ psy_image_class_init(PsyImageClass *klass)
 /**
  * psy_image_new:(constructor)
  * @width: the desired width of the image
- * @height: the desired hegith of the image
- * @num_channels: The number of channels of the image.
+ * @height: the desired height of the image
+ * @format: The desired memory format of the image.
  *
  * Create a new instance of PsyImage, with the specified dimensions in
  * pixels. For the num_channels see [method@Psy.Image.set_num_channels]
@@ -235,13 +254,13 @@ psy_image_class_init(PsyImageClass *klass)
  * Returns: a new instance of PsyImage.
  */
 PsyImage *
-psy_image_new(guint width, guint height, guint num_channnels)
+psy_image_new(guint width, guint height, PsyImageFormat format)
 {
     // clang-format off
     return g_object_new(PSY_TYPE_IMAGE,
                         "width", width,
                         "height", height,
-                        "num-channels", num_channnels,
+                        "format", format,
                         NULL);
     // clang-format on
 }
@@ -327,43 +346,36 @@ psy_image_get_height(PsyImage *self)
 }
 
 /**
- * psy_image_set_num_channels:
- * @self: an instance of [class@PsyImage]
- * @num_channels: should be 1,3 or 4 for grayscale/luminance, RGB or RGBA
- *
- * Set the number of channels in the picture
- */
-void
-psy_image_set_num_channels(PsyImage *self, guint num_channels)
-{
-    g_return_if_fail(PSY_IS_IMAGE(self));
-    g_return_if_fail(num_channels == 1 || num_channels == 3
-                     || num_channels == 4);
-
-    gsize after, start = psy_image_get_num_bytes(self);
-
-    self->num_channnels = num_channels;
-    after               = psy_image_get_num_bytes(self);
-
-    if (after != start) {
-        psy_image_alloc(self, after);
-    }
-}
-
-/**
  * psy_image_get_num_channels:
  *
  * Return the number of channels (values per pixels)
  * 1, would be grayscale, 3 would be RGB and 4 RGBA
  *
- * Returns: the number of channels
+ * Returns: the number of channels or 0 in case of error
  */
 guint
 psy_image_get_num_channels(PsyImage *self)
 {
     g_return_val_if_fail(PSY_IS_IMAGE(self), 0);
 
-    return self->num_channnels;
+    guint n = 0;
+
+    switch (self->format) {
+    case PSY_IMAGE_FORMAT_LUM:
+        n = 1;
+        break;
+    case PSY_IMAGE_FORMAT_RGB:
+        n = 3;
+        break;
+    case PSY_IMAGE_FORMAT_RGBA:
+        n = 4;
+        break;
+    case PSY_IMAGE_FORMAT_INVALID:
+    default:
+        n = 0;
+    }
+
+    return n;
 }
 
 /**
@@ -391,7 +403,7 @@ psy_image_get_stride(PsyImage *self)
 {
     g_return_val_if_fail(PSY_IS_IMAGE(self), 0);
 
-    return self->num_channnels * self->width;
+    return self->bytes_per_pixel * self->width;
 }
 
 /**
@@ -432,28 +444,30 @@ psy_image_clear(PsyImage *self, PsyColor *color)
     a = psy_color_get_alphai(color);
 
     guint8 *data = self->image_data;
-    if (self->num_channnels != 3 && self->num_channnels != 4) {
+    if (self->format != PSY_IMAGE_FORMAT_RGB
+        && self->format != PSY_IMAGE_FORMAT_RGBA) {
         g_critical(
-            "Clearing an image with %d channels is currently not supported",
-            self->num_channnels);
+            "Clearing an image with this format is currently not supported");
         return;
     }
 
     for (data = self->image_data;
          data < self->image_data + psy_image_get_num_bytes(self);
-         data += self->num_channnels) {
-        switch (self->num_channnels) {
-        case 4:
+         data += self->bytes_per_pixel) {
+        switch (self->format) {
+        case PSY_IMAGE_FORMAT_RGBA:
             data[0] = (gint8) CLAMP(r, 0, 255);
             data[1] = (gint8) CLAMP(g, 0, 255);
             data[2] = (gint8) CLAMP(b, 0, 255);
             data[3] = (gint8) CLAMP(a, 0, 255);
             break;
-        case 3:
+        case PSY_IMAGE_FORMAT_RGB:
             data[0] = (gint8) CLAMP(r, 0, 255);
             data[1] = (gint8) CLAMP(g, 0, 255);
             data[2] = (gint8) CLAMP(b, 0, 255);
             break;
+        default:
+            g_warn_if_reached(); // unsupported format
         }
     }
 }
@@ -481,15 +495,16 @@ psy_image_set_pixel(PsyImage *self, guint row, guint column, PsyColor *color)
     g_return_if_fail(row < self->height);
     g_return_if_fail(column < self->width);
 
-    g_return_if_fail(self->num_channnels == 3 || self->num_channnels == 4);
+    g_return_if_fail(self->format == PSY_IMAGE_FORMAT_RGB
+                     || self->format == PSY_IMAGE_FORMAT_RGBA);
 
     guint8 *pixel = image_get_pixel(self, row, column);
 
     pixel[0] = psy_color_get_redi(color);
-    pixel[1] = psy_color_get_redi(color);
-    pixel[2] = psy_color_get_redi(color);
-    if (self->num_channnels == 4)
-        pixel[3] = psy_color_get_redi(color);
+    pixel[1] = psy_color_get_greeni(color);
+    pixel[2] = psy_color_get_bluei(color);
+    if (self->format == PSY_IMAGE_FORMAT_RGBA)
+        pixel[3] = psy_color_get_alphai(color);
 }
 
 /**
@@ -514,14 +529,17 @@ psy_image_get_pixel(PsyImage *self, guint row, guint column)
     g_return_val_if_fail(row < self->height, NULL);
     g_return_val_if_fail(column < self->width, NULL);
 
-    g_return_val_if_fail(self->num_channnels == 3 || self->num_channnels == 4,
+    g_return_val_if_fail(self->format == PSY_IMAGE_FORMAT_RGB
+                             || self->format == PSY_IMAGE_FORMAT_RGBA,
                          NULL);
 
     guint8 *pixel = image_get_pixel(self, row, column);
-    if (self->num_channnels == 3)
+    if (self->format == PSY_IMAGE_FORMAT_RGB)
         color = psy_color_new_rgbi(pixel[0], pixel[1], pixel[2]);
-    else
+    else if (self->format == PSY_IMAGE_FORMAT_RGBA)
         color = psy_color_new_rgbai(pixel[0], pixel[1], pixel[2], pixel[3]);
+    else
+        g_warning("Unsupported pixel format for this operation");
 
     return color;
 }
@@ -542,9 +560,15 @@ psy_image_save(PsyImage *self, GFile *file, const gchar *type, GError **error)
     g_return_val_if_fail(G_IS_FILE(file), FALSE);
     g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
 
+    g_return_val_if_fail(self->format == PSY_IMAGE_FORMAT_RGB
+                             || self->format == PSY_IMAGE_FORMAT_RGBA,
+                         FALSE);
+
+    gboolean has_alpha = self->format == PSY_IMAGE_FORMAT_RGBA;
+
     GdkPixbuf *pixbuf = gdk_pixbuf_new_from_data(psy_image_get_ptr(self),
                                                  GDK_COLORSPACE_RGB,
-                                                 TRUE,
+                                                 has_alpha,
                                                  8,
                                                  psy_image_get_width(self),
                                                  psy_image_get_height(self),
@@ -599,4 +623,71 @@ psy_image_get_ptr(PsyImage *self)
     g_return_val_if_fail(PSY_IS_IMAGE(self), NULL);
 
     return self->image_data;
+}
+
+/**
+ * psy_image_get_format:
+ * @self: an instance of [class@Image]
+ *
+ * See [enum@Psy.ImageFormat] for details.
+ *
+ * Returns the used memory layout of this image.
+ */
+PsyImageFormat
+psy_image_get_format(PsyImage *self)
+{
+    g_return_val_if_fail(PSY_IS_IMAGE(self), PSY_IMAGE_FORMAT_INVALID);
+
+    return self->format;
+}
+
+/**
+ * psy_image_set_format:
+ * @self: an instance of [class@Image]
+ * @format: The desired format of this picture
+ *
+ * See [enum@Psy.ImageFormat] for details.
+ *
+ * Changing the format of an image will likely invalidate it's contents.
+ */
+void
+psy_image_set_format(PsyImage *self, PsyImageFormat format)
+{
+    g_return_if_fail(PSY_IS_IMAGE(self));
+    g_return_if_fail(format != PSY_IMAGE_FORMAT_INVALID);
+
+    gsize after, start = psy_image_get_num_bytes(self);
+
+    self->format = format;
+    switch (format) {
+    case PSY_IMAGE_FORMAT_LUM:
+        self->bytes_per_pixel = 1;
+        break;
+    case PSY_IMAGE_FORMAT_RGB:
+        self->bytes_per_pixel = 3;
+        break;
+    case PSY_IMAGE_FORMAT_RGBA:
+        self->bytes_per_pixel = 4;
+        break;
+    default:
+        g_warn_if_reached();
+    }
+
+    after = psy_image_get_num_bytes(self);
+    if (after != start)
+        psy_image_alloc(self, after);
+}
+
+/**
+ * psy_image_pixel_num_bytes:
+ * @self: an instance of [class@Image]
+ *
+ * Get the number of bytes that one pixel occupies
+ */
+guint
+psy_image_pixel_num_bytes(PsyImage *self)
+{
+    g_return_val_if_fail(PSY_IS_IMAGE(self), 0);
+
+    return self->bytes_per_pixel;
 }

@@ -101,7 +101,7 @@ psy_gl_texture_upload(PsyTexture *self, GError **error)
                     "The width of the texture is %u",
                     width);
     }
-    if (!width) {
+    if (!height) {
         g_set_error(error,
                     PSY_TEXTURE_ERROR,
                     PSY_TEXTURE_ERROR_FAILED,
@@ -188,6 +188,120 @@ psy_gl_texture_upload(PsyTexture *self, GError **error)
     gl_self->is_uploaded = TRUE;
 }
 
+static void
+psy_gl_texture_upload_image(PsyTexture *self, PsyImage *image, GError **error)
+{
+    PsyGlTexture *gl_self = PSY_GL_TEXTURE(self);
+
+    PSY_TEXTURE_CLASS(psy_gl_texture_parent_class)
+        ->upload_image(self, image, error);
+    if (*error)
+        return;
+
+    gint  width        = (int) psy_texture_get_width(self);
+    gint  height       = (int) psy_texture_get_height(self);
+    guint num_channels = psy_texture_get_num_channels(self);
+
+    if (!width) {
+        g_set_error(error,
+                    PSY_TEXTURE_ERROR,
+                    PSY_TEXTURE_ERROR_FAILED,
+                    "The width of the texture is %u",
+                    width);
+    }
+    if (!height) {
+        g_set_error(error,
+                    PSY_TEXTURE_ERROR,
+                    PSY_TEXTURE_ERROR_FAILED,
+                    "The height of the texture is %u",
+                    height);
+    }
+    if (!num_channels) {
+        g_set_error(error,
+                    PSY_TEXTURE_ERROR,
+                    PSY_TEXTURE_ERROR_FAILED,
+                    "The the texture num channels is %u",
+                    num_channels);
+    }
+
+    if (gl_self->object_id) {
+        glDeleteTextures(1, &gl_self->object_id);
+        gl_self->object_id = 0;
+    }
+
+    glGenTextures(1, &gl_self->object_id);
+    if (psy_gl_check_error(error))
+        return;
+
+    glActiveTexture(GL_TEXTURE0);
+    if (psy_gl_check_error(error))
+        return;
+
+    glBindTexture(GL_TEXTURE_2D, gl_self->object_id);
+    if (psy_gl_check_error(error))
+        return;
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    if (psy_gl_check_error(error))
+        return;
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    if (psy_gl_check_error(error))
+        return;
+
+    glTexParameteri(
+        GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    if (psy_gl_check_error(error))
+        return;
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    if (psy_gl_check_error(error))
+        return;
+
+    PsyImageFormat format = psy_image_get_format(image);
+
+    if (PSY_IMAGE_FORMAT_LUM)
+        glTexImage2D(GL_TEXTURE_2D,
+                     0,
+                     GL_LUMINANCE,
+                     width,
+                     height,
+                     0,
+                     GL_LUMINANCE,
+                     GL_UNSIGNED_BYTE,
+                     psy_image_get_ptr(image));
+    else if (format == PSY_IMAGE_FORMAT_RGB)
+        glTexImage2D(GL_TEXTURE_2D,
+                     0,
+                     GL_RGB,
+                     width,
+                     height,
+                     0,
+                     GL_RGB,
+                     GL_UNSIGNED_BYTE,
+                     psy_image_get_ptr(image));
+    else if (format == PSY_IMAGE_FORMAT_RGBA)
+        glTexImage2D(GL_TEXTURE_2D,
+                     0,
+                     GL_RGBA,
+                     width,
+                     height,
+                     0,
+                     GL_RGBA,
+                     GL_UNSIGNED_BYTE,
+                     psy_image_get_ptr(image));
+    else {
+        g_assert_not_reached();
+    };
+
+    if (psy_gl_check_error(error))
+        return;
+
+    glGenerateMipmap(GL_TEXTURE_2D);
+    if (psy_gl_check_error(error))
+        return;
+
+    gl_self->is_uploaded = TRUE;
+}
+
 static gboolean
 psy_gl_texture_is_uploaded(PsyTexture *self)
 {
@@ -220,9 +334,10 @@ psy_gl_texture_class_init(PsyGlTextureClass *class)
     gobject_class->finalize     = psy_gl_texture_finalize;
     gobject_class->dispose      = psy_gl_texture_dispose;
 
-    texture_class->upload      = psy_gl_texture_upload;
-    texture_class->is_uploaded = psy_gl_texture_is_uploaded;
-    texture_class->bind        = psy_gl_texture_bind;
+    texture_class->upload       = psy_gl_texture_upload;
+    texture_class->is_uploaded  = psy_gl_texture_is_uploaded;
+    texture_class->bind         = psy_gl_texture_bind;
+    texture_class->upload_image = psy_gl_texture_upload_image;
 
     gl_texture_properties[PROP_OBJECT_ID]
         = g_param_spec_string("object-id",

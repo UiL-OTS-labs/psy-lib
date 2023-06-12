@@ -5,6 +5,10 @@
 #include <gio/gio.h>
 #include <glib-object.h>
 
+// forward declarations
+struct _PsyMatrix4;
+typedef struct _PsyMatrix4 PsyMatrix4;
+
 G_BEGIN_DECLS
 
 #define PSY_TYPE_VECTOR4 psy_vector4_get_type()
@@ -45,6 +49,8 @@ G_MODULE_EXPORT PsyVector4 *
 psy_vector4_mul_s(PsyVector4 *self, gfloat scalar);
 G_MODULE_EXPORT PsyVector4 *
 psy_vector4_mul(PsyVector4 *self, PsyVector4 *other);
+G_MODULE_EXPORT PsyVector4 *
+psy_vector4_mul_matrix4(PsyVector4 *self, PsyMatrix4 *other);
 G_MODULE_EXPORT gfloat
 psy_vector4_dot(PsyVector4 *self, PsyVector4 *other);
 

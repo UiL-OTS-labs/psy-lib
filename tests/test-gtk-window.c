@@ -8,6 +8,18 @@ PsyClock     *clk;
 PsyTimePoint *g_tstart = NULL;
 PsyTimePoint *g_tstop  = NULL;
 
+const gchar *g_markup_text = "<span font_desc=\"Dejavu Sans Mono 25\">"
+                             "Hello, "
+                             "</span>"
+                             "<span foreground=\"red\">"
+                             "World<span font_desc=\"Dejavu Sans 32\" "
+                             "background=\"yellow\">!<i>!</i>!</span>"
+                             "</span> "
+                             "And this <b>text</b> continues for a bit";
+
+const char *g_no_markup_text = "Hello, World! We are checking whether "
+                               "this line wraps.";
+
 // related to option parsing
 gint    n_monitor;
 gdouble g_duration   = 4.0f;
@@ -24,6 +36,7 @@ char    *g_origin       = "center";
 char    *g_units        = "pixels";
 gboolean g_circle_first = FALSE;
 gboolean g_opengl_debug = FALSE;
+gboolean g_use_markup   = FALSE;
 
 // clang-format off
 static GOptionEntry entries[] = {
@@ -41,6 +54,7 @@ static GOptionEntry entries[] = {
     {"circle-first", 'c', G_OPTION_FLAG_NONE, G_OPTION_ARG_NONE, &g_circle_first, "Whether or not to present the circle first", NULL},
     {"texture-fn", 't', G_OPTION_FLAG_NONE, G_OPTION_ARG_STRING, &g_texture_fn, "The filename of the texture", "utf8"},
     {"debug", 'D', G_OPTION_FLAG_NONE, G_OPTION_ARG_NONE, &g_opengl_debug, "Use a add extra OpenGL debugging calls", NULL},
+    {"use-markup", 'M', G_OPTION_FLAG_NONE, G_OPTION_ARG_NONE, &g_use_markup, "Use markup for the text stimulus.", NULL},
     {0}
 };
 
@@ -215,9 +229,12 @@ main(int argc, char **argv)
     PsyTimePoint *tp, *start;
     GError       *error = NULL;
     gint          window_style;
-    PsyColor     *circle_color = psy_color_new_rgb(1.0, 0, 0);
-    PsyColor     *cross_color  = psy_color_new_rgb(1.0, 1.0, 0);
-    PsyColor     *rect_color   = psy_color_new_rgb(0.0, 1.0, 0.5);
+    const gchar  *text_content  = NULL;
+    PsyColor     *circle_color  = psy_color_new_rgb(1.0, 0, 0);
+    PsyColor     *cross_color   = psy_color_new_rgb(1.0, 1.0, 0);
+    PsyColor     *rect_color    = psy_color_new_rgb(0.0, 1.0, 0.5);
+    PsyColor     *font_color    = psy_color_new_rgb(1.0, 1.0, 1.0);
+    PsyColor     *text_bg_color = psy_color_new_rgb(0.2, 0.2, 0.2);
 
     GOptionContext *context = g_option_context_new("");
     g_option_context_add_main_entries(context, entries, NULL);
@@ -228,6 +245,8 @@ main(int argc, char **argv)
         return EXIT_FAILURE;
     }
     g_option_context_free(context);
+
+    text_content = g_use_markup ? g_markup_text : g_no_markup_text;
 
     clk = psy_clock_new();
     tp  = psy_clock_now(clk);
@@ -256,6 +275,20 @@ main(int argc, char **argv)
         = psy_rectangle_new_full(PSY_CANVAS(window), 200, 200, 50, 50);
     PsyPicture *picture
         = psy_picture_new_xy_filename(PSY_CANVAS(window), 300, 0, g_texture_fn);
+    PsyText *text_stim = psy_text_new_full(
+        PSY_CANVAS(window), -300, 300, 200, 200, text_content, TRUE);
+
+    g_object_set(text_stim,
+                 "color",
+                 text_bg_color,
+                 "font-color",
+                 font_color,
+                 "use-markup",
+                 g_use_markup,
+                 NULL);
+
+    g_object_unref(text_bg_color);
+    g_object_unref(font_color);
 
     PsyDrawingContext *drawing_context
         = psy_canvas_get_context(PSY_CANVAS(window));
@@ -289,6 +322,7 @@ main(int argc, char **argv)
     }
     psy_stimulus_play_for(PSY_STIMULUS(rect), start, dur);
     psy_stimulus_play_for(PSY_STIMULUS(picture), start, dur);
+    psy_stimulus_play_for(PSY_STIMULUS(text_stim), start, dur);
 
     g_main_loop_run(loop);
 

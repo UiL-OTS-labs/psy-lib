@@ -19,7 +19,8 @@ show_class_hierarchy = true
 dependencies = [
     "GLib-2.0",
     "GObject-2.0",
-    "Gtk-4.0"
+    "Gtk-4.0",
+    "Pango-1.0"
 ]
 
 [dependencies."GLib-2.0"]
@@ -35,6 +36,10 @@ doc_url = "https://docs.gtk.org/gobject/"
 name = "Gtk"
 description = "The Gtk toolkit"
 doc_url = "https://docs.gtk.org/gtk4/"
+[dependencies."Pango-1.0"]
+name = "Pango"
+description = "Internationalized text layout and rendering"
+doc_url = "https://docs.gtk.org/pango/"
 
 
 [extra]

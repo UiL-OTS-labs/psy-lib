@@ -18,9 +18,12 @@
  *         presented and makes sure that the `PsyArtist`s will actually draw
  *         every stimulus.
  */
-#include "psy-canvas.h"
+
+#include <math.h>
+
 #include "enum-types.h"
 #include "psy-artist.h"
+#include "psy-canvas.h"
 #include "psy-circle-artist.h"
 #include "psy-circle.h"
 #include "psy-color.h"
@@ -41,6 +44,7 @@
 typedef struct PsyCanvasPrivate {
     gint width, height;
     gint width_mm, height_mm;
+    gint distance_mm;
 
     PsyFrameCount frame_count;
 
@@ -69,6 +73,9 @@ typedef enum {
     HEIGHT,
     WIDTH_MM,
     HEIGHT_MM,
+    DISTANCE_MM,
+    WIDTH_VISUAL_DEGREES,
+    HEIGHT_VISUAL_DEGREES,
     FRAME_DUR,
     PROJECTION_STYLE,
     CONTEXT,
@@ -103,6 +110,9 @@ psy_canvas_set_property(GObject      *object,
     case HEIGHT_MM:
         psy_canvas_set_height_mm(self, g_value_get_int(value));
         break;
+    case DISTANCE_MM:
+        psy_canvas_set_distance_mm(self, g_value_get_int(value));
+        break;
     case PROJECTION_STYLE:
         psy_canvas_set_projection_style(self, g_value_get_int(value));
         break;
@@ -122,6 +132,9 @@ psy_canvas_get_property(GObject    *object,
     PsyCanvas *self = PSY_CANVAS(object);
 
     switch ((PsyCanvasProperty) property_id) {
+    case BACKGROUND_COLOR:
+        g_value_set_object(value, psy_canvas_get_background_color(self));
+        break;
     case WIDTH:
         g_value_set_int(value, psy_canvas_get_width(self));
         break;
@@ -131,11 +144,17 @@ psy_canvas_get_property(GObject    *object,
     case WIDTH_MM:
         g_value_set_int(value, psy_canvas_get_width_mm(self));
         break;
-    case BACKGROUND_COLOR:
-        g_value_set_object(value, psy_canvas_get_background_color(self));
-        break;
     case HEIGHT_MM:
         g_value_set_int(value, psy_canvas_get_height_mm(self));
+        break;
+    case DISTANCE_MM:
+        g_value_set_int(value, psy_canvas_get_distance_mm(self));
+        break;
+    case WIDTH_VISUAL_DEGREES:
+        g_value_set_float(value, psy_canvas_get_width_vd(self));
+        break;
+    case HEIGHT_VISUAL_DEGREES:
+        g_value_set_float(value, psy_canvas_get_height_vd(self));
         break;
     case FRAME_DUR:
         g_value_set_object(value, psy_canvas_get_frame_dur(self));
@@ -462,12 +481,13 @@ set_projection_matrix(PsyCanvas *self, PsyMatrix4 *projection)
 static PsyImage *
 get_image(PsyCanvas *self)
 {
-    gint width, height, num_channels = 4;
+    gint width, height;
     width  = psy_canvas_get_width(self);
     height = psy_canvas_get_height(self);
-    width  = psy_canvas_get_width(self);
 
-    PsyImage *image = psy_image_new(width, height, num_channels);
+    PsyImageFormat format = PSY_IMAGE_FORMAT_RGBA;
+    PsyImage      *image  = psy_image_new(width, height, format);
+
     return image;
 }
 
@@ -530,6 +550,20 @@ psy_canvas_class_init(PsyCanvasClass *klass)
     klass->reset = reset;
 
     /**
+     * PsyCanvas:bg-color-values
+     *
+     * The color of the background, you can use this property to get/set
+     * the background color of the canvas. It is basically, an array of 4 floats
+     * in RGBA format where the color values range between 0.0 and 1.0.
+     */
+    obj_properties[BACKGROUND_COLOR]
+        = g_param_spec_object("background-color",
+                              "BackgroundColor",
+                              "The color used as background for the canvas.",
+                              PSY_TYPE_COLOR,
+                              G_PARAM_READWRITE);
+
+    /**
      * PsyCanvas:width:
      *
      * The width of the canvas. When using windowed canvasses this property
@@ -562,20 +596,6 @@ psy_canvas_class_init(PsyCanvasClass *klass)
                            G_MAXINT32,
                            0,
                            G_PARAM_READWRITE | G_PARAM_CONSTRUCT);
-
-    /**
-     * PsyCanvas:bg-color-values
-     *
-     * The color of the background, you can use this property to get/set
-     * the background color of the canvas. It is basically, an array of 4 floats
-     * in RGBA format where the color values range between 0.0 and 1.0.
-     */
-    obj_properties[BACKGROUND_COLOR]
-        = g_param_spec_object("background-color",
-                              "BackgroundColor",
-                              "The color used as background for the canvas.",
-                              PSY_TYPE_COLOR,
-                              G_PARAM_READWRITE);
 
     /**
      * PsyCanvas:width-mm:
@@ -614,6 +634,55 @@ psy_canvas_class_init(PsyCanvasClass *klass)
         G_MAXINT32,
         -1,
         G_PARAM_READWRITE);
+
+    /**
+     * PsyCanvas:distance-mm:
+     *
+     * The distance between the participant and the canvas (window/monitor).
+     * This value may be ignored, but it must be set when you want to know
+     * the size of the screen in visual degrees or want to specify the stimuli
+     * in visual degrees.
+     */
+    obj_properties[DISTANCE_MM] = g_param_spec_int(
+        "distance-mm",
+        "DistanceMM",
+        "The distance between the participant and the canvas",
+        0,
+        G_MAXINT32,
+        0,
+        G_PARAM_READWRITE);
+
+    /**
+     * obj_properties:width-vd:
+     *
+     * The width of a canvas in visual degrees. This is an computed property:
+     * the width of and distance to the canvas must be known in order to compute
+     * this.
+     */
+    obj_properties[WIDTH_VISUAL_DEGREES]
+        = g_param_spec_float("width-vd",
+                             "WidthVD",
+                             "The width of the canvas in visual degrees",
+                             -1.0,
+                             G_MAXFLOAT,
+                             0,
+                             G_PARAM_READABLE);
+
+    /**
+     * obj_properties:height-vd:
+     *
+     * The height of a canvas in visual degrees. This is an computed property:
+     * the height of and distance to the canvas must be known in order to
+     * compute this.
+     */
+    obj_properties[HEIGHT_VISUAL_DEGREES]
+        = g_param_spec_float("height-vd",
+                             "HeightVD",
+                             "The height of the canvas in visual degrees",
+                             0,
+                             G_MAXFLOAT,
+                             0,
+                             G_PARAM_READABLE);
 
     /**
      * PsyCanvas:frame-dur:
@@ -945,6 +1014,112 @@ psy_canvas_set_height_mm(PsyCanvas *self, gint height_mm)
     g_return_if_fail(PSY_IS_CANVAS(self));
     PsyCanvasPrivate *private = psy_canvas_get_instance_private(self);
     private->height_mm        = height_mm;
+}
+
+/**
+ * psy_canvas_get_distance_mm:
+ * @self: an instance of [class@Canvas]
+ *
+ * Get the distance of the participant and the monitor. You should use a
+ * chin or something similar in order to get this working.
+ * Note, this value is used e.g. to compute the number of visual degrees a
+ * stimulus or this canvas is tall.
+ *
+ * Returns: The distance between the participant and the monitor.
+ */
+gint
+psy_canvas_get_distance_mm(PsyCanvas *self)
+{
+    g_return_val_if_fail(PSY_IS_CANVAS(self), -1);
+
+    PsyCanvasPrivate *priv = psy_canvas_get_instance_private(self);
+
+    return priv->distance_mm;
+}
+
+/**
+ * psy_canvas_set_distance_mm:
+ * @self: an instance of [class@Canvas]
+ * @distance: The distance of the participant in mm.
+ *
+ * Set the distance of the participant and the monitor. You should use a
+ * chin support or something similar in order to get this working.
+ * This value is used e.g. to compute the number of visual degrees a
+ * stimulus or this canvas is tall.
+ */
+void
+psy_canvas_set_distance_mm(PsyCanvas *self, gint distance)
+{
+    g_return_if_fail(PSY_IS_CANVAS(self));
+    PsyCanvasPrivate *priv = psy_canvas_get_instance_private(self);
+
+    priv->distance_mm = distance;
+}
+
+/**
+ * psy_canvas_get_width_vd:
+ * @self: An instance of [class@Canvas]
+ *
+ * Obtain the width in visual degrees of @self.
+ *
+ * Returns: A positive value which is the size of the window in visual degrees.
+ * -1 when an error occurs
+ */
+gfloat
+psy_canvas_get_width_vd(PsyCanvas *self)
+{
+    g_return_val_if_fail(PSY_IS_CANVAS(self), -1);
+
+    PsyCanvasPrivate *priv = psy_canvas_get_instance_private(self);
+
+    if (priv->width_mm <= 0) {
+        g_warning("Can't obtain width in visual degrees when the physical "
+                  "width is unknown");
+        return -1;
+    }
+
+    if (priv->distance_mm <= 0) {
+        g_warning(
+            "Can't obtain width in visual degrees when distance_mm is unknown");
+        return -1;
+    }
+
+    return psy_radians_to_degrees(
+               atan((gfloat) priv->width_mm / 2.0 / priv->distance_mm))
+           * 2.0;
+}
+
+/**
+ * psy_canvas_get_height_vd:
+ * @self: An instance of [class@Canvas]
+ *
+ * Obtain the height in visual degrees of @self.
+ *
+ * Returns: -1 on error, a positive value otherwise, which is the size of the
+ * window in visual degrees.
+ */
+gfloat
+psy_canvas_get_height_vd(PsyCanvas *self)
+{
+    g_return_val_if_fail(PSY_IS_CANVAS(self), -1);
+
+    PsyCanvasPrivate *priv = psy_canvas_get_instance_private(self);
+
+    if (priv->height_mm <= 0) {
+        g_warning("Can't obtain height in visual degrees when the physical "
+                  "height is unknown");
+        return -1;
+    }
+
+    if (priv->distance_mm <= 0) {
+        g_warning("Can't obtain height in visual degrees when distance_mm is "
+                  "unknown");
+        return -1;
+    }
+
+    return psy_radians_to_degrees(
+               atan((gfloat) priv->height_mm / 2.0 / priv->distance_mm))
+           * 2.0;
 }
 
 /**

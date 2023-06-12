@@ -6,6 +6,7 @@
 #include <glib-object.h>
 
 #include "psy-vector3.h"
+#include "psy-vector4.h"
 
 G_BEGIN_DECLS
 
@@ -61,6 +62,9 @@ psy_matrix4_mul_s(PsyMatrix4 *self, gfloat scalar);
 G_MODULE_EXPORT PsyMatrix4 *
 psy_matrix4_mul(PsyMatrix4 *self, PsyMatrix4 *other);
 
+G_MODULE_EXPORT PsyVector4 *
+psy_matrix4_mul_vec4(PsyMatrix4 *self, PsyVector4 *rhs);
+
 G_MODULE_EXPORT gboolean
 psy_matrix4_equals(PsyMatrix4 *self, PsyMatrix4 *other);
 G_MODULE_EXPORT gboolean
@@ -83,6 +87,9 @@ psy_matrix4_scale(PsyMatrix4 *self, PsyVector3 *vector);
 
 G_MODULE_EXPORT void
 psy_matrix4_translate(PsyMatrix4 *self, PsyVector3 *vector);
+
+G_MODULE_EXPORT PsyMatrix4 *
+psy_matrix4_inverse(PsyMatrix4 *self);
 
 G_END_DECLS
 

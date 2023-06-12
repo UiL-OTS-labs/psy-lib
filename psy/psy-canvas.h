@@ -124,6 +124,18 @@ psy_canvas_set_width_mm(PsyCanvas *self, gint width_mm);
 G_MODULE_EXPORT void
 psy_canvas_set_height_mm(PsyCanvas *self, gint height_mm);
 
+G_MODULE_EXPORT gint
+psy_canvas_get_distance_mm(PsyCanvas *self);
+
+G_MODULE_EXPORT void
+psy_canvas_set_distance_mm(PsyCanvas *self, gint distance);
+
+G_MODULE_EXPORT gfloat
+psy_canvas_get_width_vd(PsyCanvas *self);
+
+G_MODULE_EXPORT gfloat
+psy_canvas_get_height_vd(PsyCanvas *self);
+
 G_MODULE_EXPORT void
 psy_canvas_schedule_stimulus(PsyCanvas *self, PsyVisualStimulus *stimulus);
 

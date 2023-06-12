@@ -25,6 +25,7 @@ G_DECLARE_DERIVABLE_TYPE(
  * PsyVisualStimulusClass:
  * @parent: the parentclass of PsyVisualStimulus it derives form PsyStimulus.
  * @update: signal emitted just prior to the object should be painted again.
+ * @set_color: Sets the base color of the stimulus.
  * @create_artist: Pure virtual method, deriving classes should implement this
  *                 It is called by a canvas when the stimulus is scheduled.
  */
@@ -33,7 +34,10 @@ typedef struct _PsyVisualStimulusClass {
     void (*update)(PsyVisualStimulus *stim,
                    PsyTimePoint      *frame_time,
                    gint64             nth_frame);
+    void (*set_color)(PsyVisualStimulus *self, PsyColor *color);
     PsyArtist *(*create_artist)(PsyVisualStimulus *self);
+
+    gpointer reserved[12];
 
 } PsyVisualStimulusClass;
 

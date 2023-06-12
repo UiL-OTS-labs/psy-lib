@@ -53,6 +53,41 @@ canvas_background_color(void)
     g_object_unref(canvas);
 }
 
+static void
+canvas_size_vd(void)
+{
+    gfloat width_vd, height_vd;
+
+    gint width_mm = 640, height_mm = 480, distance_mm = 1000;
+
+    // clang-format off
+    PsyCanvas* canvas = g_object_new(
+            PSY_TYPE_GL_CANVAS,
+            "width", WIDTH,
+            "height", HEIGHT,
+            "width-mm", width_mm,
+            "height-mm", height_mm,
+            "distance-mm", distance_mm,
+            NULL
+            );
+    
+    g_object_get(
+            canvas,
+            "width-vd", &width_vd,
+            "height-vd", &height_vd,
+            NULL);
+    // clang-format on
+
+    CU_ASSERT_EQUAL(
+        width_vd,
+        2 * psy_radians_to_degrees(atan(width_mm / 2.0 / distance_mm)));
+    CU_ASSERT_EQUAL(
+        height_vd,
+        2 * psy_radians_to_degrees(atan(height_mm / 2.0 / distance_mm)));
+
+    g_object_unref(canvas);
+}
+
 int
 add_canvas_suite(void)
 {
@@ -67,6 +102,10 @@ add_canvas_suite(void)
         return 1;
 
     test = CU_ADD_TEST(suite, canvas_background_color);
+    if (!test)
+        return 1;
+
+    test = CU_ADD_TEST(suite, canvas_size_vd);
     if (!test)
         return 1;
 

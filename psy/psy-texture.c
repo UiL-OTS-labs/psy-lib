@@ -1,6 +1,7 @@
 
 #include "psy-texture.h"
 #include "psy-enums.h"
+#include "psy-image.h"
 
 #define STBI_NO_FAILURE_STRINGS
 #define STBI_FAILURE_USERMSG
@@ -54,6 +55,7 @@ typedef enum {
     PROP_NULL,
     PROP_PATH,
     PROP_FILE,
+    PROP_IMAGE,
     PROP_NUM_CHANNELS,
     PROP_IS_DECODED,
     PROP_IS_UPLOADED,
@@ -154,6 +156,33 @@ psy_texture_finalize(GObject *object)
 }
 
 static void
+texture_upload_image(PsyTexture *self, PsyImage *img, GError **error)
+{
+    (void) error;
+    PsyTexturePrivate *priv = psy_texture_get_instance_private(self);
+    if (priv->image.image_data) {
+        stbi_image_free(priv->image.image_data);
+        priv->image.image_data = NULL;
+    }
+    priv->image.width  = psy_image_get_width(img);
+    priv->image.height = psy_image_get_height(img);
+    switch (psy_image_get_format(img)) {
+    case PSY_IMAGE_FORMAT_LUM:
+        priv->image.num_channels = 1;
+        break;
+    case PSY_IMAGE_FORMAT_RGB:
+        priv->image.num_channels = 3;
+        break;
+    case PSY_IMAGE_FORMAT_RGBA:
+        priv->image.num_channels = 4;
+        break;
+    case PSY_IMAGE_FORMAT_INVALID:
+    default:
+        g_assert_not_reached();
+    }
+}
+
+static void
 psy_texture_class_init(PsyTextureClass *klass)
 {
     GObjectClass *object_class = G_OBJECT_CLASS(klass);
@@ -162,6 +191,8 @@ psy_texture_class_init(PsyTextureClass *klass)
     object_class->get_property = psy_texture_get_property;
     object_class->finalize     = psy_texture_finalize;
     object_class->dispose      = psy_texture_dispose;
+
+    klass->upload_image = texture_upload_image;
 
     /**
      * PsyTexture:path
@@ -267,6 +298,18 @@ psy_texture_class_init(PsyTextureClass *klass)
                             G_MAXINT,
                             0,
                             G_PARAM_READABLE);
+
+    /**
+     * PsyTexture:image
+     *
+     * Allows to upload a texture via setting this property.
+     */
+    texture_properties[PROP_IMAGE]
+        = g_param_spec_object("image",
+                              "Image",
+                              "Upload an instance of [class@Image] as texture",
+                              PSY_TYPE_IMAGE,
+                              G_PARAM_WRITABLE);
 
     g_object_class_install_properties(
         object_class, NUM_PROPERTIES, texture_properties);
@@ -580,4 +623,15 @@ psy_texture_get_height(PsyTexture *self)
 
     PsyTexturePrivate *priv = psy_texture_get_instance_private(self);
     return priv->image.height;
+}
+
+void
+psy_texture_upload_image(PsyTexture *self, PsyImage *image, GError **error)
+{
+    g_return_if_fail(PSY_IS_TEXTURE(self));
+    g_return_if_fail(PSY_IS_IMAGE(image));
+    g_return_if_fail(error == NULL || *error == NULL);
+
+    PsyTextureClass *cls = PSY_TEXTURE_GET_CLASS(self);
+    cls->upload_image(self, image, error);
 }

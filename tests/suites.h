@@ -25,6 +25,9 @@ int
 add_stepping_suite(void);
 
 int
+add_text_suite(void);
+
+int
 add_time_utilities_suite(void);
 
 int
