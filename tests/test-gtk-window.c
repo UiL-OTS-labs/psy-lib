@@ -278,14 +278,13 @@ main(int argc, char **argv)
     PsyText *text_stim = psy_text_new_full(
         PSY_CANVAS(window), -300, 300, 200, 200, text_content, TRUE);
 
+    // clang-format off
     g_object_set(text_stim,
-                 "color",
-                 text_bg_color,
-                 "font-color",
-                 font_color,
-                 "use-markup",
-                 g_use_markup,
+                 "color", text_bg_color,
+                 "font-color", font_color,
+                 "use-markup", g_use_markup,
                  NULL);
+    // clang-format on
 
     g_object_unref(text_bg_color);
     g_object_unref(font_color);

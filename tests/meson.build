@@ -33,6 +33,11 @@ parallel_trigger = executable(
     dependencies : [psy_dep]
 )
 
+picture_test = executable(
+    'picture_test',
+    files('picture-test.c'),
+    dependencies : [psy_dep]
+)
 
 unit_test = executable (
     'unit-test',
@@ -43,6 +48,7 @@ unit_test = executable (
         'test-image.c',
         'test-gl-canvas.c',
         'test-parallel.c',
+        'test-picture.c',
         'test-ref-count.c',
         'test-stepping.c',
         'test-text.c',

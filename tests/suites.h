@@ -19,6 +19,9 @@ int
 add_parallel_suite(gint port_num);
 
 int
+add_picture_suite(void);
+
+int
 add_ref_count_suite(void);
 
 int
