@@ -1,7 +1,10 @@
 
 #pragma once
 
+// some constants
 #mesondefine PSY_VERSION
+#mesondefine PSY_SOURCE_ROOT
+#mesondefine PSY_BUILD_ROOT
 
 // functions (or build in compiler additions)
 #mesondefine HAVE_BUILTIN_ADD_OVERFLOW

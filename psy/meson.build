@@ -3,8 +3,11 @@
 # libpsy.
 
 cdata = configuration_data({
-    'PSY_VERSION' : meson.project_version()
 })
+
+cdata.set_quoted('PSY_VERSION', meson.project_version())
+cdata.set_quoted('SOURCE_ROOT', meson.project_source_root())
+cdata.set_quoted('BUILD_ROOT', meson.project_build_root())
 
 # check for compiler buildins
 if cc.has_function('__builtin_add_overflow')
