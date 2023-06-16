@@ -151,7 +151,7 @@ artist_draw(PsyArtist *self)
 
     gfloat rotation_degrees = psy_visual_stimulus_get_rotation(priv->stimulus);
     PsyVector3 *z_axis
-        = g_object_new(PSY_TYPE_VECTOR3, "x", 0.0, "y", 0.0, "z", -1.0, NULL);
+        = g_object_new(PSY_TYPE_VECTOR3, "x", 0.0, "y", 0.0, "z", 1.0, NULL);
 
     psy_matrix4_set_identity(priv->model);
 
