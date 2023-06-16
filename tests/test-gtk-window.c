@@ -93,7 +93,7 @@ update_rect(PsyVisualStimulus *stim,
 {
     (void) nth_frame;
     PsyTimePoint *start = data;
-    PsyDuration  *dur   = psy_time_point_subtract(start, tp);
+    PsyDuration  *dur   = psy_time_point_subtract(tp, start);
 
     gdouble seconds = psy_duration_get_seconds(dur);
     psy_visual_stimulus_set_rotation(stim, seconds);
