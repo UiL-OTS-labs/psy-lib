@@ -371,7 +371,7 @@ PsyColor *
 psy_color_new_rgbi(gint r, gint g, gint b)
 {
 
-    return psy_color_new_rgbai(r, b, g, 255);
+    return psy_color_new_rgbai(r, g, b, 255);
 }
 
 /**
