@@ -59,6 +59,10 @@ add_suites_to_registry(void)
     if (error)
         return error;
 
+    error = add_picture_suite();
+    if (error)
+        return error;
+
     error = add_stepping_suite();
     if (error)
         return error;
@@ -68,6 +72,10 @@ add_suites_to_registry(void)
         return error;
 
     error = add_time_utilities_suite();
+    if (error)
+        return error;
+
+    error = add_utility_suite();
     if (error)
         return error;
 

@@ -336,6 +336,10 @@ gl_canvas_get_image(PsyCanvas *canvas)
     }
 
     glFinish();
+
+    // In OpenGL the origin is at the left bottom not left top.
+    psy_image_flip_upside_down(ret);
+
     return ret;
 }
 
@@ -434,7 +438,7 @@ on_gl_canvas_error(GLenum        source,
                   (guint) source,
                   (guint) type,
                   id,
-                  (guint)severity,
+                  (guint) severity,
                   message,
                   source_str,
                   type_str,

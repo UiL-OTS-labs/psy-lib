@@ -118,7 +118,7 @@ set_height(PsyRectangle *self, gfloat height)
 static void
 auto_resize(PsyPicture *picture, gfloat width, gfloat height)
 {
-    g_print("%s:%s %f * %f\n", __FILE__, __func__, width, height);
+    g_debug("%s:%s %f * %f\n", __FILE__, __func__, width, height);
     psy_rectangle_set_size(PSY_RECTANGLE(picture), width, height);
 }
 

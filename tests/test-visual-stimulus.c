@@ -97,23 +97,6 @@ compute_surface_area_by_color(PsyImage *image, PsyColor *color)
     return count;
 }
 
-void
-center_to_c(
-    PsyImage *image, gint row_in, gint col_in, gint *row_out, gint *col_out)
-{
-    const gint WIDTH  = psy_image_get_width(image);
-    const gint HEIGHT = psy_image_get_height(image);
-
-    g_assert(row_in >= -HEIGHT / 2 && row_in < HEIGHT / 2);
-    g_assert(col_in >= -WIDTH / 2 && col_in < WIDTH / 2);
-
-    *col_out = WIDTH / 2 + col_in;
-    *row_out = HEIGHT / 2 - row_in;
-
-    g_assert(*row_out >= 0 && *row_out < HEIGHT);
-    g_assert(*col_out >= 0 && *col_out < WIDTH);
-}
-
 /**
  * compute_surface_avg_stim_pos:
  * @image:(transfer none): The input image
@@ -310,8 +293,16 @@ vstim_translate(void)
     image = psy_canvas_get_image(PSY_CANVAS(g_canvas));
 
     compute_surface_avg_stim_pos(image, g_stim_color, &avg_x, &avg_y);
-    avg_x = avg_x - WIDTH / 2.0;
-    avg_y = avg_y - HEIGHT / 2.0;
+    //  avg_x = avg_x - WIDTH / 2.0;
+    //  avg_y = avg_y + HEIGHT / 2.0;
+    psy_coordinate_c_to_center(psy_image_get_width(image),
+                               psy_image_get_height(image),
+                               avg_x,
+                               avg_y,
+                               &avg_x,
+                               &avg_y);
+    g_printerr(
+        "\ntx =%lf, ty%lf, avg_x=%lf, avg_y=%lf\n", tx, ty, avg_x, avg_y);
     CU_ASSERT_DOUBLE_EQUAL(avg_x, tx, 1);
     CU_ASSERT_DOUBLE_EQUAL(avg_y, ty, 1);
 
@@ -372,15 +363,19 @@ vstim_rotate(void)
         save_image_tmp_png(image, "%s_%d.png", __func__, angle_0);
 
     gint x1, y1, x2, y2, x3, y3, x4, y4, x5, y5, x6, y6, x7, y7, x8, y8, x9, y9;
-    center_to_c(image, 50, -50, &y1, &x1);
-    center_to_c(image, 50, 0, &y2, &x2);
-    center_to_c(image, 50, 50, &y3, &x3);
-    center_to_c(image, 0, -50, &y4, &x4);
-    center_to_c(image, 0, 0, &y5, &x5);
-    center_to_c(image, 0, 50, &y6, &x6);
-    center_to_c(image, -50, -50, &y7, &x7);
-    center_to_c(image, -50, 0, &y8, &x8);
-    center_to_c(image, -50, 50, &y9, &x9);
+
+    gint WIDTH  = psy_image_get_width(image);
+    gint HEIGHT = psy_image_get_height(image);
+
+    psy_coordinate_center_to_c_i(WIDTH, HEIGHT, -50, 50, &x1, &y1);
+    psy_coordinate_center_to_c_i(WIDTH, HEIGHT, 0, 50, &x2, &y2);
+    psy_coordinate_center_to_c_i(WIDTH, HEIGHT, 50, 50, &x3, &y3);
+    psy_coordinate_center_to_c_i(WIDTH, HEIGHT, -50, 0, &x4, &y4);
+    psy_coordinate_center_to_c_i(WIDTH, HEIGHT, 0, 0, &x5, &y5);
+    psy_coordinate_center_to_c_i(WIDTH, HEIGHT, 50, 0, &x6, &y6);
+    psy_coordinate_center_to_c_i(WIDTH, HEIGHT, -50, -50, &x7, &y7);
+    psy_coordinate_center_to_c_i(WIDTH, HEIGHT, 0, -50, &x8, &y8);
+    psy_coordinate_center_to_c_i(WIDTH, HEIGHT, 50, -50, &x9, &y9);
 
     PsyColor *c1 = psy_image_get_pixel(image, y1, x1);
     PsyColor *c2 = psy_image_get_pixel(image, y2, x2);
