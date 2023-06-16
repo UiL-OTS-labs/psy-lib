@@ -609,23 +609,6 @@ psy_image_save_path(PsyImage    *self,
 }
 
 /**
- * psy_image_get_ptr:(skip)
- * @self: an instance of [class@PsyImage]
- *
- * Get access to the bytes of the image.
- *
- * stability:private
- * Returns: a pointer to the data of the image.
- */
-guint8 *
-psy_image_get_ptr(PsyImage *self)
-{
-    g_return_val_if_fail(PSY_IS_IMAGE(self), NULL);
-
-    return self->image_data;
-}
-
-/**
  * psy_image_get_format:
  * @self: an instance of [class@Image]
  *
@@ -690,4 +673,55 @@ psy_image_pixel_num_bytes(PsyImage *self)
     g_return_val_if_fail(PSY_IS_IMAGE(self), 0);
 
     return self->bytes_per_pixel;
+}
+
+/**
+ * psy_image_flip_upside_down:
+ * @self: the image that should be flipped upside down.
+ *
+ * Flips the image upside down. For some API's such as OpenGL, the origin
+ * of some pixel data is not at the upper left corner, but in the lower
+ * left corner. As such, when transferring pixels to and from that API might
+ * result in images that are upside down.
+ */
+void
+psy_image_flip_upside_down(PsyImage *self)
+{
+    guint8      stack[4 * 7680]; // 8K is 7680 x 4320
+    guint8     *temp_ptr = &stack[0];
+    const guint stride   = psy_image_get_stride(self);
+
+    if (stride > sizeof(stack)) {
+        temp_ptr = g_malloc(stride);
+    }
+
+    guint8 *upper_line = psy_image_get_ptr(self);
+    guint8 *lower_line = upper_line + (psy_image_get_height(self) - 1) * stride;
+    for (; upper_line < lower_line;
+         upper_line += stride, lower_line -= stride) {
+        memcpy(temp_ptr, upper_line, stride);
+        memcpy(upper_line, lower_line, stride);
+        memcpy(lower_line, temp_ptr, stride);
+    }
+
+    if (temp_ptr != &stack[0]) {
+        g_free(temp_ptr);
+    }
+}
+
+/**
+ * psy_image_get_ptr:(skip)
+ * @self: an instance of [class@PsyImage]
+ *
+ * Get access to the bytes of the image.
+ *
+ * stability:private
+ * Returns: a pointer to the data of the image.
+ */
+guint8 *
+psy_image_get_ptr(PsyImage *self)
+{
+    g_return_val_if_fail(PSY_IS_IMAGE(self), NULL);
+
+    return self->image_data;
 }
