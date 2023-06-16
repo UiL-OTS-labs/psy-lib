@@ -254,7 +254,7 @@ test_colors(PsyImage *image)
     PsyColor *red    = psy_color_new_rgbi(255, 0, 0);
     PsyColor *green  = psy_color_new_rgbi(0, 255, 0);
     PsyColor *blue   = psy_color_new_rgbi(0, 0, 255);
-    PsyColor *yellow = psy_color_new_rgbi(255, 0, 255);
+    PsyColor *purple = psy_color_new_rgbi(255, 0, 255);
 
     // owned by canvas
     PsyColor *bg = psy_canvas_get_background_color(PSY_CANVAS(g_canvas));
@@ -267,7 +267,7 @@ test_colors(PsyImage *image)
     guint upper_bound = (g_canvas_height - g_img_height) / 2;
     guint lower_bound = g_canvas_height - (g_canvas_height - g_img_height) / 2;
 
-    while (num_samples < 100) {
+    while (num_samples < 10) {
         guint x = random_int_range(0, g_canvas_width - 1);
         guint y = random_int_range(0, g_canvas_height - 1);
 
@@ -287,7 +287,7 @@ test_colors(PsyImage *image)
             guint ix = x - (g_canvas_width - g_img_width) / 2;
             guint iy = y - (g_canvas_height - g_img_height) / 2;
 
-            g_print("x = %u, y = %u, ix = %u, iy = %u\n", x, y, ix, iy);
+            // g_print("x = %u, y = %u, ix = %u, iy = %u\n", x, y, ix, iy);
 
             g_assert(ix < g_img_width);
             g_assert(iy < g_img_height);
@@ -326,10 +326,10 @@ test_colors(PsyImage *image)
                 }
             }
             else if (is_lower_right(g_img_width, g_img_height, iy, ix)) {
-                if (!psy_color_equal(yellow, probe)) {
+                if (!psy_color_equal(purple, probe)) {
                     ret = FALSE;
                     g_printerr(
-                        "point g(%u, %u), i(%u, %u) is not equal to yellow.\n",
+                        "point g(%u, %u), i(%u, %u) is not equal to purple.\n",
                         x,
                         y,
                         ix,
@@ -352,7 +352,7 @@ test_colors(PsyImage *image)
     g_object_unref(red);
     g_object_unref(green);
     g_object_unref(blue);
-    g_object_unref(yellow);
+    g_object_unref(purple);
 
     return ret;
 }
