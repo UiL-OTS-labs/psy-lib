@@ -33,6 +33,7 @@
 #include "psy-texture.h"
 #include "psy-time-point.h"
 #include "psy-trial.h"
+#include "psy-utils.h"
 #include "psy-vbuffer.h"
 #include "psy-vector.h"
 #include "psy-vector4.h"

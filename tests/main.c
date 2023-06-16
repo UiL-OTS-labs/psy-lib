@@ -75,6 +75,10 @@ add_suites_to_registry(void)
     if (error)
         return error;
 
+    error = add_utility_suite();
+    if (error)
+        return error;
+
     error = add_visual_stimulus_suite();
     if (error)
         return error;
