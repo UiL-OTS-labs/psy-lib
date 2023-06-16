@@ -293,8 +293,16 @@ vstim_translate(void)
     image = psy_canvas_get_image(PSY_CANVAS(g_canvas));
 
     compute_surface_avg_stim_pos(image, g_stim_color, &avg_x, &avg_y);
-    avg_x = avg_x - WIDTH / 2.0;
-    avg_y = avg_y + HEIGHT / 2.0;
+    //  avg_x = avg_x - WIDTH / 2.0;
+    //  avg_y = avg_y + HEIGHT / 2.0;
+    psy_coordinate_c_to_center(psy_image_get_width(image),
+                               psy_image_get_height(image),
+                               avg_x,
+                               avg_y,
+                               &avg_x,
+                               &avg_y);
+    g_printerr(
+        "\ntx =%lf, ty%lf, avg_x=%lf, avg_y=%lf\n", tx, ty, avg_x, avg_y);
     CU_ASSERT_DOUBLE_EQUAL(avg_x, tx, 1);
     CU_ASSERT_DOUBLE_EQUAL(avg_y, ty, 1);
 
