@@ -33,7 +33,12 @@ endif
 if cc.has_header('sys/random.h')
     cdata.set('HAVE_SYS_RANDOM_H', true)
 endif
-
+if cc.has_header('jack/jack.h')
+    cdata.set('HAVE_JACK_H', true)
+endif
+if cc.has_header('alsa/asoundlib.h')
+    cdata.set('HAVE_ASOUNDLIB_H', true)
+endif
 
 configure_file (
     input         : 'psy-config.h.in',
@@ -52,6 +57,7 @@ libpsy_incdirs = include_directories(
 
 libpsy_headers = files(
     'psy-artist.h',
+    'psy-audio-device.h',
     'psy-canvas.h',
     'psy-circle.h',
     'psy-circle-artist.h',
@@ -100,6 +106,7 @@ libpsy_header_private = files(
 
 libpsyfiles = files (
     'psy-artist.c',
+    'psy-audio-device.c',
     'psy-canvas.c',
     'psy-circle.c',
     'psy-circle-artist.c',

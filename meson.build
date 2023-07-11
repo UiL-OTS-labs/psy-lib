@@ -18,6 +18,8 @@ m_dep = cc.find_library('m', required : false)
 # dependency version requirements
 glib_req = '>=2.66.0' # based on what gtk requires august 2022
 gtk_req = '>4.0' # based on what gtk requires august 2022
+alsa_req = '>=1.2'
+jack2_req = '>=1.9'
 
 glib_dep = dependency(
     'glib-2.0',
@@ -57,6 +59,18 @@ gtk_dep = dependency(
         'media-gstreamer=disabled', # idem
         'build-tests=false'
     ]
+)
+
+alsa_dep = dependency (
+    'alsa',
+    version : alsa_req,
+    required : false
+)
+
+jack2_dep = dependency (
+    'jack',
+    version : jack2_req,
+    required : false
 )
 
 # OpenGL function loader helper
