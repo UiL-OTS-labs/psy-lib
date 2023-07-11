@@ -25,6 +25,7 @@ typedef struct _PsyAudioDeviceClass {
     void (*close)(PsyAudioDevice *self);
     void (*set_name)(PsyAudioDevice *self, const gchar *name);
     void (*set_sample_rate)(PsyAudioDevice *self, guint sample_rate);
+
     const gchar *(*get_default_name)(PsyAudioDevice *self);
 
     gpointer extensions[16];

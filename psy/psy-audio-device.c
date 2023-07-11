@@ -135,19 +135,62 @@ audio_device_set_sample_rate(PsyAudioDevice *self, guint sample_rate)
 }
 
 static void
-psy_audio_device_class_init(PsyAudioDeviceClass *class)
+psy_audio_device_class_init(PsyAudioDeviceClass *klass)
 {
-    GObjectClass *gobject_class = G_OBJECT_CLASS(class);
+    GObjectClass *gobject_class = G_OBJECT_CLASS(klass);
 
     gobject_class->set_property = psy_audio_device_set_property;
     gobject_class->get_property = psy_audio_device_get_property;
     gobject_class->finalize     = psy_audio_device_finalize;
     gobject_class->dispose      = psy_audio_device_dispose;
 
-    class->open            = audio_device_open;
-    class->close           = audio_device_close;
-    class->set_name        = audio_device_set_name;
-    class->set_sample_rate = audio_device_set_sample_rate;
+    klass->open            = audio_device_open;
+    klass->close           = audio_device_close;
+    klass->set_name        = audio_device_set_name;
+    klass->set_sample_rate = audio_device_set_sample_rate;
+
+    /**
+     * PsyAudioDevice:name:
+     *
+     * You may get the name of the device here. After the device has been opened
+     * a new name may be set here.
+     */
+    audio_device_properties[PROP_NAME]
+        = g_param_spec_string("name",
+                              "Name",
+                              "The name of the device to open",
+                              NULL,
+                              G_PARAM_READABLE);
+
+    /**
+     * PsyAudioDevice:is-open:
+     *
+     * You may use this property to see whether the device is open.
+     */
+    audio_device_properties[PROP_IS_OPEN]
+        = g_param_spec_boolean("is-open",
+                               "IsOpen",
+                               "Whether or not the device is open",
+                               FALSE,
+                               G_PARAM_READABLE);
+
+    /**
+     * PsyAudioDevice:sample-rate:
+     *
+     * You may use this to get the sample rate that is used for the audio
+     * device.
+     */
+    audio_device_properties[PROP_SAMPLE_RATE]
+        = g_param_spec_int("sample-rate",
+                           "SampleRate",
+                           "The sample rate of this device",
+                           8000,
+                           192000,
+                           48000,
+                           G_PARAM_READABLE);
+
+    g_object_class_install_properties(
+        gobject_class, NUM_PROPERTIES, audio_device_properties);
 }
 
 /* ************ public functions ******************** */
