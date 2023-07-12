@@ -2,6 +2,24 @@
 #pragma once
 
 /**
+ * PsyAudioDeviceError:
+ * @PSY_AUDIO_DEVICE_ERROR_NO_SERVER_CONNECTION: This error can occur when a
+ *      jack client is unable to connect to a jack server, perhaps it should
+ *      be started first.
+ * @PSY_AUDIO_DEVICE_ERROR_BUSY: This error can occur when trying to connect
+ *      to an audio device that is allready in operation.
+ * @PSY_AUDIO_DEVICE_ERROR_FAILED: unspecific error read the error message
+ *      for more info.
+ *
+ * An enumeration for errors that may result in operating an audio device
+ */
+typedef enum {
+    PSY_AUDIO_DEVICE_ERROR_NO_SERVER_CONNECTION,
+    PSY_AUDIO_DEVICE_ERROR_BUSY,
+    PSY_AUDIO_DEVICE_ERROR_FAILED,
+} PsyAudioDeviceError;
+
+/**
  * PsyAudioSampleRate:
  * @PSY_AUDIO_SAMPLE_RATE_22050: A low quality sample rate (old MP3's)
  * @PSY_AUDIO_SAMPLE_RATE_32000: A quality sufficient for audio tapes FM radio

@@ -3,11 +3,6 @@
 
 #include <gio/gio.h>
 
-#include <psy-matrix4.h>
-#include <psy-program.h>
-#include <psy-texture.h>
-#include <psy-vbuffer.h>
-
 G_BEGIN_DECLS
 
 #define PSY_AUDIO_DEVICE_ERROR psy_audio_device_error_quark()
@@ -32,28 +27,31 @@ typedef struct _PsyAudioDeviceClass {
 
 } PsyAudioDeviceClass;
 
-PsyAudioDevice *
+G_MODULE_EXPORT PsyAudioDevice *
 psy_audio_device_new(void);
 
-void
+G_MODULE_EXPORT void
 psy_audio_device_open(PsyAudioDevice *self, GError **error);
 
-const gchar *
+G_MODULE_EXPORT void
+psy_audio_device_close(PsyAudioDevice *self);
+
+G_MODULE_EXPORT const gchar *
 psy_audio_device_get_name(PsyAudioDevice *self);
 
-void
+G_MODULE_EXPORT void
 psy_audio_device_set_name(PsyAudioDevice *self, const gchar *name);
 
-guint
+G_MODULE_EXPORT guint
 psy_audio_get_sample_rate(PsyAudioDevice *self);
 
-guint
+G_MODULE_EXPORT guint
 psy_audio_set_sample_rate(PsyAudioDevice *self, guint sample_rate);
 
-gboolean
+G_MODULE_EXPORT gboolean
 psy_audio_device_get_is_open(PsyAudioDevice *self);
 
-const gchar *
+G_MODULE_EXPORT const gchar *
 psy_audio_device_get_default_name(PsyAudioDevice *self);
 
 // TODO

@@ -4,6 +4,14 @@
 #include "psy-config.h"
 #include "psy-enums.h"
 
+//#if defined HAVE_ALSA
+//    #include "alsa/psy-alsa-audio-device.h"
+//#endif
+
+#if defined HAVE_JACK2
+    #include "jack/psy-jack-audio-device.h"
+#endif
+
 /**
  * PsyAudioDevice:
  *
@@ -76,7 +84,7 @@ psy_audio_device_init(PsyAudioDevice *self)
     PsyAudioDevicePrivate *priv = psy_audio_device_get_instance_private(self);
     priv->is_open               = FALSE;
     priv->name        = g_strdup(psy_audio_device_get_default_name(self));
-    priv->sample_rate = 48000; // PSY_SAMPLE_RATE_48000;
+    priv->sample_rate = PSY_AUDIO_SAMPLE_RATE_48000;
 }
 
 static void
@@ -204,17 +212,19 @@ psy_audio_device_class_init(PsyAudioDeviceClass *klass)
  * The returned device will implement an PsyAudioDevice for one specific
  * backend.
  *
- * Returns: a instance of [class@PsyAudioDevice]
+ * Returns: A platform specific instance of [class@PsyAudioDevice] that will
+ *          implement this class.
  */
 PsyAudioDevice *
 psy_audio_device_new(void)
 {
-#if defined(HAVE_JACK)
+#if defined HAVE_JACK2
     return psy_jack_audio_device_new();
-#elif defined(HAVE_ALSA)
+#elif defined HAVE_ALSA
     return psy_alsa_audio_device_new();
-#endif
+#else
     return NULL;
+#endif
 }
 
 // TODO
@@ -258,4 +268,44 @@ psy_audio_device_get_default_name(PsyAudioDevice *self)
     g_return_val_if_fail(cls->get_default_name, NULL);
 
     return cls->get_default_name(self);
+}
+
+void
+psy_audio_device_open(PsyAudioDevice *self, GError **error)
+{
+    g_return_if_fail(PSY_IS_AUDIO_DEVICE(self));
+
+    if (psy_audio_device_get_is_open(self))
+        return;
+
+    PsyAudioDeviceClass *cls = PSY_AUDIO_DEVICE_GET_CLASS(self);
+
+    g_return_if_fail(cls->open);
+
+    cls->open(self, error);
+}
+
+void
+psy_audio_device_close(PsyAudioDevice *self)
+{
+    g_return_if_fail(PSY_IS_AUDIO_DEVICE(self));
+
+    if (psy_audio_device_get_is_open(self) == FALSE)
+        return;
+
+    PsyAudioDeviceClass *cls = PSY_AUDIO_DEVICE_GET_CLASS(self);
+
+    g_return_if_fail(cls->close);
+
+    cls->close(self);
+}
+
+gboolean
+psy_audio_device_get_is_open(PsyAudioDevice *self)
+{
+    g_return_val_if_fail(PSY_IS_AUDIO_DEVICE(self), FALSE);
+
+    PsyAudioDevicePrivate *priv = psy_audio_device_get_instance_private(self);
+
+    return priv->is_open;
 }
