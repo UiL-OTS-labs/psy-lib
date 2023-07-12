@@ -3,6 +3,7 @@
 #define PSYLIB_H
 
 #include "psy-artist.h"
+#include "psy-audio-device.h"
 #include "psy-canvas.h"
 #include "psy-circle-artist.h"
 #include "psy-circle.h"
@@ -42,6 +43,8 @@
 #include "psy-window.h"
 
 #include "backend_gtk/psy-gtk-window.h"
+
+#include "jack/psy-jack-audio-device.h"
 
 #include "gl/psy-gl-canvas.h"
 #include "gl/psy-gl-context.h"
