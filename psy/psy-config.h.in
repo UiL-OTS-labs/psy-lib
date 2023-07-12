@@ -18,3 +18,7 @@
 #mesondefine HAVE_UNISTD_H
 #mesondefine HAVE_JACK_H
 #mesondefine HAVE_ASOUNDLIB_H
+
+// backend/options
+#mesondefine HAVE_JACK2
+#mesondefine HAVE_ALSA

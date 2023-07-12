@@ -10,12 +10,15 @@ cdata.set_quoted('PSY_SOURCE_ROOT', meson.project_source_root())
 cdata.set_quoted('PSY_BUILD_ROOT', meson.project_build_root())
 
 # check for compiler buildins
+
 if cc.has_function('__builtin_add_overflow')
     cdata.set('HAVE_BUILTIN_ADD_OVERFLOW', 1)
 endif
+
 if cc.has_function('__builtin_sub_overflow')
     cdata.set('HAVE_BUILTIN_SUB_OVERFLOW', 1)
 endif
+
 if cc.has_function('__builtin_mul_overflow')
     cdata.set('HAVE_BUILTIN_MUL_OVERFLOW', 1)
 endif
@@ -24,20 +27,35 @@ endif
 if cc.has_header('unistd.h')
     cdata.set('HAVE_UNISTD_H', true)
 endif
+
 if cc.has_header('linux/parport.h')
     cdata.set('HAVE_LINUX_PARPORT_H', true)
 endif
+
 if cc.has_header('linux/ppdev.h')
     cdata.set('HAVE_LINUX_PPDEV_H', true)
 endif
+
 if cc.has_header('sys/random.h')
     cdata.set('HAVE_SYS_RANDOM_H', true)
 endif
+
 if cc.has_header('jack/jack.h')
     cdata.set('HAVE_JACK_H', true)
 endif
+
 if cc.has_header('alsa/asoundlib.h')
     cdata.set('HAVE_ASOUNDLIB_H', true)
+endif
+
+# set predefines whether psylib is compile with the following backends/options
+
+if get_option('jack2')
+    cdata.set('HAVE_JACK2', true)
+endif
+
+if get_option('alsa')
+    cdata.set('HAVE_ALSA', true)
 endif
 
 configure_file (
@@ -49,6 +67,7 @@ configure_file (
 config_incdirs = include_directories('.')
 libpsy_incdirs = include_directories(
     'external_libs',
+    'jack',
     'gl',
     'hw',
     'backend_gtk',
@@ -151,6 +170,12 @@ libpsyfiles = files (
 subdir('gl')
 subdir('backend_gtk')
 subdir('hw')
+
+if get_option('jack2')
+    subdir('jack')
+endif
+
+
 enum_files = gnome.mkenums_simple('enum-types', sources : libpsy_headers)
 
 configure_file(input : 'v-shader.vert',
@@ -173,25 +198,25 @@ configure_file(input : 'picture.frag',
                copy : true)
 
 #preprocessor args
-CPP_ARGS = [
-      '-DG_LOG_DOMAIN="Psy"',
-      '-DG_LOG_USE_STRUCTURED'
-  ]
+PP_ARGS = [
+    '-DG_LOG_DOMAIN="Psy"',
+    '-DG_LOG_USE_STRUCTURED'
+]
 
 libpsy = library (
     'psy',
     libpsyfiles + enum_files,
-    dependencies : [gtk_dep, epoxy_dep, m_dep],
+    dependencies : psy_deps,
     include_directories : [libpsy_incdirs, config_incdirs],
-    c_args : CPP_ARGS,
-    cpp_args : CPP_ARGS,
+    c_args : PP_ARGS,
+    cpp_args : PP_ARGS,
     install: true
 )
 
 libpsy_dep = declare_dependency(
     link_with : libpsy,
     include_directories : [libpsy_incdirs, config_incdirs],
-    dependencies : [glib_dep, gobject_dep, gtk_dep, epoxy_dep, m_dep]
+    dependencies : psy_deps 
 )
 
 gir = gnome.generate_gir(

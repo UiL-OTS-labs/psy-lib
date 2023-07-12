@@ -11,7 +11,24 @@ option(
     'documentation',
     type : 'boolean',
     value : true,
-    description : 'build documentation requires gi_docgen (via pip e.g.) and intropection of libpsy'
+    description : 'build documentation requires gi_docgen (via pip e.g.) ' +
+                  'and intropection of libpsy'
 )
 
+# enable features for specific backends
 
+option (
+    'jack2',
+    type : 'boolean',
+    value : true,
+    description : 'Enable JACK2 as a backend for audio Linux (mac and ' +
+                  'windows) you\'ll need the Jack2 development libraries'
+)
+
+option (
+    'alsa',
+    type : 'boolean',
+    value : true,
+    description : 'Enabe ALSA as a backend for audio Linux only depends on ' +
+                  'libasound2-dev / alsa development libs'
+)
