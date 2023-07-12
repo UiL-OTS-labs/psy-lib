@@ -43,6 +43,7 @@ unit_test = executable (
     'unit-test',
     files (
         'main.c',
+        'test-audio.c',
         'test-canvas.c',
         'test-color.c',
         'test-image.c',

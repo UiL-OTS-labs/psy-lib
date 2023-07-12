@@ -4,6 +4,9 @@
 #include <glib.h>
 
 int
+add_audio_suite(void);
+
+int
 add_canvas_suite(void);
 
 int

@@ -10,6 +10,7 @@
 
 #define VAL_FALSE "false"
 
+static gboolean g_audio;
 static gboolean verbose;
 static gboolean g_save_images = FALSE;
 static gint     g_port_num    = -1;
@@ -25,6 +26,8 @@ GOptionEntry options[] = {
         "Seed for random functions [0 - 2^32)","-1"},
     {"verbose",  'v',    G_OPTION_FLAG_NONE, G_OPTION_ARG_NONE,  &verbose,
         "Run the suite verbosely", NULL},
+    {"audio",  'a',    G_OPTION_FLAG_NONE, G_OPTION_ARG_NONE,  &g_audio,
+        "Also run the audio tests", NULL},
     {0,},
 };
 
@@ -38,6 +41,12 @@ add_suites_to_registry(void)
     error = add_ref_count_suite();
     if (error)
         return error;
+
+    if (g_audio) {
+        error = add_audio_suite();
+        if (error)
+            return error;
+    }
 
     error = add_canvas_suite();
     if (error)
