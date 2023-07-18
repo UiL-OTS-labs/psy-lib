@@ -8,6 +8,8 @@
  *      be started first.
  * @PSY_AUDIO_DEVICE_ERROR_BUSY: This error can occur when trying to connect
  *      to an audio device that is allready in operation.
+ * @PSY_AUDIO_DEVICE_ERROR_OPEN: This operation cannot be performed when the
+ *      device is open.
  * @PSY_AUDIO_DEVICE_ERROR_FAILED: unspecific error read the error message
  *      for more info.
  *
@@ -16,6 +18,7 @@
 typedef enum {
     PSY_AUDIO_DEVICE_ERROR_NO_SERVER_CONNECTION,
     PSY_AUDIO_DEVICE_ERROR_BUSY,
+    PSY_AUDIO_DEVICE_ERROR_OPEN,
     PSY_AUDIO_DEVICE_ERROR_FAILED,
 } PsyAudioDeviceError;
 

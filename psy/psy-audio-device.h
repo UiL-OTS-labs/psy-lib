@@ -2,6 +2,7 @@
 #define PSY_AUDIO_DEVICE_H
 
 #include <gio/gio.h>
+#include <psy-enums.h>
 
 G_BEGIN_DECLS
 
@@ -42,17 +43,19 @@ psy_audio_device_get_name(PsyAudioDevice *self);
 G_MODULE_EXPORT void
 psy_audio_device_set_name(PsyAudioDevice *self, const gchar *name);
 
-G_MODULE_EXPORT guint
-psy_audio_get_sample_rate(PsyAudioDevice *self);
-
-G_MODULE_EXPORT guint
-psy_audio_set_sample_rate(PsyAudioDevice *self, guint sample_rate);
-
 G_MODULE_EXPORT gboolean
 psy_audio_device_get_is_open(PsyAudioDevice *self);
 
 G_MODULE_EXPORT const gchar *
 psy_audio_device_get_default_name(PsyAudioDevice *self);
+
+G_MODULE_EXPORT PsyAudioSampleRate
+psy_audio_device_get_sample_rate(PsyAudioDevice *self);
+
+G_MODULE_EXPORT gboolean
+psy_audio_device_set_sample_rate(PsyAudioDevice    *self,
+                                 PsyAudioSampleRate sample_rate,
+                                 GError           **error);
 
 // TODO
 // PsyAudioPlayback*

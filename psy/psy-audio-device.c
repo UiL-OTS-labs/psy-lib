@@ -1,6 +1,7 @@
 
 
 #include "psy-audio-device.h"
+#include "enum-types.h"
 #include "psy-config.h"
 #include "psy-enums.h"
 
@@ -26,9 +27,9 @@ G_DEFINE_QUARK(psy-audio-device-error-quark,
 // clang-format on
 
 typedef struct _PsyAudioDevicePrivate {
-    char    *name;
-    guint    sample_rate;
-    gboolean is_open;
+    char              *name;
+    PsyAudioSampleRate sample_rate;
+    gboolean           is_open;
 } PsyAudioDevicePrivate;
 
 G_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE(PsyAudioDevice,
@@ -67,12 +68,18 @@ psy_audio_device_get_property(GObject    *object,
                               GValue     *value,
                               GParamSpec *pspec)
 {
-    PsyAudioDevice        *self = PSY_AUDIO_DEVICE(object);
-    PsyAudioDevicePrivate *priv = psy_audio_device_get_instance_private(self);
-    (void) value;
-    (void) priv;
+    PsyAudioDevice *self = PSY_AUDIO_DEVICE(object);
 
     switch ((PsyAudioDeviceProperty) prop_id) {
+    case PROP_NAME:
+        g_value_set_string(value, psy_audio_device_get_name(self));
+        break;
+    case PROP_IS_OPEN:
+        g_value_set_boolean(value, psy_audio_device_get_is_open(self));
+        break;
+    case PROP_SAMPLE_RATE:
+        g_value_set_enum(value, psy_audio_device_get_sample_rate(self));
+        break;
     default:
         G_OBJECT_WARN_INVALID_PROPERTY_ID(object, prop_id, pspec);
     }
@@ -82,8 +89,9 @@ static void
 psy_audio_device_init(PsyAudioDevice *self)
 {
     PsyAudioDevicePrivate *priv = psy_audio_device_get_instance_private(self);
-    priv->is_open               = FALSE;
-    priv->name        = g_strdup(psy_audio_device_get_default_name(self));
+
+    priv->is_open     = FALSE;
+    priv->name        = g_strdup("");
     priv->sample_rate = PSY_AUDIO_SAMPLE_RATE_48000;
 }
 
@@ -93,7 +101,10 @@ psy_audio_device_dispose(GObject *object)
     PsyAudioDevice        *self = PSY_AUDIO_DEVICE(object);
     PsyAudioDevicePrivate *priv = psy_audio_device_get_instance_private(self);
 
-    (void) priv; // currently it doesn't have other GObject's
+    if (priv->is_open) {
+        psy_audio_device_close(self);
+    }
+    g_assert(!priv->is_open);
 
     G_OBJECT_CLASS(psy_audio_device_parent_class)->dispose(object);
 }
@@ -189,13 +200,12 @@ psy_audio_device_class_init(PsyAudioDeviceClass *klass)
      * device.
      */
     audio_device_properties[PROP_SAMPLE_RATE]
-        = g_param_spec_int("sample-rate",
-                           "SampleRate",
-                           "The sample rate of this device",
-                           8000,
-                           192000,
-                           48000,
-                           G_PARAM_READABLE);
+        = g_param_spec_enum("sample-rate",
+                            "SampleRate",
+                            "The sample rate of this device",
+                            psy_audio_sample_rate_get_type(),
+                            PSY_AUDIO_SAMPLE_RATE_48000,
+                            G_PARAM_READABLE);
 
     g_object_class_install_properties(
         gobject_class, NUM_PROPERTIES, audio_device_properties);
@@ -308,4 +318,35 @@ psy_audio_device_get_is_open(PsyAudioDevice *self)
     PsyAudioDevicePrivate *priv = psy_audio_device_get_instance_private(self);
 
     return priv->is_open;
+}
+
+PsyAudioSampleRate
+psy_audio_device_get_sample_rate(PsyAudioDevice *self)
+{
+    g_return_val_if_fail(PSY_IS_AUDIO_DEVICE(self), 0);
+
+    PsyAudioDevicePrivate *priv = psy_audio_device_get_instance_private(self);
+
+    return priv->sample_rate;
+}
+
+gboolean
+psy_audio_device_set_sample_rate(PsyAudioDevice    *self,
+                                 PsyAudioSampleRate sample_rate,
+                                 GError           **error)
+{
+    g_return_val_if_fail(PSY_IS_AUDIO_DEVICE(self), FALSE);
+    g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
+    PsyAudioDevicePrivate *priv = psy_audio_device_get_instance_private(self);
+
+    if (psy_audio_device_get_is_open(self)) {
+        g_set_error(error,
+                    PSY_AUDIO_DEVICE_ERROR,
+                    PSY_AUDIO_DEVICE_ERROR_OPEN,
+                    "Unable to change sample rate when the device is open.\n");
+        return FALSE;
+    }
+
+    priv->sample_rate = sample_rate;
+    return TRUE;
 }
