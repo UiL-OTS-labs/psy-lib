@@ -4,7 +4,7 @@
 #include <glib.h>
 
 int
-add_audio_suite(void);
+add_audio_suite(const gchar *backend);
 
 int
 add_canvas_suite(void);

@@ -8,13 +8,13 @@
 #include "suites.h"
 #include "unit-test-utilities.h"
 
-#define VAL_FALSE "false"
-
 static gboolean g_audio;
 static gboolean verbose;
 static gboolean g_save_images = FALSE;
 static gint     g_port_num    = -1;
 static gint64   g_seed        = -1;
+
+static const char *g_audio_backend = "jack";
 
 /* clang-format off */
 GOptionEntry options[] = {
@@ -28,6 +28,8 @@ GOptionEntry options[] = {
         "Run the suite verbosely", NULL},
     {"audio",  'a',    G_OPTION_FLAG_NONE, G_OPTION_ARG_NONE,  &g_audio,
         "Also run the audio tests", NULL},
+    {"audio-backend",  'b', G_OPTION_FLAG_NONE, G_OPTION_ARG_STRING,
+        &g_audio_backend, "the audio backend to use", NULL},
     {0,},
 };
 
@@ -43,7 +45,7 @@ add_suites_to_registry(void)
         return error;
 
     if (g_audio) {
-        error = add_audio_suite();
+        error = add_audio_suite(g_audio_backend);
         if (error)
             return error;
     }
@@ -112,6 +114,7 @@ main(int argc, char **argv)
 {
     GOptionContext *context = g_option_context_new("");
     g_option_context_add_main_entries(context, options, NULL);
+
     int     ret, n_test_failed = -1;
     GError *error = NULL;
 
