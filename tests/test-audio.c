@@ -73,6 +73,29 @@ audio_device_create(void)
     g_object_unref(device);
 }
 
+typedef struct OnStarted {
+    GMainLoop *loop;
+    gboolean   started;
+} OnStarted;
+
+static void
+on_started(PsyAudioDevice *device, PsyTimePoint *tp, gpointer data)
+{
+    (void) device, (void) tp;
+
+    OnStarted *on_started = data;
+    on_started->started   = true;
+
+    g_main_loop_quit(on_started->loop);
+}
+
+static gboolean
+quit_loop(GMainLoop *loop)
+{
+    g_main_loop_quit(loop);
+    return FALSE;
+}
+
 static void
 audio_device_open(void)
 {
@@ -80,13 +103,14 @@ audio_device_open(void)
     gboolean        is_open;
     gchar          *name;
     GError         *error = NULL;
+    GMainLoop      *loop  = g_main_loop_new(NULL, FALSE);
+
+    OnStarted cb_data = {.loop = loop, .started = FALSE};
 
     CU_ASSERT_PTR_NOT_NULL_FATAL(device);
 
     psy_audio_device_open(device, &error);
     CU_ASSERT_PTR_NULL(error);
-
-    g_usleep(1000000);
 
     // clang-format off
     g_object_get(device,
@@ -94,13 +118,19 @@ audio_device_open(void)
                  "name", &name,
                  NULL);
     // clang-format on
+    g_signal_connect(device, "started", G_CALLBACK(on_started), &cb_data);
+    g_timeout_add(2000, G_SOURCE_FUNC(quit_loop), loop);
 
+    g_main_loop_run(loop);
     CU_ASSERT_TRUE(is_open);
+    CU_ASSERT_TRUE(cb_data.started);
     CU_ASSERT_STRING_EQUAL(name, psy_audio_device_get_default_name(device));
 
     g_free(name);
     g_clear_error(&error);
     g_object_unref(device);
+
+    g_main_loop_unref(cb_data.loop);
 }
 
 int
