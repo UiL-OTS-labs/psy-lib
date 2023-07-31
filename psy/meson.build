@@ -77,6 +77,7 @@ libpsy_incdirs = include_directories(
 libpsy_headers = files(
     'psy-artist.h',
     'psy-audio-device.h',
+    'psy-auditory-stimulus.h',
     'psy-canvas.h',
     'psy-circle.h',
     'psy-circle-artist.h',
@@ -126,6 +127,7 @@ libpsy_header_private = files(
 libpsyfiles = files (
     'psy-artist.c',
     'psy-audio-device.c',
+    'psy-auditory-stimulus.c',
     'psy-canvas.c',
     'psy-circle.c',
     'psy-circle-artist.c',

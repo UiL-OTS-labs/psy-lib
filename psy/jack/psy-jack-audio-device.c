@@ -3,6 +3,7 @@
 #include <stdio.h>
 
 #include "enum-types.h"
+#include "psy-clock.h"
 #include "psy-config.h"
 #include "psy-enums.h"
 #include "psy-jack-audio-device.h"
@@ -17,9 +18,13 @@
 typedef struct _PsyJackAudioDevice {
     PsyAudioDevice parent;
     jack_client_t *client;
-    GPtrArray     *capture_ports;
-    GPtrArray     *playback_ports;
-} PsyJackAudioDevice;
+
+    // Owned by audio callback when open
+    PsyClock  *psy_clock;
+    GPtrArray *capture_ports;
+    GPtrArray *playback_ports;
+
+} PsyJackAudioDeviceclock;
 
 G_DEFINE_FINAL_TYPE(PsyJackAudioDevice,
                     psy_jack_audio_device,
@@ -35,8 +40,28 @@ typedef enum { PROP_NULL, NUM_PROPERTIES } PsyJackAudioDeviceProperty;
 static int
 jack_audio_device_on_process(jack_nframes_t n, void *audio_device)
 {
-    PsyAudioDevice *self = audio_device;
-    (void) n;
+    PsyJackAudioDevice *self = audio_device;
+    PsyTimePoint       *tp   = psy_clock_now(self->psy_clock);
+
+    if (G_UNLIKELY(!psy_audio_device_get_started(PSY_AUDIO_DEVICE(self)))) {
+        psy_audio_device_set_started(PSY_AUDIO_DEVICE(self), tp);
+    }
+    // Read first, because the input might be desired for the output.
+
+    for (guint port = 0; port < self->capture_ports->len; port++) {
+        ;
+    }
+
+    for (guint i = 0; i < self->playback_ports->len; i++) {
+        jack_default_audio_sample_t *samples;
+        jack_port_t                 *port = self->playback_ports->pdata[i];
+
+        samples = jack_port_get_buffer(port, n);
+
+        memset(samples, '0', sizeof(jack_default_audio_sample_t) * n);
+    }
+
+    g_object_unref(tp);
 
     return 0;
 }
@@ -50,7 +75,7 @@ jack_audio_device_on_shut_down(void *audio_device)
 static int
 jack_audio_device_on_sample_rate_change(jack_nframes_t n, void *audio_device)
 {
-    PsyAudioDevice *self = audio_device;
+    PsyJackAudioDevice *self = audio_device;
     (void) n;
 
     return 0;
@@ -59,7 +84,7 @@ jack_audio_device_on_sample_rate_change(jack_nframes_t n, void *audio_device)
 static int
 jack_audio_device_on_xrun(void *audio_device)
 {
-    PsyAudioDevice *self = audio_device;
+    PsyJackAudioDevice *self = audio_device;
 
     return 0;
 }
@@ -68,7 +93,7 @@ static void
 jack_audio_device_on_latency(jack_latency_callback_mode_t mode,
                              void                        *audio_device)
 {
-    PsyAudioDevice *self = audio_device;
+    PsyJackAudioDevice *self = audio_device;
 
     if (mode == JackCaptureLatency) {
         // TODO
@@ -248,6 +273,8 @@ psy_jack_audio_device_init(PsyJackAudioDevice *self)
 
     self->capture_ports  = g_ptr_array_new();
     self->playback_ports = g_ptr_array_new();
+
+    self->psy_clock = psy_clock_new();
 }
 
 static void
@@ -257,6 +284,7 @@ psy_jack_audio_device_dispose(GObject *object)
     (void) self;
 
     // self->jack_client is closed in psy_audio_device_close()
+    g_clear_object(&self->psy_clock);
 
     G_OBJECT_CLASS(psy_jack_audio_device_parent_class)->dispose(object);
 }
