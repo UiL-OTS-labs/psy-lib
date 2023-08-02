@@ -12,14 +12,19 @@
  * PsyJackAudioDevice:
  *
  * PsyJackAudioDevice is a device that uses the JACK server to implement a
- * PsyAudioDevice.
+ * PsyAudioDevice. One important thing to note about using jack, is that
+ * the server is in charge of parameters such as the samplerate, -format and
+ * latency. Generally one might need to set these parameters on the capture
+ * device in advance, but with Jack it doens't really matter, you start
+ * the server (e.g. using QJackCtl) and then psylibs jack ctl connects to the
+ * jack server and takes over it's parameters.
  */
 
 typedef struct _PsyJackAudioDevice {
     PsyAudioDevice parent;
     jack_client_t *client;
 
-    // Owned by audio callback when open
+    // Owned by audio callback when started.
     PsyClock  *psy_clock;
     GPtrArray *capture_ports;
     GPtrArray *playback_ports;
@@ -37,6 +42,15 @@ typedef enum { PROP_NULL, NUM_PROPERTIES } PsyJackAudioDeviceProperty;
 
 /* *************** private methods ************** */
 
+/**
+ * jack_audio_device_on_process:(skip)
+ * @n: The number of sample (for each channel) to process
+ * @audio_device: A pointer back to the audio device
+ *
+ * The audio callback
+ *
+ * stability:private
+ */
 static int
 jack_audio_device_on_process(jack_nframes_t n, void *audio_device)
 {
@@ -156,6 +170,14 @@ jack_audio_device_get_ports(PsyJackAudioDevice *self)
     enum JackPortFlags playback_flags = JackPortIsPhysical | JackPortIsInput;
     enum JackPortFlags capture_flags  = JackPortIsPhysical | JackPortIsOutput;
 
+    guint num_inputs, num_outputs;
+    g_object_get(self,
+                 "num-input-channels",
+                 &num_inputs,
+                 "num-output-channels",
+                 &num_outputs,
+                 NULL);
+
     const char **capture_ports
         = jack_get_ports(client, NULL, JACK_DEFAULT_AUDIO_TYPE, capture_flags);
     const char **playback_ports
@@ -163,7 +185,7 @@ jack_audio_device_get_ports(PsyJackAudioDevice *self)
 
     gchar port_name[1024];
 
-    for (guint i = 0;; i++) {
+    for (guint i = 0; i < num_inputs; i++) {
         if (capture_ports[i] == NULL) {
             break;
         }
@@ -174,7 +196,7 @@ jack_audio_device_get_ports(PsyJackAudioDevice *self)
         g_ptr_array_add(self->capture_ports, port);
     }
 
-    for (int i = 0;; i++) {
+    for (int i = 0; i < num_outputs; i++) {
         if (playback_ports[i] == NULL) {
             break;
         }
@@ -184,6 +206,11 @@ jack_audio_device_get_ports(PsyJackAudioDevice *self)
 
         g_ptr_array_add(self->playback_ports, port);
     }
+
+    if (self->playback_ports->len != num_outputs)
+        psy_audio_device_set_num_output_channels(self, num_outputs);
+    if (self->capture_ports->len != num_inputs)
+        psy_audio_device_set_num_input_channels(self, num_inputs);
 
     jack_free(capture_ports);
     jack_free(playback_ports);
@@ -306,6 +333,7 @@ psy_jack_audio_device_finalize(GObject *object)
 static void
 jack_audio_device_open(PsyAudioDevice *self, GError **error)
 {
+
     PsyJackAudioDevice *jack_self = PSY_JACK_AUDIO_DEVICE(self);
 
     jack_options_t options = JackNoStartServer;
@@ -333,7 +361,15 @@ jack_audio_device_open(PsyAudioDevice *self, GError **error)
     // Create ports here or below register we can connect them.
     jack_audio_device_get_ports(PSY_JACK_AUDIO_DEVICE(self));
 
-    status = jack_activate(jack_self->client);
+    PSY_AUDIO_DEVICE_CLASS(psy_jack_audio_device_parent_class)
+        ->open(self, error);
+}
+
+static void
+jack_audio_device_start(PsyAudioDevice *self, GError **error)
+{
+    PsyJackAudioDevice *jack_self = PSY_JACK_AUDIO_DEVICE(self);
+    jack_status_t       status    = jack_activate(jack_self->client);
     if (status) {
         g_set_error(error,
                     psy_audio_device_error_get_type(),
@@ -346,7 +382,19 @@ jack_audio_device_open(PsyAudioDevice *self, GError **error)
     jack_audio_device_connect_ports(PSY_JACK_AUDIO_DEVICE(self));
 
     PSY_AUDIO_DEVICE_CLASS(psy_jack_audio_device_parent_class)
-        ->open(self, error);
+        ->start(self, error);
+}
+
+static void
+jack_audio_device_stop(PsyAudioDevice *self)
+{
+    PsyJackAudioDevice *jack_self = PSY_JACK_AUDIO_DEVICE(self);
+    jack_status_t       status    = jack_deactivate(jack_self->client);
+    if (status) {
+        g_error("Unable to deactivate client: %d", status);
+        return;
+    }
+    PSY_AUDIO_DEVICE_CLASS(psy_jack_audio_device_parent_class)->stop(self);
 }
 
 static void
@@ -379,6 +427,8 @@ psy_jack_audio_device_class_init(PsyJackAudioDeviceClass *klass)
 
     audio_klass->open             = jack_audio_device_open;
     audio_klass->close            = jack_audio_device_close;
+    audio_klass->start            = jack_audio_device_start;
+    audio_klass->stop             = jack_audio_device_stop;
     audio_klass->get_default_name = jack_audio_device_get_default_name;
 
     // We just use what the base class knows.

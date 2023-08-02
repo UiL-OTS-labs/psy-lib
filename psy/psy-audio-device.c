@@ -27,9 +27,11 @@ G_DEFINE_QUARK(psy-audio-device-error-quark,
 // clang-format on
 
 typedef struct _PsyAudioDevicePrivate {
-    char              *name;
+    gchar             *name;
     PsyAudioSampleRate sample_rate;
     GMainContext      *main_context;
+    guint              num_inputs;
+    guint              num_outputs;
     gboolean           is_open;
     gboolean           started;
 } PsyAudioDevicePrivate;
@@ -42,7 +44,10 @@ typedef enum {
     PROP_NULL,
     PROP_NAME,
     PROP_IS_OPEN,
+    PROP_STARTED,
     PROP_SAMPLE_RATE,
+    PROP_NUM_INPUTS,
+    PROP_NUM_OUTPUTS,
     NUM_PROPERTIES
 } PsyAudioDeviceProperty;
 
@@ -80,6 +85,18 @@ psy_audio_device_set_property(GObject      *object,
     (void) value;
 
     switch ((PsyAudioDeviceProperty) prop_id) {
+    case PROP_NAME:
+        psy_audio_device_set_name(self, g_value_get_string(value));
+        break;
+    case PROP_SAMPLE_RATE:
+        psy_audio_device_set_sample_rate(self, g_value_get_enum(value));
+        break;
+    case PROP_NUM_INPUTS:
+        psy_audio_device_set_num_input_channels(self, g_value_get_uint(value));
+        break;
+    case PROP_NUM_OUTPUTS:
+        psy_audio_device_set_num_output_channels(self, g_value_get_uint(value));
+        break;
     default:
         G_OBJECT_WARN_INVALID_PROPERTY_ID(object, prop_id, pspec);
     }
@@ -100,8 +117,17 @@ psy_audio_device_get_property(GObject    *object,
     case PROP_IS_OPEN:
         g_value_set_boolean(value, psy_audio_device_get_is_open(self));
         break;
+    case PROP_STARTED:
+        g_value_set_boolean(value, psy_audio_device_get_started(self));
+        break;
     case PROP_SAMPLE_RATE:
         g_value_set_enum(value, psy_audio_device_get_sample_rate(self));
+        break;
+    case PROP_NUM_INPUTS:
+        g_value_set_uint(value, psy_audio_device_get_num_input_channels(self));
+        break;
+    case PROP_NUM_OUTPUTS:
+        g_value_set_uint(value, psy_audio_device_get_num_output_channels(self));
         break;
     default:
         G_OBJECT_WARN_INVALID_PROPERTY_ID(object, prop_id, pspec);
@@ -126,6 +152,7 @@ psy_audio_device_dispose(GObject *object)
     PsyAudioDevicePrivate *priv = psy_audio_device_get_instance_private(self);
 
     if (priv->is_open) {
+        psy_audio_device_stop(self);
         psy_audio_device_close(self);
     }
     g_assert(!priv->is_open);
@@ -141,7 +168,6 @@ psy_audio_device_finalize(GObject *object)
 {
     PsyAudioDevice        *self = PSY_AUDIO_DEVICE(object);
     PsyAudioDevicePrivate *priv = psy_audio_device_get_instance_private(self);
-    (void) priv;
 
     g_free(priv->name);
 
@@ -155,6 +181,8 @@ audio_device_open(PsyAudioDevice *self, GError **error)
     PsyAudioDevicePrivate *priv = psy_audio_device_get_instance_private(self);
     priv->is_open               = TRUE;
     g_info("Opened PsyAudioDevice %s", psy_audio_device_get_name(self));
+
+    psy_audio_device_start(self, error);
 }
 
 static void
@@ -166,34 +194,25 @@ audio_device_close(PsyAudioDevice *self)
 }
 
 static void
-audio_device_set_name(PsyAudioDevice *self, const gchar *name)
+audio_device_start(PsyAudioDevice *self, GError **error)
 {
+    (void) error; // Error's might be raised in derived classes (backends).
     PsyAudioDevicePrivate *priv = psy_audio_device_get_instance_private(self);
-    g_clear_pointer(&priv->name, g_free);
-    priv->name = g_strdup(name);
+    priv->started               = TRUE;
+    g_info("Started PsyAudioDevice %s", psy_audio_device_get_name(self));
 }
 
 static void
-audio_device_set_sample_rate(PsyAudioDevice *self, guint sample_rate)
+audio_device_stop(PsyAudioDevice *self)
 {
     PsyAudioDevicePrivate *priv = psy_audio_device_get_instance_private(self);
-    priv->sample_rate           = sample_rate;
+    priv->started               = FALSE;
+    g_info("Stopped PsyAudioDevice %s", psy_audio_device_get_name(self));
 }
 
 static gboolean
 audio_device_emit_started(AudioStartedMsg *msg)
 {
-    PsyAudioDevicePrivate *priv
-        = psy_audio_device_get_instance_private(msg->audio_device);
-
-    PsyDuration  *dur;
-    PsyTimePoint *tp_null = psy_time_point_new();
-
-    dur = psy_time_point_subtract(msg->tp_started, tp_null);
-
-    g_object_unref(dur);
-    g_object_unref(tp_null);
-
     g_signal_emit(
         msg->audio_device, audio_device_signals[STARTED], 0, msg->tp_started);
 
@@ -210,10 +229,10 @@ psy_audio_device_class_init(PsyAudioDeviceClass *klass)
     gobject_class->finalize     = psy_audio_device_finalize;
     gobject_class->dispose      = psy_audio_device_dispose;
 
-    klass->open            = audio_device_open;
-    klass->close           = audio_device_close;
-    klass->set_name        = audio_device_set_name;
-    klass->set_sample_rate = audio_device_set_sample_rate;
+    klass->open  = audio_device_open;
+    klass->close = audio_device_close;
+    klass->start = audio_device_start;
+    klass->stop  = audio_device_stop;
 
     /**
      * PsyAudioDevice:name:
@@ -241,6 +260,18 @@ psy_audio_device_class_init(PsyAudioDeviceClass *klass)
                                G_PARAM_READABLE);
 
     /**
+     * PsyAudioDevice:started:
+     *
+     * You may use this property to see whether the audio callback is running.
+     */
+    audio_device_properties[PROP_STARTED]
+        = g_param_spec_boolean("started",
+                               "started",
+                               "Whether or not the audio callback is running",
+                               FALSE,
+                               G_PARAM_READABLE);
+
+    /**
      * PsyAudioDevice:sample-rate:
      *
      * You may use this to get the sample rate that is used for the audio
@@ -254,6 +285,38 @@ psy_audio_device_class_init(PsyAudioDeviceClass *klass)
                             PSY_AUDIO_SAMPLE_RATE_48000,
                             G_PARAM_READABLE);
 
+    /**
+     * PsyAudioDevice:num-input-channels
+     *
+     * The desired number of input channels, this property should be set before
+     * opening the device, if it is open you'll have to close and stop the
+     * device first.
+     */
+    audio_device_properties[PROP_NUM_INPUTS]
+        = g_param_spec_uint("num-input-channels",
+                            "NumInputChannels",
+                            "The number of input channels",
+                            0,
+                            G_MAXUINT,
+                            0,
+                            G_PARAM_READWRITE | G_PARAM_CONSTRUCT);
+
+    /**
+     * PsyAudioDevice:num-output-channels
+     *
+     * The desired number of output channels, this property should be set before
+     * opening the device, if it is open you'll have to close and stop the
+     * device first.
+     */
+    audio_device_properties[PROP_NUM_OUTPUTS]
+        = g_param_spec_uint("num-output-channels",
+                            "NumOutputChannels",
+                            "The number of output channels",
+                            0,
+                            G_MAXUINT,
+                            2,
+                            G_PARAM_READWRITE | G_PARAM_CONSTRUCT);
+
     g_object_class_install_properties(
         gobject_class, NUM_PROPERTIES, audio_device_properties);
 
@@ -264,6 +327,7 @@ psy_audio_device_class_init(PsyAudioDeviceClass *klass)
      *             AudioDevice.
      *
      * This signal may be used to determine when the AudioDevice is started.
+     * This signal is emitted when the first time the audio callback is run.
      */
     audio_device_signals[STARTED]
         = g_signal_new("started",
@@ -326,6 +390,24 @@ psy_audio_device_new(void)
 //     return cls->create_playback(self);
 // }
 
+gboolean
+psy_audio_device_set_name(PsyAudioDevice *self, const gchar *name)
+{
+    g_return_val_if_fail(PSY_IS_AUDIO_DEVICE(self) && name != NULL, FALSE);
+    PsyAudioDevicePrivate *priv = psy_audio_device_get_instance_private(self);
+
+    if (psy_audio_device_get_is_open(self)) {
+        g_warning(
+            "It only makes sense to set the name when the device isn't open.");
+        return FALSE;
+    }
+
+    g_clear_pointer(&priv->name, g_free);
+
+    priv->name = g_strdup(name);
+    return TRUE;
+}
+
 const gchar *
 psy_audio_device_get_name(PsyAudioDevice *self)
 {
@@ -351,6 +433,7 @@ void
 psy_audio_device_open(PsyAudioDevice *self, GError **error)
 {
     g_return_if_fail(PSY_IS_AUDIO_DEVICE(self));
+    g_return_if_fail(!error || *error == NULL);
 
     if (psy_audio_device_get_is_open(self))
         return;
@@ -362,11 +445,19 @@ psy_audio_device_open(PsyAudioDevice *self, GError **error)
     cls->open(self, error);
 }
 
+/**
+ * psy_audio_device_close:
+ * @self: an instance of [class@AudioDevice]
+ *
+ * Closes the audio device.
+ */
 void
 psy_audio_device_close(PsyAudioDevice *self)
 {
     g_return_if_fail(PSY_IS_AUDIO_DEVICE(self));
 
+    if (psy_audio_device_get_started(self))
+        psy_audio_device_stop(self);
     if (psy_audio_device_get_is_open(self) == FALSE)
         return;
 
@@ -375,6 +466,48 @@ psy_audio_device_close(PsyAudioDevice *self)
     g_return_if_fail(cls->close);
 
     cls->close(self);
+}
+
+/**
+ * psy_audio_device_start:
+ * @self: an instance of [class@AudioDevice]
+ * @error: errors may be returned here
+ *
+ * Generally you should not need to use this function as it is already
+ * called when the device is successfully opened.
+ * When this function is called the AudioCallback function will be called from
+ * some background thread, hence, the audio will start streaming and as such
+ * The device should be prepared to handle audio when this function is called.
+ */
+void
+psy_audio_device_start(PsyAudioDevice *self, GError **error)
+{
+    g_return_if_fail(PSY_IS_AUDIO_DEVICE(self));
+    g_return_if_fail(!error || *error == NULL);
+
+    PsyAudioDeviceClass *cls = PSY_AUDIO_DEVICE_GET_CLASS(self);
+    g_return_if_fail(cls->start);
+
+    cls->start(self, error);
+}
+
+/**
+ * psy_audio_device_stop:
+ * @self: an instance of [class@AudioDevice]
+ *
+ * Generally you should not need to use this function as it is already
+ * called when the device is about to close. The audio callback should not
+ * be called from this moment on.
+ */
+void
+psy_audio_device_stop(PsyAudioDevice *self)
+{
+    g_return_if_fail(PSY_IS_AUDIO_DEVICE(self));
+
+    PsyAudioDeviceClass *cls = PSY_AUDIO_DEVICE_GET_CLASS(self);
+    g_return_if_fail(cls->stop);
+
+    cls->stop(self);
 }
 
 gboolean
@@ -397,25 +530,121 @@ psy_audio_device_get_sample_rate(PsyAudioDevice *self)
     return priv->sample_rate;
 }
 
+/**
+ * psy_audio_device_set_sample_rate:
+ * @self: an instance of [class@PsyAudioDevice]
+ * @sample_rate: The desired sample rate for opening the audio device
+ *
+ * Set the desired sample rate of the audio device. This sample rate will
+ * be used to configure the audio device when opening the device. Hence,
+ * it makes only sense to change it when the device isn't open yet.
+ *
+ * Returns: TRUE if the desired sample rate is set, FALSE otherwise
+ */
 gboolean
 psy_audio_device_set_sample_rate(PsyAudioDevice    *self,
-                                 PsyAudioSampleRate sample_rate,
-                                 GError           **error)
+                                 PsyAudioSampleRate sample_rate)
 {
     g_return_val_if_fail(PSY_IS_AUDIO_DEVICE(self), FALSE);
-    g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
     PsyAudioDevicePrivate *priv = psy_audio_device_get_instance_private(self);
 
     if (psy_audio_device_get_is_open(self)) {
-        g_set_error(error,
-                    PSY_AUDIO_DEVICE_ERROR,
-                    PSY_AUDIO_DEVICE_ERROR_OPEN,
-                    "Unable to change sample rate when the device is open.\n");
+        g_warning("Unable to change the sample rate when the device is open.");
         return FALSE;
     }
 
     priv->sample_rate = sample_rate;
     return TRUE;
+}
+
+/**
+ * psy_audio_device_set_num_input_channels:
+ * @self: an instance of [class@AudioDevice]
+ * @n_channels: the desired number of input channels
+ *
+ * Set the desired number of input channels for opening the audio device. This
+ * property must be set prior to opening the device.
+ *
+ * Returns: TRUE if the desired number of channels is set, FALSE otherwise.
+ */
+gboolean
+psy_audio_device_set_num_input_channels(PsyAudioDevice *self, guint n_channels)
+{
+    g_return_val_if_fail(PSY_IS_AUDIO_DEVICE(self), FALSE);
+    PsyAudioDevicePrivate *priv = psy_audio_device_get_instance_private(self);
+
+    if (psy_audio_device_get_is_open(self)) {
+        g_warning(
+            "Unable to change num-input-channels when the device is open.");
+        return FALSE;
+    }
+    priv->num_inputs = n_channels;
+    return TRUE;
+}
+
+/**
+ * psy_audio_device_get_num_input_channels:
+ * @self: An instance of [class@PsyAudioDevice]
+ *
+ * Returns the number of input channels that are desired for opening the device
+ * if the device has opened, this may reflect the number of channels that
+ * are actually open.
+ *
+ * Returns: The desired/actual number of input channels.
+ */
+guint
+psy_audio_device_get_num_input_channels(PsyAudioDevice *self)
+{
+    g_return_val_if_fail(PSY_IS_AUDIO_DEVICE(self), -1);
+
+    PsyAudioDevicePrivate *priv = psy_audio_device_get_instance_private(self);
+
+    return priv->num_inputs;
+}
+
+/**
+ * psy_audio_device_set_num_output_channels:
+ * @self: an instance of [class@AudioDevice]
+ * @n_channels: the desired number of output channels
+ *
+ * Set the desired number of output channels for opening the audio device. This
+ * property must be set prior to opening the device.
+ *
+ * Returns: TRUE if the desired number of channels is set, FALSE otherwise.
+ */
+gboolean
+psy_audio_device_set_num_output_channels(PsyAudioDevice *self, guint n_channels)
+{
+    g_return_val_if_fail(PSY_IS_AUDIO_DEVICE(self), FALSE);
+    PsyAudioDevicePrivate *priv = psy_audio_device_get_instance_private(self);
+
+    if (psy_audio_device_get_is_open(self)) {
+        g_warning(
+            "Unable to change num-output-channels when the device is open.");
+        return FALSE;
+    }
+    priv->num_outputs = n_channels;
+    return TRUE;
+}
+
+/**
+ * psy_audio_device_get_num_output_channels:
+ * @self: An instance of [class@PsyAudioDevice]
+ *
+ * Returns the number of output channels that are desired for opening the
+ * device. If the device has opened, this may reflect the number of channels
+ * that are actually open.
+ *
+ * Returns: The desired/actual number of input channels.
+ */
+guint
+psy_audio_device_get_num_output_channels(PsyAudioDevice *self)
+{
+    g_return_val_if_fail(PSY_IS_AUDIO_DEVICE(self), -1);
+
+    PsyAudioDevicePrivate *priv = psy_audio_device_get_instance_private(self);
+
+    return priv->num_outputs;
 }
 
 /**
