@@ -77,6 +77,7 @@ libpsy_incdirs = include_directories(
 libpsy_headers = files(
     'psy-artist.h',
     'psy-audio-device.h',
+    'psy-audio-mixer.h',
     'psy-auditory-stimulus.h',
     'psy-canvas.h',
     'psy-circle.h',
@@ -96,6 +97,7 @@ libpsy_headers = files(
     'psy-picture-artist.h',
     'psy-picture.h',
     'psy-program.h',
+    'psy-queue.h',
     'psy-rectangle.h',
     'psy-rectangle-artist.h',
     'psy-shader.h',
@@ -127,6 +129,7 @@ libpsy_header_private = files(
 libpsyfiles = files (
     'psy-artist.c',
     'psy-audio-device.c',
+    'psy-audio-mixer.c',
     'psy-auditory-stimulus.c',
     'psy-canvas.c',
     'psy-circle.c',
@@ -145,6 +148,7 @@ libpsyfiles = files (
     'psy-picture.c',
     'psy-picture-artist.c',
     'psy-program.c',
+    'psy-queue.c',
     'psy-random.c',
     'psy-rectangle.c',
     'psy-rectangle-artist.c',

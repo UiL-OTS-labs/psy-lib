@@ -74,6 +74,10 @@ add_suites_to_registry(void)
     if (error)
         return error;
 
+    error = add_queue_suite();
+    if (error)
+        return error;
+
     error = add_stepping_suite();
     if (error)
         return error;

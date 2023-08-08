@@ -25,6 +25,9 @@ int
 add_picture_suite(void);
 
 int
+add_queue_suite(void);
+
+int
 add_ref_count_suite(void);
 
 int
