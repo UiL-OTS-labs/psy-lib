@@ -70,9 +70,9 @@ push_samples(gpointer data)
 
     g_info("push thread started");
     while (num_send < context->num_samples) {
-        status = psy_audio_queue_push_samples(q, 1, &data_in[num_send]);
+        status = psy_audio_queue_push_samples(q, 100, &data_in[num_send]);
         if (status == PSY_QUEUE_OK)
-            num_send++;
+            num_send += 10;
     }
 
     g_info("push thread stopping");
@@ -95,9 +95,9 @@ pull_samples(gpointer data)
     g_info("pull thread started");
 
     while (num_received < context->num_samples) {
-        status = psy_audio_queue_pop_samples(q, 1, &data_out[num_received]);
+        status = psy_audio_queue_pop_samples(q, 100, &data_out[num_received]);
         if (status == PSY_QUEUE_OK)
-            num_received++;
+            num_received += 10;
     }
 
     g_info("pull thread stopping");
