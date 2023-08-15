@@ -107,15 +107,26 @@ psy_audio_device_get_sample_rate(PsyAudioDevice *self);
 G_MODULE_EXPORT gboolean
 psy_audio_device_get_started(PsyAudioDevice *self);
 
-void
-psy_audio_device_set_started(PsyAudioDevice *self, PsyTimePoint *tp_start);
-
 G_MODULE_EXPORT PsyDuration *
 psy_audio_device_get_frame_dur(PsyAudioDevice *self);
+
+G_MODULE_EXPORT guint
+psy_audio_device_get_num_samples_callback(PsyAudioDevice *self);
+
+void
+psy_audio_device_set_num_samples_callback(PsyAudioDevice *self,
+                                          guint           num_samples);
+
+void
+psy_audio_device_set_started(PsyAudioDevice *self, PsyTimePoint *tp_start);
 
 void
 psy_audio_device_schedule_stimulus(PsyAudioDevice      *self,
                                    PsyAuditoryStimulus *stim);
+
+typedef struct _PsyAudioMixer PsyAudioMixer;
+PsyAudioMixer *
+psy_audio_device_get_mixer(PsyAudioDevice *self);
 
 // TODO
 // PsyAudioPlayback*
