@@ -1,7 +1,8 @@
 
+#include "enum-types.h"
 
 #include "psy-audio-device.h"
-#include "enum-types.h"
+#include "psy-audio-mixer.h"
 #include "psy-config.h"
 #include "psy-enums.h"
 
@@ -30,8 +31,10 @@ typedef struct _PsyAudioDevicePrivate {
     gchar             *name;
     PsyAudioSampleRate sample_rate;
     GMainContext      *main_context;
+    PsyAudioMixer     *mixer;
     guint              num_inputs;
     guint              num_outputs;
+    guint              num_sample_callback;
     gboolean           is_open;
     gboolean           started;
 } PsyAudioDevicePrivate;
@@ -48,6 +51,7 @@ typedef enum {
     PROP_SAMPLE_RATE,
     PROP_NUM_INPUTS,
     PROP_NUM_OUTPUTS,
+    PROP_NUM_SAMPLES_CALLBACK,
     NUM_PROPERTIES
 } PsyAudioDeviceProperty;
 
@@ -129,6 +133,10 @@ psy_audio_device_get_property(GObject    *object,
     case PROP_NUM_OUTPUTS:
         g_value_set_uint(value, psy_audio_device_get_num_output_channels(self));
         break;
+    case PROP_NUM_SAMPLES_CALLBACK:
+        g_value_set_uint(value,
+                         psy_audio_device_get_num_samples_callback(self));
+        break;
     default:
         G_OBJECT_WARN_INVALID_PROPERTY_ID(object, prop_id, pspec);
     }
@@ -179,7 +187,11 @@ audio_device_open(PsyAudioDevice *self, GError **error)
 {
     (void) error; // Error's might be raised in derived classes (backends).
     PsyAudioDevicePrivate *priv = psy_audio_device_get_instance_private(self);
-    priv->is_open               = TRUE;
+
+    PsyAudioMixer *mixer = psy_audio_mixer_new(self);
+    priv->mixer          = mixer;
+
+    priv->is_open = TRUE;
     g_info("Opened PsyAudioDevice %s", psy_audio_device_get_name(self));
 
     psy_audio_device_start(self, error);
@@ -316,6 +328,23 @@ psy_audio_device_class_init(PsyAudioDeviceClass *klass)
                             G_MAXUINT,
                             2,
                             G_PARAM_READWRITE | G_PARAM_CONSTRUCT);
+
+    /**
+     * PsyAudioDevice:num-samples-per-callback
+     *
+     * Obtain the number of samples that are processed each time the callback
+     * is called. This means each channel of audio processes this number
+     * of samples, hence you might need the number of channels to process
+     * which the total numbers of samples.
+     */
+    audio_device_properties[PROP_NUM_SAMPLES_CALLBACK] = g_param_spec_uint(
+        "samples-per-callback",
+        "SamplesPerCallback",
+        "The number of samples per channel that are processed",
+        0,
+        G_MAXUINT,
+        0,
+        G_PARAM_READABLE);
 
     g_object_class_install_properties(
         gobject_class, NUM_PROPERTIES, audio_device_properties);
@@ -670,12 +699,24 @@ psy_audio_device_get_frame_dur(PsyAudioDevice *self)
 }
 
 /**
+ * psy_audio_device_get_num_samples_callback:
+ *
+ * Get the number of samples that are processed in each iteration of the
+ * audio.
+ */
+guint
+psy_audio_device_get_num_samples_callback(PsyAudioDevice *self)
+{
+    g_return_val_if_fail(PSY_IS_AUDIO_DEVICE(self), -1);
+    PsyAudioDevicePrivate *priv = psy_audio_device_get_instance_private(self);
+
+    return priv->num_sample_callback;
+}
+
+/**
  * psy_audio_device_get_started:
  *
- * Determine whether the sound device is started. The device is considered
- * started when when the audio callback is running.
- *
- * Returns: TRUE when the device has started FALSE otherwise.
+ * Returns: TRUE if the device is started
  */
 gboolean
 psy_audio_device_get_started(PsyAudioDevice *self)
@@ -686,6 +727,11 @@ psy_audio_device_get_started(PsyAudioDevice *self)
     return priv->started;
 }
 
+/**
+ * psy_audio_device_set_started:
+ *
+ * stability:private
+ */
 void
 psy_audio_device_set_started(PsyAudioDevice *self, PsyTimePoint *tp)
 {
@@ -698,9 +744,30 @@ psy_audio_device_set_started(PsyAudioDevice *self, PsyTimePoint *tp)
     msg->tp_started   = g_object_ref(tp);
     msg->audio_device = g_object_ref(self);
 
+    // TODO REMOVE as it is potentially blocking, hence blocking the
+    // audio callback.
     g_main_context_invoke_full(priv->main_context,
                                G_PRIORITY_DEFAULT,
                                G_SOURCE_FUNC(audio_device_emit_started),
                                msg,
                                audio_started_msg_free);
+}
+
+/**
+ * psy_audio_device_get_mixer:(skip)
+ * @self: an instance of [class@AudioDevice]
+ *
+ * Get the mixer of the audiodevice. This is a method private to psylib
+ * If the device isn't open this function should return NULL.
+ *
+ * Stability:private:
+ * Returns:(transfer none)(nullable): The audio mixer for this AudioDevice
+ */
+PsyAudioMixer *
+psy_audio_device_get_mixer(PsyAudioDevice *self)
+{
+    g_return_val_if_fail(PSY_IS_AUDIO_DEVICE(self), NULL);
+    PsyAudioDevicePrivate *priv = psy_audio_device_get_instance_private(self);
+
+    return priv->mixer;
 }
