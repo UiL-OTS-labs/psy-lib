@@ -150,7 +150,7 @@ libpsyfiles = files (
     'psy-picture.c',
     'psy-picture-artist.c',
     'psy-program.c',
-    'psy-queue.c',
+    'psy-queue.cpp',
     'psy-random.c',
     'psy-rectangle.c',
     'psy-rectangle-artist.c',

@@ -12,8 +12,7 @@ queue_create(void)
 
     CU_ASSERT_PTR_NOT_NULL_FATAL(queue);
     CU_ASSERT_EQUAL(psy_audio_queue_size(queue), 0);
-    CU_ASSERT_EQUAL(psy_audio_queue_pop_samples(queue, 1, &some_float),
-                    PSY_QUEUE_EMPTY);
+    CU_ASSERT_EQUAL(psy_audio_queue_pop_samples(queue, 1, &some_float), 0);
     CU_ASSERT_EQUAL(psy_audio_queue_capacity(queue), 2048);
 
     psy_audio_queue_free(queue);
@@ -31,17 +30,17 @@ queue_push_pop(void)
         input[i] = 2048.0 * 1.0 / 2048;
     }
 
-    int status = psy_audio_queue_push_samples(queue, 2048, input);
-    CU_ASSERT_EQUAL(status, PSY_QUEUE_OK);
+    gsize status = psy_audio_queue_push_samples(queue, 1234, input);
+    CU_ASSERT_EQUAL(status, 1234);
 
     status = psy_audio_queue_push_samples(queue, 1, &input[0]);
-    CU_ASSERT_EQUAL(status, PSY_QUEUE_FULL);
+    CU_ASSERT_EQUAL(status, 0);
 
-    status = psy_audio_queue_pop_samples(queue, 2048, output);
-    CU_ASSERT_EQUAL(status, PSY_QUEUE_OK);
+    status = psy_audio_queue_pop_samples(queue, 1234, output);
+    CU_ASSERT_EQUAL(status, 1234);
 
     status = psy_audio_queue_pop_samples(queue, 1, &output[0]);
-    CU_ASSERT_EQUAL(status, PSY_QUEUE_EMPTY);
+    CU_ASSERT_EQUAL(status, 0);
 
     psy_audio_queue_free(queue);
 }
@@ -59,7 +58,7 @@ typedef struct PushPullContext {
 static int
 push_samples(gpointer data)
 {
-    int status;
+    gsize n;
 
     size_t           num_send = 0;
     PushPullContext *context  = data;
@@ -70,11 +69,9 @@ push_samples(gpointer data)
 
     g_info("push thread started");
     while (num_send < context->num_samples) {
-        status = psy_audio_queue_push_samples(q, 100, &data_in[num_send]);
-        if (status == PSY_QUEUE_OK)
-            num_send += 10;
+        n = psy_audio_queue_push_samples(q, 100, &data_in[num_send]);
+        num_send += n;
     }
-
     g_info("push thread stopping");
 
     return 0;
@@ -83,7 +80,7 @@ push_samples(gpointer data)
 static int
 pull_samples(gpointer data)
 {
-    int status;
+    gsize n;
 
     size_t           num_received = 0;
     PushPullContext *context      = data;
@@ -95,9 +92,8 @@ pull_samples(gpointer data)
     g_info("pull thread started");
 
     while (num_received < context->num_samples) {
-        status = psy_audio_queue_pop_samples(q, 100, &data_out[num_received]);
-        if (status == PSY_QUEUE_OK)
-            num_received += 10;
+        n = psy_audio_queue_pop_samples(q, 100, &data_out[num_received]);
+        num_received += n;
     }
 
     g_info("pull thread stopping");
