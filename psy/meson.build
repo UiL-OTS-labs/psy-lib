@@ -48,6 +48,10 @@ if cc.has_header('alsa/asoundlib.h')
     cdata.set('HAVE_ASOUNDLIB_H', true)
 endif
 
+if cxx.has_header('boost/lockfree/spsc_queue.hpp')
+    cdata.set('HAVE_BOOST_LOCKFREE_SPSC_QUEUE_HPP', true)
+endif
+
 # set predefines whether psylib is compile with the following backends/options
 
 if get_option('jack2')

@@ -22,6 +22,7 @@ gstreamer_req = '>=1.18'
 # dependencies
 
 cc = meson.get_compiler('c')
+cxx = meson.get_compiler('cpp')
 
 m_dep = cc.find_library('m', required : false)
 

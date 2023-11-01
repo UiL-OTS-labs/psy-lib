@@ -11,13 +11,16 @@
 #mesondefine HAVE_BUILTIN_SUB_OVERFLOW
 #mesondefine HAVE_BUILTIN_MUL_OVERFLOW
 
-// headers
+// headers C
 #mesondefine HAVE_LINUX_PARPORT_H
 #mesondefine HAVE_LINUX_PPDEV_H
 #mesondefine HAVE_SYS_RANDOM_H
 #mesondefine HAVE_UNISTD_H
 #mesondefine HAVE_JACK_H
 #mesondefine HAVE_ASOUNDLIB_H
+
+// headers C++
+#mesondefine HAVE_BOOST_LOCKFREE_SPSC_QUEUE_HPP
 
 // backend/options
 #mesondefine HAVE_JACK2

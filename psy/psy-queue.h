@@ -1,8 +1,12 @@
 
 #pragma once
 
-#include <gio/gio.h>
-#include <glib.h>
+#include "psy-config.h"
+
+#if defined(PSY_HAVE_BOOST_LOCKFREE_SPSC_QUEUE_HPP)
+
+    #include <gio/gio.h>
+    #include <glib.h>
 
 G_BEGIN_DECLS
 
@@ -31,3 +35,5 @@ psy_audio_queue_pop_samples(PsyAudioQueue *self,
                             gfloat        *samples);
 
 G_END_DECLS
+
+#endif // defined PSY_HAVE_BOOST_LOCKFREE_SPSC_QUEUE_HPP

@@ -1,7 +1,9 @@
 
 #include "psy-queue.h"
 
-#include <boost/lockfree/spsc_queue.hpp>
+#if defined(PSY_HAVE_BOOST_LOCKFREE_SPSC_QUEUE_HPP)
+
+    #include <boost/lockfree/spsc_queue.hpp>
 
 /**
  * PsyAudioQueue:(skip)
@@ -149,3 +151,5 @@ psy_audio_queue_push_samples(PsyAudioQueue *self,
 
     return self->p_queue->push(samples, num_samples);
 }
+
+#endif
