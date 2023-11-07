@@ -26,6 +26,14 @@ option (
 )
 
 option (
+    'portaudio',
+    type: 'boolean',
+    value : true,
+    description : 'Enable portaudio as backend for audio you\'ll need the ' +
+                  'portaudio development libraries/packages'
+)
+
+option (
     'alsa',
     type : 'boolean',
     value : true,

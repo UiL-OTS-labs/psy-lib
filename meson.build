@@ -18,6 +18,7 @@ gtk_req = '>4.0' # based on what gtk requires august 2022
 alsa_req = '>=1.2'
 jack2_req = '>=1.9'
 gstreamer_req = '>=1.18'
+portaudio_req = '>=19'
 
 # dependencies
 
@@ -100,6 +101,16 @@ if get_option('jack2')
         required : true
     )
     psy_deps += jack2_dep
+endif
+
+if get_option('portaudio')
+    message('Using portaudio')
+    portaudio_dep = dependency (
+        'portaudio-2.0',
+        version : portaudio_req,
+        required : true
+    )
+    psy_deps += portaudio_dep
 endif
 
 message('the depencies are: ')

@@ -44,6 +44,10 @@ if cc.has_header('jack/jack.h')
     cdata.set('HAVE_JACK_H', true)
 endif
 
+if cc.has_header('portaudio.h')
+    cdata.set('HAVE_PORTAUDIO_H', true)
+endif
+
 if cc.has_header('alsa/asoundlib.h')
     cdata.set('HAVE_ASOUNDLIB_H', true)
 endif
@@ -62,6 +66,10 @@ if get_option('alsa')
     cdata.set('HAVE_ALSA', true)
 endif
 
+if get_option('portaudio')
+    cdata.set('HAVE_PORTAUDIO', true)
+endif
+
 configure_file (
     input         : 'psy-config.h.in',
     output        : 'psy-config.h',
@@ -75,6 +83,7 @@ libpsy_incdirs = include_directories(
     'gl',
     'hw',
     'backend_gtk',
+    'portaudio',
 )
 
 
@@ -187,6 +196,10 @@ subdir('hw')
 
 if get_option('jack2')
     subdir('jack')
+endif
+
+if get_option('portaudio')
+    subdir('portaudio')
 endif
 
 
