@@ -1,10 +1,13 @@
 
 
-#include "psy-audio-mixer.h"
-#include "enum-types.h"
-#include "psy-audio-device.h"
 #include "psy-config.h"
+
+#include "enum-types.h"
+
+#include "psy-audio-device.h"
+#include "psy-audio-mixer.h"
 #include "psy-enums.h"
+#include "psy-queue.h"
 
 /**
  * PsyAudioMixer:(skip)
@@ -26,16 +29,18 @@
 
 #define DEFAULT_NUM_STIM_CACHE 16
 
-typedef struct _PsyAudioMixer {
-    GObject            parent;
+typedef struct _PsyAudioMixerPrivate {
     PsyAudioDevice    *device;
+    PsyAudioQueue     *queue;
     PsyAudioSampleRate sample_rate;
     guint              num_channels;
     guint              num_buffer_samples;
     GPtrArray         *stimuli;
 } PsyAudioMixerPrivate;
 
-G_DEFINE_FINAL_TYPE(PsyAudioMixer, psy_audio_mixer, G_TYPE_OBJECT)
+G_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE(PsyAudioMixer,
+                                    psy_audio_mixer,
+                                    G_TYPE_OBJECT)
 
 typedef enum {
     PROP_NULL,
@@ -102,8 +107,9 @@ psy_audio_mixer_get_property(GObject    *object,
 static void
 psy_audio_mixer_init(PsyAudioMixer *self)
 {
-    self->device = NULL;
-    self->stimuli
+    PsyAudioMixerPrivate *priv = psy_audio_mixer_get_instance_private(self);
+    priv->device               = NULL;
+    priv->stimuli
         = g_ptr_array_new_full(DEFAULT_NUM_STIM_CACHE, g_object_unref);
 }
 
@@ -112,9 +118,12 @@ psy_audio_mixer_dispose(GObject *object)
 {
     PsyAudioMixer *self = PSY_AUDIO_MIXER(object);
 
-    g_clear_object(&self->device);
-    g_ptr_array_unref(self->stimuli);
-    self->stimuli = NULL;
+    PsyAudioMixerPrivate *priv = psy_audio_mixer_get_instance_private(self);
+
+    g_clear_object(&priv->device);
+    g_ptr_array_unref(priv->stimuli);
+    g_clear_object(&priv->queue);
+    priv->stimuli = NULL;
 
     G_OBJECT_CLASS(psy_audio_mixer_parent_class)->dispose(object);
 }
@@ -123,6 +132,7 @@ static void
 psy_audio_mixer_finalize(GObject *object)
 {
     PsyAudioMixer *self = PSY_AUDIO_MIXER(object);
+    (void) self;
 
     G_OBJECT_CLASS(psy_audio_mixer_parent_class)->finalize(object);
 }
@@ -177,19 +187,6 @@ psy_audio_mixer_class_init(PsyAudioMixerClass *klass)
 /* ************ public functions ******************** */
 
 /**
- * psy_audio_mixer_new:(constructor)
- *
- * Constructs an audio mixer.
- *
- * Returns: A platform specific instance of [class@PsyAudioMixer]
- */
-PsyAudioMixer *
-psy_audio_mixer_new(PsyAudioDevice *device)
-{
-    return g_object_new(PSY_TYPE_AUDIO_MIXER, "audio-device", device, NULL);
-}
-
-/**
  * psy_audio_mixer_set_audio_device:(skip):
  *
  * This function should only be during the construction of an audio mixer.
@@ -201,12 +198,14 @@ psy_audio_mixer_set_audio_device(PsyAudioMixer *self, PsyAudioDevice *device)
 {
     g_return_if_fail(PSY_IS_AUDIO_MIXER(self) && PSY_IS_AUDIO_DEVICE(device));
 
-    g_clear_object(&self->device);
+    PsyAudioMixerPrivate *priv = psy_audio_mixer_get_instance_private(self);
 
-    self->device       = g_object_ref(device);
-    self->num_channels = psy_audio_device_get_num_output_channels(device);
+    g_clear_object(&priv->device);
+
+    priv->device       = g_object_ref(device);
+    priv->num_channels = psy_audio_device_get_num_output_channels(device);
     // self->num_buffer_samples = psy_audio_device_num_buffer_samples(device);
-    self->sample_rate  = psy_audio_device_get_sample_rate(device);
+    priv->sample_rate  = psy_audio_device_get_sample_rate(device);
 }
 
 /**
@@ -218,33 +217,56 @@ PsyAudioDevice *
 psy_audio_mixer_get_audio_device(PsyAudioMixer *self)
 {
     g_return_val_if_fail(PSY_IS_AUDIO_MIXER(self), NULL);
+    PsyAudioMixerPrivate *priv = psy_audio_mixer_get_instance_private(self);
 
-    return self->device;
+    return priv->device;
+}
+
+/**
+ * psy_audio_mixer_get_audio_queue:
+ *
+ * Returns the audio queue from the mixer. The audio queue is used to buffer
+ * audio between the audio callback and the parts of psylib that generate
+ * audio for presentation.
+ *
+ * Returns:(transfer none): the audio queue
+ */
+PsyAudioQueue *
+psy_audio_mixer_get_queue(PsyAudioMixer *self)
+{
+    g_return_val_if_fail(PSY_IS_AUDIO_MIXER(self), NULL);
+
+    PsyAudioMixerPrivate *priv = psy_audio_mixer_get_instance_private(self);
+
+    return priv->queue;
 }
 
 guint
 psy_audio_mixer_get_num_channels(PsyAudioMixer *self)
 {
     g_return_val_if_fail(PSY_IS_AUDIO_MIXER(self), 0);
+    PsyAudioMixerPrivate *priv = psy_audio_mixer_get_instance_private(self);
 
-    return psy_audio_device_get_num_output_channels(self->device);
+    return psy_audio_device_get_num_output_channels(priv->device);
 }
 
 PsyAudioSampleRate
 psy_audio_mixer_get_sample_rate(PsyAudioMixer *self)
 {
     g_return_val_if_fail(PSY_IS_AUDIO_MIXER(self), 0);
+    PsyAudioMixerPrivate *priv = psy_audio_mixer_get_instance_private(self);
 
-    return psy_audio_device_get_sample_rate(self->device);
+    return psy_audio_device_get_sample_rate(priv->device);
 }
 
 guint
 psy_audio_mixer_get_num_buffered_samples(PsyAudioMixer *self)
 {
     g_return_val_if_fail(PSY_IS_AUDIO_MIXER(self), 0);
+    PsyAudioMixerPrivate *priv = psy_audio_mixer_get_instance_private(self);
 
-    return psy_audio_device_get_num_samples_callback(self->device)
-           * psy_audio_device_get_num_output_channels(self->device);
+    return psy_audio_device_get_num_samples_callback(priv->device)
+           * psy_audio_device_get_num_output_channels(priv->device);
 }
 
 ///**

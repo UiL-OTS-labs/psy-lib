@@ -1,8 +1,10 @@
 
-#include "psy-queue.h"
 
-#if defined(PSY_HAVE_BOOST_LOCKFREE_SPSC_QUEUE_HPP)
+#include "psy-config.h"
 
+#if defined(HAVE_BOOST_LOCKFREE_SPSC_QUEUE_HPP)
+
+    #include "psy-queue.h"
     #include <boost/lockfree/spsc_queue.hpp>
 
 /**
@@ -118,7 +120,7 @@ psy_audio_queue_capacity(PsyAudioQueue *self)
  */
 gsize
 psy_audio_queue_pop_samples(PsyAudioQueue *self,
-                            gint           num_samples,
+                            guint          num_samples,
                             gfloat        *samples)
 {
     g_return_val_if_fail(self, -1);
@@ -143,7 +145,7 @@ psy_audio_queue_pop_samples(PsyAudioQueue *self,
  */
 gsize
 psy_audio_queue_push_samples(PsyAudioQueue *self,
-                             gint           num_samples,
+                             guint          num_samples,
                              const gfloat  *samples)
 {
     g_return_val_if_fail(self, -1);

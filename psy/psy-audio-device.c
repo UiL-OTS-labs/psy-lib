@@ -2,7 +2,7 @@
 #include "enum-types.h"
 
 #include "psy-audio-device.h"
-#include "psy-audio-mixer.h"
+#include "psy-audio-output-mixer.h"
 #include "psy-config.h"
 #include "psy-enums.h"
 
@@ -28,15 +28,15 @@ G_DEFINE_QUARK(psy-audio-device-error-quark,
 // clang-format on
 
 typedef struct _PsyAudioDevicePrivate {
-    gchar             *name;
-    PsyAudioSampleRate sample_rate;
-    GMainContext      *main_context;
-    PsyAudioMixer     *mixer;
-    guint              num_inputs;
-    guint              num_outputs;
-    guint              num_sample_callback;
-    gboolean           is_open;
-    gboolean           started;
+    gchar               *name;
+    PsyAudioSampleRate   sample_rate;
+    GMainContext        *main_context;
+    PsyAudioOutputMixer *output_mixer;
+    guint                num_inputs;
+    guint                num_outputs;
+    guint                num_sample_callback;
+    gboolean             is_open;
+    gboolean             started;
 } PsyAudioDevicePrivate;
 
 G_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE(PsyAudioDevice,
@@ -188,8 +188,8 @@ audio_device_open(PsyAudioDevice *self, GError **error)
     (void) error; // Error's might be raised in derived classes (backends).
     PsyAudioDevicePrivate *priv = psy_audio_device_get_instance_private(self);
 
-    PsyAudioMixer *mixer = psy_audio_mixer_new(self);
-    priv->mixer          = mixer;
+    PsyAudioOutputMixer *mixer = psy_audio_output_mixer_new(self);
+    priv->output_mixer         = mixer;
 
     priv->is_open = TRUE;
     g_info("Opened PsyAudioDevice %s", psy_audio_device_get_name(self));
@@ -754,7 +754,26 @@ psy_audio_device_set_started(PsyAudioDevice *self, PsyTimePoint *tp)
 }
 
 /**
- * psy_audio_device_get_mixer:(skip)
+ * psy_audio_device_set_num_samples_callback:
+ *
+ * This function is for internal use. It allows to cache the number of samples
+ * that will be handled with each iteration of the audio callback. This allows
+ * the audio mixers to be prepared to buffer in and output samples.
+ *
+ * stability: private
+ */
+void
+psy_audio_device_set_num_samples_callback(PsyAudioDevice *self,
+                                          guint           num_samples)
+{
+    g_return_if_fail(PSY_IS_AUDIO_DEVICE(self));
+
+    PsyAudioDevicePrivate *priv = psy_audio_device_get_instance_private(self);
+    priv->num_sample_callback   = num_samples;
+}
+
+/**
+ * psy_audio_device_get_output_mixer:(skip)
  * @self: an instance of [class@AudioDevice]
  *
  * Get the mixer of the audiodevice. This is a method private to psylib
@@ -763,11 +782,11 @@ psy_audio_device_set_started(PsyAudioDevice *self, PsyTimePoint *tp)
  * Stability:private:
  * Returns:(transfer none)(nullable): The audio mixer for this AudioDevice
  */
-PsyAudioMixer *
-psy_audio_device_get_mixer(PsyAudioDevice *self)
+PsyAudioOutputMixer *
+psy_audio_device_get_output_mixer(PsyAudioDevice *self)
 {
     g_return_val_if_fail(PSY_IS_AUDIO_DEVICE(self), NULL);
     PsyAudioDevicePrivate *priv = psy_audio_device_get_instance_private(self);
 
-    return priv->mixer;
+    return priv->output_mixer;
 }

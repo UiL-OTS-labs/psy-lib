@@ -57,6 +57,10 @@ jack_audio_device_on_process(jack_nframes_t n, void *audio_device)
     PsyJackAudioDevice *self = audio_device;
     PsyTimePoint       *tp   = psy_clock_now(self->psy_clock);
 
+    gsize num_samples
+        = psy_audio_device_get_num_samples_callback(PSY_AUDIO_DEVICE(self));
+    g_assert(num_samples == n);
+
     if (G_UNLIKELY(!psy_audio_device_get_started(PSY_AUDIO_DEVICE(self)))) {
         psy_audio_device_set_started(PSY_AUDIO_DEVICE(self), tp);
     }
@@ -65,6 +69,8 @@ jack_audio_device_on_process(jack_nframes_t n, void *audio_device)
     for (guint port = 0; port < self->capture_ports->len; port++) {
         ;
     }
+
+    PsyAudioOutputMixer *output_mixer = psy_audio_device_get_output_mixer(self);
 
     for (guint i = 0; i < self->playback_ports->len; i++) {
         jack_default_audio_sample_t *samples;
@@ -181,7 +187,7 @@ jack_audio_device_get_ports(PsyJackAudioDevice *self)
     const char **capture_ports
         = jack_get_ports(client, NULL, JACK_DEFAULT_AUDIO_TYPE, capture_flags);
     const char **playback_ports
-        = jack_get_ports(client, NULL, JACK_DEFAULT_AUDIO_TYPE, capture_flags);
+        = jack_get_ports(client, NULL, JACK_DEFAULT_AUDIO_TYPE, playback_flags);
 
     gchar port_name[1024];
 
@@ -360,6 +366,12 @@ jack_audio_device_open(PsyAudioDevice *self, GError **error)
 
     // Create ports here or below register we can connect them.
     jack_audio_device_get_ports(PSY_JACK_AUDIO_DEVICE(self));
+
+    jack_nframes_t sr             = jack_get_sample_rate(jack_self->client);
+    jack_nframes_t num_samples_cb = jack_get_buffer_size(jack_self->client);
+
+    psy_audio_device_set_sample_rate(self, psy_int_to_sample_rate(sr));
+    psy_audio_device_set_num_samples_callback(self, num_samples_cb);
 
     PSY_AUDIO_DEVICE_CLASS(psy_jack_audio_device_parent_class)
         ->open(self, error);

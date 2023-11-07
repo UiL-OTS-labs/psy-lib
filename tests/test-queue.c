@@ -13,7 +13,7 @@ queue_create(void)
     CU_ASSERT_PTR_NOT_NULL_FATAL(queue);
     CU_ASSERT_EQUAL(psy_audio_queue_size(queue), 0);
     CU_ASSERT_EQUAL(psy_audio_queue_pop_samples(queue, 1, &some_float), 0);
-    CU_ASSERT_EQUAL(psy_audio_queue_capacity(queue), 2048);
+    CU_ASSERT_EQUAL(psy_audio_queue_capacity(queue), 1234);
 
     psy_audio_queue_free(queue);
 }

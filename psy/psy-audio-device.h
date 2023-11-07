@@ -124,9 +124,9 @@ void
 psy_audio_device_schedule_stimulus(PsyAudioDevice      *self,
                                    PsyAuditoryStimulus *stim);
 
-typedef struct _PsyAudioMixer PsyAudioMixer;
-PsyAudioMixer *
-psy_audio_device_get_mixer(PsyAudioDevice *self);
+typedef struct _PsyAudioOutputMixer PsyAudioOutputMixer;
+PsyAudioOutputMixer *
+psy_audio_device_get_output_mixer(PsyAudioDevice *self);
 
 // TODO
 // PsyAudioPlayback*
