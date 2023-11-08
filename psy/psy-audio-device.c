@@ -14,6 +14,46 @@
     #include "jack/psy-jack-audio-device.h"
 #endif
 
+#if defined HAVE_PORTAUDIO
+    #include "portaudio/psy-pa-device.h"
+#endif
+
+G_DEFINE_BOXED_TYPE(PsyAudioDeviceInfo,
+                    psy_audio_device_info,
+                    psy_audio_device_info_copy,
+                    psy_audio_device_info_free);
+
+PsyAudioDeviceInfo *
+psy_audio_device_info_copy(PsyAudioDeviceInfo *self)
+{
+    PsyAudioDeviceInfo *new = g_malloc(sizeof(PsyAudioDevice));
+
+    new->device_num = self->device_num;
+
+    new->psy_api     = g_strdup(self->psy_api);
+    new->host_api    = g_strdup(self->host_api);
+    new->device_name = g_strdup(self->device_name);
+
+    new->sample_rates     = g_malloc(sizeof(PSY_AUDIO_SAMPLE_RATE_48000));
+    new->num_sample_rates = self->num_sample_rates;
+    for (guint i = 0; i < self->num_sample_rates; i++)
+        new->sample_rates[i] = self->sample_rates[i];
+
+    return new;
+}
+
+void
+psy_audio_device_info_free(PsyAudioDeviceInfo *self)
+{
+    g_free(self->psy_api);
+    g_free(self->host_api);
+    g_free(self->device_name);
+    g_free(self->device_name);
+    g_free(self->sample_rates);
+
+    g_free(self);
+}
+
 /**
  * PsyAudioDevice:
  *

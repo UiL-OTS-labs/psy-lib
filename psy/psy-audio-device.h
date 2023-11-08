@@ -8,6 +8,45 @@
 
 G_BEGIN_DECLS
 
+#define PSY_AUDIO_DEVICE_INFO psy_audio_device_info_get_type()
+
+/**
+ * PsyAudioDeviceInfo:
+ * @device_num: The device num that PsyLib gives it.
+ * @api_num: The number that the sound api gives it.
+ * @psy_api: the api used by psylib to control the device
+ * @host_api: the api used by the psy_api, they may be the same
+ * @device_name: the name according the psy_api
+ * @sample_rates:(array length=@num_sample_rates): the sample rates supported
+ *               by this device
+ * @num_sample_rates: the number of sample rates supported
+ *
+ * This structure contains some general information about an audio endpoint.
+ */
+typedef struct PsyAudioDeviceInfo {
+
+    gint device_num;
+
+    gchar *psy_api;
+    gchar *host_api;
+
+    gchar *device_name;
+
+    /* <private> */
+    PsyAudioSampleRate *sample_rates;
+    guint               num_sample_rates;
+    /* <public> */
+} PsyAudioDeviceInfo;
+
+GType
+psy_audio_device_info_get_type(void);
+
+PsyAudioDeviceInfo *
+psy_audio_device_info_copy(PsyAudioDeviceInfo *self);
+
+void
+psy_audio_device_info_free(PsyAudioDeviceInfo *self);
+
 #define PSY_AUDIO_DEVICE_ERROR psy_audio_device_error_quark()
 G_MODULE_EXPORT GQuark
 psy_audio_device_error_quark(void);
