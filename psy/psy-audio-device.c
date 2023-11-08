@@ -428,10 +428,12 @@ psy_audio_device_class_init(PsyAudioDeviceClass *klass)
 PsyAudioDevice *
 psy_audio_device_new(void)
 {
-#if defined HAVE_JACK2
-    return psy_jack_audio_device_new();
+#if defined HAVE_PORTAUDIO
+    return psy_pa_device_new();
 #elif defined HAVE_ALSA
     return psy_alsa_audio_device_new();
+#elif defined HAVE_JACK2
+    return psy_jack_audio_device_new();
 #else
     return NULL;
 #endif
@@ -810,6 +812,32 @@ psy_audio_device_set_num_samples_callback(PsyAudioDevice *self,
 
     PsyAudioDevicePrivate *priv = psy_audio_device_get_instance_private(self);
     priv->num_sample_callback   = num_samples;
+}
+
+/**
+ * psy_audio_device_enumerate_devices:
+ * @self: an instance of [class@PsyAudioDevice].
+ * @infos:(out)(array lentgth=n_samples)(callee_allocates): An array with
+ *        Device infos.
+ * @n_infos:(out): the number of PsyDeviceInfo's returned in @infos
+ *
+ * Obtain the endpoint for this audio device, the output gives info about
+ * the endpoints that are available and which you can use for opening the
+ * device.
+ */
+void
+psy_audio_device_enumerate_devices(PsyAudioDevice      *self,
+                                   PsyAudioDeviceInfo **infos,
+                                   guint               *n_infos)
+{
+    g_return_if_fail(PSY_IS_AUDIO_DEVICE(self));
+    g_return_if_fail(infos != NULL && *infos == NULL);
+    g_return_if_fail(n_infos != NULL);
+
+    PsyAudioDeviceClass *cls = PSY_AUDIO_DEVICE_GET_CLASS(self);
+    g_return_if_fail(cls->enumerate_devices);
+
+    cls->enumerate_devices(self, infos, n_infos);
 }
 
 /**

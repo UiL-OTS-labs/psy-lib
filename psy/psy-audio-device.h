@@ -89,6 +89,9 @@ typedef struct _PsyAudioDeviceClass {
     const gchar *(*get_default_name)(PsyAudioDevice *self);
 
     void (*schedule_stimulus)(PsyAudioDevice *self, PsyAuditoryStimulus *stim);
+    void (*enumerate_devices)(PsyAudioDevice      *self,
+                              PsyAudioDeviceInfo **infos,
+                              guint               *num_devices);
 
     gpointer extensions[16];
 } PsyAudioDeviceClass;
@@ -162,6 +165,11 @@ psy_audio_device_set_started(PsyAudioDevice *self, PsyTimePoint *tp_start);
 void
 psy_audio_device_schedule_stimulus(PsyAudioDevice      *self,
                                    PsyAuditoryStimulus *stim);
+
+void
+psy_audio_device_enumerate_devices(PsyAudioDevice      *self,
+                                   PsyAudioDeviceInfo **infos,
+                                   guint               *n_infos);
 
 typedef struct _PsyAudioOutputMixer PsyAudioOutputMixer;
 PsyAudioOutputMixer *
