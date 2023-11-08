@@ -25,9 +25,11 @@ typedef enum {
 /**
  * PsyAudioSampleRate:
  * @PSY_AUDIO_SAMPLE_RATE_22050: A low quality sample rate (old MP3's)
+ * @PSY_AUDIO_SAMPLE_RATE_24000:
  * @PSY_AUDIO_SAMPLE_RATE_32000: A quality sufficient for audio tapes FM radio
  * @PSY_AUDIO_SAMPLE_RATE_44100: The quality of CD audio
  * @PSY_AUDIO_SAMPLE_RATE_48000: The quality of DVD audio the default for psylib
+ * @PSY_AUDIO_SAMPLE_RATE_88200:
  * @PSY_AUDIO_SAMPLE_RATE_96000: A high quality likely better than you need
  * @PSY_AUDIO_SAMPLE_RATE_192000: A very high quality likely much higher than
  * @PSY_AUDIO_SAMPLE_RATE_UNKNOWN: A unknown/handled samplerate by psylib
@@ -40,12 +42,16 @@ typedef enum {
  *
  * Info is taken at july 11th 2023 from the [audacity-wiki]
  * (https://manual.audacityteam.org/man/sample_rates.html)
+ *
+ * 22000, 88200 have been added as they are in PortAudio
  */
 typedef enum {
     PSY_AUDIO_SAMPLE_RATE_22050   = 22050,
+    PSY_AUDIO_SAMPLE_RATE_24000   = 24000,
     PSY_AUDIO_SAMPLE_RATE_32000   = 32000,
     PSY_AUDIO_SAMPLE_RATE_44100   = 44100,
     PSY_AUDIO_SAMPLE_RATE_48000   = 48000,
+    PSY_AUDIO_SAMPLE_RATE_88200   = 88200,
     PSY_AUDIO_SAMPLE_RATE_96000   = 96000,
     PSY_AUDIO_SAMPLE_RATE_192000  = 192000,
     PSY_AUDIO_SAMPLE_RATE_UNKNOWN = -1
