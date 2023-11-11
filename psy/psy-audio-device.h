@@ -17,9 +17,9 @@ G_BEGIN_DECLS
  * @psy_api: the api used by psylib to control the device
  * @host_api: the api used by the psy_api, they may be the same
  * @device_name: the name according the psy_api
- * @sample_rates:(array length=@num_sample_rates): the sample rates supported
- *               by this device
  * @num_sample_rates: the number of sample rates supported
+ * @sample_rates:(array length=num_sample_rates): the sample rates supported
+ *               by this device.
  *
  * This structure contains some general information about an audio endpoint.
  */
@@ -32,14 +32,25 @@ typedef struct PsyAudioDeviceInfo {
 
     gchar *device_name;
 
-    /* <private> */
     PsyAudioSampleRate *sample_rates;
     guint               num_sample_rates;
-    /* <public> */
 } PsyAudioDeviceInfo;
 
 GType
 psy_audio_device_info_get_type(void);
+
+PsyAudioDeviceInfo *
+psy_audio_device_info_new(gint                device_num,
+                          gchar              *psy_api,
+                          gchar              *host_api,
+                          gchar              *device_name,
+                          PsyAudioSampleRate *sample_rates,
+                          guint               num_sample_rates);
+
+void
+psy_audio_device_info_get_sample_rates(PsyAudioDeviceInfo  *self,
+                                       PsyAudioSampleRate **sample_rates,
+                                       guint               *num_sample_rates);
 
 PsyAudioDeviceInfo *
 psy_audio_device_info_copy(PsyAudioDeviceInfo *self);
@@ -91,7 +102,7 @@ typedef struct _PsyAudioDeviceClass {
     void (*schedule_stimulus)(PsyAudioDevice *self, PsyAuditoryStimulus *stim);
     void (*enumerate_devices)(PsyAudioDevice      *self,
                               PsyAudioDeviceInfo **infos,
-                              guint               *num_devices);
+                              guint               *n_infos);
 
     gpointer extensions[16];
 } PsyAudioDeviceClass;

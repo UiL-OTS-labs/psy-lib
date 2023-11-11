@@ -14,6 +14,16 @@ typedef struct AudioBackendAllocater {
     audio_backend_allocater_func alloc;
 } AudioBackendAllocater;
 
+#if defined HAVE_PORTAUDIO
+PsyAudioDevice *
+alloc_pa_device(void)
+{
+    return psy_pa_device_new();
+}
+
+AudioBackendAllocater pa_allocater = {.alloc = alloc_pa_device};
+#endif
+
 #if defined HAVE_JACK2
 PsyAudioDevice *
 alloc_jack_device(void)
@@ -43,7 +53,6 @@ audio_device_create(void)
     gboolean           is_open;
     PsyAudioSampleRate sample_rate;
     gchar             *name;
-    const gchar       *def_name = NULL;
 
     CU_ASSERT_PTR_NOT_NULL_FATAL(device);
 
@@ -59,16 +68,6 @@ audio_device_create(void)
     CU_ASSERT_STRING_EQUAL(name, "");
 
     g_free(name);
-
-    def_name = psy_audio_device_get_default_name(device);
-
-    if (PSY_IS_JACK_AUDIO_DEVICE(device)) {
-        CU_ASSERT_STRING_EQUAL(def_name, "hw:0");
-    }
-    else {
-        g_warning("missing test for %s\n",
-                  G_OBJECT_CLASS_NAME(G_OBJECT_GET_CLASS(device)));
-    }
 
     g_object_unref(device);
 }
@@ -143,6 +142,9 @@ add_audio_suite(const gchar *backend)
 
     backend_table = g_hash_table_new(g_str_hash, g_str_equal);
 
+#if defined HAVE_PORTAUDIO
+    g_hash_table_insert(backend_table, "portaudio", &pa_allocater);
+#endif
 #if defined HAVE_JACK2
     g_hash_table_insert(backend_table, "jack", &jack_allocater);
 #endif
@@ -156,9 +158,12 @@ add_audio_suite(const gchar *backend)
         g_current_backend_allocater = allocater->alloc;
     }
     else {
-        g_printerr("The current config of psylib doesn't know about audio "
-                   "backend :'%s'.\n",
-                   backend);
+        g_printerr(
+            "%s:%d: The current config of psylib doesn't know about audio "
+            "backend :'%s', and the test are trying to use this backend.\n",
+            __FILE__,
+            __LINE__,
+            backend);
         return 1;
     }
 

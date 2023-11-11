@@ -17,6 +17,7 @@
 typedef struct _PsyPADevice {
     PsyAudioDevice parent;
     PsyClock      *psy_clock;
+    PaStream      *stream;
     gboolean       pa_initialized;
 } PsyPADevice;
 
@@ -30,21 +31,19 @@ typedef enum { PROP_NULL, NUM_PROPERTIES } PsyPADeviceProperty;
 /* *************** private methods ************** */
 
 /**
- * pa_device_on_process:(skip)
- * @n: The number of sample (for each channel) to process
- * @audio_device: A pointer back to the audio device
+ * pa_audio_callback:(skip)
  *
- * The audio callback
+ * The audio callback for the portaudio backend
  *
  * stability:private
  */
 static int
-pa_device_audio_callback(const void                     *input,
-                         void                           *output,
-                         unsigned long                   frameCount,
-                         const PaStreamCallbackTimeInfo *timeInfo,
-                         PaStreamCallbackFlags           statusFlags,
-                         void                           *audio_device)
+pa_audio_callback(const void                     *input,
+                  void                           *output,
+                  unsigned long                   frameCount,
+                  const PaStreamCallbackTimeInfo *timeInfo,
+                  PaStreamCallbackFlags           statusFlags,
+                  void                           *audio_device)
 {
     PsyPADevice *self = audio_device;
 
@@ -61,6 +60,39 @@ pa_device_audio_callback(const void                     *input,
     g_object_unref(tp);
 
     return 0;
+}
+
+/**
+ * pa_determine_device_num:
+ *
+ * Uses the first available device
+ * for alsa, wasapi on linux and windows respectively
+ *
+ * TODO Allow to use other that the first device.
+ */
+static int
+pa_determine_device_num(PsyPADevice *self)
+{
+    int             devnum = -1;
+    PaHostApiTypeId hostapi_typeid;
+#if defined(__linux__)
+    hostapi_typeid = paALSA;
+#elif defined(WIN32)
+    hostapi_typeid = paWASAPI;
+#else
+    #error "Currently unsupported platform"
+#endif
+
+    for (gint i = 0; i < Pa_GetDeviceCount(); i++) {
+        const PaDeviceInfo *dev_info = Pa_GetDeviceInfo(i);
+        if (dev_info->hostApi
+            == Pa_HostApiTypeIdToHostApiIndex(hostapi_typeid)) {
+            devnum = i;
+            break;
+        }
+    }
+
+    return devnum;
 }
 
 /* *********** virtual methods ***************** */
@@ -102,6 +134,11 @@ pa_device_audio_callback(const void                     *input,
 static void
 psy_pa_device_init(PsyPADevice *self)
 {
+    gint error           = Pa_Initialize();
+    self->pa_initialized = error == paNoError;
+    if (error != paNoError) {
+        g_critical("Unable to init portaudio: %s", Pa_GetErrorText(error));
+    }
     self->psy_clock = psy_clock_new();
 }
 
@@ -120,7 +157,10 @@ static void
 psy_pa_device_finalize(GObject *object)
 {
     PsyPADevice *self = PSY_PA_DEVICE(object);
-    (void) self;
+
+    if (self->pa_initialized) {
+        Pa_Terminate();
+    }
 
     G_OBJECT_CLASS(psy_pa_device_parent_class)->finalize(object);
 }
@@ -128,7 +168,46 @@ psy_pa_device_finalize(GObject *object)
 static void
 pa_device_open(PsyAudioDevice *self, GError **error)
 {
+    gint         pa_err;
     PsyPADevice *pa_self = PSY_PA_DEVICE(self);
+
+    PaStreamParameters input_params  = {0};
+    PaStreamParameters output_params = {0};
+
+    gint device_num = pa_determine_device_num(pa_self);
+
+    PaStreamParameters *p_in_param, *p_out_param;
+
+    input_params.channelCount = psy_audio_device_get_num_input_channels(self);
+    input_params.device       = device_num;
+    input_params.sampleFormat = paFloat32;
+    input_params.suggestedLatency = 0;
+
+    output_params.channelCount = psy_audio_device_get_num_output_channels(self);
+    output_params.device       = device_num;
+    output_params.sampleFormat = paFloat32;
+    output_params.suggestedLatency = 0;
+
+    p_in_param  = input_params.channelCount > 0 ? &input_params : NULL;
+    p_out_param = output_params.channelCount > 0 ? &output_params : NULL;
+
+    pa_err = Pa_OpenStream(&pa_self->stream,
+                           p_in_param,
+                           p_out_param,
+                           psy_audio_device_get_sample_rate(self),
+                           paFramesPerBufferUnspecified,
+                           paNoFlag,
+                           &pa_audio_callback,
+                           self);
+
+    if (pa_err != paNoError) {
+        g_set_error(error,
+                    PSY_AUDIO_DEVICE_ERROR,
+                    PSY_AUDIO_DEVICE_ERROR_OPEN,
+                    "Portaudio is unable to open a stream: %s",
+                    Pa_GetErrorText(pa_err));
+        return;
+    }
 
     PSY_AUDIO_DEVICE_CLASS(psy_pa_device_parent_class)->open(self, error);
 }

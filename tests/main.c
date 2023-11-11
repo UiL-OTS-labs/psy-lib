@@ -14,7 +14,7 @@ static gboolean g_save_images = FALSE;
 static gint     g_port_num    = -1;
 static gint64   g_seed        = -1;
 
-static const char *g_audio_backend = "jack";
+static const char *g_audio_backend = "portaudio";
 
 /* clang-format off */
 GOptionEntry options[] = {

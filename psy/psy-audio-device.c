@@ -18,15 +18,76 @@
     #include "portaudio/psy-pa-device.h"
 #endif
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+
 G_DEFINE_BOXED_TYPE(PsyAudioDeviceInfo,
                     psy_audio_device_info,
-                    psy_audio_device_info_copy,
-                    psy_audio_device_info_free);
+                    &psy_audio_device_info_copy,
+                    &psy_audio_device_info_free);
+
+#pragma GCC diagnostic pop
+
+/**
+ * psy_audio_device_info_new:(constructor)
+ * @device_num: The device number of this info
+ * @psy_api:(transfer full): The api that psylib is using for this device info
+ * @host_api:(transfer full): The api that @psy_api is using for this device
+ *                            info this may be the same e.g. portaudio might use
+ *                            ALSA, but ALSA just uses itself (or no
+ *                            intermediate info).
+ * @device_name:(transfer full): The name of this device.
+ * @sample_rates:(transfer full)(array length=num_sample_rates):
+ *                            The sample rates this devices supports
+ * @num_sample_rates: The length of @sample_rates.
+ *
+ * Construct a new boxed instance of [struct@PsyAudioDeviceInfo]
+ */
+PsyAudioDeviceInfo *
+psy_audio_device_info_new(gint                device_num,
+                          gchar              *psy_api,
+                          gchar              *host_api,
+                          gchar              *device_name,
+                          PsyAudioSampleRate *sample_rates,
+                          guint               num_sample_rates)
+{
+    PsyAudioDeviceInfo *new = g_malloc(sizeof(PsyAudioDevice));
+
+    new->device_num       = device_num;
+    new->psy_api          = psy_api;
+    new->host_api         = host_api;
+    new->device_name      = device_name;
+    new->sample_rates     = sample_rates;
+    new->num_sample_rates = num_sample_rates;
+
+    return new;
+}
+
+/**
+ * psy_audio_device_info_get_sample_rates:
+ * @self: an instance of [struct@PsyAudioDeviceInfo],
+ * @sample_rates:(out)(transfer none)(array length=num_sample_rates):
+ * @num_sample_rates:(out): The number of supported sample rates
+ *
+ * Get the supported sample rates for this device
+ */
+void
+psy_audio_device_info_get_sample_rates(PsyAudioDeviceInfo  *self,
+                                       PsyAudioSampleRate **sample_rates,
+                                       guint               *num_sample_rates)
+{
+    g_return_if_fail(self);
+    g_return_if_fail(sample_rates);
+    g_return_if_fail(num_sample_rates);
+
+    *sample_rates     = self->sample_rates;
+    *num_sample_rates = self->num_sample_rates;
+}
 
 PsyAudioDeviceInfo *
 psy_audio_device_info_copy(PsyAudioDeviceInfo *self)
 {
-    PsyAudioDeviceInfo *new = g_malloc(sizeof(PsyAudioDevice));
+    PsyAudioDeviceInfo *new = g_malloc(sizeof(PsyAudioDeviceInfo));
 
     new->device_num = self->device_num;
 
@@ -817,9 +878,9 @@ psy_audio_device_set_num_samples_callback(PsyAudioDevice *self,
 /**
  * psy_audio_device_enumerate_devices:
  * @self: an instance of [class@PsyAudioDevice].
- * @infos:(out)(array lentgth=n_samples)(callee_allocates): An array with
+ * @infos:(out callee-allocates)(array length=n_infos): An array with
  *        Device infos.
- * @n_infos:(out): the number of PsyDeviceInfo's returned in @infos
+ * @n_infos:(out): the number of PsyDeviceInfo's returned in infos
  *
  * Obtain the endpoint for this audio device, the output gives info about
  * the endpoints that are available and which you can use for opening the

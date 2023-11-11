@@ -58,7 +58,7 @@ endif
 
 # set predefines whether psylib is compile with the following backends/options
 
-if get_option('jack2')
+if get_option('jack2') == true
     cdata.set('HAVE_JACK2', true)
 endif
 
