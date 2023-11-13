@@ -35,43 +35,43 @@ typedef struct _PsyAudioOutputMixer {
 
 G_DEFINE_FINAL_TYPE(PsyAudioOutputMixer, psy_audio_output_mixer, G_TYPE_OBJECT)
 
-typedef enum { PROP_NULL, NUM_PROPERTIES } PsyAudioOutputMixerProperty;
+// typedef enum { PROP_NULL, NUM_PROPERTIES } PsyAudioOutputMixerProperty;
 
-static GParamSpec *audio_output_mixer_properties[NUM_PROPERTIES];
+// static GParamSpec *audio_output_mixer_properties[NUM_PROPERTIES];
 
 // static guint       audio_output_mixer_signals[NUM_SIGNALS];
 
 /* ********** virtual(/private) functions ***************** */
 
-static void
-psy_audio_output_mixer_set_property(GObject      *object,
-                                    guint         prop_id,
-                                    const GValue *value,
-                                    GParamSpec   *pspec)
-{
-    PsyAudioOutputMixer *self = PSY_AUDIO_OUTPUT_MIXER(object);
-    (void) self;
-    (void) value;
-
-    switch ((PsyAudioOutputMixerProperty) prop_id) {
-    default:
-        G_OBJECT_WARN_INVALID_PROPERTY_ID(object, prop_id, pspec);
-    }
-}
-
-static void
-psy_audio_output_mixer_get_property(GObject    *object,
-                                    guint       prop_id,
-                                    GValue     *value,
-                                    GParamSpec *pspec)
-{
-    PsyAudioOutputMixer *self = PSY_AUDIO_OUTPUT_MIXER(object);
-
-    switch ((PsyAudioOutputMixerProperty) prop_id) {
-    default:
-        G_OBJECT_WARN_INVALID_PROPERTY_ID(object, prop_id, pspec);
-    }
-}
+// static void
+// psy_audio_output_mixer_set_property(GObject      *object,
+//                                     guint         prop_id,
+//                                     const GValue *value,
+//                                     GParamSpec   *pspec)
+// {
+//     PsyAudioOutputMixer *self = PSY_AUDIO_OUTPUT_MIXER(object);
+//     (void) self;
+//     (void) value;
+//
+//     switch ((PsyAudioOutputMixerProperty) prop_id) {
+//     default:
+//         G_OBJECT_WARN_INVALID_PROPERTY_ID(object, prop_id, pspec);
+//     }
+// }
+//
+// static void
+// psy_audio_output_mixer_get_property(GObject    *object,
+//                                     guint       prop_id,
+//                                     GValue     *value,
+//                                     GParamSpec *pspec)
+// {
+//     PsyAudioOutputMixer *self = PSY_AUDIO_OUTPUT_MIXER(object);
+//
+//     switch ((PsyAudioOutputMixerProperty) prop_id) {
+//     default:
+//         G_OBJECT_WARN_INVALID_PROPERTY_ID(object, prop_id, pspec);
+//     }
+// }
 
 static void
 psy_audio_output_mixer_init(PsyAudioOutputMixer *self)
@@ -105,13 +105,14 @@ psy_audio_output_mixer_class_init(PsyAudioOutputMixerClass *klass)
 {
     GObjectClass *gobject_class = G_OBJECT_CLASS(klass);
 
-    gobject_class->set_property = psy_audio_output_mixer_set_property;
-    gobject_class->get_property = psy_audio_output_mixer_get_property;
-    gobject_class->finalize     = psy_audio_output_mixer_finalize;
-    gobject_class->dispose      = psy_audio_output_mixer_dispose;
+    // gobject_class->set_property = psy_audio_output_mixer_set_property;
+    // gobject_class->get_property = psy_audio_output_mixer_get_property;
+    gobject_class->finalize = psy_audio_output_mixer_finalize;
+    gobject_class->dispose  = psy_audio_output_mixer_dispose;
 
-    g_object_class_install_properties(
-        gobject_class, NUM_PROPERTIES, audio_output_mixer_properties);
+    // No properties to install
+    // g_object_class_install_properties(
+    //    gobject_class, NUM_PROPERTIES, audio_output_mixer_properties);
 }
 
 /* ************ public functions ******************** */

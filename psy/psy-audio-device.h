@@ -32,6 +32,9 @@ typedef struct PsyAudioDeviceInfo {
 
     gchar *device_name;
 
+    guint max_inputs;
+    guint max_outputs;
+
     PsyAudioSampleRate *sample_rates;
     guint               num_sample_rates;
 } PsyAudioDeviceInfo;
@@ -44,6 +47,8 @@ psy_audio_device_info_new(gint                device_num,
                           gchar              *psy_api,
                           gchar              *host_api,
                           gchar              *device_name,
+                          guint               max_inputs,
+                          guint               max_outputs,
                           PsyAudioSampleRate *sample_rates,
                           guint               num_sample_rates);
 
@@ -57,6 +62,9 @@ psy_audio_device_info_copy(PsyAudioDeviceInfo *self);
 
 void
 psy_audio_device_info_free(PsyAudioDeviceInfo *self);
+
+char *
+psy_audio_device_info_as_string(PsyAudioDeviceInfo *self);
 
 #define PSY_AUDIO_DEVICE_ERROR psy_audio_device_error_quark()
 G_MODULE_EXPORT GQuark
@@ -100,9 +108,9 @@ typedef struct _PsyAudioDeviceClass {
     const gchar *(*get_default_name)(PsyAudioDevice *self);
 
     void (*schedule_stimulus)(PsyAudioDevice *self, PsyAuditoryStimulus *stim);
-    void (*enumerate_devices)(PsyAudioDevice      *self,
-                              PsyAudioDeviceInfo **infos,
-                              guint               *n_infos);
+    void (*enumerate_devices)(PsyAudioDevice       *self,
+                              PsyAudioDeviceInfo ***infos,
+                              guint                *n_infos);
 
     gpointer extensions[16];
 } PsyAudioDeviceClass;
@@ -178,9 +186,9 @@ psy_audio_device_schedule_stimulus(PsyAudioDevice      *self,
                                    PsyAuditoryStimulus *stim);
 
 void
-psy_audio_device_enumerate_devices(PsyAudioDevice      *self,
-                                   PsyAudioDeviceInfo **infos,
-                                   guint               *n_infos);
+psy_audio_device_enumerate_devices(PsyAudioDevice       *self,
+                                   PsyAudioDeviceInfo ***infos,
+                                   guint                *n_infos);
 
 typedef struct _PsyAudioOutputMixer PsyAudioOutputMixer;
 PsyAudioOutputMixer *

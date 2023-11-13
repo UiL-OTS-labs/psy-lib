@@ -28,6 +28,14 @@ typedef enum { PROP_NULL, NUM_PROPERTIES } PsyPADeviceProperty;
 //
 // static GParamSpec *pa_device_properties[NUM_PROPERTIES];
 
+#ifdef __linux__
+PaHostApiTypeId g_supported_apis[] = {paALSA};
+#elif WIN32
+PaHostApiTypeId g_supported_apis[] = {paASIO, paWASAPI};
+#else
+    #error "Currently unsupported platform"
+#endif
+
 /* *************** private methods ************** */
 
 /**
@@ -45,9 +53,14 @@ pa_audio_callback(const void                     *input,
                   PaStreamCallbackFlags           statusFlags,
                   void                           *audio_device)
 {
+    (void) input;
+    (void) output;
+    (void) frameCount;
+    (void) timeInfo;
+    (void) statusFlags;
     PsyPADevice *self = audio_device;
 
-    // TODO no system calls in audio callback..
+    // TODO no system calls in audio callback and no mallocs..
     PsyTimePoint *tp = psy_clock_now(self->psy_clock);
 
     // TODO this might block
@@ -60,6 +73,147 @@ pa_audio_callback(const void                     *input,
     g_object_unref(tp);
 
     return 0;
+}
+
+/**
+ * pa_device_uses_preferred_host_api:
+ *
+ */
+gboolean
+pa_device_uses_preferred_host_api(const PaDeviceInfo *info)
+{
+    const size_t num_preferred
+        = sizeof(g_supported_apis) / sizeof(g_supported_apis[0]);
+
+    for (size_t i = 0; i < num_preferred; i++) {
+        if (info->hostApi
+            == Pa_HostApiTypeIdToHostApiIndex(g_supported_apis[i])) {
+            return TRUE;
+        }
+    }
+    return FALSE;
+}
+
+/**
+ * pa_get_sample_rates:
+ * @info: a PaDeviceInfo for a specific device
+ * @idx: the PaDeviceIndex for a specific device should match info.
+ * @sample_rates:(out) (transfer full) (array length=num_sample_rates): the
+ *              output is returned here.
+ * @num_sample_rates:(out): the length of the output
+ *
+ * Collect the supported sample rates for one specific device.
+ */
+void
+pa_get_sample_rates(const PaDeviceInfo  *info,
+                    PaDeviceIndex        idx,
+                    PsyAudioSampleRate **sample_rates,
+                    gsize               *num_sample_rates)
+{
+    PsyAudioSampleRate applicable[] = {
+        PSY_AUDIO_SAMPLE_RATE_22050,
+        PSY_AUDIO_SAMPLE_RATE_24000,
+        PSY_AUDIO_SAMPLE_RATE_32000,
+        PSY_AUDIO_SAMPLE_RATE_44100,
+        PSY_AUDIO_SAMPLE_RATE_48000,
+        PSY_AUDIO_SAMPLE_RATE_88200,
+        PSY_AUDIO_SAMPLE_RATE_96000,
+        PSY_AUDIO_SAMPLE_RATE_192000,
+    };
+
+    PsyAudioSampleRate  found[sizeof(applicable) / sizeof(applicable[0])];
+    PsyAudioSampleRate *ret       = NULL;
+    guint               num_found = 0;
+
+    PaStreamParameters *inp, *outp;
+
+    PaStreamParameters in_stream;
+    in_stream.channelCount              = info->maxInputChannels;
+    in_stream.device                    = idx;
+    in_stream.sampleFormat              = paFloat32;
+    in_stream.suggestedLatency          = 0;
+    in_stream.hostApiSpecificStreamInfo = NULL;
+
+    PaStreamParameters out_stream;
+    out_stream.channelCount              = info->maxOutputChannels;
+    out_stream.device                    = idx;
+    out_stream.sampleFormat              = paFloat32;
+    out_stream.suggestedLatency          = 0;
+    out_stream.hostApiSpecificStreamInfo = NULL;
+
+    inp  = in_stream.channelCount > 0 ? &in_stream : NULL;
+    outp = out_stream.channelCount > 0 ? &out_stream : NULL;
+
+    // collect and count applicable sample rates
+    for (guint i = 0; i < sizeof(applicable) / sizeof(applicable[0]); i++) {
+        if (Pa_IsFormatSupported(inp, outp, applicable[i])
+            == paFormatIsSupported) {
+            found[num_found++] = applicable[i];
+        }
+    }
+
+    // fill output array
+    if (num_found > 0) {
+        ret = malloc(sizeof(PsyAudioSampleRate) * num_found);
+        for (guint i = 0; i < num_found; i++)
+            ret[i] = found[i];
+    }
+
+    *num_sample_rates = num_found;
+    *sample_rates     = ret;
+}
+
+/**
+ * pa_enumerate_devices:
+ *
+ */
+void
+pa_enumerate_devices(PsyAudioDevice       *self,
+                     PsyAudioDeviceInfo ***infos,
+                     guint                *n_infos)
+{
+    guint                num_devices = 0;
+    PsyAudioDeviceInfo **ret_infos   = NULL;
+    (void) self;
+
+    for (PaDeviceIndex i = 0; i < Pa_GetDeviceCount(); i++) {
+        const PaDeviceInfo *info = Pa_GetDeviceInfo(i);
+        if (pa_device_uses_preferred_host_api(info)) {
+            num_devices++;
+        }
+    }
+
+    if (num_devices > 0) {
+
+        ret_infos = g_malloc(sizeof(PsyAudioDeviceInfo *) * num_devices);
+
+        num_devices = 0; // reuse variable
+
+        for (PaDeviceIndex i = 0; i < Pa_GetDeviceCount(); i++) {
+            PsyAudioSampleRate *sample_rates     = NULL;
+            gsize               num_sample_rates = 0;
+            const PaDeviceInfo *info             = Pa_GetDeviceInfo(i);
+
+            if (pa_device_uses_preferred_host_api(info)) {
+                const PaHostApiInfo *host_api_info
+                    = Pa_GetHostApiInfo(info->hostApi);
+                pa_get_sample_rates(info, i, &sample_rates, &num_sample_rates);
+                ret_infos[num_devices]
+                    = psy_audio_device_info_new(num_devices,
+                                                g_strdup("Portaudio"),
+                                                g_strdup(host_api_info->name),
+                                                g_strdup(info->name),
+                                                info->maxInputChannels,
+                                                info->maxOutputChannels,
+                                                sample_rates,
+                                                num_sample_rates);
+            }
+            num_devices++;
+        }
+    }
+
+    *n_infos = num_devices;
+    *infos   = ret_infos;
 }
 
 /**
@@ -254,11 +408,12 @@ psy_pa_device_class_init(PsyPADeviceClass *klass)
 
     PsyAudioDeviceClass *audio_klass = PSY_AUDIO_DEVICE_CLASS(klass);
 
-    audio_klass->open             = pa_device_open;
-    audio_klass->close            = pa_device_close;
-    audio_klass->start            = pa_device_start;
-    audio_klass->stop             = pa_device_stop;
-    audio_klass->get_default_name = pa_device_get_default_name;
+    audio_klass->open              = pa_device_open;
+    audio_klass->close             = pa_device_close;
+    audio_klass->start             = pa_device_start;
+    audio_klass->stop              = pa_device_stop;
+    audio_klass->get_default_name  = pa_device_get_default_name;
+    audio_klass->enumerate_devices = pa_enumerate_devices;
 
     // We just use what the base class knows.
     //    audio_klass->set_name        = pa_device_set_name;

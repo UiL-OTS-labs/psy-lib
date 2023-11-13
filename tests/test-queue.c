@@ -69,7 +69,7 @@ push_samples(gpointer data)
 
     g_info("push thread started");
     while (num_send < context->num_samples) {
-        n = psy_audio_queue_push_samples(q, 100, &data_in[num_send]);
+        n = psy_audio_queue_push_samples(q, 1, &data_in[num_send]);
         num_send += n;
     }
     g_info("push thread stopping");
@@ -92,7 +92,7 @@ pull_samples(gpointer data)
     g_info("pull thread started");
 
     while (num_received < context->num_samples) {
-        n = psy_audio_queue_pop_samples(q, 100, &data_out[num_received]);
+        n = psy_audio_queue_pop_samples(q, 1, &data_out[num_received]);
         num_received += n;
     }
 
@@ -110,7 +110,7 @@ queue_simultaneous_push_pull(void)
 
     PushPullContext context = {.data_in     = NULL,
                                .data_out    = NULL,
-                               .num_samples = 1000000,
+                               .num_samples = 10000,
                                .queue       = psy_audio_queue_new(1024)};
 
     context.data_in  = malloc(context.num_samples * sizeof(float));

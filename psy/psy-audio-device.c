@@ -37,6 +37,8 @@ G_DEFINE_BOXED_TYPE(PsyAudioDeviceInfo,
  *                            ALSA, but ALSA just uses itself (or no
  *                            intermediate info).
  * @device_name:(transfer full): The name of this device.
+ * @max_inputs: the number of input channels this device has
+ * @max_outputs: the number of output channels this device has
  * @sample_rates:(transfer full)(array length=num_sample_rates):
  *                            The sample rates this devices supports
  * @num_sample_rates: The length of @sample_rates.
@@ -48,15 +50,19 @@ psy_audio_device_info_new(gint                device_num,
                           gchar              *psy_api,
                           gchar              *host_api,
                           gchar              *device_name,
+                          guint               max_inputs,
+                          guint               max_outputs,
                           PsyAudioSampleRate *sample_rates,
                           guint               num_sample_rates)
 {
-    PsyAudioDeviceInfo *new = g_malloc(sizeof(PsyAudioDevice));
+    PsyAudioDeviceInfo *new = g_malloc(sizeof(PsyAudioDeviceInfo));
 
     new->device_num       = device_num;
     new->psy_api          = psy_api;
     new->host_api         = host_api;
     new->device_name      = device_name;
+    new->max_inputs       = max_inputs;
+    new->max_outputs      = max_outputs;
     new->sample_rates     = sample_rates;
     new->num_sample_rates = num_sample_rates;
 
@@ -95,7 +101,8 @@ psy_audio_device_info_copy(PsyAudioDeviceInfo *self)
     new->host_api    = g_strdup(self->host_api);
     new->device_name = g_strdup(self->device_name);
 
-    new->sample_rates     = g_malloc(sizeof(PSY_AUDIO_SAMPLE_RATE_48000));
+    new->sample_rates     = g_malloc(sizeof(PSY_AUDIO_SAMPLE_RATE_48000)
+                                 * self->num_sample_rates);
     new->num_sample_rates = self->num_sample_rates;
     for (guint i = 0; i < self->num_sample_rates; i++)
         new->sample_rates[i] = self->sample_rates[i];
@@ -103,12 +110,56 @@ psy_audio_device_info_copy(PsyAudioDeviceInfo *self)
     return new;
 }
 
+/**
+ * psy_audio_device_info_as_string:
+ * @self: an instance of [struct@PsyAudioDeviceInfo] to stringify
+ *
+ * Creates a string representation of the device info
+ *
+ * Returns:(transfer full): a string with a representation of the device, the
+ * returned value should be freed with g_free.
+ */
+gchar *
+psy_audio_device_info_as_string(PsyAudioDeviceInfo *self)
+{
+    GString *str_buf = g_string_sized_new(1024);
+
+    g_string_append_printf(str_buf,
+                           "PsyAudioDeviceInfo for device: %s\n"
+                           "\tdevice_num = %d\n"
+                           "\tpsy_api = %s\n"
+                           "\thost_api = %s\n"
+                           "\tmax_inputs = %d\n"
+                           "\tmax_outputs = %d\n"
+                           "\tsupported sample rates = [",
+                           self->device_name,
+                           self->device_num,
+                           self->psy_api,
+                           self->host_api,
+                           self->max_inputs,
+                           self->max_outputs);
+
+    for (guint i = 0; i < self->num_sample_rates; i++) {
+        if (i < self->num_sample_rates - 1)
+            g_string_append_printf(str_buf, "%d, ", self->sample_rates[i]);
+        else
+            g_string_append_printf(str_buf, "%d", self->sample_rates[i]);
+    }
+
+    g_string_append_printf(str_buf, "]");
+
+#if GLIB_CHECK_VERSION(2, 76, 0)
+    return g_string_free_and_steal(str_buf);
+#else
+    return g_string_free(str_buf, FALSE);
+#endif
+}
+
 void
 psy_audio_device_info_free(PsyAudioDeviceInfo *self)
 {
     g_free(self->psy_api);
     g_free(self->host_api);
-    g_free(self->device_name);
     g_free(self->device_name);
     g_free(self->sample_rates);
 
@@ -887,9 +938,9 @@ psy_audio_device_set_num_samples_callback(PsyAudioDevice *self,
  * device.
  */
 void
-psy_audio_device_enumerate_devices(PsyAudioDevice      *self,
-                                   PsyAudioDeviceInfo **infos,
-                                   guint               *n_infos)
+psy_audio_device_enumerate_devices(PsyAudioDevice       *self,
+                                   PsyAudioDeviceInfo ***infos,
+                                   guint                *n_infos)
 {
     g_return_if_fail(PSY_IS_AUDIO_DEVICE(self));
     g_return_if_fail(infos != NULL && *infos == NULL);

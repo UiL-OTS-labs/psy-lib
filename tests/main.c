@@ -3,6 +3,8 @@
 #include <CUnit/CUnit.h>
 #include <CUnit/TestRun.h>
 #include <glib.h>
+#include <portaudio.h>
+#include <psylib.h>
 #include <stdlib.h>
 
 #include "suites.h"
@@ -113,6 +115,20 @@ add_suites_to_registry(void)
     return error;
 }
 
+static void
+init_libs(void)
+{
+#if defined PSY_HAVE_PORTAUDIO
+    pa_Initialize();
+#endif
+}
+
+static void
+deinitialize_libs(void)
+{
+    Pa_Terminate();
+}
+
 int
 main(int argc, char **argv)
 {
@@ -141,6 +157,8 @@ main(int argc, char **argv)
         }
     }
 
+    init_libs();
+
     set_save_images(g_save_images ? TRUE : FALSE);
 
     CU_initialize_registry();
@@ -159,6 +177,8 @@ main(int argc, char **argv)
 
     CU_cleanup_registry();
     g_print("\nRan with a seed of %u\n", random_seed());
+
+    deinitialize_libs();
     deinitialize_random();
     g_option_context_free(context);
 
