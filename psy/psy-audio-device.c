@@ -171,6 +171,14 @@ psy_audio_device_info_free(PsyAudioDeviceInfo *self)
  *
  * A PsyAudioDevice is a device that represents an PCI(e), USB, Firewire
  * on the mother board, etc. type of an audio interface.
+ *
+ * In order to open it, one should first set the right parameters of the
+ * device. Once they are set you should can try to open it to see whether
+ * the parameters are accepted and possible for the device.
+ *
+ * Once you have opened the device you should be able to start it.
+ * Notice that enumerating, opening, starting and closing a device are expensive
+ * operations. Hence, you want to do this prior to starting your experiment.
  */
 
 // clang-format off

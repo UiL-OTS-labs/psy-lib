@@ -22,6 +22,7 @@ G_BEGIN_DECLS
  *               by this device.
  *
  * This structure contains some general information about an audio endpoint.
+ * You should consider the contained variables as read only.
  */
 typedef struct PsyAudioDeviceInfo {
 

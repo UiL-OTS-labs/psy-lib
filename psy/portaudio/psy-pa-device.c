@@ -15,10 +15,12 @@
  */
 
 typedef struct _PsyPADevice {
-    PsyAudioDevice parent;
-    PsyClock      *psy_clock;
-    PaStream      *stream;
-    gboolean       pa_initialized;
+    PsyAudioDevice       parent;
+    PsyClock            *psy_clock;
+    PaStream            *stream;
+    gboolean             pa_initialized;
+    PsyAudioDeviceInfo **dev_infos;
+    guint                num_infos;
 } PsyPADevice;
 
 G_DEFINE_FINAL_TYPE(PsyPADevice, psy_pa_device, PSY_TYPE_AUDIO_DEVICE)
@@ -76,8 +78,35 @@ pa_audio_callback(const void                     *input,
 }
 
 /**
+ * pa_is_pcm_device:
+ *
+ * This function tries to determine whether it is a pcm device, e.g. ALSA
+ * virtual devices are ignored.
+ *
+ * TODO check for windows devices whether they are PCM devices
+ */
+gboolean
+pa_is_pcm_device(const PaDeviceInfo *info)
+{
+    gboolean ret = TRUE;
+    if (info->hostApi == Pa_HostApiTypeIdToHostApiIndex(paALSA)) {
+
+        const char *re_string = "(hw:\\d+,\\d+)";
+
+        if (!g_regex_match_simple(re_string, info->name, 0, 0))
+            ret = FALSE;
+    }
+
+    return ret;
+}
+
+/**
  * pa_device_uses_preferred_host_api:
  *
+ * Checks whether the host api is supported:
+ * linux: ALSA
+ * windows: (WASAPI, ASIO) // TODO determine the preferrable host api('s)
+ * MAC: (coreaudio) // TODO
  */
 gboolean
 pa_device_uses_preferred_host_api(const PaDeviceInfo *info)
@@ -172,33 +201,41 @@ pa_enumerate_devices(PsyAudioDevice       *self,
                      PsyAudioDeviceInfo ***infos,
                      guint                *n_infos)
 {
-    guint                num_devices = 0;
-    PsyAudioDeviceInfo **ret_infos   = NULL;
-    (void) self;
+    PsyPADevice *pa_self = PSY_PA_DEVICE(self);
 
-    for (PaDeviceIndex i = 0; i < Pa_GetDeviceCount(); i++) {
-        const PaDeviceInfo *info = Pa_GetDeviceInfo(i);
-        if (pa_device_uses_preferred_host_api(info)) {
-            num_devices++;
-        }
-    }
-
-    if (num_devices > 0) {
-
-        ret_infos = g_malloc(sizeof(PsyAudioDeviceInfo *) * num_devices);
-
-        num_devices = 0; // reuse variable
+    // If we don't have a cache build it.
+    if (!pa_self->dev_infos) {
+        guint                num_devices = 0;
+        PsyAudioDeviceInfo **cache_infos = NULL;
 
         for (PaDeviceIndex i = 0; i < Pa_GetDeviceCount(); i++) {
-            PsyAudioSampleRate *sample_rates     = NULL;
-            gsize               num_sample_rates = 0;
-            const PaDeviceInfo *info             = Pa_GetDeviceInfo(i);
-
+            const PaDeviceInfo *info = Pa_GetDeviceInfo(i);
             if (pa_device_uses_preferred_host_api(info)) {
+                num_devices++;
+            }
+        }
+
+        if (num_devices > 0) {
+
+            cache_infos = g_malloc(sizeof(PsyAudioDeviceInfo *) * num_devices);
+
+            num_devices = 0; // reuse variable
+
+            for (PaDeviceIndex i = 0; i < Pa_GetDeviceCount(); i++) {
+                PsyAudioSampleRate *sample_rates     = NULL;
+                gsize               num_sample_rates = 0;
+                const PaDeviceInfo *info             = Pa_GetDeviceInfo(i);
+
+                if (!pa_device_uses_preferred_host_api(info))
+                    continue;
+
+                if (!pa_is_pcm_device(info))
+                    continue;
+
                 const PaHostApiInfo *host_api_info
                     = Pa_GetHostApiInfo(info->hostApi);
                 pa_get_sample_rates(info, i, &sample_rates, &num_sample_rates);
-                ret_infos[num_devices]
+                cache_infos[num_devices]
                     = psy_audio_device_info_new(num_devices,
                                                 g_strdup("Portaudio"),
                                                 g_strdup(host_api_info->name),
@@ -207,13 +244,24 @@ pa_enumerate_devices(PsyAudioDevice       *self,
                                                 info->maxOutputChannels,
                                                 sample_rates,
                                                 num_sample_rates);
+
+                num_devices++;
             }
-            num_devices++;
         }
+
+        pa_self->num_infos = num_devices;
+        pa_self->dev_infos = cache_infos;
     }
 
-    *n_infos = num_devices;
+    // Create a copy from cache
+    PsyAudioDeviceInfo **ret_infos
+        = g_malloc(sizeof(PsyAudioDeviceInfo *) * pa_self->num_infos);
+    for (guint i = 0; i < pa_self->num_infos; i++)
+        ret_infos[i] = psy_audio_device_info_copy(pa_self->dev_infos[i]);
+
+    // Return values by reference
     *infos   = ret_infos;
+    *n_infos = pa_self->num_infos;
 }
 
 /**
@@ -314,6 +362,13 @@ psy_pa_device_finalize(GObject *object)
 
     if (self->pa_initialized) {
         Pa_Terminate();
+    }
+
+    if (self->dev_infos) {
+        for (guint i = 0; i < self->num_infos; i++) {
+            psy_audio_device_info_free(self->dev_infos[i]);
+        }
+        g_free(self->dev_infos);
     }
 
     G_OBJECT_CLASS(psy_pa_device_parent_class)->finalize(object);
