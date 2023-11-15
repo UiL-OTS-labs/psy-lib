@@ -90,6 +90,14 @@ psy_audio_device_info_get_sample_rates(PsyAudioDeviceInfo  *self,
     *num_sample_rates = self->num_sample_rates;
 }
 
+/**
+ * psy_audio_device_info_copy:
+ * @self: An instance of [struct@AudioDeviceInfo] to copy
+ *
+ * Copy a PsyAudioDeviceInfo
+ *
+ * Returns:(transfer full): a deep copy of @self
+ */
 PsyAudioDeviceInfo *
 psy_audio_device_info_copy(PsyAudioDeviceInfo *self)
 {
