@@ -101,6 +101,9 @@ psy_audio_device_info_copy(PsyAudioDeviceInfo *self)
     new->host_api    = g_strdup(self->host_api);
     new->device_name = g_strdup(self->device_name);
 
+    new->max_inputs  = self->max_inputs;
+    new->max_outputs = self->max_outputs;
+
     new->sample_rates     = g_malloc(sizeof(PSY_AUDIO_SAMPLE_RATE_48000)
                                  * self->num_sample_rates);
     new->num_sample_rates = self->num_sample_rates;
