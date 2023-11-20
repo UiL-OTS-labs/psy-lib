@@ -21,7 +21,6 @@
 
 typedef struct _PsyPADevice {
     PsyAudioDevice       parent;
-    PsyClock            *psy_clock;
     PaStream            *stream;
     gboolean             pa_initialized;
     PsyAudioDeviceInfo **dev_infos;
@@ -61,43 +60,28 @@ pa_audio_callback(const void                     *input,
                   void                           *audio_device)
 {
     (void) input;
-    (void) output;
-    (void) frameCount;
     (void) timeInfo;
     (void) statusFlags;
     PsyPADevice *self = audio_device;
 
-    gfloat attenuation = 0.5f;
+    gdouble attenuation = 0.5f;
 
     guint num_out
         = psy_audio_device_get_num_output_channels(PSY_AUDIO_DEVICE(self));
-    static gfloat time        = 0;
-    gfloat       *out_pointer = output;
+    static gdouble time        = 0;
+    gfloat        *out_pointer = output;
 
     for (guint n = 0; n < frameCount; n++) {
-        gfloat sig_value = (float) sin(time * 440.0 * 2 * M_PI) * attenuation;
+        gdouble sig_value = sin(time * 440.0 * 2 * M_PI) * attenuation;
         for (guint n_chan = 0; n_chan < num_out; n_chan++) {
             *out_pointer = sig_value;
             out_pointer++;
         }
-        time += 1.0f
-                / (float) psy_audio_device_get_sample_rate(
-                    PSY_AUDIO_DEVICE(self));
+        g_print("%f\n", sig_value);
+        time += 1.0f / psy_audio_device_get_sample_rate(PSY_AUDIO_DEVICE(self));
     }
 
-    // TODO no system calls in audio callback and no mallocs..
-    PsyTimePoint *tp = psy_clock_now(self->psy_clock);
-
-    // TODO this might block
-    if (G_UNLIKELY(!psy_audio_device_get_started(PSY_AUDIO_DEVICE(self)))) {
-        psy_audio_device_set_started(PSY_AUDIO_DEVICE(self), tp);
-    }
-    // Read first, because the input might be desired for the output.
-
-    // TODO freeing isn't bounded.
-    g_object_unref(tp);
-
-    return 0;
+    return paContinue;
 }
 
 /**
@@ -347,8 +331,10 @@ pa_determine_device(PsyPADevice         *self,
             if (!psy_audio_device_info_contains_sr(infos[i], sr))
                 continue;
 
+            // We've found a match.
             devnum = (gint) i;
             *info  = psy_audio_device_info_copy(infos[i]);
+            break;
         }
         if (devnum < 0)
             g_set_error(error,
@@ -414,16 +400,13 @@ psy_pa_device_init(PsyPADevice *self)
     if (error != paNoError) {
         g_critical("Unable to init portaudio: %s", Pa_GetErrorText(error));
     }
-    self->psy_clock = psy_clock_new();
 }
 
 static void
 psy_pa_device_dispose(GObject *object)
 {
-    PsyPADevice *self = PSY_PA_DEVICE(object);
-    (void) self;
-
-    g_clear_object(&self->psy_clock);
+    PsyAudioDevice *self    = PSY_PA_DEVICE(object);
+    PsyPADevice    *pa_self = PSY_PA_DEVICE(object);
 
     G_OBJECT_CLASS(psy_pa_device_parent_class)->dispose(object);
 }
@@ -467,15 +450,17 @@ pa_device_open(PsyAudioDevice *self, GError **error)
 
     input_params.channelCount
         = (int) psy_audio_device_get_num_input_channels(self);
-    input_params.device           = device_num;
-    input_params.sampleFormat     = paFloat32;
-    input_params.suggestedLatency = pa_info->defaultLowInputLatency;
+    input_params.device                    = device_num;
+    input_params.sampleFormat              = paFloat32;
+    input_params.suggestedLatency          = pa_info->defaultLowInputLatency;
+    input_params.hostApiSpecificStreamInfo = NULL;
 
     output_params.channelCount
         = (int) psy_audio_device_get_num_output_channels(self);
-    output_params.device           = device_num;
-    output_params.sampleFormat     = paFloat32;
-    output_params.suggestedLatency = pa_info->defaultLowOutputLatency;
+    output_params.device                    = device_num;
+    output_params.sampleFormat              = paFloat32;
+    output_params.suggestedLatency          = pa_info->defaultLowOutputLatency;
+    output_params.hostApiSpecificStreamInfo = NULL;
 
     p_in_param  = input_params.channelCount > 0 ? &input_params : NULL;
     p_out_param = output_params.channelCount > 0 ? &output_params : NULL;
@@ -520,8 +505,8 @@ pa_device_start(PsyAudioDevice *self, GError **error)
     if (err != paNoError) {
         g_set_error(error,
                     PSY_AUDIO_DEVICE_ERROR,
-                    PSY_AUDIO_DEVICE_ERROR_OPEN,
-                    "Unable to open portaudio stream: %s",
+                    PSY_AUDIO_DEVICE_ERROR_FAILED,
+                    "Unable to start portaudio stream: %s",
                     Pa_GetErrorText(err));
         return;
     }
@@ -550,6 +535,9 @@ static void
 pa_device_close(PsyAudioDevice *self)
 {
     PsyPADevice *pa_self = PSY_PA_DEVICE(self);
+
+    Pa_CloseStream(pa_self->stream);
+
     PSY_AUDIO_DEVICE_CLASS(psy_pa_device_parent_class)->close(self);
 }
 

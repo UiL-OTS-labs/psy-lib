@@ -98,8 +98,8 @@ quit_loop(GMainLoop *loop)
 static void
 audio_device_open(void)
 {
-    PsyAudioDevice *device = g_current_backend_allocater();
-    gboolean        is_open;
+    PsyAudioDevice *device  = g_current_backend_allocater();
+    gboolean        is_open = FALSE, started = FALSE;
     gchar          *name;
     GError         *error = NULL;
     GMainLoop      *loop  = g_main_loop_new(NULL, FALSE);
@@ -114,11 +114,12 @@ audio_device_open(void)
     // clang-format off
     g_object_get(device,
                  "is-open", &is_open,
+                 "started", &started,
                  "name", &name,
                  NULL);
     // clang-format on
     g_signal_connect(device, "started", G_CALLBACK(on_started), &cb_data);
-    g_timeout_add(2000, G_SOURCE_FUNC(quit_loop), loop);
+    g_timeout_add(1000, G_SOURCE_FUNC(quit_loop), loop);
 
     g_main_loop_run(loop);
     CU_ASSERT_TRUE(is_open);

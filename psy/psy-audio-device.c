@@ -651,10 +651,11 @@ psy_audio_device_get_default_name(PsyAudioDevice *self)
  * other properties above will be opened and the name will be set on the
  * device.
  *
- * So if you want to open a specific device, set the [property@PsyAudioDevice:name]
- * before opening the device. You can find the applicable devices using
- * [method@Psy.AudioDevice.enumerate_devices], this will return a list
- * of [struct@PsyAudioDeviceInfo] which contains the appropriate device_name.
+ * So if you want to open a specific device, set the
+ * [property@PsyAudioDevice:name] before opening the device. You can find the
+ * applicable devices using [method@Psy.AudioDevice.enumerate_devices], this
+ * will return a list of [struct@PsyAudioDeviceInfo] which contains the
+ * appropriate device_name.
  *
  * If you have opened the devices successfully it will also be started,
  * and the audio will stream immediately.
@@ -740,6 +741,12 @@ psy_audio_device_stop(PsyAudioDevice *self)
     cls->stop(self);
 }
 
+/**
+ * psy_audio_device_get_is_open:
+ *
+ *
+ * Returns: TRUE if the device is open, false otherwise.
+ */
 gboolean
 psy_audio_device_get_is_open(PsyAudioDevice *self)
 {
@@ -750,6 +757,11 @@ psy_audio_device_get_is_open(PsyAudioDevice *self)
     return priv->is_open;
 }
 
+/**
+ * psy_audio_device_get_sample_rate:
+ *
+ * Get the sample rate that this device should use or is using.
+ */
 PsyAudioSampleRate
 psy_audio_device_get_sample_rate(PsyAudioDevice *self)
 {
