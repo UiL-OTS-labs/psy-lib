@@ -77,7 +77,7 @@ pa_audio_callback(const void                     *input,
             *out_pointer = sig_value;
             out_pointer++;
         }
-        g_print("%f\n", sig_value);
+        // g_print("%f\n", sig_value);
         time += 1.0f / psy_audio_device_get_sample_rate(PSY_AUDIO_DEVICE(self));
     }
 
@@ -470,7 +470,7 @@ pa_device_open(PsyAudioDevice *self, GError **error)
                            p_out_param,
                            psy_audio_device_get_sample_rate(self),
                            paFramesPerBufferUnspecified,
-                           paNoFlag,
+                           paPrimeOutputBuffersUsingStreamCallback,
                            &pa_audio_callback,
                            self);
 
