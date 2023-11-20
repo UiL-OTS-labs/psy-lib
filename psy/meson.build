@@ -48,6 +48,10 @@ if cc.has_header('portaudio.h')
     cdata.set('HAVE_PORTAUDIO_H', true)
 endif
 
+if cc.has_header('pa_linux_alsa.h')
+    cdata.set('HAVE_PA_LINUX_ALSA_H', true)
+endif
+
 if cc.has_header('alsa/asoundlib.h')
     cdata.set('HAVE_ASOUNDLIB_H', true)
 endif

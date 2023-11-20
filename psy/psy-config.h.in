@@ -19,6 +19,7 @@
 #mesondefine HAVE_JACK_H
 #mesondefine HAVE_ASOUNDLIB_H
 #mesondefine HAVE_PORTAUDIO_H
+#mesondefine HAVE_PA_LINUX_ALSA_H
 
 // headers C++
 #mesondefine HAVE_BOOST_LOCKFREE_SPSC_QUEUE_HPP

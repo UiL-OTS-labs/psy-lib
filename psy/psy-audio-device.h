@@ -20,9 +20,14 @@ G_BEGIN_DECLS
  * @num_sample_rates: the number of sample rates supported
  * @sample_rates:(array length=num_sample_rates): the sample rates supported
  *               by this device.
+ * @private_index: An internal number that corresponds to an enumerated device
+ *                 internally to psylib.
  *
  * This structure contains some general information about an audio endpoint.
  * You should consider the contained variables as read only.
+ *
+ * You can use the device num or device name on the PsyAudioDevice from which
+ * you have obtained this PsyAudioDeviceInfo to open the device.
  */
 typedef struct PsyAudioDeviceInfo {
 
@@ -38,6 +43,9 @@ typedef struct PsyAudioDeviceInfo {
 
     PsyAudioSampleRate *sample_rates;
     guint               num_sample_rates;
+
+    /* <private> */
+    guint private_index;
 } PsyAudioDeviceInfo;
 
 GType
@@ -51,7 +59,8 @@ psy_audio_device_info_new(gint                device_num,
                           guint               max_inputs,
                           guint               max_outputs,
                           PsyAudioSampleRate *sample_rates,
-                          guint               num_sample_rates);
+                          guint               num_sample_rates,
+                          guint               private_index);
 
 void
 psy_audio_device_info_get_sample_rates(PsyAudioDeviceInfo  *self,
@@ -66,6 +75,10 @@ psy_audio_device_info_free(PsyAudioDeviceInfo *self);
 
 char *
 psy_audio_device_info_as_string(PsyAudioDeviceInfo *self);
+
+gboolean
+psy_audio_device_info_contains_sr(PsyAudioDeviceInfo *self,
+                                  PsyAudioSampleRate  sr);
 
 #define PSY_AUDIO_DEVICE_ERROR psy_audio_device_error_quark()
 G_MODULE_EXPORT GQuark
@@ -194,10 +207,6 @@ psy_audio_device_enumerate_devices(PsyAudioDevice       *self,
 typedef struct _PsyAudioOutputMixer PsyAudioOutputMixer;
 PsyAudioOutputMixer *
 psy_audio_device_get_output_mixer(PsyAudioDevice *self);
-
-// TODO
-// PsyAudioPlayback*
-// psy_audio_device_get_playback(PsyAudioDevice* device);
 
 G_END_DECLS
 

@@ -29,7 +29,7 @@ G_DEFINE_BOXED_TYPE(PsyAudioDeviceInfo,
 #pragma GCC diagnostic pop
 
 /**
- * psy_audio_device_info_new:(constructor)
+ * psy_audio_device_info_new:(constructor)(skip)
  * @device_num: The device number of this info
  * @psy_api:(transfer full): The api that psylib is using for this device info
  * @host_api:(transfer full): The api that @psy_api is using for this device
@@ -53,7 +53,8 @@ psy_audio_device_info_new(gint                device_num,
                           guint               max_inputs,
                           guint               max_outputs,
                           PsyAudioSampleRate *sample_rates,
-                          guint               num_sample_rates)
+                          guint               num_sample_rates,
+                          guint               private_index)
 {
     PsyAudioDeviceInfo *new = g_malloc(sizeof(PsyAudioDeviceInfo));
 
@@ -65,6 +66,7 @@ psy_audio_device_info_new(gint                device_num,
     new->max_outputs      = max_outputs;
     new->sample_rates     = sample_rates;
     new->num_sample_rates = num_sample_rates;
+    new->private_index    = private_index;
 
     return new;
 }
@@ -118,6 +120,8 @@ psy_audio_device_info_copy(PsyAudioDeviceInfo *self)
     for (guint i = 0; i < self->num_sample_rates; i++)
         new->sample_rates[i] = self->sample_rates[i];
 
+    new->private_index = self->private_index;
+
     return new;
 }
 
@@ -164,6 +168,27 @@ psy_audio_device_info_as_string(PsyAudioDeviceInfo *self)
 #else
     return g_string_free(str_buf, FALSE);
 #endif
+}
+
+/**
+ * psy_audio_device_info_contains_sr:
+ * @self: An instance of [struct@PsyAudioDeviceInfo]
+ * @sr: An value of [enum@PsyAudioSampleRate]
+ *
+ * Checks whether this device supports the samplerate @sr
+ *
+ * Returns: #TRUE when the sample rate is supported #FALSE otherwise
+ */
+gboolean
+psy_audio_device_info_contains_sr(PsyAudioDeviceInfo *self,
+                                  PsyAudioSampleRate  sr)
+{
+    g_return_val_if_fail(self, FALSE);
+    for (guint i = 0; i < self->num_sample_rates; i++) {
+        if (self->sample_rates[i] == sr)
+            return TRUE;
+    }
+    return FALSE;
 }
 
 void
@@ -428,7 +453,7 @@ psy_audio_device_class_init(PsyAudioDeviceClass *klass)
                               "Name",
                               "The name of the device to open",
                               NULL,
-                              G_PARAM_READABLE);
+                              G_PARAM_READWRITE);
 
     /**
      * PsyAudioDevice:is-open:
@@ -466,7 +491,7 @@ psy_audio_device_class_init(PsyAudioDeviceClass *klass)
                             "The sample rate of this device",
                             psy_audio_sample_rate_get_type(),
                             PSY_AUDIO_SAMPLE_RATE_48000,
-                            G_PARAM_READABLE);
+                            G_PARAM_READWRITE);
 
     /**
      * PsyAudioDevice:num-input-channels
@@ -570,28 +595,6 @@ psy_audio_device_new(void)
 #endif
 }
 
-// TODO
-// /**
-//  * psy_audio_device_get_playback:
-//  * @self: An instance of [class@AudioDevice] that will provide a
-//  * [class@AudioPlayback]
-//  *
-//  * Requests the backend of this audiodevice to provide a
-//  * [class@AudioPlayback] that is compatible with this context.
-//  *
-//  * Returns:(transfer none): An instance of [class@Texture]
-//  */
-// PsyTexture *
-// psy_audio_device_create_playback(PsyAudioDevice *self)
-// {
-//     g_return_val_if_fail(PSY_IS_AUDIO_DEVICE(self), NULL);
-//
-//     PsyAudioDeviceClass *cls = PSY_AUDIO_DEVICE_GET_CLASS(self);
-//
-//     g_return_val_if_fail(cls->create_playback, NULL);
-//     return cls->create_playback(self);
-// }
-
 gboolean
 psy_audio_device_set_name(PsyAudioDevice *self, const gchar *name)
 {
@@ -631,6 +634,31 @@ psy_audio_device_get_default_name(PsyAudioDevice *self)
     return cls->get_default_name(self);
 }
 
+/**
+ * psy_audio_device_open:
+ * @self: An instance of [class@PsyAudioDevice]
+ *
+ * Opens a PsyAudioDevice. Before trying to open the device, it is recommended
+ * to set the parameters to use for opening the device. Relevant parameters
+ * are [property@PsyAudioDevice:num-input-channels],
+ * [property@PsyAudioDevice:num-output-channels],
+ * [property@PsyAudioDevice:sample-rate],
+ * [property@PsyAudioDevice:name]
+ *
+ * If you set the name of the device, this is the device psylib will try to
+ * open and will try to apply the other parameters to this device. If you
+ * leave the name empty ("") or NULL, the first device that matches the
+ * other properties above will be opened and the name will be set on the
+ * device.
+ *
+ * So if you want to open a specific device, set the [property@PsyAudioDevice:name]
+ * before opening the device. You can find the applicable devices using
+ * [method@Psy.AudioDevice.enumerate_devices], this will return a list
+ * of [struct@PsyAudioDeviceInfo] which contains the appropriate device_name.
+ *
+ * If you have opened the devices successfully it will also be started,
+ * and the audio will stream immediately.
+ */
 void
 psy_audio_device_open(PsyAudioDevice *self, GError **error)
 {

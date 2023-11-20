@@ -7,9 +7,12 @@
  *      jack client is unable to connect to a jack server, perhaps it should
  *      be started first.
  * @PSY_AUDIO_DEVICE_ERROR_BUSY: This error can occur when trying to connect
- *      to an audio device that is allready in operation.
+ *      to an audio device that is already in operation.
  * @PSY_AUDIO_DEVICE_ERROR_OPEN: This operation cannot be performed when the
  *      device is open.
+ * @PSY_AUDIO_DEVICE_ERROR_OPEN_NAME: Unable to open a device with this name.
+ * @PSY_AUDIO_DEVICE_ERROR_OPEN_NO_MATCH: Unable to open, no matching devices
+ *      found.
  * @PSY_AUDIO_DEVICE_ERROR_FAILED: unspecific error read the error message
  *      for more info.
  *
@@ -19,6 +22,8 @@ typedef enum {
     PSY_AUDIO_DEVICE_ERROR_NO_SERVER_CONNECTION,
     PSY_AUDIO_DEVICE_ERROR_BUSY,
     PSY_AUDIO_DEVICE_ERROR_OPEN,
+    PSY_AUDIO_DEVICE_ERROR_OPEN_NAME,
+    PSY_AUDIO_DEVICE_ERROR_OPEN_NO_MATCH,
     PSY_AUDIO_DEVICE_ERROR_FAILED,
 } PsyAudioDeviceError;
 
@@ -42,6 +47,10 @@ typedef enum {
  *
  * Info is taken at july 11th 2023 from the [audacity-wiki]
  * (https://manual.audacityteam.org/man/sample_rates.html)
+ *
+ * TODO // In python this might map to Psy.AudioSampleRate.48000 and python
+ * doesn't like the .48000, hence we might need to prefix a R to get
+ * Psy.AudioSampleRate.48000
  *
  * 22000, 88200 have been added as they are in PortAudio
  */
