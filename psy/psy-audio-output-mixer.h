@@ -17,7 +17,7 @@ G_DECLARE_FINAL_TYPE(PsyAudioOutputMixer,
                      psy_audio_output_mixer,
                      PSY,
                      AUDIO_OUTPUT_MIXER,
-                     GObject)
+                     PsyAudioMixer)
 
 PsyAudioOutputMixer *
 psy_audio_output_mixer_new(PsyAudioDevice *device);

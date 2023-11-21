@@ -72,6 +72,28 @@ audio_device_create(void)
     g_object_unref(device);
 }
 
+static void
+audio_device_enumerate(void)
+{
+    PsyAudioDevice *device = g_current_backend_allocater();
+
+    PsyAudioDeviceInfo **infos     = NULL;
+    guint                num_infos = 0;
+
+    psy_audio_device_enumerate_devices(device, &infos, &num_infos);
+
+    if (num_infos > 0) {
+        CU_ASSERT_PTR_NOT_NULL(infos);
+
+        // free mem
+        for (guint i = 0; i < num_infos; i++)
+            g_free(infos[i]);
+        g_free(infos);
+    }
+
+    g_object_unref(device);
+}
+
 typedef struct OnStarted {
     GMainLoop *loop;
     gboolean   started;
@@ -133,28 +155,6 @@ audio_device_open(void)
     g_main_loop_unref(cb_data.loop);
 }
 
-static void
-audio_device_enumerate(void)
-{
-    PsyAudioDevice *device = g_current_backend_allocater();
-
-    PsyAudioDeviceInfo **infos     = NULL;
-    guint                num_infos = 0;
-
-    psy_audio_device_enumerate_devices(device, &infos, &num_infos);
-
-    if (num_infos > 0) {
-        CU_ASSERT_PTR_NOT_NULL(infos);
-
-        // free mem
-        for (guint i = 0; i < num_infos; i++)
-            g_free(infos[i]);
-        g_free(infos);
-    }
-
-    g_object_unref(device);
-}
-
 int
 add_audio_suite(const gchar *backend)
 {
@@ -197,11 +197,11 @@ add_audio_suite(const gchar *backend)
     if (!test)
         return 1;
 
-    test = CU_ADD_TEST(suite, audio_device_open);
+    test = CU_ADD_TEST(suite, audio_device_enumerate);
     if (!test)
         return 1;
 
-    test = CU_ADD_TEST(suite, audio_device_enumerate);
+    test = CU_ADD_TEST(suite, audio_device_open);
     if (!test)
         return 1;
 

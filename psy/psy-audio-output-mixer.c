@@ -33,7 +33,9 @@ typedef struct _PsyAudioOutputMixer {
     GPtrArray    *stimuli;
 } PsyAudioOutputMixer;
 
-G_DEFINE_FINAL_TYPE(PsyAudioOutputMixer, psy_audio_output_mixer, G_TYPE_OBJECT)
+G_DEFINE_FINAL_TYPE(PsyAudioOutputMixer,
+                    psy_audio_output_mixer,
+                    PSY_TYPE_AUDIO_MIXER)
 
 // typedef enum { PROP_NULL, NUM_PROPERTIES } PsyAudioOutputMixerProperty;
 
