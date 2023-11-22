@@ -34,6 +34,13 @@ cmdparser.add_argument(
     choices=sr_choices,
     default=48000,
 )
+cmdparser.add_argument(
+    "-d",
+    "--duration",
+    type=float,
+    help="Specify a positive duration in seconds to play audio",
+    default=4.0,
+)
 
 
 def print_audio_dev_props(dev: Psy.AudioDevice):
@@ -71,7 +78,7 @@ def main():
     print("After opening:")
     print_audio_dev_props(audiodev)
 
-    time.sleep(10)
+    time.sleep(args.duration)
 
 
 if __name__ == "__main__":
