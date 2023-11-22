@@ -6,6 +6,7 @@
 
 #include "psy-artist.h"
 #include "psy-audio-device.h"
+#include "psy-audio-utils.h"
 #include "psy-canvas.h"
 #include "psy-circle-artist.h"
 #include "psy-circle.h"

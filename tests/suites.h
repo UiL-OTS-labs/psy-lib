@@ -7,6 +7,9 @@ int
 add_audio_suite(const gchar *backend);
 
 int
+add_audio_utils_suite(void);
+
+int
 add_canvas_suite(void);
 
 int

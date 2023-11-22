@@ -3,8 +3,6 @@
 #include <CUnit/CUnit.h>
 #include <psylib.h>
 
-#include "psy-config.h"
-
 #include "unit-test-utilities.h"
 
 typedef PsyAudioDevice *(*audio_backend_allocater_func)(void);

@@ -39,6 +39,8 @@ cmdparser.add_argument(
 def print_audio_dev_props(dev: Psy.AudioDevice):
     print("audiodev.props.name =", dev.props.name)
     print("audiodev.props.is_open =", dev.props.is_open)
+    if dev.props.is_open:
+        print("audiodev.props.output_latency =", dev.props.output_latency.get_seconds())
     print("audiodev.props.started =", dev.props.started)
     print("audiodev.props.sample_rate =", dev.props.sample_rate)
     print("audiodev.props.num_input_channels =", dev.props.num_input_channels)

@@ -52,6 +52,10 @@ add_suites_to_registry(void)
             return error;
     }
 
+    error = add_audio_utils_suite();
+    if (error)
+        return error;
+
     error = add_canvas_suite();
     if (error)
         return error;

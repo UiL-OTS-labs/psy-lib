@@ -248,6 +248,7 @@ typedef enum {
     PROP_NUM_INPUTS,
     PROP_NUM_OUTPUTS,
     PROP_NUM_SAMPLES_CALLBACK,
+    PROP_OUTPUT_LATENCY,
     NUM_PROPERTIES
 } PsyAudioDeviceProperty;
 
@@ -332,6 +333,9 @@ psy_audio_device_get_property(GObject    *object,
     case PROP_NUM_SAMPLES_CALLBACK:
         g_value_set_uint(value,
                          psy_audio_device_get_num_samples_callback(self));
+        break;
+    case PROP_OUTPUT_LATENCY:
+        g_value_set_object(value, psy_audio_device_get_output_latency(self));
         break;
     default:
         G_OBJECT_WARN_INVALID_PROPERTY_ID(object, prop_id, pspec);
@@ -540,6 +544,21 @@ psy_audio_device_class_init(PsyAudioDeviceClass *klass)
         0,
         G_MAXUINT,
         0,
+        G_PARAM_READABLE);
+
+    /**
+     * PsyAudioDevice:output-latency
+     *
+     * Obtain an estimation of the latency, that boils down to the number
+     * of samples in the cyclic buffer. This is a software buffer managed by
+     * the kernel of your OS. It may be the case that the hardware has
+     * it's own internal buffering device that adds additional latency.
+     */
+    audio_device_properties[PROP_OUTPUT_LATENCY] = g_param_spec_object(
+        "output-latency",
+        "OutputLatency",
+        "The estimated output latency of this [class@PsyAudioDevice]",
+        PSY_TYPE_DURATION,
         G_PARAM_READABLE);
 
     g_object_class_install_properties(
@@ -909,6 +928,33 @@ psy_audio_device_get_frame_dur(PsyAudioDevice *self)
     gdouble dur_flt = 1.0 / psy_audio_device_get_sample_rate(self);
 
     return psy_duration_new(dur_flt);
+}
+
+/**
+ * psy_audio_device_get_output_latency:
+ * @self: an instance of [class@AudioDevice] The device whose output latency
+ *        you would like to know
+ *
+ * When the device is configured running as output, it is possible to query
+ * the output latency. Typically, in order to have a valid latency, the
+ * backend should be opened/connected to the server(JACK) in order to
+ * get a valid latency. Otherwise this function may return nothing.
+ *
+ * The result of this value may be used internally by psylib in order to adjust
+ * the onset sample of the stimuli. So that the stimulus is presented as
+ * accurate as possible.
+ *
+ * Returns:(nullable)(transfer full): The estimated latency of a audio device.
+ */
+PsyDuration *
+psy_audio_device_get_output_latency(PsyAudioDevice *self)
+{
+    g_return_val_if_fail(PSY_IS_AUDIO_DEVICE(self), NULL);
+
+    PsyAudioDeviceClass *cls = PSY_AUDIO_DEVICE_GET_CLASS(self);
+    g_return_val_if_fail(cls->get_output_latency != NULL, NULL);
+
+    return cls->get_output_latency(self);
 }
 
 /**

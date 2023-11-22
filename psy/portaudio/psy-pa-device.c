@@ -92,7 +92,7 @@ pa_audio_callback(const void                     *input,
  *
  * TODO check for windows devices whether they are PCM devices
  */
-gboolean
+static gboolean
 pa_is_pcm_device(const PaDeviceInfo *info)
 {
     gboolean ret = TRUE;
@@ -115,7 +115,7 @@ pa_is_pcm_device(const PaDeviceInfo *info)
  * windows: (WASAPI, ASIO) // TODO determine the preferrable host api('s)
  * MAC: (coreaudio) // TODO
  */
-gboolean
+static gboolean
 pa_device_uses_preferred_host_api(const PaDeviceInfo *info)
 {
     const size_t num_preferred
@@ -140,7 +140,7 @@ pa_device_uses_preferred_host_api(const PaDeviceInfo *info)
  *
  * Collect the supported sample rates for one specific device.
  */
-void
+static void
 pa_get_sample_rates(const PaDeviceInfo  *info,
                     PaDeviceIndex        idx,
                     PsyAudioSampleRate **sample_rates,
@@ -199,10 +199,10 @@ pa_get_sample_rates(const PaDeviceInfo  *info,
     *sample_rates     = ret;
 }
 
-void
-pa_enumerate_devices(PsyAudioDevice       *self,
-                     PsyAudioDeviceInfo ***infos,
-                     guint                *n_infos)
+static void
+pa_device_enumerate_devices(PsyAudioDevice       *self,
+                            PsyAudioDeviceInfo ***infos,
+                            guint                *n_infos)
 {
     PsyPADevice *pa_self = PSY_PA_DEVICE(self);
 
@@ -405,7 +405,7 @@ psy_pa_device_init(PsyPADevice *self)
 static void
 psy_pa_device_dispose(GObject *object)
 {
-    PsyAudioDevice *self    = PSY_PA_DEVICE(object);
+    PsyAudioDevice *self    = PSY_AUDIO_DEVICE(object);
     PsyPADevice    *pa_self = PSY_PA_DEVICE(object);
 
     G_OBJECT_CLASS(psy_pa_device_parent_class)->dispose(object);
@@ -539,6 +539,8 @@ pa_device_close(PsyAudioDevice *self)
     PaError error = Pa_CloseStream(pa_self->stream);
     if (error != paNoError)
         g_critical("Unable to close stream: %s", Pa_GetErrorText(error));
+    else
+        pa_self->stream = NULL;
 
     PSY_AUDIO_DEVICE_CLASS(psy_pa_device_parent_class)->close(self);
 }
@@ -565,6 +567,19 @@ pa_device_get_default_name(PsyAudioDevice *self)
     return pa_self->dev_infos[0]->device_name;
 }
 
+static PsyDuration *
+pa_device_get_output_latency(PsyAudioDevice *self)
+{
+    g_return_val_if_fail(psy_audio_device_get_is_open(self), NULL);
+    PsyPADevice *pa_self = PSY_PA_DEVICE(self);
+    g_return_val_if_fail(pa_self->stream, NULL);
+
+    PaTime pa_time = Pa_GetStreamInfo(pa_self->stream)->outputLatency;
+
+    PsyDuration *latency = psy_duration_new(pa_time);
+    return latency;
+}
+
 static void
 psy_pa_device_class_init(PsyPADeviceClass *klass)
 {
@@ -577,12 +592,13 @@ psy_pa_device_class_init(PsyPADeviceClass *klass)
 
     PsyAudioDeviceClass *audio_klass = PSY_AUDIO_DEVICE_CLASS(klass);
 
-    audio_klass->open              = pa_device_open;
-    audio_klass->close             = pa_device_close;
-    audio_klass->start             = pa_device_start;
-    audio_klass->stop              = pa_device_stop;
-    audio_klass->get_default_name  = pa_device_get_default_name;
-    audio_klass->enumerate_devices = pa_enumerate_devices;
+    audio_klass->open               = pa_device_open;
+    audio_klass->close              = pa_device_close;
+    audio_klass->start              = pa_device_start;
+    audio_klass->stop               = pa_device_stop;
+    audio_klass->get_default_name   = pa_device_get_default_name;
+    audio_klass->enumerate_devices  = pa_device_enumerate_devices;
+    audio_klass->get_output_latency = pa_device_get_output_latency;
 
     // We just use what the base class knows.
     //    audio_klass->set_name        = pa_device_set_name;

@@ -108,6 +108,7 @@ G_DECLARE_DERIVABLE_TYPE(
  *                     [class@AudioMixer] which will mix it in at the
  *                     appropriate time. TODO may remove as it probably doesn't
  *                     need to be virtual.
+ * @param enumerate_devices
  *
  * A base class for handling audio devices.
  */
@@ -125,6 +126,7 @@ typedef struct _PsyAudioDeviceClass {
     void (*enumerate_devices)(PsyAudioDevice       *self,
                               PsyAudioDeviceInfo ***infos,
                               guint                *n_infos);
+    PsyDuration *(*get_output_latency)(PsyAudioDevice *self);
 
     gpointer extensions[16];
 } PsyAudioDeviceClass;
@@ -184,6 +186,9 @@ psy_audio_device_get_started(PsyAudioDevice *self);
 
 G_MODULE_EXPORT PsyDuration *
 psy_audio_device_get_frame_dur(PsyAudioDevice *self);
+
+G_MODULE_EXPORT PsyDuration *
+psy_audio_device_get_output_latency(PsyAudioDevice *self);
 
 G_MODULE_EXPORT guint
 psy_audio_device_get_num_samples_callback(PsyAudioDevice *self);
