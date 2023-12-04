@@ -9,6 +9,7 @@
 #include <stdio.h>
 
 #include "enum-types.h"
+#include "psy-audio-output-mixer.h"
 #include "psy-clock.h"
 #include "psy-enums.h"
 #include "psy-pa-device.h"
@@ -54,7 +55,7 @@ PaHostApiTypeId g_supported_apis[] = {paASIO, paWASAPI};
 static int
 pa_audio_callback(const void                     *input,
                   void                           *output,
-                  unsigned long                   frameCount,
+                  unsigned long                   frame_count,
                   const PaStreamCallbackTimeInfo *timeInfo,
                   PaStreamCallbackFlags           statusFlags,
                   void                           *audio_device)
@@ -62,23 +63,30 @@ pa_audio_callback(const void                     *input,
     (void) input;
     (void) timeInfo;
     (void) statusFlags;
-    PsyPADevice *self = audio_device;
 
-    gdouble attenuation = 0.5f;
+    PsyPADevice         *self = audio_device;
+    guint                num_out_channels;
+    PsyAudioOutputMixer *out_mixer;
 
-    guint num_out
+    num_out_channels
         = psy_audio_device_get_num_output_channels(PSY_AUDIO_DEVICE(self));
-    static gdouble time        = 0;
-    gfloat        *out_pointer = output;
 
-    for (guint n = 0; n < frameCount; n++) {
-        gdouble sig_value = sin(time * 440.0 * 2 * M_PI) * attenuation;
-        for (guint n_chan = 0; n_chan < num_out; n_chan++) {
-            *out_pointer = sig_value;
-            out_pointer++;
+    guint num_out_floats = num_out_channels * frame_count;
+    out_mixer = psy_audio_device_get_output_mixer(PSY_AUDIO_DEVICE(self));
+
+    // TODO Read from input here.
+
+    // Save's our ears when there is something wrong reading from output mixer.
+    memset(output, 0, num_out_floats * sizeof(float));
+
+    if (output != NULL && frame_count > 0) {
+        guint num_read = psy_audio_output_mixer_read_samples(
+            out_mixer, num_out_floats, output);
+        if (G_UNLIKELY(num_read != num_out_floats)) {
+            g_critical("%s, Unable to read: %u samples from the output mixer",
+                       __func__,
+                       num_out_floats);
         }
-        // g_print("%f\n", sig_value);
-        time += 1.0f / psy_audio_device_get_sample_rate(PSY_AUDIO_DEVICE(self));
     }
 
     return paContinue;

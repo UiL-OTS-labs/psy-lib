@@ -97,6 +97,11 @@ typedef struct OnStarted {
     gboolean   started;
 } OnStarted;
 
+typedef struct OnStop {
+    GMainLoop      *loop;
+    PsyAudioDevice *device;
+} OnStop;
+
 static void
 on_started(PsyAudioDevice *device, PsyTimePoint *tp, gpointer data)
 {
@@ -109,10 +114,15 @@ on_started(PsyAudioDevice *device, PsyTimePoint *tp, gpointer data)
 }
 
 static gboolean
-quit_loop(GMainLoop *loop)
+quit_loop(gpointer data)
 {
-    g_main_loop_quit(loop);
-    return FALSE;
+    OnStop *stop_data = data;
+
+    // make sure the audio device is closed before terminating the loop.
+    psy_audio_device_close(stop_data->device);
+    g_main_loop_quit(stop_data->loop);
+
+    return G_SOURCE_REMOVE;
 }
 
 static void
@@ -124,7 +134,10 @@ audio_device_open(void)
     GError         *error = NULL;
     GMainLoop      *loop  = g_main_loop_new(NULL, FALSE);
 
-    OnStarted cb_data = {.loop = loop, .started = FALSE};
+    g_print("Device = %p\n", (void *) device);
+
+    OnStarted cb_data   = {.loop = loop, .started = FALSE};
+    OnStop    stop_data = {.loop = loop, .device = device};
 
     CU_ASSERT_PTR_NOT_NULL_FATAL(device);
 
@@ -139,7 +152,7 @@ audio_device_open(void)
                  NULL);
     // clang-format on
     g_signal_connect(device, "started", G_CALLBACK(on_started), &cb_data);
-    g_timeout_add(1000, G_SOURCE_FUNC(quit_loop), loop);
+    g_timeout_add(100, G_SOURCE_FUNC(quit_loop), &stop_data);
 
     g_main_loop_run(loop);
     CU_ASSERT_TRUE(is_open);

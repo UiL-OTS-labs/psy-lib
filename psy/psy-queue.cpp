@@ -22,14 +22,14 @@ struct PsyAudioQueue {
 /**
  * psy_audio_queue_new:(skip)
  *
- * Allocates a new queue with a capacity that is a power of two. The
- * returned value should be freed with [method@Psy.AudioQueue.free].
+ * Allocates a new queue. The returned value should be freed with
+ * [method@Psy.AudioQueue.free].
  *
  * Returns: A new queue, that is empty.
  * Stability: private
  */
 PsyAudioQueue *
-psy_audio_queue_new(gint num_samples)
+psy_audio_queue_new(gsize num_samples)
 {
     PsyAudioQueue *queue
         = static_cast<PsyAudioQueue *>(g_malloc(sizeof(PsyAudioQueue)));
@@ -41,14 +41,14 @@ psy_audio_queue_new(gint num_samples)
         queue->p_queue = new boost::lockfree::spsc_queue<gfloat>(num_samples);
     } catch (std::bad_alloc& exception) {
         g_critical(
-            "Unable to alloc boost::lockfree::spsc_queue<gfloat>(%d): %s",
+            "Unable to alloc boost::lockfree::spsc_queue<gfloat>(%lu): %s",
             num_samples,
             exception.what());
         g_free(queue);
         queue = NULL;
     } catch (std::exception& exception) {
         g_critical(
-            "Unable to alloc boost::lockfree::spsc_queue<gfloat>(%d): %s",
+            "Unable to alloc boost::lockfree::spsc_queue<gfloat>(%lu): %s",
             num_samples,
             exception.what());
         if (queue->p_queue)
@@ -58,6 +58,8 @@ psy_audio_queue_new(gint num_samples)
     }
 
     queue->capacity = queue->p_queue->write_available();
+
+    g_assert(queue->capacity == num_samples);
 
     return queue;
 }
@@ -93,7 +95,9 @@ psy_audio_queue_size(PsyAudioQueue *self)
 /**
  * psy_audio_queue_capacity:(skip)
  *
- * Returns: The capacity of the audio queue, should always be a power of 2;
+ * Returns: The capacity of the audio queue, should be the size used to
+ * initialize the queue.
+ *
  * Stability: private
  */
 gsize
@@ -136,9 +140,7 @@ psy_audio_queue_pop_samples(PsyAudioQueue *self,
  * @samples:(in): The input array of samples from the user.
  *                It should be at least big enough to contain num_samples
  *
- * Pushes samples @num_samples onto the queue. This is a locking operation,
- * but it should be done very quickly. As it might be bad for the audio
- * callback to block on this function.
+ * Pushes @num_samples samples onto the queue.
  *
  * Returns: The number of samples successfully transmitted to the queue
  * Stability: private

@@ -20,7 +20,7 @@ G_DECLARE_FINAL_TYPE(PsyAudioOutputMixer,
                      PsyAudioMixer)
 
 PsyAudioOutputMixer *
-psy_audio_output_mixer_new(PsyAudioDevice *device);
+psy_audio_output_mixer_new(PsyAudioDevice *device, guint num_channels);
 
 void
 psy_audio_output_mixer_schedule_stimulus(PsyAudioOutputMixer *self,
@@ -29,7 +29,7 @@ psy_audio_output_mixer_schedule_stimulus(PsyAudioOutputMixer *self,
 guint
 psy_audio_output_mixer_read_samples(PsyAudioOutputMixer *self,
                                     guint                num_samples,
-                                    gfloat              *data);
+                                    gfloat              *buffer);
 
 G_END_DECLS
 

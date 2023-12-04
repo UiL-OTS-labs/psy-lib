@@ -5,8 +5,9 @@ import argparse as ap
 
 gi.require_versions({"Psy": "0.1", "GLib": "2.0"})
 
-from gi.repository import Psy
+from gi.repository import Psy, GLib
 
+g_audio_dev = None
 
 cmdparser = ap.ArgumentParser(sys.argv[0], description="Try to open an audio device")
 cmdparser.add_argument("-n", "--name", type=str, help="The name of the device")
@@ -54,31 +55,48 @@ def print_audio_dev_props(dev: Psy.AudioDevice):
     print("audiodev.props.num_output_channels =", dev.props.num_output_channels)
 
 
-def main():
-    args = cmdparser.parse_args()
-    audiodev = Psy.AudioDevice.new()
+def open_audio_device(args: ap.Namespace) -> int:
+    """Opens the audio device and store it in a global variable"""
+    global g_audio_dev
+    g_audio_dev = Psy.AudioDevice.new()
     for i in range(3):
         print()
 
     if args.name:
-        audiodev.props.name = args.name
+        g_audio_dev.props.name = args.name
 
     if args.num_input:
-        audiodev.props.num_input_channels = args.num_input
+        g_audio_dev.props.num_input_channels = args.num_input
 
-    audiodev.props.num_output_channels = args.num_output
-    audiodev.props.sample_rate = args.sr
+    g_audio_dev.props.num_output_channels = args.num_output
+    g_audio_dev.props.sample_rate = args.sr
 
     print("Before opening:")
-    print_audio_dev_props(audiodev)
-    audiodev.open()
+    print_audio_dev_props(g_audio_dev)
+    g_audio_dev.open()
 
     for i in range(3):
         print()
     print("After opening:")
-    print_audio_dev_props(audiodev)
+    print_audio_dev_props(g_audio_dev)
 
-    time.sleep(args.duration)
+    return GLib.SOURCE_REMOVE
+
+
+def stop_loop(loop: GLib.MainLoop):
+    """stops the mainloop"""
+    loop.quit()
+
+
+def main():
+    args = cmdparser.parse_args()
+
+    loop = GLib.MainLoop()
+
+    GLib.idle_add(open_audio_device, args)
+    GLib.timeout_add(args.duration * 1000, stop_loop, loop)
+
+    loop.run()
 
 
 if __name__ == "__main__":

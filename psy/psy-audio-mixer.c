@@ -10,10 +10,10 @@
 #include "psy-queue.h"
 
 /**
- * PsyAudioMixer:(skip)
+ * PsyAudioMixer:
  *
  * The AudioMixer is considered to be a private to Psylib in practice the
- * AudioDevice will create one instance of this class.
+ * AudioDevice will create one instance of this class for the in and output.
  *
  * A PsyAudioMixer is a mixer that mixes the scheduled PsyAuditoryStimuli
  * together. It maintains an buffer with audio samples, Psylib must make sure
@@ -24,7 +24,14 @@
  * This class is used by PsyAudioDevices to buffer audio in such a way
  * that the audio callback can retrieve samples from this buffer very quickly.
  *
- * stability: private
+ * The class has a pure virtual function process_audio that should be
+ * implemented by deriving classes. The function is installed as a
+ * callback function that is called every roughly every ms. In the case of
+ * an output mixer, the callback should ensure there is enough data to be read
+ * by the audio callback. In case of an input, there should be enough space
+ * in the input buffer so that the audio callback can write all its samples.
+ *
+ * Stability: private
  */
 
 #define DEFAULT_NUM_STIM_CACHE 16
@@ -35,7 +42,9 @@ typedef struct _PsyAudioMixerPrivate {
     PsyAudioSampleRate sample_rate;
     guint              num_channels;
     guint              num_buffer_samples;
+    GMainContext      *context;
     GPtrArray         *stimuli;
+    guint              process_callback_id;
 } PsyAudioMixerPrivate;
 
 G_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE(PsyAudioMixer,
@@ -73,6 +82,9 @@ psy_audio_mixer_set_property(GObject      *object,
     case PROP_AUDIO_DEVICE:
         psy_audio_mixer_set_audio_device(self, g_value_get_object(value));
         break;
+    case PROP_NUM_CHANNELS:
+        psy_audio_mixer_set_num_channels(self, g_value_get_uint(value));
+        break;
     default:
         G_OBJECT_WARN_INVALID_PROPERTY_ID(object, prop_id, pspec);
     }
@@ -104,6 +116,17 @@ psy_audio_mixer_get_property(GObject    *object,
     }
 }
 
+static int
+audio_mixer_call_process(gpointer data)
+{
+    g_assert(PSY_IS_AUDIO_MIXER(data));
+    PsyAudioMixer *self = data;
+
+    psy_audio_mixer_process_audio(self);
+
+    return G_SOURCE_CONTINUE;
+}
+
 static void
 psy_audio_mixer_init(PsyAudioMixer *self)
 {
@@ -111,6 +134,26 @@ psy_audio_mixer_init(PsyAudioMixer *self)
     priv->device               = NULL;
     priv->stimuli
         = g_ptr_array_new_full(DEFAULT_NUM_STIM_CACHE, g_object_unref);
+
+    priv->process_callback_id = g_timeout_add_full(
+        G_PRIORITY_HIGH, 1, audio_mixer_call_process, self, NULL);
+}
+
+static void
+audio_mixer_constructed(GObject *self)
+{
+    // construct the queue here as only after initalization has finished
+    // the number of buffered samples is known.
+    guint num_buffered_samples
+        = psy_audio_mixer_get_num_buffered_samples(PSY_AUDIO_MIXER(self));
+
+    g_return_if_fail(num_buffered_samples <= G_MAXINT);
+
+    PsyAudioMixerPrivate *priv
+        = psy_audio_mixer_get_instance_private(PSY_AUDIO_MIXER(self));
+    priv->queue = psy_audio_queue_new((int) num_buffered_samples);
+
+    G_OBJECT_CLASS(psy_audio_mixer_parent_class)->constructed(self);
 }
 
 static void
@@ -121,9 +164,16 @@ psy_audio_mixer_dispose(GObject *object)
     PsyAudioMixerPrivate *priv = psy_audio_mixer_get_instance_private(self);
 
     g_clear_object(&priv->device);
-    g_ptr_array_unref(priv->stimuli);
-    g_clear_object(&priv->queue);
-    priv->stimuli = NULL;
+
+    if (priv->stimuli) {
+        g_ptr_array_unref(priv->stimuli);
+        priv->stimuli = NULL;
+    }
+
+    if (priv->process_callback_id != 0) {
+        g_source_remove(priv->process_callback_id);
+        priv->process_callback_id = 0;
+    }
 
     G_OBJECT_CLASS(psy_audio_mixer_parent_class)->dispose(object);
 }
@@ -131,8 +181,11 @@ psy_audio_mixer_dispose(GObject *object)
 static void
 psy_audio_mixer_finalize(GObject *object)
 {
-    PsyAudioMixer *self = PSY_AUDIO_MIXER(object);
-    (void) self;
+    PsyAudioMixer        *self = PSY_AUDIO_MIXER(object);
+    PsyAudioMixerPrivate *priv = psy_audio_mixer_get_instance_private(self);
+
+    psy_audio_queue_free(priv->queue);
+    priv->queue = NULL;
 
     G_OBJECT_CLASS(psy_audio_mixer_parent_class)->finalize(object);
 }
@@ -146,6 +199,7 @@ psy_audio_mixer_class_init(PsyAudioMixerClass *klass)
     gobject_class->get_property = psy_audio_mixer_get_property;
     gobject_class->finalize     = psy_audio_mixer_finalize;
     gobject_class->dispose      = psy_audio_mixer_dispose;
+    gobject_class->constructed  = audio_mixer_constructed;
 
     audio_mixer_properties[PROP_AUDIO_DEVICE]
         = g_param_spec_object("audio-device",
@@ -166,10 +220,10 @@ psy_audio_mixer_class_init(PsyAudioMixerClass *klass)
         = g_param_spec_uint("num-channels",
                             "NumChannels",
                             "The number of channels for the mixer.",
-                            0,
+                            1,
                             G_MAXUINT,
-                            0,
-                            G_PARAM_READABLE);
+                            1,
+                            G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY);
 
     audio_mixer_properties[PROP_NUM_BUFFERED_SAMPLES] = g_param_spec_uint(
         "num-buffered-samples",
@@ -247,7 +301,16 @@ psy_audio_mixer_get_num_channels(PsyAudioMixer *self)
     g_return_val_if_fail(PSY_IS_AUDIO_MIXER(self), 0);
     PsyAudioMixerPrivate *priv = psy_audio_mixer_get_instance_private(self);
 
-    return psy_audio_device_get_num_output_channels(priv->device);
+    return priv->num_channels;
+}
+
+void
+psy_audio_mixer_set_num_channels(PsyAudioMixer *self, guint num_channels)
+{
+    g_return_if_fail(PSY_IS_AUDIO_MIXER(self));
+    PsyAudioMixerPrivate *priv = psy_audio_mixer_get_instance_private(self);
+
+    priv->num_channels = num_channels;
 }
 
 PsyAudioSampleRate
@@ -265,36 +328,25 @@ psy_audio_mixer_get_num_buffered_samples(PsyAudioMixer *self)
     g_return_val_if_fail(PSY_IS_AUDIO_MIXER(self), 0);
     PsyAudioMixerPrivate *priv = psy_audio_mixer_get_instance_private(self);
 
-    return psy_audio_device_get_num_samples_callback(priv->device)
-           * psy_audio_device_get_num_output_channels(priv->device);
+    return psy_audio_device_get_num_samples_buffer(priv->device)
+           * priv->num_channels;
 }
 
-///**
-// * psy_audio_mixer_set_sample_rate:(skip)
-// * @self: an instance of [class@AudioMixer]
-// * @sample_rate: The sample rate of configured for the audio pipeline
-// *
-// * This property may only be set when constructing the mixer. This property
-// * should match the [property@Psy.AudioDevice:sample-rate] of the output
-// device.
-// *
-// * Stability: private
-// */
-// void
-// psy_audio_mixer_set_sample_rate(PsyAudioMixer     *self,
-//                                PsyAudioSampleRate sample_rate);
+/**
+ * psy_audio_mixer_process_audio:
+ * @self: An instance of [class@PsyAudioMixer]
+ *
+ * virtual function that should be implemented in the deriving classes
+ * That maintains the buffer strategy of the mixer.
+ */
+void
+psy_audio_mixer_process_audio(PsyAudioMixer *self)
+{
+    g_return_if_fail(PSY_IS_AUDIO_MIXER(self));
 
-///**
-// * psy_audio_mixer_set_num_channels:(skip)
-// * @self: an instance of [class@AudioMixer]
-// * @num_channels: The number of channels of the output device.
-// *
-// * This property may only be set when constructing the mixer.
-// *
-// * Stability: private
-// */
-// void
-// psy_audio_mixer_set_num_channels(PsyAudioMixer *self, guint num_channels);
+    PsyAudioMixerClass *cls = PSY_AUDIO_MIXER_GET_CLASS(self);
 
-// void
-// psy_audio_mixer_set_bufsize(PsyAudioMixer *self, guint bufsize);
+    g_return_if_fail(cls->process_audio != NULL);
+
+    cls->process_audio(self);
+}

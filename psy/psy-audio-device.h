@@ -191,11 +191,7 @@ G_MODULE_EXPORT PsyDuration *
 psy_audio_device_get_output_latency(PsyAudioDevice *self);
 
 G_MODULE_EXPORT guint
-psy_audio_device_get_num_samples_callback(PsyAudioDevice *self);
-
-void
-psy_audio_device_set_num_samples_callback(PsyAudioDevice *self,
-                                          guint           num_samples);
+psy_audio_device_get_num_samples_buffer(PsyAudioDevice *self);
 
 void
 psy_audio_device_set_started(PsyAudioDevice *self, PsyTimePoint *tp_start);
@@ -212,6 +208,13 @@ psy_audio_device_enumerate_devices(PsyAudioDevice       *self,
 typedef struct _PsyAudioOutputMixer PsyAudioOutputMixer;
 PsyAudioOutputMixer *
 psy_audio_device_get_output_mixer(PsyAudioDevice *self);
+
+G_MODULE_EXPORT PsyDuration *
+psy_audio_device_get_buffer_duration(PsyAudioDevice *self);
+
+G_MODULE_EXPORT void
+psy_audio_device_set_buffer_duration(PsyAudioDevice *self,
+                                     PsyDuration    *duration);
 
 G_END_DECLS
 

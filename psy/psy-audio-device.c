@@ -3,6 +3,7 @@
 
 #include "psy-audio-device.h"
 #include "psy-audio-output-mixer.h"
+#include "psy-audio-utils.h"
 #include "psy-config.h"
 #include "psy-enums.h"
 
@@ -228,9 +229,9 @@ typedef struct _PsyAudioDevicePrivate {
     PsyAudioSampleRate   sample_rate;
     GMainContext        *main_context;
     PsyAudioOutputMixer *output_mixer;
-    guint                num_inputs;
-    guint                num_outputs;
-    guint                num_sample_callback;
+    PsyDuration         *buffer_duration;
+    guint                num_inputs;  // channels
+    guint                num_outputs; // channels
     gboolean             is_open;
     gboolean             started;
 } PsyAudioDevicePrivate;
@@ -247,7 +248,7 @@ typedef enum {
     PROP_SAMPLE_RATE,
     PROP_NUM_INPUTS,
     PROP_NUM_OUTPUTS,
-    PROP_NUM_SAMPLES_CALLBACK,
+    PROP_NUM_SAMPLES_BUFFER,
     PROP_OUTPUT_LATENCY,
     NUM_PROPERTIES
 } PsyAudioDeviceProperty;
@@ -330,9 +331,8 @@ psy_audio_device_get_property(GObject    *object,
     case PROP_NUM_OUTPUTS:
         g_value_set_uint(value, psy_audio_device_get_num_output_channels(self));
         break;
-    case PROP_NUM_SAMPLES_CALLBACK:
-        g_value_set_uint(value,
-                         psy_audio_device_get_num_samples_callback(self));
+    case PROP_NUM_SAMPLES_BUFFER:
+        g_value_set_uint(value, psy_audio_device_get_num_samples_buffer(self));
         break;
     case PROP_OUTPUT_LATENCY:
         g_value_set_object(value, psy_audio_device_get_output_latency(self));
@@ -347,10 +347,11 @@ psy_audio_device_init(PsyAudioDevice *self)
 {
     PsyAudioDevicePrivate *priv = psy_audio_device_get_instance_private(self);
 
-    priv->is_open      = FALSE;
-    priv->name         = g_strdup("");
-    priv->sample_rate  = PSY_AUDIO_SAMPLE_RATE_48000;
-    priv->main_context = g_main_context_ref_thread_default();
+    priv->is_open         = FALSE;
+    priv->name            = g_strdup("");
+    priv->sample_rate     = PSY_AUDIO_SAMPLE_RATE_48000;
+    priv->main_context    = g_main_context_ref_thread_default();
+    priv->buffer_duration = psy_duration_new_ms(20);
 }
 
 static void
@@ -367,6 +368,8 @@ psy_audio_device_dispose(GObject *object)
 
     g_main_context_unref(priv->main_context);
     priv->main_context = NULL;
+
+    g_clear_object(&priv->buffer_duration);
 
     G_OBJECT_CLASS(psy_audio_device_parent_class)->dispose(object);
 }
@@ -388,8 +391,11 @@ audio_device_open(PsyAudioDevice *self, GError **error)
     (void) error; // Error's might be raised in derived classes (backends).
     PsyAudioDevicePrivate *priv = psy_audio_device_get_instance_private(self);
 
-    PsyAudioOutputMixer *mixer = psy_audio_output_mixer_new(self);
-    priv->output_mixer         = mixer;
+    if (priv->num_outputs > 0) {
+        PsyAudioOutputMixer *mixer
+            = psy_audio_output_mixer_new(self, priv->num_outputs);
+        priv->output_mixer = mixer;
+    }
 
     priv->is_open = TRUE;
     g_info("Opened PsyAudioDevice %s", psy_audio_device_get_name(self));
@@ -401,7 +407,11 @@ static void
 audio_device_close(PsyAudioDevice *self)
 {
     PsyAudioDevicePrivate *priv = psy_audio_device_get_instance_private(self);
-    priv->is_open               = FALSE;
+
+    g_clear_object(&priv->output_mixer);
+
+    priv->is_open = FALSE;
+
     g_info("Closed PsyAudioDevice %s", psy_audio_device_get_name(self));
 }
 
@@ -530,21 +540,21 @@ psy_audio_device_class_init(PsyAudioDeviceClass *klass)
                             G_PARAM_READWRITE | G_PARAM_CONSTRUCT);
 
     /**
-     * PsyAudioDevice:num-samples-per-callback
+     * PsyAudioDevice:num-samples-buffer
      *
      * Obtain the number of samples that are processed each time the callback
      * is called. This means each channel of audio processes this number
      * of samples, hence you might need the number of channels to process
      * which the total numbers of samples.
      */
-    audio_device_properties[PROP_NUM_SAMPLES_CALLBACK] = g_param_spec_uint(
-        "samples-per-callback",
-        "SamplesPerCallback",
-        "The number of samples per channel that are processed",
-        0,
-        G_MAXUINT,
-        0,
-        G_PARAM_READABLE);
+    audio_device_properties[PROP_NUM_SAMPLES_BUFFER]
+        = g_param_spec_uint("num-samples-buffer",
+                            "NumSamplesBuffer",
+                            "The number of samples that are kept in the buffer",
+                            0,
+                            G_MAXUINT,
+                            0,
+                            G_PARAM_READABLE);
 
     /**
      * PsyAudioDevice:output-latency
@@ -706,10 +716,11 @@ psy_audio_device_close(PsyAudioDevice *self)
 {
     g_return_if_fail(PSY_IS_AUDIO_DEVICE(self));
 
-    if (psy_audio_device_get_started(self))
-        psy_audio_device_stop(self);
     if (psy_audio_device_get_is_open(self) == FALSE)
         return;
+
+    if (psy_audio_device_get_started(self))
+        psy_audio_device_stop(self);
 
     PsyAudioDeviceClass *cls = PSY_AUDIO_DEVICE_GET_CLASS(self);
 
@@ -958,18 +969,21 @@ psy_audio_device_get_output_latency(PsyAudioDevice *self)
 }
 
 /**
- * psy_audio_device_get_num_samples_callback:
+ * psy_audio_device_get_num_samples_buffer:
  *
- * Get the number of samples that are processed in each iteration of the
- * audio.
+ * Get the number of samples that are maintainted in the audio buffers. This
+ * value should still be multiplied by the number of channels in use.
  */
 guint
-psy_audio_device_get_num_samples_callback(PsyAudioDevice *self)
+psy_audio_device_get_num_samples_buffer(PsyAudioDevice *self)
 {
     g_return_val_if_fail(PSY_IS_AUDIO_DEVICE(self), -1);
     PsyAudioDevicePrivate *priv = psy_audio_device_get_instance_private(self);
 
-    return priv->num_sample_callback;
+    guint num_samples = psy_duration_to_num_audio_samples(priv->buffer_duration,
+                                                          priv->sample_rate);
+
+    return num_samples;
 }
 
 /**
@@ -1010,25 +1024,6 @@ psy_audio_device_set_started(PsyAudioDevice *self, PsyTimePoint *tp)
                                G_SOURCE_FUNC(audio_device_emit_started),
                                msg,
                                audio_started_msg_free);
-}
-
-/**
- * psy_audio_device_set_num_samples_callback:
- *
- * This function is for internal use. It allows to cache the number of samples
- * that will be handled with each iteration of the audio callback. This allows
- * the audio mixers to be prepared to buffer in and output samples.
- *
- * stability: private
- */
-void
-psy_audio_device_set_num_samples_callback(PsyAudioDevice *self,
-                                          guint           num_samples)
-{
-    g_return_if_fail(PSY_IS_AUDIO_DEVICE(self));
-
-    PsyAudioDevicePrivate *priv = psy_audio_device_get_instance_private(self);
-    priv->num_sample_callback   = num_samples;
 }
 
 /**
@@ -1074,4 +1069,52 @@ psy_audio_device_get_output_mixer(PsyAudioDevice *self)
     PsyAudioDevicePrivate *priv = psy_audio_device_get_instance_private(self);
 
     return priv->output_mixer;
+}
+
+/**
+ * psy_audio_device_get_buffer_duration:
+ * @self: an instance of [class@PsyAudioDevice]
+ *
+ * Set the desired duration of the buffer period, this should be large enough
+ * to prevent buffer overflows or under runs.
+ *
+ * Return:(transfer none): The buffer duration that the in and output mixers
+ * will use.
+ */
+PsyDuration *
+psy_audio_device_get_buffer_duration(PsyAudioDevice *self)
+{
+    PsyAudioDevicePrivate *priv = psy_audio_device_get_instance_private(self);
+
+    g_return_val_if_fail(PSY_IS_AUDIO_DEVICE(self), NULL);
+
+    return priv->buffer_duration;
+}
+
+/**
+ * psy_audio_device_set_buffer_duration:
+ * @self: an instance of [class@PsyAudioDevice]
+ * @duration:(transfer full): The desired duration that the audiodevice should
+ *                            keep in its buffer.
+ *
+ * This may be used to set the desired buffering period. This property should
+ * be set prior to opening the device. The default value should be
+ * 20 ms. If you encounter buffer overflows or under runs it might be nice
+ * to increase this value.
+ */
+void
+psy_audio_device_set_buffer_duration(PsyAudioDevice *self,
+                                     PsyDuration    *duration)
+{
+    PsyAudioDevicePrivate *priv = psy_audio_device_get_instance_private(self);
+
+    g_return_if_fail(PSY_IS_AUDIO_DEVICE(self) && PSY_IS_DURATION(duration));
+
+    if (psy_audio_device_get_is_open(self)) {
+        g_warning("Unable to set buffer duration when the device is open");
+        return;
+    }
+
+    g_clear_object(&priv->buffer_duration);
+    priv->buffer_duration = duration;
 }
