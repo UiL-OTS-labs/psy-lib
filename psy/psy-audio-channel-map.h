@@ -78,9 +78,6 @@ G_MODULE_EXPORT void
 psy_audio_channel_map_free(PsyAudioChannelMap *self);
 
 G_MODULE_EXPORT PsyAudioChannelMap *
-psy_audio_channel_new(guint num_sink_channels, guint num_source_channels);
-
-G_MODULE_EXPORT PsyAudioChannelMap *
 psy_audio_channel_map_new(guint num_sink_channels, guint num_source_channels);
 
 G_MODULE_EXPORT PsyAudioChannelMap *
