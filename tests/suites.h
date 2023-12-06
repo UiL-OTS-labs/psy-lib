@@ -4,6 +4,9 @@
 #include <glib.h>
 
 int
+add_audio_channel_mapping_suite(void);
+
+int
 add_audio_suite(const gchar *backend);
 
 int

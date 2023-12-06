@@ -44,6 +44,7 @@ unit_test = executable (
     files (
         'main.c',
         'test-audio.c',
+        'test-audio-channel-mapping.c',
         'test-audio-utils.c',
         'test-canvas.c',
         'test-color.c',

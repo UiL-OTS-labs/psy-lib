@@ -5,6 +5,7 @@
 #include "psy-config.h"
 
 #include "psy-artist.h"
+#include "psy-audio-channel-map.h"
 #include "psy-audio-device.h"
 #include "psy-audio-utils.h"
 #include "psy-canvas.h"

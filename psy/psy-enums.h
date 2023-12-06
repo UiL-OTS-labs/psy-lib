@@ -67,6 +67,41 @@ typedef enum {
 } PsyAudioSampleRate;
 
 /**
+ * PsyAudioChannelStrategy:
+ * @PSY_AUDIO_CHANNEL_STRATEGY_DUPLICATE_INPUTS: When a PsyAudioOutputDevice has
+ *     more channels available that there are in the source audio, channels are
+ *     duplicated in order to write to all outputs, mono audio signals will
+ *     be present on both audio channels. For three output channels the mapping
+ *     will be [left, right, left] for stereo output. So inputs will be
+ *     duplicated when there are more output channels
+ * @PSY_AUDIO_CHANNEL_STRATEGY_MIX_TRAILING_INPUTS: When the sound source has
+ *     more output channels than input channels the trailing outputs of the
+ *     source are summed with the channels already written. So writing a stereo
+ *     signal to a mono PsyAudioOutputDevice will lead from mixing two channels
+ *     [left, right] to one channel [left + right]
+ * @PSY_AUDIO_CHANNEL_STRATEGY_CUSTOM:
+ *     Choose your own mapping using e.g.
+ *     [method@AuditoryStimulus.set_channel_mapping]
+ * @PSY_AUDIO_CHANNEL_STRATEGY_DEFAULT: The default channel strategy is a
+ *     mix between PSY_AUDIO_CHANNEL_STRATEGY_DUPLICATE_INPUTS and
+ *     PSY_AUDIO_CHANNEL_STRATEGY_STRIP_TRAILING_INPUTS
+ *
+ * With these flags you can specify the default behavior when there is a mis-
+ * match in the number of AudioSource outputs and AudioSink inputs.
+ * By default psylib will generate a mapping between each input channel
+ * is mapped to the channel with the same number on the output. When there
+ * are more output channels, you can choose to use inputs multiple times as
+ * 1 output, this results in that you can mix your mono audio on both (or more)
+ * speakers of an stereo audio output.
+ */
+typedef enum {
+    PSY_AUDIO_CHANNEL_STRATEGY_DEFAULT             = 0,
+    PSY_AUDIO_CHANNEL_STRATEGY_DUPLICATE_INPUTS    = 1 << 0,
+    PSY_AUDIO_CHANNEL_STRATEGY_MIX_TRAILING_INPUTS = 1 << 1,
+    PSY_AUDIO_CHANNEL_STRATEGY_CUSTOM              = 1 << 2,
+} PsyAudioChannelStrategy;
+
+/**
  * PsyDrawingContextError:
  * @PSY_DRAWING_CONTEXT_ERROR_NAME_EXISTS: A resouce with that name has
  *      already been registered.
