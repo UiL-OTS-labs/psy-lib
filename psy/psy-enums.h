@@ -81,7 +81,7 @@ typedef enum {
  *     [left, right] to one channel [left + right]
  * @PSY_AUDIO_CHANNEL_STRATEGY_CUSTOM:
  *     Choose your own mapping using e.g.
- *     [method@AuditoryStimulus.set_channel_mapping]
+ *     [method@AuditoryStimulus.set_channel_map]
  * @PSY_AUDIO_CHANNEL_STRATEGY_DEFAULT: The default channel strategy is a
  *     mix between PSY_AUDIO_CHANNEL_STRATEGY_DUPLICATE_INPUTS and
  *     PSY_AUDIO_CHANNEL_STRATEGY_STRIP_TRAILING_INPUTS

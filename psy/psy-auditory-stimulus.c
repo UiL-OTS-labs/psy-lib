@@ -30,11 +30,16 @@
 typedef struct PsyAuditoryStimulusPrivate {
     PsyAudioDevice *audio_device; // The audio_device on which this stimulus
                                   // should be presented
-
     gint64 nth_frame;
     gint64 num_frames;  // Total number of frames for stimulus duration
     gint64 start_frame; // When the stimulus should start, negative when not
                         // started.
+    guint num_channels; // The number of channels, this is fixed, for some
+                        // stimuli, such as wav files, the file determines
+                        // the format. But it's flexible for others stimuli such
+                        // as generated waveform such as Noise or Sine waves.
+    PsyAudioChannelMap *channel_map; // The channel map to map source channels
+                                     // to the output channels.
 } PsyAuditoryStimulusPrivate;
 
 G_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE(PsyAuditoryStimulus,
@@ -49,14 +54,19 @@ typedef enum {
     PROP_NTH_FRAME,    // the frame for which we are rendering
     PROP_START_FRAME,  // the frame at which this object should be first
                        // presented
+    PROP_NUM_CHANNELS, // The number of channels of the audio, this is only
+                       // writable when PROP_FLEXIBLE_NUM_CHANNELS is set
+    PROP_FLEXIBLE_NUM_CHANNELS, // Whether or not NUM_CHANNELS can be set
+                                // by the client.
+    PROP_CHANNEL_MAP, // The map that maps the channels of the auditory
+                      // stimulus to  the channels of the PsyAudioDevice/sink
     NUM_PROPERTIES
 } AuditoryStimulusProperty;
 
-typedef enum { NUM_SIGNALS } AuditoryStimulusSignals;
+typedef enum { SIG_ADD_CHANNEL_MAP, NUM_SIGNALS } AuditoryStimulusSignals;
 
 static GParamSpec *auditory_stimulus_properties[NUM_PROPERTIES] = {0};
-
-// static guint       auditory_stimulus_signals[NUM_SIGNALS]       = {0};
+static guint       auditory_stimulus_signals[NUM_SIGNALS]       = {0};
 
 static void
 psy_auditory_stimulus_set_property(GObject      *object,
@@ -70,9 +80,16 @@ psy_auditory_stimulus_set_property(GObject      *object,
     case PROP_AUDIO_DEVICE:
         psy_auditory_stimulus_set_audio_device(self, g_value_get_object(value));
         break;
-    case PROP_NUM_FRAMES: // gettable only
-    case PROP_NTH_FRAME:  // gettable only
     case PROP_START_FRAME:
+        psy_auditory_stimulus_set_start_frame(self, g_value_get_int64(value));
+        break;
+    case PROP_CHANNEL_MAP:
+        psy_auditory_stimulus_set_channel_map(self, g_value_get_boxed(value));
+        break;
+    case PROP_NUM_FRAMES:            // gettable only
+    case PROP_NTH_FRAME:             // gettable only
+    case PROP_NUM_CHANNELS:          // gettable only
+    case PROP_FLEXIBLE_NUM_CHANNELS: // gettable only
     default:
         G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
     }
@@ -100,6 +117,13 @@ psy_auditory_stimulus_get_property(GObject    *object,
         break;
     case PROP_START_FRAME:
         g_value_set_int64(value, priv->start_frame);
+        break;
+    case PROP_NUM_CHANNELS:
+        g_value_set_uint(value, priv->num_channels);
+        break;
+    case PROP_FLEXIBLE_NUM_CHANNELS:
+        g_value_set_boolean(
+            value, psy_auditory_stimulus_get_flexible_num_channels(self));
         break;
     default:
         G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
@@ -240,8 +264,82 @@ psy_auditory_stimulus_class_init(PsyAuditoryStimulusClass *klass)
         0,
         G_PARAM_READABLE);
 
+    /**
+     * PsyAuditoryStimulus:num-channels:
+     *
+     * The number of channels for the audio stimuli. This parameter is always
+     * readable, however, for some stimuli, it is writeable, whereas for
+     * others it is ignored. E.g. psylib can decide to create a 1, 2, etc
+     * channel sine wave, but it can't/won't assign new channels to existing
+     * .wav or other files. So typically, it's true for generated audio,
+     * but static for sounds that come from a source outside of psylib.
+     * So if you want to know, if
+     * [property@PsyAuditoryStimulus:flexible-num-channels] is true, than
+     * you should be able to set it manually. Otherwise, the default is 2,
+     * so you get a stereo output. You'll can't write to this property,
+     * but you can set it using [method@AuditoryStimulus.set_num_channels].
+     */
+    auditory_stimulus_properties[PROP_NUM_CHANNELS]
+        = g_param_spec_uint("num-channels",
+                            "NumChannels",
+                            "The number of channels for the stimulus",
+                            0,
+                            G_MAXINT,
+                            0,
+                            G_PARAM_READABLE);
+
+    /**
+     * PsyAuditoryStimulus:flexible-num-channels:
+     *
+     * Whether or not the client may set the number of channels for this
+     * stimulus.
+     */
+    auditory_stimulus_properties[PROP_FLEXIBLE_NUM_CHANNELS]
+        = g_param_spec_boolean(
+            "flexible-num-channels",
+            "FlexibleNumChannels",
+            "Whether or not the client is able to set the number of channels",
+            FALSE,
+            G_PARAM_READABLE);
+
+    /**
+     * PsyAuditoryStimulus:channel-map:
+     *
+     * The mapping between the output channels (source pads) of this stimulus
+     * and the (input channels) of the PsyAudioDevice.
+     */
+    auditory_stimulus_properties[PROP_CHANNEL_MAP] = g_param_spec_boxed(
+        "channel-map",
+        "ChannelMap",
+        "The map that maps the StimulusOuptputs(sources) to the input (sinks)"
+        "of the PsyAudioDevice/mixer",
+        PSY_TYPE_AUDIO_CHANNEL_MAP,
+        G_PARAM_READWRITE);
+
     g_object_class_install_properties(
         object_class, NUM_PROPERTIES, auditory_stimulus_properties);
+
+    /**
+     * PsyAuditoryStimulus::add-channel-map:
+     * @self: an instance of [class@PsyAuditoryStimulus]
+     * @device: an instance of [class@PsyAudioDevice]
+     *
+     * This signal is emitted when the stimulus is scheduled, by then
+     * all parameters should be fixed/known and may a channel map be
+     * attached to transfer channels of this stimulus to the channels
+     * of the PsyAudioDevice.
+     */
+    auditory_stimulus_signals[SIG_ADD_CHANNEL_MAP] = g_signal_new(
+        "add-channel-map",
+        PSY_TYPE_AUDITORY_STIMULUS,
+        G_SIGNAL_RUN_LAST,
+        G_STRUCT_OFFSET(PsyAuditoryStimulusClass, add_channel_map),
+        NULL,
+        NULL,
+        NULL,
+        G_TYPE_NONE,
+        1,
+        PSY_TYPE_AUDIO_DEVICE);
 }
 
 /**
@@ -375,4 +473,116 @@ psy_auditory_stimulus_get_start_frame(PsyAuditoryStimulus *self)
     g_return_val_if_fail(PSY_IS_AUDITORY_STIMULUS(self), -1);
 
     return priv->start_frame;
+}
+
+/**
+ * psy_auditory_stimulus_get_flexible_num_channels:
+ * @self: an instance [class@AuditoryStimulus]
+ *
+ * Get whether or not the client may set the number of channels for this
+ * stimulus. The deriving classes should dictate whether this is possible.
+ */
+gboolean
+psy_auditory_stimulus_get_flexible_num_channels(PsyAuditoryStimulus *self)
+{
+    PsyAuditoryStimulusClass *cls = PSY_AUDITORY_STIMULUS_GET_CLASS(self);
+
+    g_return_val_if_fail(PSY_IS_AUDITORY_STIMULUS(self), FALSE);
+    g_return_val_if_fail(cls->get_flexible_num_channels != NULL, FALSE);
+
+    return cls->get_flexible_num_channels(self);
+}
+
+/**
+ * psy_auditory_stimulus_get_channel_map:
+ *
+ * Get a copy from the internal channelmap
+ *
+ * Returns:(transfer full): A copy from the internal channel map or NULL when
+ *    no channel map has been set.
+ */
+PsyAudioChannelMap *
+psy_auditory_stimulus_get_channel_map(PsyAuditoryStimulus *self)
+{
+    PsyAuditoryStimulusPrivate *priv
+        = psy_auditory_stimulus_get_instance_private(self);
+    g_return_val_if_fail(PSY_IS_AUDITORY_STIMULUS(self), NULL);
+
+    if (priv->channel_map == NULL)
+        return NULL;
+
+    return psy_audio_channel_map_dup(priv->channel_map);
+}
+
+/**
+ * psy_auditory_stimulus_set_channel_map:
+ * @self: an instance of PsyAuditoryStimulus
+ * @map:(transfer none): A mapping between the output channels (source channels)
+ *     of the stimulus and the sink channels of the Opened PsyAudioDevice/Mixer.
+ *
+ * Set the channel map, The channel map should be appropriate for this device.
+ */
+void
+psy_auditory_stimulus_set_channel_map(PsyAuditoryStimulus *self,
+                                      PsyAudioChannelMap  *map)
+{
+    PsyAuditoryStimulusPrivate *priv
+        = psy_auditory_stimulus_get_instance_private(self);
+    g_return_if_fail(PSY_IS_AUDITORY_STIMULUS(self));
+    g_return_if_fail(map != NULL);
+
+    g_clear_pointer(&priv->channel_map, psy_audio_channel_map_free);
+    priv->channel_map = psy_audio_channel_map_dup(map);
+}
+
+/**
+ * psy_auditory_stimulus_set_num_channels:
+ * @self:
+ * @num_channels: a value between 1 and G_MAXINT
+ *
+ * Set the number of channels this is handy for generated waveforms/noise
+ * For file like stimuli, the file determines the number of channels
+ */
+void
+psy_auditory_stimulus_set_num_channels(PsyAuditoryStimulus *self,
+                                       guint                num_channels)
+{
+    PsyAuditoryStimulusPrivate *priv
+        = psy_auditory_stimulus_get_instance_private(self);
+
+    g_return_if_fail(PSY_IS_AUDITORY_STIMULUS(self));
+    g_return_if_fail(num_channels <= G_MAXINT);
+
+    if (!psy_auditory_stimulus_get_flexible_num_channels(self)) {
+        g_warning("Unable to change num channels for instance of %s",
+                  G_OBJECT_CLASS_NAME(PSY_AUDITORY_STIMULUS_GET_CLASS(self)));
+    }
+
+    if (psy_auditory_stimulus_is_scheduled(self)) {
+        g_warning("Unable to change num channels when stimulus is active");
+        return;
+    }
+
+    priv->num_channels = num_channels;
+}
+
+/**
+ * psy_auditory_stimulus_get_num_channels:
+ *
+ * Returns the number of channels this device uses. For some devices
+ * this might return 0 at first, however, after the pipeline is set to playing
+ * the number of channels is known and put in this field.
+ *
+ * Returns: A positive number greater than 0. or 0 when it isn't yet available
+ *     e.g. for files first a bit of the file needs to be read.
+ */
+guint
+psy_auditory_stimulus_get_num_channels(PsyAuditoryStimulus *self)
+{
+    PsyAuditoryStimulusPrivate *priv
+        = psy_auditory_stimulus_get_instance_private(self);
+
+    g_return_val_if_fail(PSY_IS_AUDITORY_STIMULUS(self), 0);
+
+    return priv->num_channels;
 }

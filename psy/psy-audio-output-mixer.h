@@ -4,7 +4,6 @@
 #include <psy-enums.h>
 
 #include <psy-audio-mixer.h>
-#include <psy-auditory-stimulus.h>
 
 /*
  * The PsyAudioOutputMixer is considered to be a private object.

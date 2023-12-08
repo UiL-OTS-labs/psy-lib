@@ -2,9 +2,9 @@
 #define PSY_AUDIO_MIXER_H
 
 #include <gio/gio.h>
+
 #include <psy-enums.h>
 
-#include <psy-auditory-stimulus.h>
 #include <psy-queue.h>
 
 /*
@@ -12,6 +12,10 @@
  */
 
 G_BEGIN_DECLS
+
+// Forward declaration
+typedef struct _PsyAudioDevice      PsyAudioDevice;
+typedef struct _PsyAuditoryStimulus PsyAuditoryStimulus;
 
 #define PSY_TYPE_AUDIO_MIXER psy_audio_mixer_get_type()
 G_DECLARE_DERIVABLE_TYPE(
