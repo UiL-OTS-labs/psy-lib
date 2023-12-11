@@ -40,6 +40,7 @@ typedef struct PsyAuditoryStimulusPrivate {
                         // as generated waveform such as Noise or Sine waves.
     PsyAudioChannelMap *channel_map; // The channel map to map source channels
                                      // to the output channels.
+    GArray *sample_array;
 } PsyAuditoryStimulusPrivate;
 
 G_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE(PsyAuditoryStimulus,
@@ -384,12 +385,11 @@ psy_auditory_stimulus_set_audio_device(PsyAuditoryStimulus *stimulus,
 }
 
 /**
- * psy_auditory_stimulus_get_num_frames:
+ * psy_auditory_stimulus_get_num_samples:
  * @self: an instance of `PsyAuditoryStimulus`.
  *
- * This function returns how many times the stimulus is going to be presented
- * This number reflects the duration of the stimulus. e.g A stimulus with a
- * duration of 50 ms will be presented precisely 3 frames at 60Hz monitors.
+ * This function returns how many samples this stimulus contains/-ed.
+ * This may be used to calculate the duration of this stimulus.
  *
  * Returns: An integer reflecting how many frames this stimulus has been
  * presented.
@@ -585,4 +585,36 @@ psy_auditory_stimulus_get_num_channels(PsyAuditoryStimulus *self)
     g_return_val_if_fail(PSY_IS_AUDITORY_STIMULUS(self), 0);
 
     return priv->num_channels;
+}
+
+/**
+ * psy_auditory_stimulus_read:
+ * @self: an instance of PsyAuditoryStimulus
+ * @num_samples: The number of samples that should be read for each channel
+ *      of audio.
+ * @result:(out caller-allocates): A return location to store the audio,
+ *      the output should be large enough to house num_channels * num_samples
+ *      samples
+ *
+ * This function is called by the PsyAudioOutputMixer in order to obtain the
+ * data for mixing the final output buffer. It's the responsibility of the
+ * mixer to mix the final output for the audiocallback.
+ *
+ * Returns: The number of samples (for each channel) read this should generally
+ * be equal to the num_samples argument, expect when it's exhausted. This is
+ * an indication that the stimulus is at the end of its stream.
+ */
+guint
+psy_auditory_stimulus_read(PsyAuditoryStimulus *self,
+                           guint                num_samples,
+                           gfloat              *result)
+{
+    g_return_val_if_fail(PSY_IS_AUDITORY_STIMULUS(self), 0);
+    g_return_val_if_fail(result != NULL, 0);
+
+    PsyAuditoryStimulusClass *cls = PSY_AUDITORY_STIMULUS_GET_CLASS(self);
+
+    g_return_val_if_fail(cls->read != NULL, 0);
+
+    return cls->read(self, num_samples, result);
 }

@@ -22,6 +22,8 @@ G_DECLARE_DERIVABLE_TYPE(PsyAuditoryStimulus,
  * @has_flexible_num_channels: abstract method that needs to be implemented in
  *     the child. It returns a boolean to indicate what the result is for the
  *     [property@AuditoryStimulus:flexible_num_channels]
+ * @add_channel_map: a method that adds a ChannelMap to the stimulus when is
+ *     ready to be presented.
  */
 typedef struct _PsyAuditoryStimulusClass {
     PsyStimulusClass parent;
@@ -30,6 +32,8 @@ typedef struct _PsyAuditoryStimulusClass {
     void (*add_channel_map)(PsyAuditoryStimulus *self,
                             PsyAudioDevice      *device,
                             gpointer             data);
+
+    guint (*read)(PsyAuditoryStimulus *self, guint num_samples, gfloat *result);
 
     gpointer reserved[12];
 
@@ -71,6 +75,11 @@ psy_auditory_stimulus_get_num_channels(PsyAuditoryStimulus *self);
 G_MODULE_EXPORT void
 psy_auditory_stimulus_set_num_channels(PsyAuditoryStimulus *self,
                                        guint                num_channels);
+
+G_MODULE_EXPORT guint
+psy_auditory_stimulus_read(PsyAuditoryStimulus *self,
+                           guint                num_samples,
+                           gfloat              *result);
 
 G_END_DECLS
 
