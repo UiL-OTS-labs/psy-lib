@@ -3,6 +3,7 @@
 #include <CUnit/CUnit.h>
 #include <CUnit/TestRun.h>
 #include <glib.h>
+#include <gst/gst.h>
 #include <portaudio.h>
 #include <psylib.h>
 #include <stdlib.h>
@@ -120,6 +121,10 @@ add_suites_to_registry(void)
     if (error)
         return error;
 
+    error = add_wave_suite();
+    if (error)
+        return error;
+
     return error;
 }
 
@@ -129,11 +134,15 @@ init_libs(void)
 #if defined PSY_HAVE_PORTAUDIO
     pa_Initialize();
 #endif
+
+    gst_init(NULL, NULL);
 }
 
 static void
 deinitialize_libs(void)
 {
+    gst_deinit();
+
     Pa_Terminate();
 }
 

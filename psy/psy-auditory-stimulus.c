@@ -84,12 +84,14 @@ psy_auditory_stimulus_set_property(GObject      *object,
     case PROP_START_FRAME:
         psy_auditory_stimulus_set_start_frame(self, g_value_get_int64(value));
         break;
+    case PROP_NUM_CHANNELS:
+        psy_auditory_stimulus_set_num_channels(self, g_value_get_uint(value));
+        break;
     case PROP_CHANNEL_MAP:
         psy_auditory_stimulus_set_channel_map(self, g_value_get_boxed(value));
         break;
     case PROP_NUM_FRAMES:            // gettable only
     case PROP_NTH_FRAME:             // gettable only
-    case PROP_NUM_CHANNELS:          // gettable only
     case PROP_FLEXIBLE_NUM_CHANNELS: // gettable only
     default:
         G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
@@ -287,7 +289,7 @@ psy_auditory_stimulus_class_init(PsyAuditoryStimulusClass *klass)
                             0,
                             G_MAXINT,
                             0,
-                            G_PARAM_READABLE);
+                            G_PARAM_READWRITE);
 
     /**
      * PsyAuditoryStimulus:flexible-num-channels:
@@ -490,7 +492,7 @@ psy_auditory_stimulus_get_flexible_num_channels(PsyAuditoryStimulus *self)
     g_return_val_if_fail(PSY_IS_AUDITORY_STIMULUS(self), FALSE);
     g_return_val_if_fail(cls->get_flexible_num_channels != NULL, FALSE);
 
-    return cls->get_flexible_num_channels(self);
+    return cls->get_flexible_num_channels();
 }
 
 /**

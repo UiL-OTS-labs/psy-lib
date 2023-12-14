@@ -265,3 +265,33 @@ typedef enum PsyPictureSizeStrategy {
     PSY_PICTURE_STRATEGY_AUTOMATIC,
     PSY_PICTURE_STRATEGY_MANUAL
 } PsyPictureSizeStrategy;
+
+/**
+ * PsyWaveForm:
+ * @PSY_WAVE_FORM_SINE: This is the default shape a pure tone/sine wave
+ * @PSY_WAVE_FORM_SQUARE: A square wave form is generated
+ * @PSY_WAVE_FORM_SAW: A saw tooth wave form is generated
+ * @PSY_WAVE_FORM_TRIANGLE: A triangular wave for is generated
+ * @PSY_WAVE_FORM_SILENCE: A silent wave form is generated
+ * @PSY_WAVE_FORM_WHITE_UNIFORM_NOISE: White noise with a uniform distribution
+ * @PSY_WAVE_FORM_PINK_NOISE: A waveform with pink noise is generated
+ * @PSY_WAVE_FORM_WHITE_GAUSSIAN_NOISE: white gaussian noise is generated
+ * @PSY_WAVE_FORM_RED_NOISE: red noise is generated
+ * @PSY_WAVE_FORM_BLUE_NOISE: blue noise is generated
+ * @PSY_WAVE_FORM_VIOLET_NOISE: violet noise is generated
+
+ * The different types of wave form that PsyWave should be able to generate.
+ */
+typedef enum {
+    PSY_WAVE_FORM_SINE                 = 0,
+    PSY_WAVE_FORM_SQUARE               = 1,
+    PSY_WAVE_FORM_SAW                  = 2,
+    PSY_WAVE_FORM_TRIANGLE             = 3,
+    PSY_WAVE_FORM_SILENCE              = 4,
+    PSY_WAVE_FORM_WHITE_UNIFORM_NOISE  = 5,
+    PSY_WAVE_FORM_PINK_NOISE           = 6,
+    PSY_WAVE_FORM_WHITE_GAUSSIAN_NOISE = 9,
+    PSY_WAVE_FORM_RED_NOISE            = 10,
+    PSY_WAVE_FORM_BLUE_NOISE           = 11,
+    PSY_WAVE_FORM_VIOLET_NOISE         = 12
+} PsyWaveForm;

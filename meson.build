@@ -59,6 +59,11 @@ gstreamer_dep = dependency(
     version : gstreamer_req,
 )
 
+gstreamer_app_dep = dependency(
+    'gstreamer-app-1.0',
+    version : gstreamer_req
+  )
+
 gtk_dep = dependency(
     'gtk4',
     version: gtk_req,
@@ -79,7 +84,14 @@ cairo_dep = dependency('cairo', version : '>1.0')
 pango_dep = dependency('pango', version : '>1.0')
 pangocairo_dep = dependency('pangocairo', version : '>1.0')
 
-psy_deps = [glib_dep, gobject_dep, gtk_dep, epoxy_dep]
+psy_deps = [
+    glib_dep,
+    gobject_dep,
+    gtk_dep,
+    epoxy_dep,
+    gstreamer_dep,
+    gstreamer_app_dep
+]
 
 # add optional dependencies
 

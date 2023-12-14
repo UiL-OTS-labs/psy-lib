@@ -28,7 +28,7 @@ G_DECLARE_DERIVABLE_TYPE(PsyAuditoryStimulus,
 typedef struct _PsyAuditoryStimulusClass {
     PsyStimulusClass parent;
 
-    gboolean (*get_flexible_num_channels)(PsyAuditoryStimulus *self);
+    gboolean (*get_flexible_num_channels)(void);
     void (*add_channel_map)(PsyAuditoryStimulus *self,
                             PsyAudioDevice      *device,
                             gpointer             data);

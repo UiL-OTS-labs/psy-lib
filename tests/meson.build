@@ -58,6 +58,7 @@ unit_test = executable (
         'test-text.c',
         'test-time-utilities.c',
         'test-utility.c',
+        'test-wave.c',
         'test-visual-stimulus.c',
         'unit-test-utilities.c',
         'vector-test.c',

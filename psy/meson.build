@@ -110,6 +110,7 @@ libpsy_headers = files(
     'psy-duration.h',
     'psy-enums.h',
     'psy-font-utils.h',
+    'psy-gst-stimulus.h',
     'psy-image.h',
     'psy-image-canvas.h',
     'psy-loop.h',
@@ -136,6 +137,7 @@ libpsy_headers = files(
     'psy-vector3.h',
     'psy-vector4.h',
     'psy-visual-stimulus.h',
+    'psy-wave.h',
     'psy-widget.h',
     'psy-window.h',
     'psy-window-toy.h',
@@ -164,6 +166,7 @@ libpsyfiles = files (
     'psy-drawing-context.c',
     'psy-duration.c',
     'psy-font-utils.c',
+    'psy-gst-stimulus.c',
     'psy-image.c',
     'psy-image-canvas.c',
     'psy-loop.c',
@@ -191,6 +194,7 @@ libpsyfiles = files (
     'psy-vector3.cpp',
     'psy-vector4.cpp',
     'psy-visual-stimulus.c',
+    'psy-wave.c',
     'psy-widget.c',
     'psy-window.c',
     'psy-window-toy.c',
@@ -235,6 +239,13 @@ PP_ARGS = [
     '-DG_LOG_DOMAIN="Psy"',
     '-DG_LOG_USE_STRUCTURED'
 ]
+
+buildtype = get_option('buildtype')
+if buildtype != 'debug' and buildtype != 'debugoptimized'
+    # flags for release builds (disable asserts)
+    PP_ARGS += '-DG_DISABLE_ASSERTS=1'
+    PP_ARGS += '-DNDEBUG=1'
+endif
 
 libpsy = library (
     'psy',
