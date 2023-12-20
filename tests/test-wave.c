@@ -19,6 +19,7 @@ create_audio_device(void)
     // clang-format off
     g_object_set(g_device,
             "num-output-channels", 2,
+//            "num-input-channels", 1,
             "sample-rate", PSY_AUDIO_SAMPLE_RATE_44100,
             NULL);
     // clang-format on
@@ -28,6 +29,9 @@ create_audio_device(void)
         g_critical("Unable to open audio device: %s", error->message);
         return 1;
     }
+
+    // The tests that are playing audio should start the device itself
+    psy_audio_device_stop(g_device);
     return 0;
 }
 
@@ -130,6 +134,8 @@ test_wave_play(void)
     PsyDuration  *dur      = psy_duration_new(.250);
     PsyTimePoint *tp_start = psy_time_point_add(now, dur);
 
+    GError *error = NULL;
+
     g_object_set(tone, "num-channels", 2, NULL);
 
     CU_ASSERT_PTR_NOT_NULL_FATAL(tone);
@@ -141,9 +147,18 @@ test_wave_play(void)
     g_signal_connect(tone, "started", G_CALLBACK(wave_started), &status);
     g_signal_connect(tone, "stopped", G_CALLBACK(wave_stopped), &status);
 
+    psy_audio_device_start(g_device, &error);
+    CU_ASSERT_PTR_NULL(error);
+    if (error) {
+        g_printerr("Unable to start the audio device: %s\n", error->message);
+        g_clear_error(&error);
+    }
+
     psy_stimulus_play_for(PSY_STIMULUS(tone), tp_start, dur);
 
     g_main_loop_run(loop);
+
+    psy_audio_device_stop(g_device);
 
     g_object_unref(tp_start);
     g_object_unref(dur);

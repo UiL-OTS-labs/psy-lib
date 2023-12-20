@@ -52,6 +52,9 @@ typedef enum {
  * doesn't like the .48000, hence we might need to prefix a R to get
  * Psy.AudioSampleRate.48000
  *
+ * TODO convert the name of the enum to PsyAudioFrameRate as it is more accurate
+ * according to the definition of Frame and Sample [audio-with-psylib]
+ *
  * 22000, 88200 have been added as they are in PortAudio
  */
 typedef enum {

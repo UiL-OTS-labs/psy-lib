@@ -16,7 +16,7 @@
 
 struct PsyAudioQueue {
     boost::lockfree::spsc_queue<gfloat> *p_queue;
-    gsize                                capacity;
+    guint                                capacity;
 };
 
 /**
@@ -29,7 +29,7 @@ struct PsyAudioQueue {
  * Stability: private
  */
 PsyAudioQueue *
-psy_audio_queue_new(gsize num_samples)
+psy_audio_queue_new(guint num_samples)
 {
     PsyAudioQueue *queue
         = static_cast<PsyAudioQueue *>(g_malloc(sizeof(PsyAudioQueue)));
@@ -41,14 +41,14 @@ psy_audio_queue_new(gsize num_samples)
         queue->p_queue = new boost::lockfree::spsc_queue<gfloat>(num_samples);
     } catch (std::bad_alloc& exception) {
         g_critical(
-            "Unable to alloc boost::lockfree::spsc_queue<gfloat>(%lu): %s",
+            "Unable to alloc boost::lockfree::spsc_queue<gfloat>(%u): %s",
             num_samples,
             exception.what());
         g_free(queue);
         queue = NULL;
     } catch (std::exception& exception) {
         g_critical(
-            "Unable to alloc boost::lockfree::spsc_queue<gfloat>(%lu): %s",
+            "Unable to alloc boost::lockfree::spsc_queue<gfloat>(%u): %s",
             num_samples,
             exception.what());
         if (queue->p_queue)
@@ -85,7 +85,7 @@ psy_audio_queue_free(PsyAudioQueue *self)
  * samples, for each channel).
  *
  */
-gsize
+guint
 psy_audio_queue_size(PsyAudioQueue *self)
 {
     g_return_val_if_fail(self, -1);
@@ -100,7 +100,7 @@ psy_audio_queue_size(PsyAudioQueue *self)
  *
  * Stability: private
  */
-gsize
+guint
 psy_audio_queue_capacity(PsyAudioQueue *self)
 {
     g_return_val_if_fail(self, -1);
@@ -122,7 +122,7 @@ psy_audio_queue_capacity(PsyAudioQueue *self)
  *
  * Stability: private
  */
-gsize
+guint
 psy_audio_queue_pop_samples(PsyAudioQueue *self,
                             guint          num_samples,
                             gfloat        *samples)
@@ -130,7 +130,13 @@ psy_audio_queue_pop_samples(PsyAudioQueue *self,
     g_return_val_if_fail(self, -1);
     g_return_val_if_fail(samples, -1);
 
-    return self->p_queue->pop(samples, num_samples);
+    gsize num_popped = self->p_queue->pop(samples, num_samples);
+    if (G_UNLIKELY(num_samples > G_MAXUINT)) {
+        g_critical("Popped %lu sample more than G_MAXUINT", num_popped);
+    }
+
+    guint ret = (guint) num_popped;
+    return ret;
 }
 
 /**
@@ -145,7 +151,7 @@ psy_audio_queue_pop_samples(PsyAudioQueue *self,
  * Returns: The number of samples successfully transmitted to the queue
  * Stability: private
  */
-gsize
+guint
 psy_audio_queue_push_samples(PsyAudioQueue *self,
                              guint          num_samples,
                              const gfloat  *samples)
@@ -153,7 +159,13 @@ psy_audio_queue_push_samples(PsyAudioQueue *self,
     g_return_val_if_fail(self, -1);
     g_return_val_if_fail(samples, -1);
 
-    return self->p_queue->push(samples, num_samples);
+    gsize num_pushed = self->p_queue->push(samples, num_samples);
+    if (G_UNLIKELY(num_samples > G_MAXUINT)) {
+        g_critical("Pushed %lu sample more than G_MAXUINT", num_pushed);
+    }
+
+    guint ret = (guint) num_pushed;
+    return ret;
 }
 
 #endif

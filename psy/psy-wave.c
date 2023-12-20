@@ -183,14 +183,12 @@ wave_create_gst_timeline(PsyGstStimulus *self)
     }
 
 #ifndef NDEBUG
-    g_printerr("Debug build\n");
     GObject *gpipeline = G_OBJECT(pipeline);
     GObject *gappsink  = G_OBJECT(pipeline);
 
     g_assert(gpipeline->ref_count == 1);
     g_assert(gappsink->ref_count == 1);
 #else
-    g_printerr("Release build\n");
 #endif
 
     gint64 num_frames
@@ -224,13 +222,11 @@ wave_create_gst_timeline(PsyGstStimulus *self)
     // clang-format on
 
 #ifndef NDEBUG
-    g_printerr("Debug build\n");
     // only PsyGstStimulus should hold a reference
     g_assert(gpipeline->ref_count == 1);
     // The pipeline should hold only owns a reference
     g_assert(gappsink->ref_count == 1);
 #else
-    g_printerr("Release build\n");
 #endif
 
     PSY_GST_STIMULUS_CLASS(psy_wave_parent_class)->create_gst_pipeline(self);
@@ -311,7 +307,7 @@ psy_wave_class_init(PsyWaveClass *klass)
                               440.0,
                               G_PARAM_READWRITE | G_PARAM_CONSTRUCT);
 
-    g_object_class_install_properties(klass, NUM_PROPS, wave_properties);
+    g_object_class_install_properties(obj_class, NUM_PROPS, wave_properties);
 }
 
 // Public functions

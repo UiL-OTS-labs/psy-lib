@@ -12,6 +12,9 @@ G_DECLARE_FINAL_TYPE(PsyDuration, psy_duration, PSY, DURATION, GObject)
 G_MODULE_EXPORT PsyDuration *
 psy_duration_new(gdouble seconds);
 
+G_MODULE_EXPORT void
+psy_duration_destroy(PsyDuration *self);
+
 G_MODULE_EXPORT PsyDuration *
 psy_duration_new_us(gint64 us);
 

@@ -48,6 +48,8 @@ psy_int_to_sample_rate(gint sample_rate)
  * isn't a whole number of micro seconds. So the multiplication with a large
  * number of samples loses quite some time.
  *
+ * To do the reverse operation see [method@Duration.to_num_audio_samples]
+ *
  * Returns:(transfer full)(nullable): a duration for that number of samples. The
  * result might be null if an overflow is detected.
  */

@@ -14,6 +14,9 @@ G_DECLARE_FINAL_TYPE(PsyTimePoint, psy_time_point, PSY, TIME_POINT, GObject)
 G_MODULE_EXPORT PsyTimePoint *
 psy_time_point_new(void);
 
+G_MODULE_EXPORT void
+psy_time_point_destroy(PsyTimePoint *self);
+
 G_MODULE_EXPORT PsyTimePoint *
 psy_time_point_new_monotonic(gint64 monotonic_time);
 

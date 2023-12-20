@@ -194,6 +194,20 @@ psy_duration_new(gdouble seconds)
 }
 
 /**
+ * psy_duration_destroy:(skip)
+ * @self: the instance to destroy
+ *
+ * This function destroys instances that have previously been created
+ * with psy_duration_new(_x).
+ */
+void
+psy_duration_destroy(PsyDuration *self)
+{
+    g_return_if_fail(PSY_IS_DURATION(self));
+    g_object_unref(self);
+}
+
+/**
  * psy_duration_new_us:(constructor)
  * @us: The number of microseconds of the returned duration
  *

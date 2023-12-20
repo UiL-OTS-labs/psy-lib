@@ -9,20 +9,30 @@
 #include <stdio.h>
 
 #include "enum-types.h"
-#include "psy-audio-output-mixer.h"
+#include "psy-audio-mixer.h"
 #include "psy-clock.h"
 #include "psy-enums.h"
 #include "psy-pa-device.h"
+
+typedef struct {
+    GMutex lock;
+    gint64 num_frames;
+    PaTime current_stream_time;
+    PaTime time_input;
+    PaTime time_output;
+} LastFrameInfo;
 
 /**
  * PsyPADevice:
  *
  * PsyPADevice is a device that uses portaudio to implement a PsyAudioDevice.
  */
-
 typedef struct _PsyPADevice {
     PsyAudioDevice       parent;
+    LastFrameInfo        last_frame;
     PaStream            *stream;
+    PsyClock            *clk;
+    PsyDuration         *clock_offset; // pa_time - psy_clock_now()
     gboolean             pa_initialized;
     PsyAudioDeviceInfo **dev_infos;
     guint                num_infos;
@@ -64,9 +74,21 @@ pa_audio_callback(const void                     *input,
     (void) timeInfo;
     (void) statusFlags;
 
-    PsyPADevice         *self = audio_device;
-    guint                num_out_channels;
-    PsyAudioOutputMixer *out_mixer;
+    gboolean locked = FALSE;
+
+    PsyPADevice   *self = audio_device;
+    guint          num_out_channels;
+    PsyAudioMixer *out_mixer;
+
+    locked = g_mutex_trylock(&self->last_frame.lock);
+    if (locked) {
+        self->last_frame.current_stream_time = timeInfo->currentTime;
+        self->last_frame.time_input          = timeInfo->inputBufferAdcTime;
+        self->last_frame.time_output         = timeInfo->outputBufferDacTime;
+        self->last_frame.num_frames
+            = psy_audio_device_get_current_frame_count(PSY_AUDIO_DEVICE(self));
+        g_mutex_unlock(&self->last_frame.lock);
+    }
 
     num_out_channels
         = psy_audio_device_get_num_output_channels(PSY_AUDIO_DEVICE(self));
@@ -80,16 +102,88 @@ pa_audio_callback(const void                     *input,
     memset(output, 0, num_out_floats * sizeof(float));
 
     if (output != NULL && frame_count > 0) {
-        guint num_read = psy_audio_output_mixer_read_samples(
-            out_mixer, num_out_floats, output);
+        guint num_read
+            = psy_audio_mixer_read_frames(out_mixer, frame_count, output);
         if (G_UNLIKELY(num_read != num_out_floats)) {
-            g_critical("%s, Unable to read: %u samples from the output mixer",
-                       __func__,
-                       num_out_floats);
+            g_critical(
+                "%s, Unable to read: %u samples (got %u) from the output mixer",
+                __func__,
+                num_out_floats,
+                num_read);
         }
     }
 
+    if (G_UNLIKELY(frame_count >= G_MAXINT)) {
+        g_critical("unexpected large frame_count %ld", frame_count);
+        return paAbort;
+    }
+
+    psy_audio_device_update_frame_count(PSY_AUDIO_DEVICE(self),
+                                        (gint) frame_count);
+
     return paContinue;
+}
+
+/**
+ * pa_time_to_psy_timepoint:
+ * @time: A stream time from Pa_GetStreamTime().
+ *
+ * This function converts a PaTime to a PsyTimePoint. The returned timepoint
+ * has probably an offset to an timepoint returned by [method@Clock.now]
+ * hence it should be transformed to a time comparable with the time
+ * reported by [method@Clock.now].
+ *
+ * Stability: private
+ * Returns: An instance of [class@PsyTimePoint], the timepoint returned is an
+ *          timepoint that is a timepoint with the origin of in Port Audio.
+ */
+static PsyTimePoint *
+pa_time_to_psy_timepoint(PaTime time)
+{
+    PsyTimePoint *tp_null        = psy_time_point_new();
+    PsyDuration  *pa_running_dur = psy_duration_new(time);
+
+    PsyTimePoint *tp_psy = psy_time_point_add(tp_null, pa_running_dur);
+
+    g_object_unref(tp_null);
+    g_object_unref(pa_running_dur);
+    return tp_psy;
+}
+
+/**
+ * pa_time_calculate_clock_offset:
+ * @self: an instance of PsyPADevice*
+ * @tp_pa: An timepoint obtained from pa_time_to_psy_timepoint
+ *
+ * Calculates the offset between the PsyClock and Pa_GetStreamTime()
+ * and stores the offset in @self.
+ *
+ * Stability: Private
+ */
+static void
+pa_time_calculate_clock_offset(PsyPADevice *self, PsyTimePoint *tp_pa)
+{
+    PsyTimePoint *tp_now = psy_clock_now(self->clk);
+    g_clear_object(&self->clock_offset);
+    self->clock_offset = psy_time_point_subtract(tp_now, tp_pa);
+    g_debug("The clock offset is roughly %lf s",
+            psy_duration_get_seconds(self->clock_offset));
+    g_object_unref(tp_now);
+}
+
+/**
+ * pa_transform_pa_time_to_psy_time:
+ *
+ * Transfers the portaudio time to psylib's time
+ *
+ * Stability: Private
+ * Returns:(transfer full): The pa timepoint to an timepoint comparable with
+ *    [class@Clock]'s timepoints.
+ */
+static PsyTimePoint *
+pa_transform_pa_time_to_psy_time(PsyPADevice *self, PsyTimePoint *tp_pa)
+{
+    return psy_time_point_add(tp_pa, self->clock_offset);
 }
 
 /**
@@ -99,6 +193,7 @@ pa_audio_callback(const void                     *input,
  * virtual devices are ignored.
  *
  * TODO check for windows devices whether they are PCM devices
+ * Stability: Private
  */
 static gboolean
 pa_is_pcm_device(const PaDeviceInfo *info)
@@ -405,6 +500,8 @@ psy_pa_device_init(PsyPADevice *self)
 {
     gint error           = Pa_Initialize();
     self->pa_initialized = error == paNoError;
+    self->clk            = psy_clock_new();
+    g_mutex_init(&self->last_frame.lock);
     if (error != paNoError) {
         g_critical("Unable to init portaudio: %s", Pa_GetErrorText(error));
     }
@@ -413,8 +510,9 @@ psy_pa_device_init(PsyPADevice *self)
 static void
 psy_pa_device_dispose(GObject *object)
 {
-    PsyAudioDevice *self    = PSY_AUDIO_DEVICE(object);
-    PsyPADevice    *pa_self = PSY_PA_DEVICE(object);
+    PsyPADevice *pa_self = PSY_PA_DEVICE(object);
+
+    g_clear_object(&pa_self->clock_offset);
 
     G_OBJECT_CLASS(psy_pa_device_parent_class)->dispose(object);
 }
@@ -434,6 +532,8 @@ psy_pa_device_finalize(GObject *object)
         }
         g_free(self->dev_infos);
     }
+
+    g_mutex_clear(&self->last_frame.lock);
 
     G_OBJECT_CLASS(psy_pa_device_parent_class)->finalize(object);
 }
@@ -519,6 +619,13 @@ pa_device_start(PsyAudioDevice *self, GError **error)
         return;
     }
 
+    PaTime        stream_time = Pa_GetStreamTime(pa_self->stream);
+    PsyTimePoint *pa_time     = pa_time_to_psy_timepoint(stream_time);
+
+    pa_time_calculate_clock_offset(pa_self, pa_time);
+
+    g_object_unref(pa_time);
+
     PSY_AUDIO_DEVICE_CLASS(psy_pa_device_parent_class)->start(self, error);
 }
 
@@ -588,6 +695,33 @@ pa_device_get_output_latency(PsyAudioDevice *self)
     return latency;
 }
 
+static gboolean
+pa_device_get_last_known_frame(PsyAudioDevice *self,
+                               gint64         *nth_frame,
+                               PsyTimePoint  **tp_in,
+                               PsyTimePoint  **tp_out)
+{
+    PsyPADevice *pa_self = PSY_PA_DEVICE(self);
+
+    *nth_frame = pa_self->last_frame.num_frames;
+
+    if (tp_in) {
+        PsyTimePoint *tp_pa_in
+            = pa_time_to_psy_timepoint(pa_self->last_frame.time_input);
+        *tp_in = pa_transform_pa_time_to_psy_time(pa_self, tp_pa_in);
+        g_object_unref(tp_pa_in);
+    }
+
+    if (tp_out) {
+        PsyTimePoint *tp_pa_out
+            = pa_time_to_psy_timepoint(pa_self->last_frame.time_output);
+        *tp_out = pa_transform_pa_time_to_psy_time(pa_self, tp_pa_out);
+        g_object_unref(tp_pa_out);
+    }
+
+    return TRUE;
+}
+
 static void
 psy_pa_device_class_init(PsyPADeviceClass *klass)
 {
@@ -600,13 +734,14 @@ psy_pa_device_class_init(PsyPADeviceClass *klass)
 
     PsyAudioDeviceClass *audio_klass = PSY_AUDIO_DEVICE_CLASS(klass);
 
-    audio_klass->open               = pa_device_open;
-    audio_klass->close              = pa_device_close;
-    audio_klass->start              = pa_device_start;
-    audio_klass->stop               = pa_device_stop;
-    audio_klass->get_default_name   = pa_device_get_default_name;
-    audio_klass->enumerate_devices  = pa_device_enumerate_devices;
-    audio_klass->get_output_latency = pa_device_get_output_latency;
+    audio_klass->open                 = pa_device_open;
+    audio_klass->close                = pa_device_close;
+    audio_klass->start                = pa_device_start;
+    audio_klass->stop                 = pa_device_stop;
+    audio_klass->get_default_name     = pa_device_get_default_name;
+    audio_klass->enumerate_devices    = pa_device_enumerate_devices;
+    audio_klass->get_output_latency   = pa_device_get_output_latency;
+    audio_klass->get_last_known_frame = pa_device_get_last_known_frame;
 
     // We just use what the base class knows.
     //    audio_klass->set_name        = pa_device_set_name;

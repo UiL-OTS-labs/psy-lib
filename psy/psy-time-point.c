@@ -108,6 +108,20 @@ psy_time_point_new(void)
 }
 
 /**
+ * psy_time_point_destroy:(skip)
+ * @self: the instance of PsyTimePoint to destroy
+ *
+ * Frees timepoint that have previously created with psy_time_point_new(_x)
+ * or have been retured by e.g. [method@Clock.now]
+ */
+void
+psy_time_point_destroy(PsyTimePoint *self)
+{
+    g_return_if_fail(PSY_IS_TIME_POINT(self));
+    g_object_unref(self);
+}
+
+/**
  * psy_time_point_new_monotonic:(constructor)
  * @monotonic_time:(in): A timevalue obtained with g_get_monotonic_time() or
  *                       some method that in synchronous to that function.
@@ -121,8 +135,8 @@ psy_time_point_new(void)
 PsyTimePoint *
 psy_time_point_new_monotonic(gint64 monotonic_time)
 {
-    gint zero_time = psy_clock_get_zero_time();
-    gint num_ticks = monotonic_time - zero_time;
+    gint64 zero_time = psy_clock_get_zero_time();
+    gint64 num_ticks = monotonic_time - zero_time;
     return g_object_new(PSY_TYPE_TIME_POINT, "num_ticks", num_ticks, NULL);
 }
 

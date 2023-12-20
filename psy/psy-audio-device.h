@@ -8,6 +8,8 @@
 
 G_BEGIN_DECLS
 
+typedef struct _PsyAudioMixer PsyAudioMixer;
+
 #define PSY_AUDIO_DEVICE_INFO psy_audio_device_info_get_type()
 
 /**
@@ -108,7 +110,10 @@ G_DECLARE_DERIVABLE_TYPE(
  *                     [class@AudioMixer] which will mix it in at the
  *                     appropriate time. TODO may remove as it probably doesn't
  *                     need to be virtual.
- * @param enumerate_devices
+ * @param enumerate_devices: Enumerates the devices that belong to this backend.
+ * @param get_last_known_frame: gives info about a sample known when it has
+ *                              been presented and may be used to compute the
+ *                              presentation of future samples.
  *
  * A base class for handling audio devices.
  */
@@ -128,14 +133,16 @@ typedef struct _PsyAudioDeviceClass {
                               guint                *n_infos);
     PsyDuration *(*get_output_latency)(PsyAudioDevice *self);
 
+    gboolean (*get_last_known_frame)(PsyAudioDevice *self,
+                                     gint64         *nth_frame,
+                                     PsyTimePoint  **tp_in,
+                                     PsyTimePoint  **tp_out);
+
     gpointer extensions[16];
 } PsyAudioDeviceClass;
 
 G_MODULE_EXPORT PsyAudioDevice *
 psy_audio_device_new(void);
-
-G_MODULE_EXPORT void
-psy_schedule_stimulus(PsyAudioDevice *self, PsyAuditoryStimulus *stimulus);
 
 G_MODULE_EXPORT void
 psy_audio_device_open(PsyAudioDevice *self, GError **error);
@@ -205,16 +212,31 @@ psy_audio_device_enumerate_devices(PsyAudioDevice       *self,
                                    PsyAudioDeviceInfo ***infos,
                                    guint                *n_infos);
 
-typedef struct _PsyAudioOutputMixer PsyAudioOutputMixer;
-PsyAudioOutputMixer *
-psy_audio_device_get_output_mixer(PsyAudioDevice *self);
-
 G_MODULE_EXPORT PsyDuration *
 psy_audio_device_get_buffer_duration(PsyAudioDevice *self);
 
 G_MODULE_EXPORT void
 psy_audio_device_set_buffer_duration(PsyAudioDevice *self,
                                      PsyDuration    *duration);
+
+/* ************ private functions/methods ***********/
+gboolean
+psy_audio_device_get_last_known_frame(PsyAudioDevice *self,
+                                      gint64         *nth_frame,
+                                      PsyTimePoint  **tp_in,
+                                      PsyTimePoint  **tp_out);
+
+gint64
+psy_audio_device_get_current_frame_count(PsyAudioDevice *self);
+
+void
+psy_audio_device_update_frame_count(PsyAudioDevice *self, gint num_frames);
+
+void
+psy_audio_device_clear_frame_count(PsyAudioDevice *self);
+
+PsyAudioMixer *
+psy_audio_device_get_output_mixer(PsyAudioDevice *device);
 
 G_END_DECLS
 

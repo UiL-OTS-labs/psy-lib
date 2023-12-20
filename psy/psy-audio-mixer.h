@@ -46,7 +46,7 @@ typedef struct _PsyAudioMixerClass {
 } PsyAudioMixerClass;
 
 G_MODULE_EXPORT PsyAudioMixer *
-psy_audio_mixer_new(PsyAudioDevice *device);
+psy_audio_mixer_new(PsyAudioDevice *device, gboolean is_output);
 
 G_MODULE_EXPORT void
 psy_audio_mixer_schedule_stimulus(PsyAudioMixer       *self,
@@ -61,30 +61,21 @@ psy_audio_mixer_get_audio_device(PsyAudioMixer *self);
 G_MODULE_EXPORT PsyAudioSampleRate
 psy_audio_mixer_get_sample_rate(PsyAudioMixer *self);
 
-G_MODULE_EXPORT void
-psy_audio_mixer_set_sample_rate(PsyAudioMixer     *self,
-                                PsyAudioSampleRate sample_rate);
+G_MODULE_EXPORT guint
+psy_audio_mixer_get_num_in_channels(PsyAudioMixer *self);
 
 G_MODULE_EXPORT guint
-psy_audio_mixer_get_num_channels(PsyAudioMixer *self);
-
-G_MODULE_EXPORT void
-psy_audio_mixer_set_num_channels(PsyAudioMixer *self, guint num_channels);
+psy_audio_mixer_get_num_out_channels(PsyAudioMixer *self);
 
 G_MODULE_EXPORT guint
-psy_audio_mixer_get_num_buffered_samples(PsyAudioMixer *self);
-
-G_MODULE_EXPORT void
-psy_audio_mixer_set_num_buffered_samples(PsyAudioMixer *self,
-                                         guint          num_samples);
+psy_audio_mixer_read_frames(PsyAudioMixer *self,
+                            guint          num_frames,
+                            gfloat        *data);
 
 G_MODULE_EXPORT guint
-psy_audio_mixer_read_samples(PsyAudioMixer *self,
-                             guint          num_samples,
+psy_audio_mixer_write_frames(PsyAudioMixer *self,
+                             guint          num_frames,
                              gfloat        *data);
-
-G_MODULE_EXPORT PsyAudioQueue *
-psy_audio_mixer_get_queue(PsyAudioMixer *self);
 
 G_MODULE_EXPORT void
 psy_audio_mixer_process_audio(PsyAudioMixer *self);

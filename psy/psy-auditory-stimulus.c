@@ -156,19 +156,20 @@ psy_auditory_stimulus_init(PsyAuditoryStimulus *self)
     priv->start_frame  = -1;
 }
 
-// static void
-// auditory_stimulus_play(PsyStimulus *stimulus, PsyTimePoint *start_time)
-//{
-//     PsyAuditoryStimulus *vstim = PSY_AUDITORY_STIMULUS(stimulus);
-//
-//     PsyAudioDevice *audio_device
-//         = psy_auditory_stimulus_get_audio_device(vstim);
-//
-//     psy_audio_device_schedule_stimulus(audio_device, vstim);
-//
-//     PSY_STIMULUS_CLASS(psy_auditory_stimulus_parent_class)
-//         ->play(stimulus, start_time);
-// }
+static void
+auditory_stimulus_play(PsyStimulus *stimulus, PsyTimePoint *start_time)
+{
+    // We first have to chainup in order to set the start time at the
+    // stimulus.
+    PSY_STIMULUS_CLASS(psy_auditory_stimulus_parent_class)
+        ->play(stimulus, start_time);
+
+    PsyAuditoryStimulus *stim = PSY_AUDITORY_STIMULUS(stimulus);
+
+    PsyAudioDevice *audio_device = psy_auditory_stimulus_get_audio_device(stim);
+
+    psy_audio_device_schedule_stimulus(audio_device, stim);
+}
 
 static void
 auditory_stimulus_set_duration(PsyStimulus *self, PsyDuration *stim_dur)
@@ -200,7 +201,7 @@ psy_auditory_stimulus_class_init(PsyAuditoryStimulusClass *klass)
     object_class->dispose      = psy_auditory_stimulus_dispose;
 
     PsyStimulusClass *stimulus_class = PSY_STIMULUS_CLASS(klass);
-    // stimulus_class->play             = auditory_stimulus_play;
+    stimulus_class->play             = auditory_stimulus_play;
     stimulus_class->set_duration     = auditory_stimulus_set_duration;
 
     /**

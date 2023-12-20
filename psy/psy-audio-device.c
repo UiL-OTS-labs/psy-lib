@@ -2,7 +2,7 @@
 #include "enum-types.h"
 
 #include "psy-audio-device.h"
-#include "psy-audio-output-mixer.h"
+#include "psy-audio-mixer.h"
 #include "psy-audio-utils.h"
 #include "psy-config.h"
 #include "psy-enums.h"
@@ -225,15 +225,16 @@ G_DEFINE_QUARK(psy-audio-device-error-quark,
 // clang-format on
 
 typedef struct _PsyAudioDevicePrivate {
-    gchar               *name;
-    PsyAudioSampleRate   sample_rate;
-    GMainContext        *main_context;
-    PsyAudioOutputMixer *output_mixer;
-    PsyDuration         *buffer_duration;
-    guint                num_inputs;  // channels
-    guint                num_outputs; // channels
-    gboolean             is_open;
-    gboolean             started;
+    gchar             *name;
+    PsyAudioSampleRate sample_rate;
+    GMainContext      *main_context;
+    PsyAudioMixer     *output_mixer;
+    PsyDuration       *buffer_duration;
+    guint              num_inputs;  // channels
+    guint              num_outputs; // channels
+    gboolean           is_open;
+    gboolean           started;
+    _Atomic int64_t    num_frames_presented;
 } PsyAudioDevicePrivate;
 
 G_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE(PsyAudioDevice,
@@ -392,9 +393,8 @@ audio_device_open(PsyAudioDevice *self, GError **error)
     PsyAudioDevicePrivate *priv = psy_audio_device_get_instance_private(self);
 
     if (priv->num_outputs > 0) {
-        PsyAudioOutputMixer *mixer
-            = psy_audio_output_mixer_new(self, priv->num_outputs);
-        priv->output_mixer = mixer;
+        PsyAudioMixer *mixer = psy_audio_mixer_new(self, TRUE);
+        priv->output_mixer   = mixer;
     }
 
     priv->is_open = TRUE;
@@ -420,6 +420,7 @@ audio_device_start(PsyAudioDevice *self, GError **error)
 {
     (void) error; // Error's might be raised in derived classes (backends).
     PsyAudioDevicePrivate *priv = psy_audio_device_get_instance_private(self);
+    priv->num_frames_presented  = 0;
     priv->started               = TRUE;
     g_info("Started PsyAudioDevice %s", psy_audio_device_get_name(self));
 }
@@ -1027,6 +1028,28 @@ psy_audio_device_set_started(PsyAudioDevice *self, PsyTimePoint *tp)
 }
 
 /**
+ * psy_audio_device_schedule_stimulus:
+ * @self: The device on which you want to schedule a stimulus
+ * @stim: An stimulus to schedule for playing.
+ *
+ * This requests the output device to mix the stimulus in the output stream.
+ * The PsyAudioOutputMixer will take this job and hold an reference to this
+ * stimulus.
+ */
+void
+psy_audio_device_schedule_stimulus(PsyAudioDevice      *self,
+                                   PsyAuditoryStimulus *stim)
+{
+    PsyAudioDevicePrivate *priv = psy_audio_device_get_instance_private(self);
+
+    g_return_if_fail(PSY_IS_AUDIO_DEVICE(self));
+    g_return_if_fail(PSY_IS_AUDITORY_STIMULUS(stim));
+
+    psy_audio_mixer_schedule_stimulus(PSY_AUDIO_MIXER(priv->output_mixer),
+                                      stim);
+}
+
+/**
  * psy_audio_device_enumerate_devices:
  * @self: an instance of [class@PsyAudioDevice].
  * @infos:(out callee-allocates)(array length=n_infos): An array with
@@ -1050,25 +1073,6 @@ psy_audio_device_enumerate_devices(PsyAudioDevice       *self,
     g_return_if_fail(cls->enumerate_devices);
 
     cls->enumerate_devices(self, infos, n_infos);
-}
-
-/**
- * psy_audio_device_get_output_mixer:(skip)
- * @self: an instance of [class@AudioDevice]
- *
- * Get the mixer of the audiodevice. This is a method private to psylib
- * If the device isn't open this function should return NULL.
- *
- * Stability:private:
- * Returns:(transfer none)(nullable): The audio mixer for this AudioDevice
- */
-PsyAudioOutputMixer *
-psy_audio_device_get_output_mixer(PsyAudioDevice *self)
-{
-    g_return_val_if_fail(PSY_IS_AUDIO_DEVICE(self), NULL);
-    PsyAudioDevicePrivate *priv = psy_audio_device_get_instance_private(self);
-
-    return priv->output_mixer;
 }
 
 /**
@@ -1117,4 +1121,108 @@ psy_audio_device_set_buffer_duration(PsyAudioDevice *self,
 
     g_clear_object(&priv->buffer_duration);
     priv->buffer_duration = duration;
+}
+
+/**
+ * psy_audio_device_get_last_known_frame:
+ * @self: The audio device to get some sample info of.
+ * @nth_frame:(out caller-allocates): The number of the frame that corresponds
+ *                                    to the time points below.
+ * @tp_in:(out caller-allocates)(nullable):The time point that corresponds to
+ *                                         @nth_frame when it was obtained from
+ *                                         the ADC.
+ * @tp_out:(out caller-allocates)(nullable): The time point that corresponds to
+ *                                           @nth_frame when it will be played
+ *                                           by the DAC.
+ *
+ * Returns the time of an audio frame in the past, it tell when it was presented
+ * to the DAC (Digital to Analog Converter) for output or from the ADC
+ * (Analog to Digital Converter) for input. These timepoints.
+ *
+ * Returns: TRUE when this call was successfull, may be false when the device
+ *          isn't running and no known frames have been presented/recorded.
+ */
+gboolean
+psy_audio_device_get_last_known_frame(PsyAudioDevice *self,
+                                      gint64         *nth_frame,
+                                      PsyTimePoint  **tp_in,
+                                      PsyTimePoint  **tp_out)
+{
+    g_return_val_if_fail(PSY_IS_AUDIO_DEVICE(self), FALSE);
+    g_return_val_if_fail(nth_frame != NULL, FALSE);
+    g_return_val_if_fail(tp_in == NULL || *tp_in == NULL, FALSE);
+    g_return_val_if_fail(tp_out == NULL || *tp_out == NULL, FALSE);
+
+    PsyAudioDeviceClass *cls = PSY_AUDIO_DEVICE_GET_CLASS(self);
+
+    g_return_val_if_fail(cls->get_last_known_frame, FALSE);
+
+    return cls->get_last_known_frame(self, nth_frame, tp_in, tp_out);
+}
+
+/**
+ * psy_audio_get_current_frame_count:(skip)
+ * @self: an instance of [class@AudioDevice]
+ *
+ * Get the number of frames the that have been send to/received from the audio
+ * device. This count is typically updated after each call to the audio
+ * callback. This is the number of frames that the audio callback has
+ * processed, and will hence typically be a little bit ahead of the
+ * number of frames that the audio interface will have played/recorded.
+ */
+gint64
+psy_audio_device_get_current_frame_count(PsyAudioDevice *self)
+{
+    PsyAudioDevicePrivate *priv = psy_audio_device_get_instance_private(self);
+    g_return_val_if_fail(PSY_IS_AUDIO_DEVICE(self), -1);
+
+    return priv->num_frames_presented;
+}
+
+/**
+ * psy_audio_device_update_frame_count:(skip)
+ * @self: an instance of [class@AudioDevice]
+ * @num_frames: a positive integer
+ *
+ * Updates the frame count of the audio device. The num_frames parameter is
+ * added to the total of presented frames.
+ */
+void
+psy_audio_device_update_frame_count(PsyAudioDevice *self, gint num_frames)
+{
+    PsyAudioDevicePrivate *priv = psy_audio_device_get_instance_private(self);
+    g_return_if_fail(PSY_IS_AUDIO_DEVICE(self));
+    g_return_if_fail(num_frames >= 0);
+
+    priv->num_frames_presented += num_frames;
+}
+
+/**
+ * psy_audio_device_clear_frame_count:(skip)
+ * @self: an instance of [class@AudioDevice]
+ *
+ * resets the frame count.
+ */
+void
+psy_audio_device_clear_frame_count(PsyAudioDevice *self)
+{
+    PsyAudioDevicePrivate *priv = psy_audio_device_get_instance_private(self);
+    g_return_if_fail(PSY_IS_AUDIO_DEVICE(self));
+
+    priv->num_frames_presented = 0;
+}
+
+/**
+ * psy_audio_device_get_output_mixer:(skip)
+ *
+ * Returns: the output mixer for this audio device the audio device should read
+ * from this device.
+ */
+PsyAudioMixer *
+psy_audio_device_get_output_mixer(PsyAudioDevice *self)
+{
+    PsyAudioDevicePrivate *priv = psy_audio_device_get_instance_private(self);
+    g_return_val_if_fail(PSY_IS_AUDIO_DEVICE(self), NULL);
+
+    return priv->output_mixer;
 }
