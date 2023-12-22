@@ -20,7 +20,8 @@ dependencies = [
     "GLib-2.0",
     "GObject-2.0",
     "Gtk-4.0",
-    "Pango-1.0"
+    "Pango-1.0",
+    "GStreamer-1.0",
 ]
 
 [dependencies."GLib-2.0"]
@@ -55,6 +56,7 @@ doc_url = "https://docs.gtk.org/pango/"
 content_files = [
     "introduction.md",
     "drawing-with-psylib-developer.md",
+    "audio-with-psylib.md",
 ]
 # Additional images referenced by the documentation; their path
 # is relative to the content directory specified on the command
