@@ -6,9 +6,12 @@
 
 #include "psy-audio-device.h"
 #include "psy-audio-mixer.h"
+#include "psy-audio-utils.h"
 #include "psy-duration.h"
 #include "psy-enums.h"
 #include "psy-queue.h"
+
+#define NUM_BUF_SAMPLES (65536)
 
 /**
  * PsyAudioMixer:
@@ -41,8 +44,13 @@ typedef struct _PsyAudioMixerPrivate {
 
     PsyAudioDevice *device;
 
-    PsyAudioQueue *in_queue;  // AudioCallback writes to input queue.
-    PsyAudioQueue *out_queue; // AudioCallback reads from output queue.
+    PsyAudioQueue *in_queue;  // The audio callback writes to input queue.
+                              // So the process callback empties this.
+    PsyAudioQueue *out_queue; // The audio callback reads from output queue.
+                              // So the process callback fills this.
+
+    gint64 num_out_frames;
+    gint64 num_in_frames;
 
     GMainContext *context;
     GPtrArray    *stimuli;
@@ -219,14 +227,81 @@ psy_audio_mixer_finalize(GObject *object)
 }
 
 static void
+audio_mixer_process_output_frames(PsyAudioMixer *self, gint64 num_frames)
+{
+    gfloat samples[NUM_BUF_SAMPLES] = {0};
+    gfloat temp[NUM_BUF_SAMPLES];
+
+    PsyAudioMixerPrivate *priv = psy_audio_mixer_get_instance_private(self);
+
+    gint64 window_start, window_stop, window_dur;
+    guint  num_out_channels
+        = psy_audio_device_get_num_output_channels(priv->device);
+    const gint64 num_samples = num_out_channels * num_frames;
+
+    if (num_frames == 0)
+        return;
+
+    if (G_UNLIKELY(num_samples > NUM_BUF_SAMPLES)) {
+        g_critical(
+            "More samples to process than %s can handle silencing output",
+            G_OBJECT_CLASS_NAME(G_OBJECT_GET_CLASS(self)));
+        gfloat zero = 0.0f;
+        for (gint64 f = 0; f < num_frames; f++) {
+            for (gint64 c = 0; c < num_out_channels; c++) {
+                psy_audio_queue_push_samples(priv->out_queue, 1, &zero);
+            }
+        }
+        return;
+    }
+
+    window_start = priv->num_out_frames;
+    window_stop  = priv->num_out_frames + num_frames;
+    window_dur   = num_frames;
+
+    g_assert(window_start < window_stop);
+
+    for (guint i = 0; i < priv->stimuli->len; i++) {
+        memset(temp, 0, sizeof(temp));
+        PsyAuditoryStimulus *stim = priv->stimuli->pdata[i];
+
+        gint64 stim_start, stim_dur, stim_stop;
+
+        stim_start = psy_auditory_stimulus_get_start_frame(stim);
+        stim_dur   = psy_auditory_stimulus_get_num_frames(stim);
+        stim_stop  = num_frames < 0 ? G_MAXINT64 : stim_start + num_frames;
+
+        gint64 num_frames_to_read;
+        if (stim_stop < window_start || window_stop < stim_start)
+            num_frames_to_read = 0;
+    }
+
+    if (G_UNLIKELY(num_samples > G_MAXUINT || num_samples < 0)) {
+        g_critical("Unexpected number of samples");
+        g_assert_not_reached();
+        return;
+    }
+
+    psy_audio_queue_push_samples(priv->out_queue, num_samples, &samples[0]);
+}
+
+static void
 audio_mixer_process_audio(PsyAudioMixer *self)
 {
     PsyAudioMixerPrivate *priv = psy_audio_mixer_get_instance_private(self);
 
-    gfloat sample = 0.0f;
+    gint64 num_samples_free;
+    gint64 num_frames_free;
 
-    while (psy_audio_queue_push_samples(priv->out_queue, 1, &sample) == 1)
-        ;
+    num_samples_free = psy_audio_queue_capacity(priv->out_queue)
+                       - psy_audio_queue_size(priv->out_queue);
+
+    num_frames_free = num_samples_free
+                      / psy_audio_device_get_num_output_channels(priv->device);
+
+    if (num_frames_free > 0) {
+        audio_mixer_process_output_frames(self, num_frames_free);
+    }
 }
 
 static void
@@ -323,29 +398,33 @@ psy_audio_mixer_schedule_stimulus(PsyAudioMixer       *self,
 {
     PsyAudioMixerPrivate *priv = psy_audio_mixer_get_instance_private(self);
 
+    PsyDuration  *buffer_duration = NULL; // from audio device
+    PsyDuration  *onset_dur       = NULL; // calculated needs to be freed
+    PsyTimePoint *tp_start        = NULL; // from AuditoryStimulus
+    PsyTimePoint *tp_sample       = NULL; // needs to be freed. Time point
+                                          // of last known sample.
+
+    gint64 nth_sample; // last presented sample with a known time
+
     g_return_if_fail(PSY_IS_AUDIO_MIXER(self)
                      && PSY_IS_AUDITORY_STIMULUS(stimulus));
 
-    if (psy_auditory_stimulus_is_scheduled(stimulus))
+    if (psy_auditory_stimulus_is_scheduled(stimulus)) {
+        g_warning("Stimulus is already scheduled.");
         return;
-
-    PsyTimePoint *tp_sample = NULL;
-    gint64        nth_sample;
+    }
 
     if (!psy_audio_device_get_last_known_frame(
             priv->device, &nth_sample, NULL, &tp_sample)) {
         g_critical("%s: The audio device doesn't seem to be running.",
                    __func__);
-        return;
+        goto fail;
     }
 
-    PsyDuration *buffer_duration // owned by the device
-        = psy_audio_device_get_buffer_duration(priv->device);
+    buffer_duration = psy_audio_device_get_buffer_duration(priv->device);
+    tp_start        = psy_stimulus_get_start_time(PSY_STIMULUS(stimulus));
 
-    PsyTimePoint *tp_start // owned by the stimulus
-        = psy_stimulus_get_start_time(PSY_STIMULUS(stimulus));
-
-    PsyDuration *onset_dur = psy_time_point_subtract(tp_start, tp_sample);
+    onset_dur = psy_time_point_subtract(tp_start, tp_sample);
 
     if (psy_duration_less(onset_dur, buffer_duration)) {
         g_warning("scheduling an auditory stimulus within %lf seconds from "
@@ -354,8 +433,33 @@ psy_audio_mixer_schedule_stimulus(PsyAudioMixer       *self,
                   psy_duration_get_seconds(onset_dur));
     }
 
-    psy_duration_destroy(onset_dur);
-    psy_time_point_destroy(tp_sample);
+    gint64 num_wait_samples = psy_duration_to_num_audio_samples(
+        onset_dur, psy_audio_device_get_sample_rate(priv->device));
+
+    gint64 start_frame = nth_sample + num_wait_samples;
+
+    psy_auditory_stimulus_set_start_frame(stimulus, start_frame);
+
+    g_ptr_array_add(priv->stimuli, g_object_ref(stimulus));
+
+    g_info(
+        "Scheduled instance of %s at %p with the audiomixer %p, ref_frame = "
+        "%ld, num_wait_frames = %ld, start_frame = %ld, wait duration = %lfs",
+        G_OBJECT_CLASS_NAME(G_OBJECT_GET_CLASS(stimulus)),
+        (gpointer) stimulus,
+        (gpointer) self,
+        nth_sample,
+        start_frame,
+        num_wait_samples,
+        psy_duration_get_seconds(onset_dur));
+
+fail:
+    if (onset_dur) {
+        psy_duration_destroy(onset_dur);
+    }
+    if (tp_sample) {
+        psy_time_point_destroy(tp_sample);
+    }
 }
 
 /**

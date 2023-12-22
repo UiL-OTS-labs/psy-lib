@@ -43,14 +43,14 @@ G_MODULE_EXPORT PsyAudioDevice *
 psy_auditory_stimulus_get_audio_device(PsyAuditoryStimulus *self);
 
 G_MODULE_EXPORT void
-psy_auditory_stimulus_set_audio_device(PsyAuditoryStimulus *stimulus,
+psy_auditory_stimulus_set_audio_device(PsyAuditoryStimulus *self,
                                        PsyAudioDevice      *audio_device);
 
 G_MODULE_EXPORT gint64
 psy_auditory_stimulus_get_num_frames(PsyAuditoryStimulus *self);
 
 G_MODULE_EXPORT gboolean
-psy_auditory_stimulus_is_scheduled(PsyAuditoryStimulus *stimulus);
+psy_auditory_stimulus_is_scheduled(PsyAuditoryStimulus *self);
 
 void
 psy_auditory_stimulus_set_start_frame(PsyAuditoryStimulus *self,

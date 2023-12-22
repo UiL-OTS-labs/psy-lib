@@ -30,8 +30,8 @@
 typedef struct PsyAuditoryStimulusPrivate {
     PsyAudioDevice *audio_device; // The audio_device on which this stimulus
                                   // should be presented
-    gint64 nth_frame;
     gint64 num_frames;  // Total number of frames for stimulus duration
+                        // when negative, it has no end point.
     gint64 start_frame; // When the stimulus should start, negative when not
                         // started.
     guint num_channels; // The number of channels, this is fixed, for some
@@ -52,7 +52,6 @@ typedef enum {
     PROP_AUDIO_DEVICE, // The audio_device on which this stimulus should be
                        // drawn
     PROP_NUM_FRAMES,   // The number of frames the stimulus will be presented
-    PROP_NTH_FRAME,    // the frame for which we are rendering
     PROP_START_FRAME,  // the frame at which this object should be first
                        // presented
     PROP_NUM_CHANNELS, // The number of channels of the audio, this is only
@@ -91,7 +90,6 @@ psy_auditory_stimulus_set_property(GObject      *object,
         psy_auditory_stimulus_set_channel_map(self, g_value_get_boxed(value));
         break;
     case PROP_NUM_FRAMES:            // gettable only
-    case PROP_NTH_FRAME:             // gettable only
     case PROP_FLEXIBLE_NUM_CHANNELS: // gettable only
     default:
         G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
@@ -111,9 +109,6 @@ psy_auditory_stimulus_get_property(GObject    *object,
     switch ((AuditoryStimulusProperty) property_id) {
     case PROP_NUM_FRAMES:
         g_value_set_int64(value, priv->num_frames);
-        break;
-    case PROP_NTH_FRAME:
-        g_value_set_int64(value, priv->nth_frame);
         break;
     case PROP_AUDIO_DEVICE:
         g_value_set_object(value, priv->audio_device);
@@ -221,11 +216,9 @@ psy_auditory_stimulus_class_init(PsyAuditoryStimulusClass *klass)
     /**
      * PsyAuditoryStimulus:num-frames:
      *
-     * When a auditory stimulus is played for an amount of time, the stimulus
-     * on which it will be drawn will be determine when it will be presented for
-     * the first time.
-     * This value will be most useful in the update signal handler or in
-     * `psy_auditory_stimulus_update`.
+     * This refects the duration of the stimulus, but then in the number
+     * of frames. This may be negative, in this case, psylib regards
+     * the stimulus to run until manually stopped/aborted.
      */
     auditory_stimulus_properties[PROP_NUM_FRAMES] = g_param_spec_int64(
         "num-frames",
@@ -237,27 +230,10 @@ psy_auditory_stimulus_class_init(PsyAuditoryStimulusClass *klass)
         G_PARAM_READABLE);
 
     /**
-     * PsyAuditoryStimulus:nth-frame:
-     *
-     * Everytime the stimulus draws a stimulus, you'll get the time to update
-     * it. This value will be most useful in the update signal handler or in
-     * `psy_auditory_stimulus_update`.
-     */
-    auditory_stimulus_properties[PROP_NTH_FRAME]
-        = g_param_spec_int64("nth-frame",
-                             "NthFrame",
-                             "The nth frame of this stimulus.",
-                             -1,
-                             G_MAXINT64,
-                             -1,
-                             G_PARAM_READABLE);
-
-    /**
      * PsyAuditoryStimulus:start-frame:
      *
      * When auditory stimuli are scheduled, we have to specify a given frame
      * on which the stimulus will be presented for the first time.
-     *
      */
     auditory_stimulus_properties[PROP_START_FRAME] = g_param_spec_int64(
         "start-frame",
@@ -297,6 +273,11 @@ psy_auditory_stimulus_class_init(PsyAuditoryStimulusClass *klass)
      *
      * Whether or not the client may set the number of channels for this
      * stimulus.
+     *
+     * For generated audio e.g. see [class@Wave], you can set
+     * this yourself, for stimuli from files this is generally deduced
+     * from the file, hence, the number of channels will be set when psylib has
+     * determined the number of channels present in the media source.
      */
     auditory_stimulus_properties[PROP_FLEXIBLE_NUM_CHANNELS]
         = g_param_spec_boolean(
@@ -368,19 +349,19 @@ psy_auditory_stimulus_get_audio_device(PsyAuditoryStimulus *self)
 
 /**
  * psy_auditory_stimulus_set_audio_device:
- * @stimulus: a `PsyAuditoryStimulus`
- * @audio_device:(transfer full): a `PsyAudioDevice` to draw this stimulus on.
+ * @self: an instance of  [class@PsyAuditoryStimulus]
+ * @audio_device:(transfer none): a `PsyAudioDevice` to draw this stimulus on.
  *
  * Set the audio_device on which this stimulus should be drawn.
  */
 void
-psy_auditory_stimulus_set_audio_device(PsyAuditoryStimulus *stimulus,
+psy_auditory_stimulus_set_audio_device(PsyAuditoryStimulus *self,
                                        PsyAudioDevice      *audio_device)
 {
     PsyAuditoryStimulusPrivate *priv
-        = psy_auditory_stimulus_get_instance_private(stimulus);
+        = psy_auditory_stimulus_get_instance_private(self);
 
-    g_return_if_fail(PSY_IS_AUDITORY_STIMULUS(stimulus));
+    g_return_if_fail(PSY_IS_AUDITORY_STIMULUS(self));
     g_return_if_fail(PSY_IS_AUDIO_DEVICE(audio_device));
 
     g_clear_object(&priv->audio_device);
@@ -427,6 +408,18 @@ psy_auditory_stimulus_get_nth_frame(PsyAuditoryStimulus *self)
     return priv->nth_frame;
 }
 
+/**
+ * psy_auditory_stimulus_is_scheduled:
+ * @self: An instance of [class@AuditoryStimulus]
+ *
+ * Determines whether or not the stimulus is scheduled. A stimulus
+ * is considered scheduled, once a start frame has been determined. In practice
+ * it is also required that it has been added to the psy audio device. A
+ * an instance is scheduled by call to e.g. [method@Stimulus.play] or
+ * [method@Stimulus.play_for]
+ *
+ * Returns: TRUE if it is scheduled, FALSE otherwise.
+ */
 gboolean
 psy_auditory_stimulus_is_scheduled(PsyAuditoryStimulus *self)
 {

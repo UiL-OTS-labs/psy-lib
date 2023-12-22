@@ -74,6 +74,11 @@ pa_audio_callback(const void                     *input,
     (void) timeInfo;
     (void) statusFlags;
 
+    //    g_info("frame_count %lu, stream_time = %lf, output time = %lf",
+    //           frame_count,
+    //           timeInfo->currentTime,
+    //           timeInfo->outputBufferDacTime);
+
     gboolean locked = FALSE;
 
     PsyPADevice   *self = audio_device;
@@ -122,6 +127,21 @@ pa_audio_callback(const void                     *input,
                                         (gint) frame_count);
 
     return paContinue;
+}
+
+/**
+ * pa_clear_last_time_info:
+ * @self: An instance of PsyPADevice
+ *
+ * Clears the info of the frames.
+ */
+static void
+pa_clear_last_frame_info(PsyPADevice *self)
+{
+    self->last_frame.current_stream_time = 0;
+    self->last_frame.num_frames          = 0;
+    self->last_frame.time_input          = 0;
+    self->last_frame.current_stream_time = 0;
 }
 
 /**
@@ -619,6 +639,8 @@ pa_device_start(PsyAudioDevice *self, GError **error)
         return;
     }
 
+    pa_clear_last_frame_info(pa_self);
+
     PaTime        stream_time = Pa_GetStreamTime(pa_self->stream);
     PsyTimePoint *pa_time     = pa_time_to_psy_timepoint(stream_time);
 
@@ -641,6 +663,8 @@ pa_device_stop(PsyAudioDevice *self)
                     Pa_GetErrorText(err));
             return;
         }
+
+        pa_clear_last_frame_info(pa_self);
     }
 
     PSY_AUDIO_DEVICE_CLASS(psy_pa_device_parent_class)->stop(self);
