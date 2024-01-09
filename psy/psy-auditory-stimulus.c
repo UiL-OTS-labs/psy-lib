@@ -34,6 +34,9 @@ typedef struct PsyAuditoryStimulusPrivate {
                         // when negative, it has no end point.
     gint64 start_frame; // When the stimulus should start, negative when not
                         // started.
+    gint64 num_frames_presented; // The number of frames read by a client
+                                 // This may be used to compute the
+                                 // final duration.
     guint num_channels; // The number of channels, this is fixed, for some
                         // stimuli, such as wav files, the file determines
                         // the format. But it's flexible for others stimuli such
@@ -54,6 +57,8 @@ typedef enum {
     PROP_NUM_FRAMES,   // The number of frames the stimulus will be presented
     PROP_START_FRAME,  // the frame at which this object should be first
                        // presented
+    PROP_NUM_FRAMES_PRESENTED, // The number of frames presented/read
+                               // by the client.
     PROP_NUM_CHANNELS, // The number of channels of the audio, this is only
                        // writable when PROP_FLEXIBLE_NUM_CHANNELS is set
     PROP_FLEXIBLE_NUM_CHANNELS, // Whether or not NUM_CHANNELS can be set
@@ -110,6 +115,9 @@ psy_auditory_stimulus_get_property(GObject    *object,
     case PROP_NUM_FRAMES:
         g_value_set_int64(value, priv->num_frames);
         break;
+    case PROP_NUM_FRAMES_PRESENTED:
+        g_value_set_int64(value, priv->num_frames_presented);
+        break;
     case PROP_AUDIO_DEVICE:
         g_value_set_object(value, priv->audio_device);
         break;
@@ -145,10 +153,10 @@ psy_auditory_stimulus_init(PsyAuditoryStimulus *self)
 {
     PsyAuditoryStimulusPrivate *priv
         = psy_auditory_stimulus_get_instance_private(self);
-    priv->audio_device = NULL;
-    priv->nth_frame    = 0;
-    priv->num_frames   = -1;
-    priv->start_frame  = -1;
+    priv->audio_device         = NULL;
+    priv->num_frames_presented = 0;
+    priv->num_frames           = -1;
+    priv->start_frame          = -1;
 }
 
 static void
@@ -223,11 +231,28 @@ psy_auditory_stimulus_class_init(PsyAuditoryStimulusClass *klass)
     auditory_stimulus_properties[PROP_NUM_FRAMES] = g_param_spec_int64(
         "num-frames",
         "NumFrames",
-        "The number of frames that this stimulus will be displayed.",
+        "The number of frames that this stimulus will be played.",
         -1,
         G_MAXINT64,
         -1,
         G_PARAM_READABLE);
+
+    /**
+     * PsyAuditoryStimulus:num-frames-presented:
+     *
+     * This reflects the number of frames that allready have been
+     * read by a client of this [class@AuditoryStimulus]. The stimulus
+     * considers these frames as already played, hence the name.
+     */
+    auditory_stimulus_properties[PROP_NUM_FRAMES_PRESENTED]
+        = g_param_spec_int64("num-frames-presented",
+                             "NumFramesPresented",
+                             "The number of frames that have been "
+                             "presented/read from this stimulus.",
+                             0,
+                             G_MAXINT64,
+                             0,
+                             G_PARAM_READABLE);
 
     /**
      * PsyAuditoryStimulus:start-frame:
@@ -235,14 +260,15 @@ psy_auditory_stimulus_class_init(PsyAuditoryStimulusClass *klass)
      * When auditory stimuli are scheduled, we have to specify a given frame
      * on which the stimulus will be presented for the first time.
      */
-    auditory_stimulus_properties[PROP_START_FRAME] = g_param_spec_int64(
-        "start-frame",
-        "StartFrame",
-        "The number of the frame on which this stimulus should be presented",
-        0,
-        G_MAXINT64,
-        0,
-        G_PARAM_READABLE);
+    auditory_stimulus_properties[PROP_START_FRAME]
+        = g_param_spec_int64("start-frame",
+                             "StartFrame",
+                             "The number of the frame on which this stimulus "
+                             "should be presented",
+                             0,
+                             G_MAXINT64,
+                             0,
+                             G_PARAM_READABLE);
 
     /**
      * PsyAuditoryStimulus:num-channels:
@@ -369,14 +395,12 @@ psy_auditory_stimulus_set_audio_device(PsyAuditoryStimulus *self,
 }
 
 /**
- * psy_auditory_stimulus_get_num_samples:
+ * psy_auditory_stimulus_get_num_frames:
  * @self: an instance of `PsyAuditoryStimulus`.
  *
- * This function returns how many samples this stimulus contains/-ed.
- * This may be used to calculate the duration of this stimulus.
+ * This function returns how many frames this stimulus is expected to last.
  *
- * Returns: An integer reflecting how many frames this stimulus has been
- * presented.
+ * Returns: An integer reflecting the expected stimulus duration.
  */
 gint64
 psy_auditory_stimulus_get_num_frames(PsyAuditoryStimulus *self)
@@ -389,23 +413,26 @@ psy_auditory_stimulus_get_num_frames(PsyAuditoryStimulus *self)
 }
 
 /**
- * psy_auditory_stimulus_get_nth_frame:
+ * psy_auditory_stimulus_get_num_frames_presented:
  * @self: an instance of `PsyAuditoryStimulus`.
  *
- * This function returns how many times the stimulus has be presented. Notice
- * that this starts at 0 when preparing the first frame.
+ * This function keeps track of how many of the frames have been presented
+ * in the eye of the PsyAuditoryStimulus. Everytime we read from this
+ * stimulus, the number of frame read increases, until the final frame
+ * is read. In theory, after this stimulus is finished, this should be the
+ * same as [property@Psy.AuditoryStimulus:num-frames]
  *
- * Returns: An integer reflecting how many frames this stimulus has been
+ * Returns: An integer reflecting how many frames of this stimulus have been
  * presented.
  */
 gint64
-psy_auditory_stimulus_get_nth_frame(PsyAuditoryStimulus *self)
+psy_auditory_stimulus_get_num_frames_presented(PsyAuditoryStimulus *self)
 {
     PsyAuditoryStimulusPrivate *priv
         = psy_auditory_stimulus_get_instance_private(self);
     g_return_val_if_fail(PSY_IS_AUDITORY_STIMULUS(self), -1);
 
-    return priv->nth_frame;
+    return priv->num_frames_presented;
 }
 
 /**

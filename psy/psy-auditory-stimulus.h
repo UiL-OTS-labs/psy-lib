@@ -49,6 +49,9 @@ psy_auditory_stimulus_set_audio_device(PsyAuditoryStimulus *self,
 G_MODULE_EXPORT gint64
 psy_auditory_stimulus_get_num_frames(PsyAuditoryStimulus *self);
 
+G_MODULE_EXPORT gint64
+psy_auditory_stimulus_get_num_frames_presented(PsyAuditoryStimulus *self);
+
 G_MODULE_EXPORT gboolean
 psy_auditory_stimulus_is_scheduled(PsyAuditoryStimulus *self);
 
