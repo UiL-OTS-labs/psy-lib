@@ -172,6 +172,9 @@ auditory_stimulus_play(PsyStimulus *stimulus, PsyTimePoint *start_time)
     PsyAudioDevice *audio_device = psy_auditory_stimulus_get_audio_device(stim);
 
     psy_audio_device_schedule_stimulus(audio_device, stim);
+
+    g_signal_emit(
+        stim, auditory_stimulus_signals[SIG_ADD_CHANNEL_MAP], 0, audio_device);
 }
 
 static void
@@ -196,6 +199,24 @@ auditory_stimulus_set_duration(PsyStimulus *self, PsyDuration *stim_dur)
 }
 
 static void
+auditory_stimulus_add_channel_map(PsyAuditoryStimulus *self,
+                                  PsyAudioDevice      *device,
+                                  gpointer             data)
+{
+    (void) data;
+    guint num_stim_channels = psy_auditory_stimulus_get_num_channels(self);
+    guint num_device_channels
+        = psy_audio_device_get_num_output_channels(device);
+
+    PsyAudioChannelMap *map = psy_audio_channel_map_new_strategy(
+        num_device_channels,
+        num_stim_channels,
+        PSY_AUDIO_CHANNEL_STRATEGY_DEFAULT);
+
+    psy_auditory_stimulus_set_channel_map(self, map);
+}
+
+static void
 psy_auditory_stimulus_class_init(PsyAuditoryStimulusClass *klass)
 {
     GObjectClass *object_class = G_OBJECT_CLASS(klass);
@@ -206,6 +227,8 @@ psy_auditory_stimulus_class_init(PsyAuditoryStimulusClass *klass)
     PsyStimulusClass *stimulus_class = PSY_STIMULUS_CLASS(klass);
     stimulus_class->play             = auditory_stimulus_play;
     stimulus_class->set_duration     = auditory_stimulus_set_duration;
+
+    klass->add_channel_map = auditory_stimulus_add_channel_map;
 
     /**
      * PsyAuditoryStimulus:audio_device:
@@ -322,7 +345,7 @@ psy_auditory_stimulus_class_init(PsyAuditoryStimulusClass *klass)
     auditory_stimulus_properties[PROP_CHANNEL_MAP] = g_param_spec_boxed(
         "channel-map",
         "ChannelMap",
-        "The map that maps the StimulusOuptputs(sources) to the input (sinks)"
+        "The map that maps the StimulusOutputs(sources) to the input (sinks)"
         "of the PsyAudioDevice/mixer",
         PSY_TYPE_AUDIO_CHANNEL_MAP,
         G_PARAM_READWRITE);
@@ -613,8 +636,8 @@ psy_auditory_stimulus_get_num_channels(PsyAuditoryStimulus *self)
 /**
  * psy_auditory_stimulus_read:
  * @self: an instance of PsyAuditoryStimulus
- * @num_samples: The number of samples that should be read for each channel
- *      of audio.
+ * @num_frames: The number of frames that should be read, you'll get a
+ *              Sample for each channel.
  * @result:(out caller-allocates): A return location to store the audio,
  *      the output should be large enough to house num_channels * num_samples
  *      samples
@@ -623,13 +646,13 @@ psy_auditory_stimulus_get_num_channels(PsyAuditoryStimulus *self)
  * data for mixing the final output buffer. It's the responsibility of the
  * mixer to mix the final output for the audiocallback.
  *
- * Returns: The number of samples (for each channel) read this should generally
- * be equal to the num_samples argument, expect when it's exhausted. This is
+ * Returns: The number of frames read this should generally
+ * be equal to the num_frames argument, expect when it's exhausted. This is
  * an indication that the stimulus is at the end of its stream.
  */
 guint
 psy_auditory_stimulus_read(PsyAuditoryStimulus *self,
-                           guint                num_samples,
+                           guint                num_frames,
                            gfloat              *result)
 {
     g_return_val_if_fail(PSY_IS_AUDITORY_STIMULUS(self), 0);
@@ -639,5 +662,5 @@ psy_auditory_stimulus_read(PsyAuditoryStimulus *self,
 
     g_return_val_if_fail(cls->read != NULL, 0);
 
-    return cls->read(self, num_samples, result);
+    return cls->read(self, num_frames, result);
 }

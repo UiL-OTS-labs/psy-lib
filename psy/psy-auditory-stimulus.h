@@ -33,7 +33,7 @@ typedef struct _PsyAuditoryStimulusClass {
                             PsyAudioDevice      *device,
                             gpointer             data);
 
-    guint (*read)(PsyAuditoryStimulus *self, guint num_samples, gfloat *result);
+    guint (*read)(PsyAuditoryStimulus *self, guint num_frames, gfloat *result);
 
     gpointer reserved[12];
 
@@ -81,7 +81,7 @@ psy_auditory_stimulus_set_num_channels(PsyAuditoryStimulus *self,
 
 G_MODULE_EXPORT guint
 psy_auditory_stimulus_read(PsyAuditoryStimulus *self,
-                           guint                num_samples,
+                           guint                num_frames,
                            gfloat              *result);
 
 G_END_DECLS

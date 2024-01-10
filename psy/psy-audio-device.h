@@ -236,7 +236,7 @@ void
 psy_audio_device_clear_frame_count(PsyAudioDevice *self);
 
 PsyAudioMixer *
-psy_audio_device_get_output_mixer(PsyAudioDevice *device);
+psy_audio_device_get_mixer(PsyAudioDevice *device);
 
 G_END_DECLS
 

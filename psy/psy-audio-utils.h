@@ -15,10 +15,10 @@ PsyAudioSampleRate
 psy_int_to_sample_rate(gint sample_rate);
 
 PsyDuration *
-psy_num_audio_samples_to_duration(guint64 num_samples, PsyAudioSampleRate sr);
+psy_num_audio_samples_to_duration(gint64 num_samples, PsyAudioSampleRate sr);
 
-guint64
-psy_duration_to_num_audio_samples(PsyDuration *dur, PsyAudioSampleRate sr);
+gint64
+psy_duration_to_num_audio_frames(PsyDuration *dur, PsyAudioSampleRate sr);
 
 #ifdef __cplusplus
 }

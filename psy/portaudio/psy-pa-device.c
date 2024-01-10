@@ -83,7 +83,7 @@ pa_audio_callback(const void                     *input,
 
     PsyPADevice   *self = audio_device;
     guint          num_out_channels;
-    PsyAudioMixer *out_mixer;
+    PsyAudioMixer *mixer;
 
     locked = g_mutex_trylock(&self->last_frame.lock);
     if (locked) {
@@ -99,7 +99,7 @@ pa_audio_callback(const void                     *input,
         = psy_audio_device_get_num_output_channels(PSY_AUDIO_DEVICE(self));
 
     guint num_out_floats = num_out_channels * frame_count;
-    out_mixer = psy_audio_device_get_output_mixer(PSY_AUDIO_DEVICE(self));
+    mixer                = psy_audio_device_get_mixer(PSY_AUDIO_DEVICE(self));
 
     // TODO Read from input here.
 
@@ -108,7 +108,7 @@ pa_audio_callback(const void                     *input,
 
     if (output != NULL && frame_count > 0) {
         guint num_read
-            = psy_audio_mixer_read_frames(out_mixer, frame_count, output);
+            = psy_audio_mixer_read_frames(mixer, frame_count, output);
         if (G_UNLIKELY(num_read != num_out_floats)) {
             g_critical(
                 "%s, Unable to read: %u samples (got %u) from the output mixer",

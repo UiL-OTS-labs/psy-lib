@@ -228,7 +228,7 @@ typedef struct _PsyAudioDevicePrivate {
     gchar             *name;
     PsyAudioSampleRate sample_rate;
     GMainContext      *main_context;
-    PsyAudioMixer     *output_mixer;
+    PsyAudioMixer     *mixer;
     PsyDuration       *buffer_duration;
     guint              num_inputs;  // channels
     guint              num_outputs; // channels
@@ -392,10 +392,10 @@ audio_device_open(PsyAudioDevice *self, GError **error)
     (void) error; // Error's might be raised in derived classes (backends).
     PsyAudioDevicePrivate *priv = psy_audio_device_get_instance_private(self);
 
-    if (priv->num_outputs > 0) {
-        PsyAudioMixer *mixer = psy_audio_mixer_new(self, TRUE);
-        priv->output_mixer   = mixer;
-    }
+    // Perhaps add an property to the audio device to that the mixer can use
+    // than the client has some effect on the mixing buffer duration.
+    PsyAudioMixer *mixer = psy_audio_mixer_new(self, psy_duration_new(0.020));
+    priv->mixer          = mixer;
 
     priv->is_open = TRUE;
     g_info("Opened PsyAudioDevice %s", psy_audio_device_get_name(self));
@@ -408,7 +408,7 @@ audio_device_close(PsyAudioDevice *self)
 {
     PsyAudioDevicePrivate *priv = psy_audio_device_get_instance_private(self);
 
-    g_clear_object(&priv->output_mixer);
+    g_clear_object(&priv->mixer);
 
     priv->is_open = FALSE;
 
@@ -981,8 +981,8 @@ psy_audio_device_get_num_samples_buffer(PsyAudioDevice *self)
     g_return_val_if_fail(PSY_IS_AUDIO_DEVICE(self), -1);
     PsyAudioDevicePrivate *priv = psy_audio_device_get_instance_private(self);
 
-    guint num_samples = psy_duration_to_num_audio_samples(priv->buffer_duration,
-                                                          priv->sample_rate);
+    guint num_samples = psy_duration_to_num_audio_frames(priv->buffer_duration,
+                                                         priv->sample_rate);
 
     return num_samples;
 }
@@ -1045,8 +1045,7 @@ psy_audio_device_schedule_stimulus(PsyAudioDevice      *self,
     g_return_if_fail(PSY_IS_AUDIO_DEVICE(self));
     g_return_if_fail(PSY_IS_AUDITORY_STIMULUS(stim));
 
-    psy_audio_mixer_schedule_stimulus(PSY_AUDIO_MIXER(priv->output_mixer),
-                                      stim);
+    psy_audio_mixer_schedule_stimulus(PSY_AUDIO_MIXER(priv->mixer), stim);
 }
 
 /**
@@ -1213,16 +1212,16 @@ psy_audio_device_clear_frame_count(PsyAudioDevice *self)
 }
 
 /**
- * psy_audio_device_get_output_mixer:(skip)
+ * psy_audio_device_get_mixer:(skip)
  *
- * Returns: the output mixer for this audio device the audio device should read
- * from this device.
+ * Returns: the mixer for this audio device the audio device should read from
+ * / write to this device.
  */
 PsyAudioMixer *
-psy_audio_device_get_output_mixer(PsyAudioDevice *self)
+psy_audio_device_get_mixer(PsyAudioDevice *self)
 {
     PsyAudioDevicePrivate *priv = psy_audio_device_get_instance_private(self);
     g_return_val_if_fail(PSY_IS_AUDIO_DEVICE(self), NULL);
 
-    return priv->output_mixer;
+    return priv->mixer;
 }

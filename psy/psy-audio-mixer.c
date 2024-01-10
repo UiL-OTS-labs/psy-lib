@@ -48,6 +48,7 @@ typedef struct _PsyAudioMixerPrivate {
                               // So the process callback empties this.
     PsyAudioQueue *out_queue; // The audio callback reads from output queue.
                               // So the process callback fills this.
+    PsyDuration *buf_dur;     // The buffer duration of the mixer.
 
     gint64 num_out_frames;
     gint64 num_in_frames;
@@ -55,9 +56,6 @@ typedef struct _PsyAudioMixerPrivate {
     GMainContext *context;
     GPtrArray    *stimuli;
     guint         process_callback_id;
-
-    gboolean is_output;
-
 } PsyAudioMixerPrivate;
 
 G_DEFINE_TYPE_WITH_PRIVATE(PsyAudioMixer, psy_audio_mixer, G_TYPE_OBJECT)
@@ -66,10 +64,9 @@ typedef enum {
     PROP_NULL,
     PROP_AUDIO_DEVICE,
     PROP_SAMPLE_RATE,
+    PROP_BUFFER_DURATION,
     PROP_NUM_IN_CHANNELS,
     PROP_NUM_OUT_CHANNELS,
-    PROP_IS_OUTPUT,
-    PROP_IS_INPUT,
     NUM_PROPERTIES
 } PsyAudioMixerProperty;
 
@@ -94,11 +91,8 @@ psy_audio_mixer_set_property(GObject      *object,
     case PROP_AUDIO_DEVICE:
         psy_audio_mixer_set_audio_device(self, g_value_get_object(value));
         break;
-    case PROP_IS_OUTPUT:
-        priv->is_output = g_value_get_boolean(value);
-        break;
-    case PROP_IS_INPUT:
-        priv->is_output = !g_value_get_boolean(value);
+    case PROP_BUFFER_DURATION:
+        priv->buf_dur = g_value_get_object(value);
         break;
     default:
         G_OBJECT_WARN_INVALID_PROPERTY_ID(object, prop_id, pspec);
@@ -111,27 +105,24 @@ psy_audio_mixer_get_property(GObject    *object,
                              GValue     *value,
                              GParamSpec *pspec)
 {
-    PsyAudioMixer        *self = PSY_AUDIO_MIXER(object);
-    PsyAudioMixerPrivate *priv = psy_audio_mixer_get_instance_private(self);
+    PsyAudioMixer *self = PSY_AUDIO_MIXER(object);
+    // PsyAudioMixerPrivate *priv = psy_audio_mixer_get_instance_private(self);
 
     switch ((PsyAudioMixerProperty) prop_id) {
+    case PROP_AUDIO_DEVICE:
+        g_value_set_object(value, psy_audio_mixer_get_audio_device(self));
+        break;
     case PROP_SAMPLE_RATE:
         g_value_set_enum(value, psy_audio_mixer_get_sample_rate(self));
+        break;
+    case PROP_BUFFER_DURATION:
+        g_value_set_object(value, psy_audio_mixer_get_buffer_duration(self));
         break;
     case PROP_NUM_IN_CHANNELS:
         g_value_set_uint(value, psy_audio_mixer_get_num_in_channels(self));
         break;
     case PROP_NUM_OUT_CHANNELS:
         g_value_set_uint(value, psy_audio_mixer_get_num_out_channels(self));
-        break;
-    case PROP_AUDIO_DEVICE:
-        g_value_set_object(value, psy_audio_mixer_get_audio_device(self));
-        break;
-    case PROP_IS_OUTPUT:
-        g_value_set_boolean(value, priv->is_output);
-        break;
-    case PROP_IS_INPUT:
-        g_value_set_boolean(value, !priv->is_output);
         break;
     default:
         G_OBJECT_WARN_INVALID_PROPERTY_ID(object, prop_id, pspec);
@@ -157,6 +148,8 @@ psy_audio_mixer_init(PsyAudioMixer *self)
     priv->stimuli
         = g_ptr_array_new_full(DEFAULT_NUM_STIM_CACHE, g_object_unref);
 
+    priv->buf_dur = psy_duration_new(.020);
+
     priv->process_callback_id = g_timeout_add_full(
         G_PRIORITY_HIGH, 1, audio_mixer_call_process, self, NULL);
 }
@@ -174,9 +167,11 @@ audio_mixer_constructed(GObject *self)
     guint n_out_chan
         = psy_audio_mixer_get_num_out_channels(PSY_AUDIO_MIXER(self));
 
-    guint  num_samples = psy_audio_device_get_num_samples_buffer(priv->device);
-    gint64 num_in_samples  = (gint64) num_samples * n_in_chan;
-    gint64 num_out_samples = (gint64) num_samples * n_out_chan;
+    gint64 num_frames = psy_duration_to_num_audio_frames(
+        priv->buf_dur, psy_audio_device_get_sample_rate(priv->device));
+
+    gint64 num_in_samples  = (gint64) num_frames * n_in_chan;
+    gint64 num_out_samples = (gint64) num_frames * n_out_chan;
 
     g_return_if_fail(num_in_samples < G_MAXUINT && num_out_samples < G_MAXUINT);
 
@@ -185,9 +180,7 @@ audio_mixer_constructed(GObject *self)
 
     // fill output queue, otherwise audio callback can't fetch data and will log
     // errors.
-    if (priv->is_output) {
-        psy_audio_mixer_process_audio(PSY_AUDIO_MIXER(self));
-    }
+    psy_audio_mixer_process_audio(PSY_AUDIO_MIXER(self));
 }
 
 static void
@@ -226,21 +219,46 @@ psy_audio_mixer_finalize(GObject *object)
     G_OBJECT_CLASS(psy_audio_mixer_parent_class)->finalize(object);
 }
 
+static gboolean
+stimulus_overlaps_window(gint64 window_start,
+                         gint64 window_stop,
+                         gint64 stim_start,
+                         gint64 stim_stop)
+{
+    g_assert(window_start < window_stop);
+    g_assert(stim_start < stim_stop);
+
+    if (stim_stop < window_start) // stimulus should be discarded it's finished
+        return FALSE;
+    if (stim_start >= window_stop) // stimulus is scheduled in the future.
+        return FALSE;
+
+    return TRUE;
+}
+
 static void
 audio_mixer_process_output_frames(PsyAudioMixer *self, gint64 num_frames)
 {
     gfloat samples[NUM_BUF_SAMPLES] = {0};
     gfloat temp[NUM_BUF_SAMPLES];
 
+    g_assert(num_frames >= 0);
+
     PsyAudioMixerPrivate *priv = psy_audio_mixer_get_instance_private(self);
 
-    gint64 window_start, window_stop, window_dur;
+    gint64 window_start, window_stop;
     guint  num_out_channels
         = psy_audio_device_get_num_output_channels(priv->device);
     const gint64 num_samples = num_out_channels * num_frames;
 
     if (num_frames == 0)
         return;
+
+    if (G_UNLIKELY(num_samples > G_MAXUINT || num_samples < 0)) {
+        g_critical("Unexpected number of samples");
+        g_assert_not_reached();
+        return;
+    }
 
     if (G_UNLIKELY(num_samples > NUM_BUF_SAMPLES)) {
         g_critical(
@@ -257,32 +275,66 @@ audio_mixer_process_output_frames(PsyAudioMixer *self, gint64 num_frames)
 
     window_start = priv->num_out_frames;
     window_stop  = priv->num_out_frames + num_frames;
-    window_dur   = num_frames;
-
-    g_assert(window_start < window_stop);
 
     for (guint i = 0; i < priv->stimuli->len; i++) {
-        memset(temp, 0, sizeof(temp));
+
         PsyAuditoryStimulus *stim = priv->stimuli->pdata[i];
 
         gint64 stim_start, stim_dur, stim_stop;
 
         stim_start = psy_auditory_stimulus_get_start_frame(stim);
         stim_dur   = psy_auditory_stimulus_get_num_frames(stim);
-        stim_stop  = num_frames < 0 ? G_MAXINT64 : stim_start + num_frames;
+        stim_stop  = stim_start + stim_dur;
 
-        gint64 num_frames_to_read;
-        if (stim_stop < window_start || window_stop < stim_start)
-            num_frames_to_read = 0;
-    }
+        // Check whether we need to do some work for this stimulus
+        if (!stimulus_overlaps_window(
+                window_start, window_stop, stim_start, stim_stop))
+            continue;
 
-    if (G_UNLIKELY(num_samples > G_MAXUINT || num_samples < 0)) {
-        g_critical("Unexpected number of samples");
-        g_assert_not_reached();
-        return;
+        PsyAudioChannelMap *channel_map
+            = psy_auditory_stimulus_get_channel_map(stim);
+
+        memset(temp, 0, sizeof(temp));
+
+        if (!channel_map) {
+            g_critical("%s: Encountered PsyAuditoryStimulus without "
+                       "channel_map",
+                       __func__);
+            continue;
+        }
+
+        gint64 stim_index_frame_start = MAX(0, stim_start - window_start);
+        gint64 stim_index_sample_start
+            = stim_index_frame_start * num_out_channels;
+        gint64 num_stim_frames = num_frames - stim_index_frame_start;
+
+        gint64 num_frames_read = psy_auditory_stimulus_read(
+            stim, num_stim_frames, &temp[stim_index_sample_start]);
+
+        guint num_mappings = psy_audio_channel_map_get_size(channel_map);
+        for (guint map = 0; map < num_mappings; map++) {
+            PsyAudioChannelMapping *mapping
+                = psy_audio_channel_map_get_mapping(channel_map, map);
+
+            const gfloat *source
+                = &temp[stim_index_sample_start] + mapping->mapped_source;
+            gfloat *mapped_channel
+                = &samples[stim_index_sample_start] + mapping->sink_channel;
+
+            for (; source < source + num_frames_read * num_out_channels;
+                 source += num_out_channels,
+                 mapped_channel += num_out_channels) {
+                *mapped_channel += *source;
+            }
+
+            psy_audio_channel_mapping_free(mapping);
+        }
+
+        psy_audio_channel_map_free(channel_map);
     }
 
     psy_audio_queue_push_samples(priv->out_queue, num_samples, &samples[0]);
+    priv->num_out_frames += num_frames;
 }
 
 static void
@@ -324,6 +376,14 @@ psy_audio_mixer_class_init(PsyAudioMixerClass *klass)
                               PSY_TYPE_AUDIO_DEVICE,
                               G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY);
 
+    audio_mixer_properties[PROP_BUFFER_DURATION] = g_param_spec_object(
+        "buffer-duration",
+        "BufferDuration",
+        "The duration that determines the number of samples that are buffered "
+        "in the mixer.",
+        PSY_TYPE_DURATION,
+        G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY);
+
     audio_mixer_properties[PROP_SAMPLE_RATE]
         = g_param_spec_enum("sample-rate",
                             "SampleRate",
@@ -350,20 +410,6 @@ psy_audio_mixer_class_init(PsyAudioMixerClass *klass)
                             1,
                             G_PARAM_READABLE);
 
-    audio_mixer_properties[PROP_IS_OUTPUT] = g_param_spec_boolean(
-        "is-output",
-        "IsOutput",
-        "Whether or not this mixer is configured for output",
-        TRUE,
-        G_PARAM_CONSTRUCT_ONLY | G_PARAM_READWRITE);
-
-    audio_mixer_properties[PROP_IS_INPUT] = g_param_spec_boolean(
-        "is-input",
-        "IsInput",
-        "Whether or not this mixer is configured as input",
-        FALSE,
-        G_PARAM_READABLE);
-
     g_object_class_install_properties(
         gobject_class, NUM_PROPERTIES, audio_mixer_properties);
 }
@@ -372,24 +418,47 @@ psy_audio_mixer_class_init(PsyAudioMixerClass *klass)
 
 /**
  * psy_audio_mixer_new:(skip)(constructor)
- * @device: An instance of PsyAudioDevice, that is connected to this mixer.
- * @is_output: Whether or not this mixer is configured as output.
+ * @device: An instance of [class@AudioDevice, that is connected to this mixer.
+ * @buf_dur:(transfer full): An instance of [class@Duration] that is connected
+ *          to this mixer.
  *
- * Configures a new in- or output audio mixer. If true is passed to the
- * is output, one may only read from the audio mixer. Otherwise, one can
- * only write to the output mixer.
+ * Configures a new in- and output audio mixer. The audio mixer will
+ * have a buffer duration close to 20ms.
  *
  * Construct a new instance of [class@PsyAudioMixer]
  */
 PsyAudioMixer *
-psy_audio_mixer_new(PsyAudioDevice *device, gboolean is_output)
+psy_audio_mixer_new(PsyAudioDevice *device, PsyDuration *buf_dur)
 {
+    g_assert(((GObject *) buf_dur)->ref_count == 1); // it's owned by the client
     // clang-format off
-    return g_object_new(PSY_TYPE_AUDIO_MIXER,
+    PsyAudioMixer* mixer = g_object_new(PSY_TYPE_AUDIO_MIXER,
                         "audio-device", device,
-                        "is-output", is_output,
+                        "buffer-duration", buf_dur,
                         NULL);
     // clang-format on
+    g_assert(((GObject *) buf_dur)->ref_count
+             == 1); // Now the mixer should have taken over the reference,
+                    // so the caller doesn't
+                    // have to free it anymore
+    return mixer;
+}
+
+/**
+ * psy_audio_mixer_get_buffer_duration:
+ * @self: an instance of[class@AudioMixer]
+ *
+ *
+ * returns:(transfer none): The duration of the audio buffer managed by the
+ * mixer.
+ */
+PsyDuration *
+psy_audio_mixer_get_buffer_duration(PsyAudioMixer *self)
+{
+    g_return_val_if_fail(PSY_IS_AUDIO_MIXER(self), NULL);
+    PsyAudioMixerPrivate *priv = psy_audio_mixer_get_instance_private(self);
+
+    return priv->buf_dur;
 }
 
 void
@@ -433,7 +502,7 @@ psy_audio_mixer_schedule_stimulus(PsyAudioMixer       *self,
                   psy_duration_get_seconds(onset_dur));
     }
 
-    gint64 num_wait_samples = psy_duration_to_num_audio_samples(
+    gint64 num_wait_samples = psy_duration_to_num_audio_frames(
         onset_dur, psy_audio_device_get_sample_rate(priv->device));
 
     gint64 start_frame = nth_sample + num_wait_samples;
