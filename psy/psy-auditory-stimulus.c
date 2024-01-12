@@ -149,6 +149,18 @@ psy_auditory_stimulus_dispose(GObject *object)
 }
 
 static void
+psy_auditory_stimulus_finalize(GObject *object)
+{
+    PsyAuditoryStimulusPrivate *priv
+        = psy_auditory_stimulus_get_instance_private(
+            PSY_AUDITORY_STIMULUS(object));
+
+    g_clear_pointer(&priv->channel_map, psy_audio_channel_map_free);
+
+    G_OBJECT_CLASS(psy_auditory_stimulus_parent_class)->finalize(object);
+}
+
+static void
 psy_auditory_stimulus_init(PsyAuditoryStimulus *self)
 {
     PsyAuditoryStimulusPrivate *priv
@@ -213,7 +225,9 @@ auditory_stimulus_add_channel_map(PsyAuditoryStimulus *self,
         num_stim_channels,
         PSY_AUDIO_CHANNEL_STRATEGY_DEFAULT);
 
-    psy_auditory_stimulus_set_channel_map(self, map);
+    psy_auditory_stimulus_set_channel_map(self, map); // transfer none
+
+    psy_audio_channel_map_free(map);
 }
 
 static void
@@ -223,6 +237,7 @@ psy_auditory_stimulus_class_init(PsyAuditoryStimulusClass *klass)
     object_class->get_property = psy_auditory_stimulus_get_property;
     object_class->set_property = psy_auditory_stimulus_set_property;
     object_class->dispose      = psy_auditory_stimulus_dispose;
+    object_class->finalize     = psy_auditory_stimulus_finalize;
 
     PsyStimulusClass *stimulus_class = PSY_STIMULUS_CLASS(klass);
     stimulus_class->play             = auditory_stimulus_play;

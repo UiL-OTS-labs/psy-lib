@@ -419,6 +419,10 @@ test_audio_channel_map_set_mapping(void)
 
     g_clear_pointer(&r1, psy_audio_channel_mapping_free);
     g_clear_pointer(&r2, psy_audio_channel_mapping_free);
+    g_clear_pointer(&m1, psy_audio_channel_mapping_free);
+    g_clear_pointer(&m2, psy_audio_channel_mapping_free);
+
+    g_clear_pointer(&map, psy_audio_channel_map_free);
 }
 
 int
