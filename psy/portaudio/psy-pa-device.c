@@ -621,6 +621,8 @@ pa_device_open(PsyAudioDevice *self, GError **error)
         psy_audio_device_set_name(self, dev_info->device_name);
     }
 
+    psy_audio_device_info_free(dev_info);
+
     PSY_AUDIO_DEVICE_CLASS(psy_pa_device_parent_class)->open(self, error);
 }
 
