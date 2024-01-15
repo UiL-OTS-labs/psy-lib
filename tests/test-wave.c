@@ -5,6 +5,30 @@
 
 PsyAudioDevice *g_device = NULL;
 
+// Useful to put a breakpoint on to get a backtrace to the origin of the error
+static void
+wave_log_handler(const gchar   *log_domain,
+                 GLogLevelFlags log_level,
+                 const gchar   *message,
+                 gpointer       data)
+{
+    (void) data;
+    if (g_strcmp0(log_domain, "Psy") == 0) {
+        volatile int a = 1;
+        (void) a;
+    }
+    else if (g_strcmp0(log_domain, "GObject") == 0) {
+        volatile int b = 2;
+        (void) b;
+    }
+    else {
+        volatile int c = 3;
+        (void) c;
+    }
+    // Pass info to the default log handler
+    g_log_default_handler(log_domain, log_level, message, data);
+}
+
 typedef struct {
     GMainLoop *loop;
     gboolean   started;
@@ -14,7 +38,11 @@ typedef struct {
 static int
 create_audio_device(void)
 {
-    g_device      = psy_audio_device_new();
+    g_log_set_default_handler(wave_log_handler, NULL);
+    g_device = psy_audio_device_new();
+    g_print("%s: g_device refcount = %u\n",
+            __func__,
+            ((GObject *) g_device)->ref_count);
     GError *error = NULL;
     // clang-format off
     g_object_set(g_device,
@@ -38,7 +66,16 @@ create_audio_device(void)
 static int
 destroy_audio_device(void)
 {
-    g_clear_object(&g_device);
+    psy_audio_device_close(g_device);
+    g_print("%s: g_device refcount = %u\n",
+            __func__,
+            ((GObject *) g_device)->ref_count);
+    g_object_unref(g_device);
+    g_print("%s: g_device refcount = %u\n",
+            __func__,
+            ((GObject *) g_device)->ref_count);
+    g_device = NULL;
+    g_log_set_default_handler(g_log_default_handler, NULL);
     return 0;
 }
 
@@ -69,6 +106,13 @@ wave_stopped(PsyStimulus *self, PsyTimePoint *tp, gpointer data)
     WaveStatus *status = data;
     status->stopped    = TRUE;
 
+    PsyTimePoint *start = psy_stimulus_get_start_time(self);
+    PsyDuration  *dur   = psy_time_point_subtract(tp, start);
+
+    g_print("Wave duration was: %lf seconds", psy_duration_get_seconds(dur));
+
+    g_object_unref(dur);
+
     g_main_loop_quit(status->loop);
 }
 
@@ -86,7 +130,7 @@ test_wave_create(void)
     // clang-format off
     g_object_get(
             tone,
-            "volume", & default_volume,
+            "volume", &default_volume,
             "wave-form", &wave,
             "freq", &default_freq,
             NULL);
@@ -137,12 +181,14 @@ test_wave_play(void)
     GError *error = NULL;
 
     g_object_set(tone, "num-channels", 2, NULL);
+    g_object_set(tone, "duration", dur, NULL);
+    g_object_set(tone, "running", TRUE, NULL);
 
     CU_ASSERT_PTR_NOT_NULL_FATAL(tone);
 
     WaveStatus status = {.loop = loop};
 
-    g_timeout_add(1000, quit_loop, loop);
+    g_timeout_add(2000, quit_loop, loop);
 
     g_signal_connect(tone, "started", G_CALLBACK(wave_started), &status);
     g_signal_connect(tone, "stopped", G_CALLBACK(wave_stopped), &status);
@@ -165,6 +211,8 @@ test_wave_play(void)
     g_object_unref(now);
     g_object_unref(clk);
     g_main_loop_unref(loop);
+
+    g_print("tone refcount = %u", ((GObject *) tone)->ref_count);
     g_object_unref(tone);
 
     CU_ASSERT_TRUE(status.started);

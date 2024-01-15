@@ -677,11 +677,16 @@ pa_device_close(PsyAudioDevice *self)
 {
     PsyPADevice *pa_self = PSY_PA_DEVICE(self);
 
-    PaError error = Pa_CloseStream(pa_self->stream);
-    if (error != paNoError)
-        g_critical("Unable to close stream: %s", Pa_GetErrorText(error));
-    else
-        pa_self->stream = NULL;
+    // This function is sometimes called recursively while closing the audio
+    // device.
+    if (pa_self->stream != NULL) {
+
+        PaError error = Pa_CloseStream(pa_self->stream);
+        if (error != paNoError)
+            g_critical("Unable to close stream: %s", Pa_GetErrorText(error));
+        else
+            pa_self->stream = NULL;
+    }
 
     PSY_AUDIO_DEVICE_CLASS(psy_pa_device_parent_class)->close(self);
 }

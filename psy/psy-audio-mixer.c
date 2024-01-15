@@ -79,10 +79,10 @@ static GParamSpec *audio_mixer_properties[NUM_PROPERTIES];
 /* ********** virtual(/private) functions ***************** */
 
 static void
-psy_audio_mixer_set_property(GObject      *object,
-                             guint         prop_id,
-                             const GValue *value,
-                             GParamSpec   *pspec)
+audio_mixer_set_property(GObject      *object,
+                         guint         prop_id,
+                         const GValue *value,
+                         GParamSpec   *pspec)
 {
     PsyAudioMixer        *self = PSY_AUDIO_MIXER(object);
     PsyAudioMixerPrivate *priv = psy_audio_mixer_get_instance_private(self);
@@ -100,10 +100,10 @@ psy_audio_mixer_set_property(GObject      *object,
 }
 
 static void
-psy_audio_mixer_get_property(GObject    *object,
-                             guint       prop_id,
-                             GValue     *value,
-                             GParamSpec *pspec)
+audio_mixer_get_property(GObject    *object,
+                         guint       prop_id,
+                         GValue     *value,
+                         GParamSpec *pspec)
 {
     PsyAudioMixer *self = PSY_AUDIO_MIXER(object);
     // PsyAudioMixerPrivate *priv = psy_audio_mixer_get_instance_private(self);
@@ -184,7 +184,7 @@ audio_mixer_constructed(GObject *self)
 }
 
 static void
-psy_audio_mixer_dispose(GObject *object)
+audio_mixer_dispose(GObject *object)
 {
     PsyAudioMixer *self = PSY_AUDIO_MIXER(object);
 
@@ -206,7 +206,7 @@ psy_audio_mixer_dispose(GObject *object)
 }
 
 static void
-psy_audio_mixer_finalize(GObject *object)
+audio_mixer_finalize(GObject *object)
 {
     PsyAudioMixer        *self = PSY_AUDIO_MIXER(object);
     PsyAudioMixerPrivate *priv = psy_audio_mixer_get_instance_private(self);
@@ -217,6 +217,13 @@ psy_audio_mixer_finalize(GObject *object)
     priv->out_queue = NULL;
 
     G_OBJECT_CLASS(psy_audio_mixer_parent_class)->finalize(object);
+}
+
+static void
+remove_stimulus(PsyAudioMixer *self, PsyAuditoryStimulus *stim)
+{
+    PsyAudioMixerPrivate *priv = psy_audio_mixer_get_instance_private(self);
+    g_ptr_array_remove(priv->stimuli, stim);
 }
 
 static gboolean
@@ -318,12 +325,13 @@ audio_mixer_process_output_frames(PsyAudioMixer *self, gint64 num_frames)
 
             const gfloat *source
                 = &temp[stim_index_sample_start] + mapping->mapped_source;
+            const gfloat *source_end
+                = source + num_frames_read * num_out_channels;
             gfloat *mapped_channel
                 = &samples[stim_index_sample_start] + mapping->sink_channel;
 
-            for (; source < source + num_frames_read * num_out_channels;
-                 source += num_out_channels,
-                 mapped_channel += num_out_channels) {
+            for (; source < source_end; source += num_out_channels,
+                                        mapped_channel += num_out_channels) {
                 *mapped_channel += *source;
             }
 
@@ -331,6 +339,27 @@ audio_mixer_process_output_frames(PsyAudioMixer *self, gint64 num_frames)
         }
 
         psy_audio_channel_map_free(channel_map);
+
+        if (num_frames_read == 0) { // stimulus is done
+            g_print("Removing stimulus", num_frames_read);
+            PsyTimePoint *the_end;
+            PsyDuration  *dur;
+
+            PsyTimePoint *start
+                = psy_stimulus_get_start_time(PSY_STIMULUS(stim));
+            gint64 num_frames
+                = psy_auditory_stimulus_get_num_frames_presented(stim);
+            dur = psy_num_audio_samples_to_duration(
+                num_frames, psy_audio_device_get_sample_rate(priv->device));
+
+            the_end = psy_time_point_add(start, dur);
+
+            psy_stimulus_set_is_finished(PSY_STIMULUS(stim), the_end);
+            remove_stimulus(self, stim);
+
+            g_object_unref(dur);
+            g_object_unref(the_end);
+        }
     }
 
     psy_audio_queue_push_samples(priv->out_queue, num_samples, &samples[0]);
@@ -361,10 +390,10 @@ psy_audio_mixer_class_init(PsyAudioMixerClass *klass)
 {
     GObjectClass *gobject_class = G_OBJECT_CLASS(klass);
 
-    gobject_class->set_property = psy_audio_mixer_set_property;
-    gobject_class->get_property = psy_audio_mixer_get_property;
-    gobject_class->finalize     = psy_audio_mixer_finalize;
-    gobject_class->dispose      = psy_audio_mixer_dispose;
+    gobject_class->set_property = audio_mixer_set_property;
+    gobject_class->get_property = audio_mixer_get_property;
+    gobject_class->finalize     = audio_mixer_finalize;
+    gobject_class->dispose      = audio_mixer_dispose;
     gobject_class->constructed  = audio_mixer_constructed;
 
     klass->process_audio = audio_mixer_process_audio;
@@ -547,7 +576,7 @@ psy_audio_mixer_set_audio_device(PsyAudioMixer *self, PsyAudioDevice *device)
 
     g_clear_object(&priv->device);
 
-    priv->device = g_object_ref(device);
+    priv->device = device;
 }
 
 /**

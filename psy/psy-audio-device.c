@@ -7,6 +7,9 @@
 #include "psy-config.h"
 #include "psy-enums.h"
 
+static void
+psy_audio_device_set_mixer(PsyAudioDevice *self, PsyAudioMixer *mixer);
+
 //#if defined HAVE_ALSA
 //    #include "alsa/psy-alsa-audio-device.h"
 //#endif
@@ -394,8 +397,16 @@ audio_device_open(PsyAudioDevice *self, GError **error)
 
     // Perhaps add an property to the audio device to that the mixer can use
     // than the client has some effect on the mixing buffer duration.
+    g_print("%s:%d,AudioDev->ref_count = %u\n",
+            __FILE__,
+            __LINE__,
+            G_OBJECT(self)->ref_count);
     PsyAudioMixer *mixer = psy_audio_mixer_new(self, psy_duration_new(0.020));
-    priv->mixer          = mixer;
+    g_print("%s:%d,AudioDev->ref_count = %u\n",
+            __FILE__,
+            __LINE__,
+            G_OBJECT(self)->ref_count);
+    psy_audio_device_set_mixer(self, mixer);
 
     priv->is_open = TRUE;
     g_info("Opened PsyAudioDevice %s", psy_audio_device_get_name(self));
@@ -429,7 +440,8 @@ static void
 audio_device_stop(PsyAudioDevice *self)
 {
     PsyAudioDevicePrivate *priv = psy_audio_device_get_instance_private(self);
-    priv->started               = FALSE;
+
+    priv->started = FALSE;
     g_info("Stopped PsyAudioDevice %s", psy_audio_device_get_name(self));
 }
 
@@ -765,6 +777,10 @@ void
 psy_audio_device_stop(PsyAudioDevice *self)
 {
     g_return_if_fail(PSY_IS_AUDIO_DEVICE(self));
+
+    PsyAudioDevicePrivate *priv = psy_audio_device_get_instance_private(self);
+    if (!priv->started)
+        return;
 
     PsyAudioDeviceClass *cls = PSY_AUDIO_DEVICE_GET_CLASS(self);
     g_return_if_fail(cls->stop);
@@ -1209,6 +1225,23 @@ psy_audio_device_clear_frame_count(PsyAudioDevice *self)
     g_return_if_fail(PSY_IS_AUDIO_DEVICE(self));
 
     priv->num_frames_presented = 0;
+}
+
+/**
+ * psy_audio_device_set_mixer:(skip)
+ * @mixer:(transfer full): The mixer for this audio device
+ *
+ * Stability:private
+ */
+static void
+psy_audio_device_set_mixer(PsyAudioDevice *self, PsyAudioMixer *mixer)
+{
+    g_return_if_fail(PSY_IS_AUDIO_DEVICE(self) && PSY_IS_AUDIO_MIXER(mixer));
+
+    PsyAudioDevicePrivate *priv = psy_audio_device_get_instance_private(self);
+
+    g_clear_object(&priv->mixer);
+    priv->mixer = mixer;
 }
 
 /**

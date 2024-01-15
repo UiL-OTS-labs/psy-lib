@@ -122,9 +122,9 @@ calculate_num_buffers(gint64 samples_per_buffer, gint64 num_desired_samples)
 }
 
 static void
-wave_create_gst_timeline(PsyGstStimulus *self)
+wave_create_gst_pipeline(PsyGstStimulus *self)
 {
-    guint samples_per_buffer = 1024;
+    guint samples_per_buffer = 256;
 
     PsyAudioDevice *device
         = psy_auditory_stimulus_get_audio_device(PSY_AUDITORY_STIMULUS(self));
@@ -204,19 +204,18 @@ wave_create_gst_timeline(PsyGstStimulus *self)
             "pipeline", pipeline,
             "app-sink", appsink,
             NULL);
+    // clang-format on
 
-    gint64 num_buffers = calculate_num_buffers (
-            samples_per_buffer,
-            num_frames
-            );
+    gint64 num_buffers = calculate_num_buffers(samples_per_buffer, num_frames);
 
     if (num_buffers > G_MAXINT) {
         num_buffers = G_MAXINT;
     }
-    
+
+    // clang-format off
     g_object_set(source,
             "volume", PSY_WAVE(self)->volume,
-            "samplesperbuffer", 1024,
+            "samplesperbuffer", samples_per_buffer,
             "num-buffers", (int)num_buffers,
             NULL);
     // clang-format on
@@ -254,7 +253,7 @@ psy_wave_class_init(PsyWaveClass *klass)
     as_class->get_flexible_num_channels = wave_get_flexible_num_channels;
 
     PsyGstStimulusClass *gst_class = PSY_GST_STIMULUS_CLASS(klass);
-    gst_class->create_gst_pipeline = wave_create_gst_timeline;
+    gst_class->create_gst_pipeline = wave_create_gst_pipeline;
 
     /**
      * PsyWave:wave-form:

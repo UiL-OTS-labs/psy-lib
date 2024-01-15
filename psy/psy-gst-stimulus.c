@@ -28,6 +28,7 @@
 typedef struct PsyGstStimulusPrivate {
     GstPipeline *pipeline;
     GstAppSink  *app_sink; // should be part of pipeline.
+    GArray      *sample_buffer;
     gboolean     running;
 } PsyGstStimulusPrivate;
 
@@ -103,6 +104,7 @@ psy_gst_stimulus_init(PsyGstStimulus *self)
 {
     PsyGstStimulusPrivate *priv = psy_gst_stimulus_get_instance_private(self);
     priv->pipeline              = NULL;
+    priv->sample_buffer         = g_array_new(FALSE, FALSE, sizeof(gfloat));
 }
 
 static void
@@ -111,10 +113,23 @@ gst_stimulus_dispose(GObject *self)
     PsyGstStimulusPrivate *priv
         = psy_gst_stimulus_get_instance_private(PSY_GST_STIMULUS(self));
 
-    g_clear_object(&priv->pipeline); // This will unref the appsink.
-    priv->app_sink = NULL;           // we'll mark it as NULL anyway.
+    if (priv->running) {
+        // disposes GStreamer pipeline
+        psy_gst_stimulus_set_running(PSY_GST_STIMULUS(self), FALSE);
+    }
 
     G_OBJECT_CLASS(psy_gst_stimulus_parent_class)->dispose(self);
+}
+
+static void
+gst_stimulus_finalize(GObject *self)
+{
+    PsyGstStimulusPrivate *priv
+        = psy_gst_stimulus_get_instance_private(PSY_GST_STIMULUS(self));
+
+    g_clear_pointer(&priv->sample_buffer, g_array_unref);
+
+    G_OBJECT_CLASS(psy_gst_stimulus_parent_class)->finalize(self);
 }
 
 static void
@@ -125,6 +140,9 @@ gst_stimulus_create_pipeline(PsyGstStimulus *self)
     g_assert(priv->pipeline);
     g_assert(priv->app_sink);
 
+    // set the pipeline to running
+    gst_element_set_state(GST_ELEMENT(priv->pipeline), GST_STATE_PLAYING);
+
     priv->running = (priv->pipeline != NULL && priv->app_sink != NULL);
 }
 
@@ -133,12 +151,90 @@ gst_stimulus_destroy_pipeline(PsyGstStimulus *self)
 {
     PsyGstStimulusPrivate *priv = psy_gst_stimulus_get_instance_private(self);
 
+    gst_element_set_state(GST_ELEMENT(priv->pipeline), GST_STATE_NULL);
+
     gst_object_unref(priv->pipeline);
 
     priv->app_sink = NULL;
     priv->pipeline = NULL;
 
     priv->running = FALSE;
+}
+
+static gboolean
+gst_stimulus_read_sample(PsyGstStimulus *self)
+{
+    PsyGstStimulusPrivate *priv = psy_gst_stimulus_get_instance_private(self);
+
+    GstSample *sample;
+    gboolean   ret    = FALSE;
+    GstBuffer *buffer = NULL;
+    GstMapInfo info   = {0};
+
+    if (!priv->app_sink) {
+        g_critical("priv->app_sink = NULL, did you create the GstPipeline?");
+        return FALSE;
+    }
+
+    sample = gst_app_sink_pull_sample(priv->app_sink);
+    if (!sample) {
+        return FALSE;
+    }
+
+    buffer = gst_sample_get_buffer(sample);
+    if (!buffer) {
+        goto clean_up;
+    }
+
+    gboolean mapped = gst_buffer_map(buffer, &info, GST_MAP_READ);
+    if (!mapped) {
+        goto clean_up;
+    }
+
+    gconstpointer audio_data = info.data;
+    guint audio_size = info.size / (sizeof(gfloat) / sizeof(info.data[0]));
+
+    g_array_append_vals(priv->sample_buffer, audio_data, audio_size);
+
+    gst_buffer_unmap(buffer, &info);
+
+    ret = TRUE;
+
+clean_up:
+    gst_sample_unref(sample);
+
+    return ret;
+}
+
+static guint
+gst_stimulus_read(PsyAuditoryStimulus *self, guint num_frames, gfloat *result)
+{
+    PsyGstStimulus        *gst_self = PSY_GST_STIMULUS(self);
+    PsyGstStimulusPrivate *priv
+        = psy_gst_stimulus_get_instance_private(gst_self);
+
+    gint64 num_channels = psy_auditory_stimulus_get_num_channels(self);
+    gint64 num_samples  = num_frames * num_channels;
+
+    while (num_samples > priv->sample_buffer->len) {
+        gboolean read_sample = gst_stimulus_read_sample(gst_self);
+        if (!read_sample)
+            break;
+    }
+
+    guint64 num_samples_written = 0;
+
+    gfloat *start = (float *) priv->sample_buffer->data;
+    gfloat *stop  = MIN(start + num_samples, start + priv->sample_buffer->len);
+
+    while (start < stop) {
+        *result++ = *start++;
+        num_samples_written++;
+    }
+
+    g_array_remove_range(priv->sample_buffer, 0, num_samples_written);
+
+    return num_samples_written / num_channels;
 }
 
 static void
@@ -149,6 +245,11 @@ psy_gst_stimulus_class_init(PsyGstStimulusClass *klass)
     obj_class->set_property = gst_stimulus_set_property;
     obj_class->get_property = gst_stimulus_get_property;
     obj_class->dispose      = gst_stimulus_dispose;
+    obj_class->finalize     = gst_stimulus_finalize;
+
+    PsyAuditoryStimulusClass *auditory_stim_class
+        = PSY_AUDITORY_STIMULUS_CLASS(klass);
+    auditory_stim_class->read = gst_stimulus_read;
 
     klass->create_gst_pipeline  = gst_stimulus_create_pipeline;
     klass->destroy_gst_pipeline = gst_stimulus_destroy_pipeline;
@@ -188,8 +289,8 @@ psy_gst_stimulus_class_init(PsyGstStimulusClass *klass)
      *
      * This boolean reflects whether the pipeline is running. When the
      * PsyGstStimulus is set to running, the pipeline will start to
-     * decode/generate the audio in the background. Then it should be possible
-     * to fetch the audio quickly.
+     * decode/generate the audio in the background. Then it should be
+     * possible to fetch the audio quickly.
      */
     gst_stimulus_properties[PROP_RUNNING]
         = g_param_spec_boolean("running",
@@ -208,8 +309,8 @@ psy_gst_stimulus_class_init(PsyGstStimulusClass *klass)
  * @self:
  *
  * The method that will create the GstPipeline use by this instance. This
- * instance will need an pipeline in order to manage and retrieve information
- * about the media.
+ * instance will need an pipeline in order to manage and retrieve
+ * information about the media.
  *
  * Returns: TRUE when successful, FALSE otherwise.
  */
@@ -281,8 +382,8 @@ psy_gst_stimulus_set_app_sink(PsyGstStimulus *self, GstAppSink *app_sink)
  * before you set it to running. Some deriving classes need to know the
  * frequency of a wave form, others might need a filename in order to
  * get the audio from a file.
- * When you are done setting the required parameters, you can set the running
- * property to true and it will start the pipeline.
+ * When you are done setting the required parameters, you can set the
+ * running property to true and it will start the pipeline.
  */
 void
 psy_gst_stimulus_set_running(PsyGstStimulus *self, gboolean running)
@@ -308,6 +409,9 @@ psy_gst_stimulus_set_running(PsyGstStimulus *self, gboolean running)
     }
     else {
         cls->destroy_gst_pipeline(self);
+        g_assert(priv->pipeline == NULL);
+        g_assert(priv->app_sink == NULL);
+        g_assert(priv->running == FALSE);
     }
 }
 
