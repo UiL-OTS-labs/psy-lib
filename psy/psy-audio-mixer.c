@@ -190,7 +190,8 @@ audio_mixer_dispose(GObject *object)
 
     PsyAudioMixerPrivate *priv = psy_audio_mixer_get_instance_private(self);
 
-    g_clear_object(&priv->device);
+    // We don't own a ref on priv->device, the device owns us.
+    // g_clear_object(&priv->device);
 
     if (priv->stimuli) {
         g_ptr_array_unref(priv->stimuli);
@@ -574,7 +575,8 @@ psy_audio_mixer_set_audio_device(PsyAudioMixer *self, PsyAudioDevice *device)
 
     PsyAudioMixerPrivate *priv = psy_audio_mixer_get_instance_private(self);
 
-    g_clear_object(&priv->device);
+    // We don't own a device, it owns us so no need to unref
+    // g_clear_object(&priv->device);
 
     priv->device = device;
 }
