@@ -1,33 +1,10 @@
 
 
+#include "unit-test-utilities.h"
 #include <CUnit/CUnit.h>
 #include <psylib.h>
 
 PsyAudioDevice *g_device = NULL;
-
-// Useful to put a breakpoint on to get a backtrace to the origin of the error
-static void
-wave_log_handler(const gchar   *log_domain,
-                 GLogLevelFlags log_level,
-                 const gchar   *message,
-                 gpointer       data)
-{
-    (void) data;
-    if (g_strcmp0(log_domain, "Psy") == 0) {
-        volatile int a = 1;
-        (void) a;
-    }
-    else if (g_strcmp0(log_domain, "GObject") == 0) {
-        volatile int b = 2;
-        (void) b;
-    }
-    else {
-        volatile int c = 3;
-        (void) c;
-    }
-    // Pass info to the default log handler
-    g_log_default_handler(log_domain, log_level, message, data);
-}
 
 typedef struct {
     GMainLoop *loop;
@@ -38,12 +15,11 @@ typedef struct {
 static int
 create_audio_device(void)
 {
-    g_log_set_default_handler(wave_log_handler, NULL);
-    g_device = psy_audio_device_new();
-    g_print("%s: g_device refcount = %u\n",
-            __func__,
-            ((GObject *) g_device)->ref_count);
-    GError *error = NULL;
+    set_log_handler_file("test-wave.txt");
+
+    g_device         = psy_audio_device_new();
+    gchar  *dev_name = NULL;
+    GError *error    = NULL;
     // clang-format off
     g_object_set(g_device,
             "num-output-channels", 2,
@@ -52,11 +28,14 @@ create_audio_device(void)
             NULL);
     // clang-format on
     psy_audio_device_open(g_device, &error);
-
     if (error) {
         g_critical("Unable to open audio device: %s", error->message);
         return 1;
     }
+
+    g_object_get(g_device, "name", &dev_name, NULL);
+    g_print("test-wave uses audio device: %s\n", dev_name);
+    g_free(dev_name);
 
     // The tests that are playing audio should start the device itself
     psy_audio_device_stop(g_device);
@@ -75,7 +54,9 @@ destroy_audio_device(void)
             __func__,
             ((GObject *) g_device)->ref_count);
     g_device = NULL;
-    g_log_set_default_handler(g_log_default_handler, NULL);
+
+    set_log_handler_file(NULL);
+
     return 0;
 }
 
@@ -188,7 +169,7 @@ test_wave_play(void)
 
     WaveStatus status = {.loop = loop};
 
-    g_timeout_add(2000, quit_loop, loop);
+    g_timeout_add(1000, quit_loop, loop);
 
     g_signal_connect(tone, "started", G_CALLBACK(wave_started), &status);
     g_signal_connect(tone, "stopped", G_CALLBACK(wave_stopped), &status);
@@ -219,6 +200,63 @@ test_wave_play(void)
     CU_ASSERT_TRUE(status.stopped);
 }
 
+static void
+test_wave_play_noise(void)
+{
+    PsyWave      *tone     = psy_wave_new(g_device);
+    GMainLoop    *loop     = g_main_loop_new(NULL, FALSE);
+    PsyClock     *clk      = psy_clock_new();
+    PsyTimePoint *now      = psy_clock_now(clk);
+    PsyDuration  *dur      = psy_duration_new(.250);
+    PsyTimePoint *tp_start = psy_time_point_add(now, dur);
+
+    CU_ASSERT_PTR_NOT_NULL_FATAL(tone);
+
+    PsyWaveForm wave = PSY_WAVE_FORM_WHITE_UNIFORM_NOISE;
+
+    GError *error = NULL;
+
+    // clang-format off
+    g_object_set(tone,
+            "num-channels", 2, 
+            "duration", dur,
+            "wave-form", wave,
+            "running", TRUE,
+            NULL);
+    // clang-format on
+
+    WaveStatus status = {.loop = loop};
+
+    g_timeout_add(1000, quit_loop, loop);
+
+    g_signal_connect(tone, "started", G_CALLBACK(wave_started), &status);
+    g_signal_connect(tone, "stopped", G_CALLBACK(wave_stopped), &status);
+
+    psy_audio_device_start(g_device, &error);
+    CU_ASSERT_PTR_NULL(error);
+    if (error) {
+        g_printerr("Unable to start the audio device: %s\n", error->message);
+        g_clear_error(&error);
+    }
+
+    psy_stimulus_play_for(PSY_STIMULUS(tone), tp_start, dur);
+
+    g_main_loop_run(loop);
+
+    psy_audio_device_stop(g_device);
+
+    g_object_unref(tp_start);
+    g_object_unref(dur);
+    g_object_unref(now);
+    g_object_unref(clk);
+    g_main_loop_unref(loop);
+
+    g_object_unref(tone);
+
+    CU_ASSERT_TRUE(status.started);
+    CU_ASSERT_TRUE(status.stopped);
+}
+
 int
 add_wave_suite(void)
 {
@@ -238,6 +276,10 @@ add_wave_suite(void)
         return 1;
 
     test = CU_ADD_TEST(suite, test_wave_play);
+    if (!test)
+        return 1;
+
+    test = CU_ADD_TEST(suite, test_wave_play_noise);
     if (!test)
         return 1;
 

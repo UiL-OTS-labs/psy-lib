@@ -16,6 +16,8 @@ static gboolean verbose;
 static gboolean g_save_images = FALSE;
 static gint     g_port_num    = -1;
 static gint64   g_seed        = -1;
+static gchar   *g_log_domain  = NULL;
+static gchar   *g_log_level   = "info";
 
 static const char *g_audio_backend = "portaudio";
 
@@ -33,6 +35,10 @@ GOptionEntry options[] = {
         "Also run the audio tests", NULL},
     {"audio-backend",  'b', G_OPTION_FLAG_NONE, G_OPTION_ARG_STRING,
         &g_audio_backend, "the audio backend to use", NULL},
+    {"log-domain",  'd', G_OPTION_FLAG_NONE, G_OPTION_ARG_STRING,
+        &g_log_domain, "the log domain to monitor", NULL},
+    {"log-level",  'l', G_OPTION_FLAG_NONE, G_OPTION_ARG_STRING,
+        &g_log_level, "the log level debug, info, message, warning or critical", "info"},
     {0,},
 };
 
@@ -146,6 +152,39 @@ deinitialize_libs(void)
     Pa_Terminate();
 }
 
+static void
+setup_log_handler(void)
+{
+    install_log_handler();
+    GLogLevelFlags level = G_LOG_LEVEL_INFO;
+
+    if (g_log_domain)
+        set_log_handler_domain(g_log_domain);
+
+    if (g_log_level) {
+        if (g_strcmp0(g_log_level, "debug") == 0) {
+            level = G_LOG_LEVEL_DEBUG;
+        }
+        else if (g_strcmp0(g_log_level, "info") == 0) {
+            level = G_LOG_LEVEL_INFO;
+        }
+        else if (g_strcmp0(g_log_level, "message") == 0) {
+            level = G_LOG_LEVEL_MESSAGE;
+        }
+        else if (g_strcmp0(g_log_level, "warning") == 0) {
+            level = G_LOG_LEVEL_WARNING;
+        }
+        else if (g_strcmp0(g_log_level, "critical") == 0) {
+            level = G_LOG_LEVEL_CRITICAL;
+        }
+        else {
+            level = G_LOG_LEVEL_INFO;
+        }
+    }
+
+    set_log_handler_level(level);
+}
+
 int
 main(int argc, char **argv)
 {
@@ -160,6 +199,8 @@ main(int argc, char **argv)
         g_option_context_free(context);
         return EXIT_FAILURE;
     }
+
+    setup_log_handler();
 
     if (g_seed < 0) {
         if (!init_random()) {
@@ -197,6 +238,9 @@ main(int argc, char **argv)
 
     deinitialize_libs();
     deinitialize_random();
+
+    remove_log_handler(); // clear logging stuff.
+
     g_option_context_free(context);
 
     return n_test_failed != 0;
