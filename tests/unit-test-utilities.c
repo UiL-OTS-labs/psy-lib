@@ -119,16 +119,15 @@ psy_unit_test_logger(GLogLevelFlags   log_level,
     const GLogField *field = NULL;
     g_mutex_lock(&log_mutex);
 
+    if (g_log_data.level < log_level)
+        goto exit;
+
     for (guint i = 0; i < num_fields; i++) { // extract log_domain
         field = &fields[i];
         if (g_strcmp0(field->key, "GLIB_DOMAIN") == 0)
             break;
     }
-
     g_assert(field);
-
-    if (g_log_data.level < log_level)
-        goto exit;
 
     if (g_log_data.domain) {
         size_t len = strlen(g_log_data.domain);
