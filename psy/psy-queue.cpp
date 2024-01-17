@@ -168,4 +168,23 @@ psy_audio_queue_push_samples(PsyAudioQueue *self,
     return ret;
 }
 
+/**
+ * psy_audio_queue_clear:
+ * @self: The queue to clear
+ *
+ * Removes all audio samples from the queue and makes sure it's empty. It's
+ * probably wise to do not call this method when the audio callback is running.
+ * You'll might end up with warnings that the callback can't process the
+ * fetch samples from the buffer etc.
+ *
+ * The samples are removed from this queue, however, another thread might
+ * push samples to this queue before this call is finished.
+ */
+void
+psy_audio_queue_clear(PsyAudioQueue *self)
+{
+    g_return_if_fail(self != NULL);
+    self->p_queue->reset();
+}
+
 #endif

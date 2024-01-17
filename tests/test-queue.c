@@ -45,6 +45,29 @@ queue_push_pop(void)
     psy_audio_queue_free(queue);
 }
 
+static void
+queue_clear(void)
+{
+    float          sample = .5;
+    PsyAudioQueue *queue  = psy_audio_queue_new(16);
+
+    psy_audio_queue_push_samples(queue, 1, &sample);
+
+    CU_ASSERT_EQUAL(psy_audio_queue_size(queue), 1);
+
+    psy_audio_queue_push_samples(queue, 1, &sample);
+    psy_audio_queue_push_samples(queue, 1, &sample);
+    psy_audio_queue_push_samples(queue, 1, &sample);
+
+    CU_ASSERT_EQUAL(psy_audio_queue_size(queue), 4);
+
+    psy_audio_queue_clear(queue);
+
+    CU_ASSERT_EQUAL(psy_audio_queue_size(queue), 0);
+
+    psy_audio_queue_free(queue);
+}
+
 typedef struct PushPullContext {
 
     float *data_in;
@@ -157,6 +180,10 @@ add_queue_suite(void)
         return 1;
 
     test = CU_ADD_TEST(suite, queue_push_pop);
+    if (!test)
+        return 1;
+
+    test = CU_ADD_TEST(suite, queue_clear);
     if (!test)
         return 1;
 
