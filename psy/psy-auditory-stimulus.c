@@ -9,14 +9,20 @@
  * This is the base class for auditory stimuli. A PsyAuditoryStimulus is a
  * stimulus that is going to be presented at an instance of
  * [class@PsyAudioDevice]. The Base class sets up the frame work for when a
- * stimulus is presented and also where. Additionally it supports, some scaling
- * and rotation of a stimulus. This contains all the parameters to setup a Model
- * matrix for this stimulus. A auditory stimulus also supports a color, so that
- * artist know in what color stimuli should be presented.
+ * stimulus is presented and on which audio device.
+ *
+ * This is an base class for all auditory stimuli in psylib, it contains
+ * the information about how this stimulus should be scheduled to play. It
+ * expresses the number of channels this stimulus represents and it links
+ * it to one specific audio device. You may use the channel map to specify
+ * how the input channels from this stimulus are going to be mapped to the
+ * channels of the audio device. The private class [class@AudioMixer] will
+ * use the channel map in order to do so. You can attach a custom
+ * [struct@AudioChannelMap] when you connect to the
+ * [signal@AuditoryStimulus::add-channel-map].
  *
  * Instances of [class@AuditoryStimulus] are scheduled when the stimulus is
  * played.
- *
  */
 
 typedef struct PsyAuditoryStimulusPrivate {
@@ -35,7 +41,6 @@ typedef struct PsyAuditoryStimulusPrivate {
                         // as generated waveform such as Noise or Sine waves.
     PsyAudioChannelMap *channel_map; // The channel map to map source channels
                                      // to the output channels.
-    GArray *sample_array;
 } PsyAuditoryStimulusPrivate;
 
 G_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE(PsyAuditoryStimulus,
