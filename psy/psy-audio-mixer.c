@@ -303,42 +303,66 @@ audio_mixer_process_output_frames(PsyAudioMixer *self, gint64 num_frames)
 
         PsyAuditoryStimulus *stim = priv->stimuli->pdata[i];
 
-        gint64 stim_start, stim_dur, stim_stop;
+        gint64 stim_start, stim_dur, stim_stop, stim_presented;
+        guint  num_src_channels = psy_auditory_stimulus_get_num_channels(stim);
 
-        stim_start = psy_auditory_stimulus_get_start_frame(stim);
-        stim_dur   = psy_auditory_stimulus_get_num_frames(stim);
-        stim_stop  = stim_start + stim_dur;
+        stim_start     = psy_auditory_stimulus_get_start_frame(stim);
+        stim_dur       = psy_auditory_stimulus_get_num_frames(stim);
+        stim_presented = psy_auditory_stimulus_get_num_frames_presented(stim);
+        stim_stop      = stim_start + stim_dur;
 
-        g_debug("stimulus %u: start = %ld, dur = %ld stop = %ld",
-                priv->stimuli->len,
-                stim_start,
-                stim_dur,
-                stim_stop);
+        g_debug(
+            "stimulus %u: start = %ld, presented = %ld dur = %ld stop = %ld",
+            priv->stimuli->len,
+            stim_start,
+            stim_presented,
+            stim_dur,
+            stim_stop);
 
         // Check whether we need to do some work for this stimulus
         if (!stimulus_overlaps_window(
-                window_start, window_stop, stim_start, stim_stop))
-            continue;
+                window_start, window_stop, stim_start, stim_stop)) {
+            if (stim_stop < window_start) {
+                g_critical("Mixer encountered stimulus that is in the past "
+                           "window_start = %ld, stim_stop = %ld, removing it.",
+                           window_start,
+                           stim_stop);
+                g_ptr_array_add(priv->to_remove, stim);
+            }
 
-        PsyAudioChannelMap *channel_map
-            = psy_auditory_stimulus_get_channel_map(stim);
-
-        memset(temp, 0, sizeof(temp));
-
-        if (!channel_map) {
-            g_critical("%s: Encountered PsyAuditoryStimulus without "
-                       "channel_map",
-                       __func__);
             continue;
         }
+
+        memset(
+            temp, 0, MIN((gint64) sizeof(temp), num_frames * num_out_channels));
 
         gint64 stim_index_frame_start = MAX(0, stim_start - window_start);
         gint64 stim_index_sample_start
             = stim_index_frame_start * num_out_channels;
+        gint64 num_frames_in_stim = stim_dur - stim_presented;
+
         gint64 num_stim_frames = num_frames - stim_index_frame_start;
+        num_stim_frames        = MIN(num_stim_frames, num_frames_in_stim);
+
+        g_debug("if_start %ld, is_start %ld, ns_frames %ld, nf_left %ld",
+                stim_index_frame_start,
+                stim_index_sample_start,
+                num_stim_frames,
+                num_frames_in_stim);
 
         gint64 num_frames_read = psy_auditory_stimulus_read(
             stim, num_stim_frames, &temp[stim_index_sample_start]);
+
+        PsyAudioChannelMap *channel_map
+            = psy_auditory_stimulus_get_channel_map(stim);
+
+        if (!channel_map) {
+            g_critical("%s: Encountered PsyAuditoryStimulus without "
+                       "channel_map, removing stimulus",
+                       __func__);
+            g_ptr_array_remove(priv->to_remove, stim);
+            continue;
+        }
 
         guint num_mappings = psy_audio_channel_map_get_size(channel_map);
         for (guint map = 0; map < num_mappings; map++) {
@@ -348,11 +372,11 @@ audio_mixer_process_output_frames(PsyAudioMixer *self, gint64 num_frames)
             const gfloat *source
                 = &temp[stim_index_sample_start] + mapping->mapped_source;
             const gfloat *source_end
-                = source + num_frames_read * num_out_channels;
+                = source + num_frames_read * num_src_channels;
             gfloat *mapped_channel
                 = &samples[stim_index_sample_start] + mapping->sink_channel;
 
-            for (; source < source_end; source += num_out_channels,
+            for (; source < source_end; source += num_src_channels,
                                         mapped_channel += num_out_channels) {
                 *mapped_channel += *source;
             }
