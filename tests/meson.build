@@ -39,6 +39,19 @@ picture_test = executable(
     dependencies : [psy_dep]
 )
 
+#preprocessor args for the unit tests
+UNIT_PP_ARGS = [
+    '-DG_LOG_DOMAIN="Psy-Unit"',
+    '-DG_LOG_USE_STRUCTURED'
+]
+
+buildtype = get_option('buildtype')
+if buildtype != 'debug' and buildtype != 'debugoptimized'
+    # flags for release builds (disable asserts)
+    UNIT_PP_ARGS += '-DG_DISABLE_ASSERTS=1'
+    UNIT_PP_ARGS += '-DNDEBUG=1'
+endif
+
 unit_test = executable (
     'unit-test',
     files (
@@ -65,7 +78,9 @@ unit_test = executable (
         'vector3-test.c',
         'vector4-test.c',
     ),
-    dependencies : [psy_dep, cunit_dep]
+    dependencies : [psy_dep, cunit_dep],
+    c_args : UNIT_PP_ARGS,
+    cpp_args : UNIT_PP_ARGS,
 )
 
 test('unit-test', unit_test)
