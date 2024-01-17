@@ -77,17 +77,20 @@ test_audio_channel_map_strategy_default21(void)
     PsyAudioChannelMap *map
         = psy_audio_channel_map_new_strategy(num_sinks, num_sources, strategy);
 
-    CU_ASSERT_EQUAL(psy_audio_channel_map_get_size(map), 1);
     CU_ASSERT_PTR_NOT_NULL_FATAL(map);
+    CU_ASSERT_EQUAL(psy_audio_channel_map_get_size(map), 2);
 
     PsyAudioChannelMapping *m0 = psy_audio_channel_map_get_mapping(map, 0);
     PsyAudioChannelMapping *m1 = psy_audio_channel_map_get_mapping(map, 1);
 
     CU_ASSERT_PTR_NOT_NULL_FATAL(m0);
-    CU_ASSERT_PTR_NULL(m1);
+    CU_ASSERT_PTR_NOT_NULL_FATAL(m1);
 
     CU_ASSERT_EQUAL(m0->sink_channel, 0);
     CU_ASSERT_EQUAL(m0->mapped_source, 0);
+
+    CU_ASSERT_EQUAL(m1->sink_channel, 1);
+    CU_ASSERT_EQUAL(m1->mapped_source, 0);
 
     psy_audio_channel_map_free(map);
     psy_audio_channel_mapping_free(m0);

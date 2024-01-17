@@ -71,6 +71,11 @@ typedef enum {
 
 /**
  * PsyAudioChannelStrategy:
+ * @PSY_AUDIO_CHANNEL_STRATEGY_NONE: When there are an equal number of inputs
+ *     and outputs the intput-n is matched to output-n. However, when
+ *     there is a mismatch between the number only channels
+ *     0 to min(num_inputs, num_outputs) are mapped, hence some channels will
+ *     not be mapped at all, and they are stripped from the final result.
  * @PSY_AUDIO_CHANNEL_STRATEGY_DUPLICATE_INPUTS: When a PsyAudioOutputDevice has
  *     more channels available that there are in the source audio, channels are
  *     duplicated in order to write to all outputs, mono audio signals will
@@ -86,8 +91,7 @@ typedef enum {
  *     Choose your own mapping using e.g.
  *     [method@AuditoryStimulus.set_channel_map]
  * @PSY_AUDIO_CHANNEL_STRATEGY_DEFAULT: The default channel strategy is a
- *     mix between PSY_AUDIO_CHANNEL_STRATEGY_DUPLICATE_INPUTS and
- *     PSY_AUDIO_CHANNEL_STRATEGY_STRIP_TRAILING_INPUTS
+ *     the same as [enum@AudioChannelStrategy.DUPLICATE_INPUTS]
  *
  * With these flags you can specify the default behavior when there is a mis-
  * match in the number of AudioSource outputs and AudioSink inputs.
@@ -98,10 +102,12 @@ typedef enum {
  * speakers of an stereo audio output.
  */
 typedef enum {
-    PSY_AUDIO_CHANNEL_STRATEGY_DEFAULT             = 0,
+    PSY_AUDIO_CHANNEL_STRATEGY_NONE                = 0,
     PSY_AUDIO_CHANNEL_STRATEGY_DUPLICATE_INPUTS    = 1 << 0,
     PSY_AUDIO_CHANNEL_STRATEGY_MIX_TRAILING_INPUTS = 1 << 1,
     PSY_AUDIO_CHANNEL_STRATEGY_CUSTOM              = 1 << 2,
+    PSY_AUDIO_CHANNEL_STRATEGY_DEFAULT
+    = PSY_AUDIO_CHANNEL_STRATEGY_DUPLICATE_INPUTS
 } PsyAudioChannelStrategy;
 
 /**
