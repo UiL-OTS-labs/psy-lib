@@ -84,6 +84,9 @@ psy_audio_mixer_write_frames(PsyAudioMixer *self,
 G_MODULE_EXPORT void
 psy_audio_mixer_process_audio(PsyAudioMixer *self);
 
+G_MODULE_EXPORT void
+psy_audio_mixer_reset(PsyAudioMixer *self);
+
 G_END_DECLS
 
 #endif

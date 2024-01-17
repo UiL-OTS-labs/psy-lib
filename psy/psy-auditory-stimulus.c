@@ -15,16 +15,8 @@
  * artist know in what color stimuli should be presented.
  *
  * Instances of [class@AuditoryStimulus] are scheduled when the stimulus is
- * played. When, the stimulus is scheduled, the audio_device will call the
- * [method@Psy.AuditoryStimulus.create_artist], which should instantiate the
- * artist. The artist will be responsible for drawing the stimulus. The
- * PsyAuditoryStimulus is merely a dataholder.
+ * played.
  *
- * Derived instances may use the framework setup by [class@AuditoryStimulus]
- * and [class@Artist] to do drawing. The base class PsyAuditoryStimulus and
- * PsyArtist work together, so that deriving class can draw around the origin,
- * PsyAuditoryStimulus and PsyArtist make sure that the stimuli are positioned
- * on the right place.
  */
 
 typedef struct PsyAuditoryStimulusPrivate {
@@ -216,18 +208,23 @@ auditory_stimulus_add_channel_map(PsyAuditoryStimulus *self,
                                   gpointer             data)
 {
     (void) data;
-    guint num_stim_channels = psy_auditory_stimulus_get_num_channels(self);
-    guint num_device_channels
-        = psy_audio_device_get_num_output_channels(device);
+    PsyAuditoryStimulusPrivate *priv
+        = psy_auditory_stimulus_get_instance_private(self);
 
-    PsyAudioChannelMap *map = psy_audio_channel_map_new_strategy(
-        num_device_channels,
-        num_stim_channels,
-        PSY_AUDIO_CHANNEL_STRATEGY_DEFAULT);
+    if (!priv->channel_map) {
+        guint num_stim_channels = psy_auditory_stimulus_get_num_channels(self);
+        guint num_device_channels
+            = psy_audio_device_get_num_output_channels(device);
 
-    psy_auditory_stimulus_set_channel_map(self, map); // transfer none
+        PsyAudioChannelMap *map = psy_audio_channel_map_new_strategy(
+            num_device_channels,
+            num_stim_channels,
+            PSY_AUDIO_CHANNEL_STRATEGY_DEFAULT);
 
-    psy_audio_channel_map_free(map);
+        psy_auditory_stimulus_set_channel_map(self, map); // transfer none
+
+        psy_audio_channel_map_free(map);
+    }
 }
 
 static void
@@ -374,9 +371,11 @@ psy_auditory_stimulus_class_init(PsyAuditoryStimulusClass *klass)
      * @device: an instance of [class@PsyAudioDevice]
      *
      * This signal is emitted when the stimulus is scheduled, by then
-     * all parameters should be fixed/known and may a channel map be
-     * attached to transfer channels of this stimulus to the channels
-     * of the PsyAudioDevice.
+     * all parameters should be fixed/known and all info should be available.
+     * The default signal handler will attach a audio channel map with
+     * [enum.PsyAudioChannelStrategy.DEFAULT] which makes sure that mono
+     * audio will be played on both speakers of a stereo setup. And it will
+     * only attach a ChannelMap when none has been set previously.
      */
     auditory_stimulus_signals[SIG_ADD_CHANNEL_MAP] = g_signal_new(
         "add-channel-map",
@@ -675,7 +674,12 @@ psy_auditory_stimulus_read(PsyAuditoryStimulus *self,
 
     PsyAuditoryStimulusClass *cls = PSY_AUDITORY_STIMULUS_GET_CLASS(self);
 
+    PsyAuditoryStimulusPrivate *priv
+        = psy_auditory_stimulus_get_instance_private(self);
+
     g_return_val_if_fail(cls->read != NULL, 0);
 
-    return cls->read(self, num_frames, result);
+    guint num_read = cls->read(self, num_frames, result);
+    priv->num_frames_presented += num_read;
+    return num_read;
 }

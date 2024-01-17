@@ -433,7 +433,12 @@ audio_device_start(PsyAudioDevice *self, GError **error)
     PsyAudioDevicePrivate *priv = psy_audio_device_get_instance_private(self);
     priv->num_frames_presented  = 0;
     priv->started               = TRUE;
-    g_info("Started PsyAudioDevice %s", psy_audio_device_get_name(self));
+
+    psy_audio_mixer_reset(priv->mixer);
+
+    // Log this from derived class as the derived class should first chain
+    // up to the audio device in order to reset the mixer etc.
+    // g_info("Started PsyAudioDevice %s", psy_audio_device_get_name(self));
 }
 
 static void
@@ -759,6 +764,9 @@ psy_audio_device_start(PsyAudioDevice *self, GError **error)
     g_return_if_fail(PSY_IS_AUDIO_DEVICE(self));
     g_return_if_fail(!error || *error == NULL);
 
+    if (psy_audio_device_get_started(self))
+        return;
+
     PsyAudioDeviceClass *cls = PSY_AUDIO_DEVICE_GET_CLASS(self);
     g_return_if_fail(cls->start);
 
@@ -1020,6 +1028,13 @@ psy_audio_device_get_started(PsyAudioDevice *self)
 /**
  * psy_audio_device_set_started:
  *
+ * Emits the signal that the callback is started. This function should
+ * not be called from the audio callback as either invoking another context
+ * might block or handeling the signal.
+ * TODO It should be investigated whether it makes sense to indirectly invoke
+ * the main context or we should do this directly e.g. evoke
+ * audio_device_emit_started directly.
+ *
  * stability:private
  */
 void
@@ -1154,7 +1169,7 @@ psy_audio_device_set_buffer_duration(PsyAudioDevice *self,
  * to the DAC (Digital to Analog Converter) for output or from the ADC
  * (Analog to Digital Converter) for input. These timepoints.
  *
- * Returns: TRUE when this call was successfull, may be false when the device
+ * Returns: TRUE when this call was successful, may be false when the device
  *          isn't running and no known frames have been presented/recorded.
  */
 gboolean

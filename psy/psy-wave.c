@@ -122,9 +122,26 @@ calculate_num_buffers(gint64 samples_per_buffer, gint64 num_desired_samples)
 }
 
 static void
+wave_set_source_properties(PsyWave *self, GstElement *source)
+{
+    double freq      = self->freq;
+    int    wave_form = self->wave_form;
+    double volume    = self->volume;
+
+    // clang-format off
+    g_object_set(source,
+                 "volume", volume,
+                 "wave", wave_form,
+                 "freq", freq,
+                 NULL);
+    // clang-format on
+}
+
+static void
 wave_create_gst_pipeline(PsyGstStimulus *self)
 {
-    guint samples_per_buffer = 256;
+    PsyWave *wave_self          = PSY_WAVE(self);
+    guint    samples_per_buffer = 1024;
 
     PsyAudioDevice *device
         = psy_auditory_stimulus_get_audio_device(PSY_AUDITORY_STIMULUS(self));
@@ -135,6 +152,8 @@ wave_create_gst_pipeline(PsyGstStimulus *self)
     gint  sample_rate = psy_audio_device_get_sample_rate(device);
     guint channels
         = psy_auditory_stimulus_get_num_channels(PSY_AUDITORY_STIMULUS(self));
+
+    g_return_if_fail(channels <= G_MAXINT);
 
     if (channels < 1 || channels > G_MAXINT) {
         g_critical(
@@ -157,6 +176,8 @@ wave_create_gst_pipeline(PsyGstStimulus *self)
 
     GstElement *source = gst_element_factory_make("audiotestsrc", "source");
     GstElement *sink   = gst_element_factory_make("appsink", "sink");
+
+    wave_set_source_properties(wave_self, source);
 
 #ifndef NDEBUG
     g_assert(g_object_is_floating(sink));

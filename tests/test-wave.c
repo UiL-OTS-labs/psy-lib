@@ -34,7 +34,7 @@ create_audio_device(void)
     }
 
     g_object_get(g_device, "name", &dev_name, NULL);
-    g_print("test-wave uses audio device: %s\n", dev_name);
+    g_message("test-wave uses audio device: %s", dev_name);
     g_free(dev_name);
 
     // The tests that are playing audio should start the device itself
@@ -46,13 +46,13 @@ static int
 destroy_audio_device(void)
 {
     psy_audio_device_close(g_device);
-    g_print("%s: g_device refcount = %u\n",
-            __func__,
-            ((GObject *) g_device)->ref_count);
+    g_message("%s: g_device refcount = %u",
+              __func__,
+              ((GObject *) g_device)->ref_count);
     g_object_unref(g_device);
-    g_print("%s: g_device refcount = %u\n",
-            __func__,
-            ((GObject *) g_device)->ref_count);
+    g_message("%s: g_device refcount = %u",
+              __func__,
+              ((GObject *) g_device)->ref_count);
     g_device = NULL;
 
     set_log_handler_file(NULL);
@@ -169,7 +169,7 @@ test_wave_play(void)
 
     WaveStatus status = {.loop = loop};
 
-    g_timeout_add(1000, quit_loop, loop);
+    g_timeout_add(500, quit_loop, loop);
 
     g_signal_connect(tone, "started", G_CALLBACK(wave_started), &status);
     g_signal_connect(tone, "stopped", G_CALLBACK(wave_stopped), &status);
@@ -193,7 +193,7 @@ test_wave_play(void)
     g_object_unref(clk);
     g_main_loop_unref(loop);
 
-    g_print("tone refcount = %u", ((GObject *) tone)->ref_count);
+    g_message("tone refcount = %u", ((GObject *) tone)->ref_count);
     g_object_unref(tone);
 
     CU_ASSERT_TRUE(status.started);
@@ -218,16 +218,17 @@ test_wave_play_noise(void)
 
     // clang-format off
     g_object_set(tone,
-            "num-channels", 2, 
+            "num-channels", 1, 
             "duration", dur,
             "wave-form", wave,
-            "running", TRUE,
             NULL);
     // clang-format on
 
+    psy_gst_stimulus_set_running(PSY_GST_STIMULUS(tone), TRUE);
+
     WaveStatus status = {.loop = loop};
 
-    g_timeout_add(1000, quit_loop, loop);
+    g_timeout_add(500, quit_loop, loop);
 
     g_signal_connect(tone, "started", G_CALLBACK(wave_started), &status);
     g_signal_connect(tone, "stopped", G_CALLBACK(wave_stopped), &status);

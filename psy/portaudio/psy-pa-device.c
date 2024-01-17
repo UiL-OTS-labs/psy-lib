@@ -74,10 +74,25 @@ pa_audio_callback(const void                     *input,
     (void) timeInfo;
     (void) statusFlags;
 
+    //    static double last_current;
+    //    static double last_output;
+
     //    g_info("frame_count %lu, stream_time = %lf, output time = %lf",
     //           frame_count,
     //           timeInfo->currentTime,
     //           timeInfo->outputBufferDacTime);
+    //    g_print("num_frames = %lu, current-time=%lf input-time=%lf
+    //    output-time=%lf "
+    //            "diff=%lf delta_current=%lf, delta_output=%lf\n",
+    //            frame_count,
+    //            timeInfo->currentTime,
+    //            timeInfo->inputBufferAdcTime,
+    //            timeInfo->outputBufferDacTime,
+    //            timeInfo->outputBufferDacTime - timeInfo->currentTime,
+    //            timeInfo->currentTime - last_current,
+    //            timeInfo->outputBufferDacTime - last_output);
+    //    last_current = timeInfo->currentTime;
+    //    last_output  = timeInfo->outputBufferDacTime;
 
     gboolean locked = FALSE;
 
@@ -107,8 +122,9 @@ pa_audio_callback(const void                     *input,
     memset(output, 0, num_out_floats * sizeof(float));
 
     if (output != NULL && frame_count > 0) {
-        guint num_read
-            = psy_audio_mixer_read_frames(mixer, frame_count, output);
+        gfloat *float_out = output;
+        guint   num_read
+            = psy_audio_mixer_read_frames(mixer, frame_count, &float_out[0]);
         if (G_UNLIKELY(num_read != num_out_floats)) {
             g_critical(
                 "%s, Unable to read: %u samples (got %u) from the output mixer",
@@ -631,6 +647,12 @@ pa_device_start(PsyAudioDevice *self, GError **error)
 {
     PsyPADevice *pa_self = PSY_PA_DEVICE(self);
 
+    // Allows parent to setup PsyAudioMixer
+    PSY_AUDIO_DEVICE_CLASS(psy_pa_device_parent_class)->start(self, error);
+
+    if (*error != NULL)
+        return;
+
     PaError err = Pa_StartStream(pa_self->stream);
     if (err != paNoError) {
         g_set_error(error,
@@ -643,14 +665,17 @@ pa_device_start(PsyAudioDevice *self, GError **error)
 
     pa_clear_last_frame_info(pa_self);
 
-    PaTime        stream_time = Pa_GetStreamTime(pa_self->stream);
-    PsyTimePoint *pa_time     = pa_time_to_psy_timepoint(stream_time);
+    PaTime stream_time = Pa_GetStreamTime(pa_self->stream);
+    g_info("%s:stream_time = %lf",
+           G_OBJECT_CLASS_NAME(G_OBJECT_GET_CLASS(self)),
+           stream_time);
+    PsyTimePoint *pa_time = pa_time_to_psy_timepoint(stream_time);
 
     pa_time_calculate_clock_offset(pa_self, pa_time);
 
     g_object_unref(pa_time);
 
-    PSY_AUDIO_DEVICE_CLASS(psy_pa_device_parent_class)->start(self, error);
+    g_info("Started PsyPADevice %s", psy_audio_device_get_name(self));
 }
 
 static void
@@ -734,6 +759,8 @@ pa_device_get_last_known_frame(PsyAudioDevice *self,
 {
     PsyPADevice *pa_self = PSY_PA_DEVICE(self);
 
+    g_mutex_lock(&pa_self->last_frame.lock);
+
     *nth_frame = pa_self->last_frame.num_frames;
 
     if (tp_in) {
@@ -749,6 +776,8 @@ pa_device_get_last_known_frame(PsyAudioDevice *self,
         *tp_out = pa_transform_pa_time_to_psy_time(pa_self, tp_pa_out);
         g_object_unref(tp_pa_out);
     }
+
+    g_mutex_unlock(&pa_self->last_frame.lock);
 
     return TRUE;
 }
