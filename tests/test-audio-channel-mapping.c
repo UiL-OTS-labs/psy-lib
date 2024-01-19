@@ -94,6 +94,7 @@ test_audio_channel_map_strategy_default21(void)
 
     psy_audio_channel_map_free(map);
     psy_audio_channel_mapping_free(m0);
+    psy_audio_channel_mapping_free(m1);
 }
 
 static void
