@@ -13,7 +13,8 @@ on the steps that psy-lib does in the continues integration.
 2. Install dependencies, you'll be needing the development libraries:
    - glib-2.0
    - gtk-4
-   - gstreamer-1.0
+   - gstreamer-1.0 for all packages see the [gstreamer documentation][1]
+   - portaudio19-dev
    - libcunit1 (for the unittests)
 3. You'll need python-3.10
 4. You need the python packages from the "requirements.txt" file.
@@ -88,3 +89,5 @@ it is possible to run GObject based libraries.
   based and fits nicely in this ecosystem
 - We currently support OpenGL in combination with Gtk+-4.0 for visual stimuli.
   But perhaps we'd like to use Direct3D on windows.
+
+[1]: https://gstreamer.freedesktop.org/documentation/installing/
