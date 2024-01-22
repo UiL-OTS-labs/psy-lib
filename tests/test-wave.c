@@ -63,6 +63,7 @@ destroy_audio_device(void)
 static gboolean
 quit_loop(gpointer data)
 {
+    g_warning("Closing loop in timeout %p", data);
     GMainLoop *loop = data;
 
     g_main_loop_quit(loop);
@@ -75,6 +76,10 @@ wave_started(PsyStimulus *self, PsyTimePoint *tp, gpointer data)
 {
     (void) self;
     (void) tp;
+    g_info("Callback wave started, stimulus = %p, tp %p data = %p",
+           (void *) self,
+           (void *) tp,
+           data);
     WaveStatus *status = data;
     status->started    = TRUE;
 }
@@ -84,13 +89,17 @@ wave_stopped(PsyStimulus *self, PsyTimePoint *tp, gpointer data)
 {
     (void) self;
     (void) tp;
+    g_info("Callback wave started, stimulus = %p, tp %p data = %p",
+           (void *) self,
+           (void *) tp,
+           data);
     WaveStatus *status = data;
     status->stopped    = TRUE;
 
     PsyTimePoint *start = psy_stimulus_get_start_time(self);
     PsyDuration  *dur   = psy_time_point_subtract(tp, start);
 
-    g_print("Wave duration was: %lf seconds", psy_duration_get_seconds(dur));
+    g_info("Wave duration was: %lf seconds", psy_duration_get_seconds(dur));
 
     g_object_unref(dur);
 
@@ -169,7 +178,7 @@ test_wave_play(void)
 
     WaveStatus status = {.loop = loop};
 
-    g_timeout_add(500, quit_loop, loop);
+    guint timeout_id = g_timeout_add(500, quit_loop, loop);
 
     g_signal_connect(tone, "started", G_CALLBACK(wave_started), &status);
     g_signal_connect(tone, "stopped", G_CALLBACK(wave_stopped), &status);
@@ -184,6 +193,8 @@ test_wave_play(void)
     psy_stimulus_play_for(PSY_STIMULUS(tone), tp_start, dur);
 
     g_main_loop_run(loop);
+
+    g_source_remove(timeout_id);
 
     psy_audio_device_stop(g_device);
 
@@ -228,7 +239,7 @@ test_wave_play_noise(void)
 
     WaveStatus status = {.loop = loop};
 
-    g_timeout_add(500, quit_loop, loop);
+    guint timeout_id = g_timeout_add(500, quit_loop, loop);
 
     g_signal_connect(tone, "started", G_CALLBACK(wave_started), &status);
     g_signal_connect(tone, "stopped", G_CALLBACK(wave_stopped), &status);
@@ -243,6 +254,8 @@ test_wave_play_noise(void)
     psy_stimulus_play_for(PSY_STIMULUS(tone), tp_start, dur);
 
     g_main_loop_run(loop);
+
+    g_source_remove(timeout_id);
 
     psy_audio_device_stop(g_device);
 

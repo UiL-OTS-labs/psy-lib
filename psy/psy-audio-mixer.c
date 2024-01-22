@@ -230,14 +230,22 @@ static void
 remove_stimulus(PsyAudioMixer *self, PsyAuditoryStimulus *stim)
 {
     PsyAudioMixerPrivate *priv = psy_audio_mixer_get_instance_private(self);
-    g_info("Removing PsyAuditoryStimulus %p", (gpointer) stim);
-    gint64 num_frames = psy_auditory_stimulus_get_num_frames(stim);
-    gint64 num_pres   = psy_auditory_stimulus_get_num_frames_presented(stim);
+    gint64 num_frames          = psy_auditory_stimulus_get_num_frames(stim);
+    gint64 num_pres = psy_auditory_stimulus_get_num_frames_presented(stim);
+    PsyAudioSampleRate rate = psy_audio_device_get_sample_rate(priv->device);
+
     if (num_pres > num_frames) {
         g_warning("Stimulus has been presented for to many frames %ld > %ld",
                   num_pres,
                   num_frames);
     }
+
+    PsyDuration *stim_dur = psy_num_audio_samples_to_duration(num_frames, rate);
+    PsyTimePoint *stim_end = psy_time_point_add(
+        psy_stimulus_get_start_time(PSY_STIMULUS(stim)), stim_dur);
+    psy_stimulus_set_is_finished(PSY_STIMULUS(stim), stim_end);
+
+    g_info("Removing PsyAuditoryStimulus %p", (gpointer) stim);
     g_ptr_array_remove(priv->stimuli, stim);
 }
 
@@ -587,6 +595,8 @@ psy_audio_mixer_schedule_stimulus(PsyAudioMixer       *self,
         num_wait_samples,
         psy_duration_get_seconds(onset_dur));
     g_info("The AudioMixer has %u stimuli", priv->stimuli->len);
+
+    psy_stimulus_set_is_started(PSY_STIMULUS(stimulus), tp_start);
 
 fail:
     if (onset_dur) {
