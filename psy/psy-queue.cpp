@@ -3,9 +3,11 @@
 #include "psy-config.h"
 
 #if defined(HAVE_BOOST_LOCKFREE_SPSC_QUEUE_HPP)
-
     #include "psy-queue.h"
     #include <boost/lockfree/spsc_queue.hpp>
+#else
+    #error "please make sure to install boost/lockfree/spsc_queue.hpp"
+#endif
 
 /**
  * PsyAudioQueue:(skip)
@@ -186,5 +188,3 @@ psy_audio_queue_clear(PsyAudioQueue *self)
     g_return_if_fail(self != NULL);
     self->p_queue->reset();
 }
-
-#endif

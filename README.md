@@ -15,6 +15,7 @@ on the steps that psy-lib does in the continues integration.
    - gtk-4
    - gstreamer-1.0 for all packages see the [gstreamer documentation][1]
    - portaudio19-dev
+   - libboost-dev (lockfree qeues)
    - libcunit1 (for the unittests)
 3. You'll need python-3.10
 4. You need the python packages from the "requirements.txt" file.

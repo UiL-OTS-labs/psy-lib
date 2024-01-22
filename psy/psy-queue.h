@@ -6,8 +6,6 @@
 
 #include "psy-config.h"
 
-#if defined(HAVE_BOOST_LOCKFREE_SPSC_QUEUE_HPP)
-
 G_BEGIN_DECLS
 
 typedef struct PsyAudioQueue PsyAudioQueue;
@@ -38,5 +36,3 @@ G_MODULE_EXPORT void
 psy_audio_queue_clear(PsyAudioQueue *self);
 
 G_END_DECLS
-
-#endif // defined HAVE_BOOST_LOCKFREE_SPSC_QUEUE_HPP
