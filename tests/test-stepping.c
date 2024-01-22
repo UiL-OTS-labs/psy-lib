@@ -96,7 +96,7 @@ test_basic_step(void)
         app, "activate", G_CALLBACK(on_basic_step_activate), &data);
 
     status = g_application_run(G_APPLICATION(app), 0, NULL);
-    assert(status == 0);
+    CU_ASSERT_TRUE_FATAL(status == 0);
     g_object_unref(app);
 
     CU_ASSERT_TRUE(data.activated);
