@@ -54,11 +54,15 @@ jobs:
         run: xvfb-run meson compile -C build/
       - name: C Unit tests
         run: xvfb-run meson test -C build/ -v
-      - uses: actions/upload-artifact@v3
-        if: failure()
+      - uses: actions/upload-artifact@v4
         with:
-          name: Linux_meson_testlog
+          name: Linux_meson_testlog-${{matrix.buildtype}}-${{matrix.compiler}}
           path: build/meson-logs/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Linux_tmp_log-${{matrix.buildtype}}-${{matrix.compiler}}
+          path: /tmp/psy-unit-tests
+
 
 #  see https://mesonbuild.com/Continuous-Integration.html
 #  Compile-psylib-windows:
