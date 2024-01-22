@@ -20,7 +20,7 @@ option(
 option (
     'jack2',
     type : 'boolean',
-    value : true,
+    value : false,
     description : 'Enable JACK2 as a backend for audio Linux (mac and ' +
                   'windows) you\'ll need the Jack2 development libraries'
 )
