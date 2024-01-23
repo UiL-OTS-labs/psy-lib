@@ -683,10 +683,10 @@ psy_text_create_stimulus(PsyText *self)
     tp1 = psy_clock_now(clk);
     dur = psy_time_point_subtract(tp1, tp0);
 
-    g_print("Rendering text stimulus takes %lfs.\n",
-            psy_duration_get_seconds(dur));
+    g_info("Rendering text stimulus takes %lfs.\n",
+           psy_duration_get_seconds(dur));
 
-    g_object_unref(dur);
+    psy_duration_free(dur);
     g_object_unref(tp1);
     g_object_unref(tp0);
     g_object_unref(clk);

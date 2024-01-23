@@ -463,7 +463,7 @@ set_monitor(PsyWindow *self, gint nth_monitor)
 
     PSY_CANVAS_CLASS(psy_gtk_window_parent_class)
         ->set_frame_dur(PSY_CANVAS(self), frame_duration);
-    g_object_unref(frame_duration);
+    psy_duration_free(frame_duration);
 
     PSY_WINDOW_CLASS(psy_gtk_window_parent_class)
         ->set_monitor(PSY_WINDOW(self), nth_monitor);
@@ -661,6 +661,8 @@ psy_gtk_window_compute_frame_stats(PsyGtkWindow *self, PsyTimePoint *tp_new)
 
         gint64 num_frames = psy_duration_divide_rounded(time_lapsed, frame_dur);
         self->frames_lapsed = num_frames;
+
+        psy_duration_free(time_lapsed);
     }
     else {
         self->frames_lapsed = 1;

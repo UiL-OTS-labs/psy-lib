@@ -258,7 +258,7 @@ vstim_scale(void)
 
     g_object_unref(image);
     g_object_unref(circle);
-    g_object_unref(stim_dur);
+    psy_duration_free(stim_dur);
 }
 
 void
@@ -517,7 +517,7 @@ vstim_rotate(void)
     g_object_unref(c9);
     g_object_unref(image);
 
-    g_object_unref(dur);
+    psy_duration_free(dur);
     g_object_unref(rect);
 }
 
@@ -611,7 +611,7 @@ vstim_draworder_same_z(void)
     g_object_unref(rect1);
     g_object_unref(rect2_color);
     g_object_unref(rect1_color);
-    g_object_unref(dur);
+    psy_duration_free(dur);
 }
 
 static void
@@ -709,7 +709,7 @@ vstim_draworder_different_z(void)
     g_object_unref(rect1);
     g_object_unref(rect2_color);
     g_object_unref(rect1_color);
-    g_object_unref(dur);
+    psy_duration_free(dur);
 }
 
 int

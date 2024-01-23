@@ -34,13 +34,13 @@ test_clock(void)
     dur = psy_time_point_subtract(t2, t1);
 
     g_assert(dur);
-    g_object_get(dur, "us", &us, NULL);
+    us = psy_duration_get_us(dur);
     CU_ASSERT_TRUE(us >= 0); // Negative durations would be weird in this case.
 failure:
     g_object_unref(clock);
     g_object_unref(t1);
     g_object_unref(t2);
-    g_object_unref(dur);
+    psy_duration_free(dur);
 }
 
 static void
@@ -53,24 +53,24 @@ check_time_point_arithmetic(void)
     PsyDuration  *onesec = psy_duration_new_s(1);
 
     PsyDuration *dur = psy_time_point_subtract(t1, t2);
-    g_object_get(dur, "us", &us, NULL);
+    us               = psy_duration_get_us(dur);
     CU_ASSERT_EQUAL(us, 0);
-    g_clear_object(&dur);
+    g_clear_pointer(&dur, psy_duration_free);
 
     dur = psy_time_point_duration_since_start(t1);
-    g_object_get(dur, "us", &us, NULL);
+    us  = psy_duration_get_us(dur);
     CU_ASSERT_EQUAL(us, 0);
 
-    g_clear_object(&dur);
+    g_clear_pointer(&dur, psy_duration_free);
     PsyTimePoint *time = psy_time_point_add(t1, onesec);
     dur                = psy_time_point_subtract(time, t1);
     CU_ASSERT_TRUE(psy_duration_equal(dur, onesec));
     tz = psy_time_point_subtract_dur(time, onesec);
     CU_ASSERT_TRUE(psy_time_point_equal(tz, t1));
     g_clear_object(&time);
-    g_clear_object(&dur);
+    g_clear_pointer(&dur, psy_duration_free);
 
-    g_object_unref(onesec);
+    psy_duration_free(onesec);
     g_object_unref(t1);
     g_object_unref(t2);
     g_object_unref(tz);
@@ -118,25 +118,23 @@ check_time_point_comparisons(void)
 //     PsyDuration  *two_us   = psy_duration_new_us(2);
 //     PsyDuration  *n_two_us = psy_duration_new_us(-2);
 //     t1                     = g_object_new(PSY_TYPE_TIME_POINT, NULL);
-// 
-//     t2 = psy_time_point_add(t1, dur_max); // highest possible valid time point
-//     CU_ASSERT_PTR_NOT_NULL(t2);
-//     toverflow = psy_time_point_add(t2, one_us); // Adding should overflow
-//     CU_ASSERT_PTR_NULL(toverflow);
+//
+//     t2 = psy_time_point_add(t1, dur_max); // highest possible valid time
+//     point CU_ASSERT_PTR_NOT_NULL(t2); toverflow = psy_time_point_add(t2,
+//     one_us); // Adding should overflow CU_ASSERT_PTR_NULL(toverflow);
 //     toverflow = psy_time_point_subtract_dur(
 //         t2, n_two_us); // subtracting a neg dur too.
 //     CU_ASSERT_PTR_NULL(toverflow);
-// 
+//
 //     // subtracting a postive dur from smallest time point should overflow
 //     // adding a negative too.
 //     g_clear_object(&t2);
-//     t2 = psy_time_point_subtract_dur(t1, dur_max); // lowest possible time point
-//     CU_ASSERT_PTR_NOT_NULL(t2);
-//     toverflow = psy_time_point_subtract_dur(t2, two_us);
-//     CU_ASSERT_PTR_NULL(toverflow);
+//     t2 = psy_time_point_subtract_dur(t1, dur_max); // lowest possible time
+//     point CU_ASSERT_PTR_NOT_NULL(t2); toverflow =
+//     psy_time_point_subtract_dur(t2, two_us); CU_ASSERT_PTR_NULL(toverflow);
 //     toverflow = psy_time_point_add(t2, n_two_us);
 //     CU_ASSERT_PTR_NULL(toverflow);
-// 
+//
 //     g_object_unref(t1);
 //     g_object_unref(t2);
 //     g_object_unref(dur_max);
@@ -167,14 +165,10 @@ check_duration_arithmetics(void)
     d_res = psy_duration_add(d_temp, d_s);
     g_assert(d_res);
 
-    // clang-format off
-    g_object_get(d_res,
-                 "us", &us,
-                 "ms", &ms,
-                 "s", &s,
-                 "seconds", &seconds,
-                 NULL);
-    // clang-format on
+    us      = psy_duration_get_us(d_res);
+    ms      = psy_duration_get_ms(d_res);
+    s       = psy_duration_get_s(d_res);
+    seconds = psy_duration_get_seconds(d_res);
 
     CU_ASSERT_EQUAL(us, 5 + 5 * 1000 + 5 * 1000000);
     CU_ASSERT_EQUAL(ms, 5 + 5 * 1000);
@@ -187,27 +181,22 @@ check_duration_arithmetics(void)
     CU_ASSERT_EQUAL(psy_duration_divide(d_s, d_half), 2);
 
     sub_result = psy_duration_subtract(d_s, d_half);
-    CU_ASSERT_PTR_NOT_NULL(sub_result);
-    if (!sub_result)
-        goto failure;
+    CU_ASSERT_PTR_NOT_NULL_FATAL(sub_result);
 
     CU_ASSERT_TRUE(psy_duration_equal(sub_result, d_half));
 
     mul_res = psy_duration_multiply_scalar(d_half, 2);
-    CU_ASSERT_PTR_NOT_NULL(mul_res);
-    if (!mul_res)
-        goto failure;
-    g_assert(psy_duration_equal(mul_res, d_s));
+    CU_ASSERT_PTR_NOT_NULL_FATAL(mul_res);
+    CU_ASSERT(psy_duration_equal(mul_res, d_s));
 
-failure:
-    g_object_unref(d_us);
-    g_object_unref(d_ms);
-    g_object_unref(d_s);
-    g_object_unref(d_res);
-    g_object_unref(d_temp);
-    g_object_unref(d_half);
-    g_object_unref(sub_result);
-    g_object_unref(mul_res);
+    psy_duration_free(d_us);
+    psy_duration_free(d_ms);
+    psy_duration_free(d_s);
+    psy_duration_free(d_res);
+    psy_duration_free(d_temp);
+    psy_duration_free(d_half);
+    psy_duration_free(sub_result);
+    psy_duration_free(mul_res);
 }
 
 static void
@@ -223,9 +212,9 @@ check_duration_rounded_division(void)
     CU_ASSERT_EQUAL(r1, 1); // 10 / 8 = 1.25
     CU_ASSERT_EQUAL(r2, 2); // 10 / 6 = 1.6667
 
-    g_object_unref(ten);
-    g_object_unref(eight);
-    g_object_unref(six);
+    psy_duration_free(ten);
+    psy_duration_free(eight);
+    psy_duration_free(six);
 }
 
 static void
@@ -256,9 +245,9 @@ check_duration_comparisons(void)
     CU_ASSERT_FALSE(psy_duration_less(alittlemore, one_s));
     CU_ASSERT_FALSE(psy_duration_less_equal(alittlemore, one_s));
 
-    g_object_unref(one_s);
-    g_object_unref(alittlemore);
-    g_object_unref(alittleless);
+    psy_duration_free(one_s);
+    psy_duration_free(alittlemore);
+    psy_duration_free(alittleless);
 }
 
 int
@@ -286,10 +275,10 @@ add_time_utilities_suite(void)
     if (!test)
         return 1;
 
-//    test = CU_add_test(
-//        suite, "Test time point overflow", check_time_point_overflow);
-//    if (!test)
-//        return 1;
+    //    test = CU_add_test(
+    //        suite, "Test time point overflow", check_time_point_overflow);
+    //    if (!test)
+    //        return 1;
 
     test = CU_add_test(
         suite, "Test duration arithmetics", check_duration_arithmetics);

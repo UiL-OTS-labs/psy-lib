@@ -110,7 +110,7 @@ test_gl_canvas_iterate(void)
     g_object_unref(image);
     g_object_unref(tp0);
     g_object_unref(tp1);
-    g_object_unref(dur);
+    psy_duration_free(dur);
     g_object_unref(canvas);
 }
 

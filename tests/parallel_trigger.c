@@ -43,7 +43,7 @@ finished(PsyParallelTrigger *trigger,
         g_main_loop_quit(info->loop);
     }
 
-    g_object_unref(dur);
+    psy_duration_free(dur);
     g_object_unref(newtp);
 }
 
@@ -107,9 +107,9 @@ exit:
     g_object_unref(clk);
 
     if (onset_dur)
-        g_object_unref(onset_dur);
+        psy_duration_free(onset_dur);
     if (trigger_dur)
-        g_object_unref(trigger_dur);
+        psy_duration_free(trigger_dur);
     if (trigger_start)
         g_object_unref(trigger_start);
     if (now)

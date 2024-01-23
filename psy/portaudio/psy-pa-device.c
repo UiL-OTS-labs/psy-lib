@@ -182,7 +182,7 @@ pa_time_to_psy_timepoint(PaTime time)
     PsyTimePoint *tp_psy = psy_time_point_add(tp_null, pa_running_dur);
 
     g_object_unref(tp_null);
-    g_object_unref(pa_running_dur);
+    psy_duration_free(pa_running_dur);
     return tp_psy;
 }
 

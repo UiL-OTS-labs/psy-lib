@@ -40,6 +40,9 @@
 
 #define DEFAULT_NUM_STIM_CACHE 16
 
+static void
+psy_audio_mixer_set_buffer_dur(PsyAudioMixer *mixer, PsyDuration *dur);
+
 typedef struct _PsyAudioMixerPrivate {
 
     PsyAudioDevice *device;
@@ -85,15 +88,14 @@ audio_mixer_set_property(GObject      *object,
                          const GValue *value,
                          GParamSpec   *pspec)
 {
-    PsyAudioMixer        *self = PSY_AUDIO_MIXER(object);
-    PsyAudioMixerPrivate *priv = psy_audio_mixer_get_instance_private(self);
+    PsyAudioMixer *self = PSY_AUDIO_MIXER(object);
 
     switch ((PsyAudioMixerProperty) prop_id) {
     case PROP_AUDIO_DEVICE:
         psy_audio_mixer_set_audio_device(self, g_value_get_object(value));
         break;
     case PROP_BUFFER_DURATION:
-        priv->buf_dur = g_value_get_object(value);
+        psy_audio_mixer_set_buffer_dur(self, g_value_get_boxed(value));
         break;
     default:
         G_OBJECT_WARN_INVALID_PROPERTY_ID(object, prop_id, pspec);
@@ -223,6 +225,8 @@ audio_mixer_finalize(GObject *object)
     g_ptr_array_unref(priv->to_remove);
     priv->to_remove = NULL;
 
+    psy_duration_free(priv->buf_dur);
+
     G_OBJECT_CLASS(psy_audio_mixer_parent_class)->finalize(object);
 }
 
@@ -247,6 +251,8 @@ remove_stimulus(PsyAudioMixer *self, PsyAuditoryStimulus *stim)
 
     g_info("Removing PsyAuditoryStimulus %p", (gpointer) stim);
     g_ptr_array_remove(priv->stimuli, stim);
+
+    psy_duration_free(stim_dur);
 }
 
 static gboolean
@@ -449,7 +455,7 @@ psy_audio_mixer_class_init(PsyAudioMixerClass *klass)
                               PSY_TYPE_AUDIO_DEVICE,
                               G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY);
 
-    audio_mixer_properties[PROP_BUFFER_DURATION] = g_param_spec_object(
+    audio_mixer_properties[PROP_BUFFER_DURATION] = g_param_spec_boxed(
         "buffer-duration",
         "BufferDuration",
         "The duration that determines the number of samples that are buffered "
@@ -492,7 +498,7 @@ psy_audio_mixer_class_init(PsyAudioMixerClass *klass)
 /**
  * psy_audio_mixer_new:(skip)(constructor)
  * @device: An instance of [class@AudioDevice, that is connected to this mixer.
- * @buf_dur:(transfer full): An instance of [class@Duration] that is connected
+ * @buf_dur:(transfer full): An instance of [struct@Duration] that is connected
  *          to this mixer.
  *
  * Configures a new in- and output audio mixer. The audio mixer will
@@ -503,17 +509,12 @@ psy_audio_mixer_class_init(PsyAudioMixerClass *klass)
 PsyAudioMixer *
 psy_audio_mixer_new(PsyAudioDevice *device, PsyDuration *buf_dur)
 {
-    g_assert(((GObject *) buf_dur)->ref_count == 1); // it's owned by the client
     // clang-format off
     PsyAudioMixer* mixer = g_object_new(PSY_TYPE_AUDIO_MIXER,
                         "audio-device", device,
                         "buffer-duration", buf_dur,
                         NULL);
     // clang-format on
-    g_assert(((GObject *) buf_dur)->ref_count
-             == 1); // Now the mixer should have taken over the reference,
-                    // so the caller doesn't
-                    // have to free it anymore
     return mixer;
 }
 
@@ -600,7 +601,7 @@ psy_audio_mixer_schedule_stimulus(PsyAudioMixer       *self,
 
 fail:
     if (onset_dur) {
-        psy_duration_destroy(onset_dur);
+        psy_duration_free(onset_dur);
     }
     if (tp_sample) {
         psy_time_point_destroy(tp_sample);
@@ -625,6 +626,27 @@ psy_audio_mixer_set_audio_device(PsyAudioMixer *self, PsyAudioDevice *device)
     // g_clear_object(&priv->device);
 
     priv->device = device;
+}
+
+/**
+ * psy_audio_mixer_set_buffer_dur:(skip):
+ * @self:
+ * @duration:(transfer none):
+ *
+ * Sets the buffer duration of the audio mixer
+ *
+ * stability:private
+ */
+static void
+psy_audio_mixer_set_buffer_dur(PsyAudioMixer *self, PsyDuration *dur)
+{
+    g_return_if_fail(PSY_IS_AUDIO_MIXER(self));
+    g_return_if_fail(dur != NULL);
+
+    PsyAudioMixerPrivate *priv = psy_audio_mixer_get_instance_private(self);
+
+    g_clear_pointer(&priv->buf_dur, psy_duration_free);
+    priv->buf_dur = psy_duration_copy(dur);
 }
 
 /**

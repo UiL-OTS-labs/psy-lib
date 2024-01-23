@@ -194,7 +194,7 @@ PsyTimePoint *
 psy_time_point_subtract_dur(PsyTimePoint *self, PsyDuration *dur)
 {
     g_return_val_if_fail(PSY_IS_TIME_POINT(self), NULL);
-    g_return_val_if_fail(PSY_IS_DURATION(dur), NULL);
+    g_return_val_if_fail(dur != NULL, NULL);
 
     gint64 new_ticks, ticks, us;
     us    = psy_duration_get_us(dur);
@@ -225,7 +225,7 @@ PsyTimePoint *
 psy_time_point_add(PsyTimePoint *self, PsyDuration *dur)
 {
     g_return_val_if_fail(PSY_IS_TIME_POINT(self), NULL);
-    g_return_val_if_fail(PSY_IS_DURATION(dur), NULL);
+    g_return_val_if_fail(dur != NULL, NULL);
 
     gint64 us        = psy_duration_get_us(dur);
     gint64 new_ticks = 0;

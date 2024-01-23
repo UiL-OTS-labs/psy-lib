@@ -33,9 +33,17 @@ psy_stimulus_dispose(GObject *object)
         = psy_stimulus_get_instance_private(PSY_STIMULUS(object));
 
     g_clear_object(&priv->start_time);
-    g_clear_object(&priv->duration);
 
     G_OBJECT_CLASS(psy_stimulus_parent_class)->dispose(object);
+}
+
+static void
+psy_stimulus_finalize(GObject *self)
+{
+    PsyStimulusPrivate *priv
+        = psy_stimulus_get_instance_private(PSY_STIMULUS(self));
+
+    psy_duration_free(priv->duration);
 }
 
 static void
@@ -51,7 +59,7 @@ psy_stimulus_set_property(GObject      *object,
         psy_stimulus_play(self, g_value_get_object(value));
         break;
     case PROP_DURATION:
-        psy_stimulus_set_duration(self, g_value_get_object(value));
+        psy_stimulus_set_duration(self, g_value_get_boxed(value));
         break;
     case PROP_IS_STARTED: // Only get properties
     case PROP_IS_FINISHED:
@@ -77,7 +85,7 @@ psy_stimulus_get_property(GObject    *object,
         g_value_set_object(value, psy_stimulus_get_stop_time(self));
         break;
     case PROP_DURATION:
-        g_value_set_object(value, priv->duration);
+        g_value_set_boxed(value, priv->duration);
         break;
     case PROP_IS_STARTED:
         g_value_set_boolean(value, priv->is_started);
@@ -111,7 +119,7 @@ stimulus_set_duration(PsyStimulus *stim, PsyDuration *dur)
 {
     PsyStimulusPrivate *priv = psy_stimulus_get_instance_private(stim);
     if (priv->duration)
-        g_object_unref(priv->duration);
+        psy_duration_free(priv->duration);
     priv->duration = dur;
 }
 
@@ -123,6 +131,7 @@ psy_stimulus_class_init(PsyStimulusClass *klass)
     object_class->set_property = psy_stimulus_set_property;
     object_class->get_property = psy_stimulus_get_property;
     object_class->dispose      = psy_stimulus_dispose;
+    object_class->finalize     = psy_stimulus_finalize;
 
     klass->play         = stimulus_play;
     klass->set_duration = stimulus_set_duration;
@@ -168,11 +177,11 @@ psy_stimulus_class_init(PsyStimulusClass *klass)
      * #PsyStimulus:start-time.
      */
     stimulus_properties[PROP_DURATION]
-        = g_param_spec_object("duration",
-                              "Duration",
-                              "The desired duration of the stimulus",
-                              PSY_TYPE_DURATION,
-                              G_PARAM_READWRITE);
+        = g_param_spec_boxed("duration",
+                             "Duration",
+                             "The desired duration of the stimulus",
+                             PSY_TYPE_DURATION,
+                             G_PARAM_READWRITE);
 
     /**
      * PsyStimulus:is-started:
@@ -284,7 +293,7 @@ psy_stimulus_play_for(PsyStimulus  *self,
 {
     g_return_if_fail(PSY_IS_STIMULUS(self));
     g_return_if_fail(PSY_IS_TIME_POINT(start_time));
-    g_return_if_fail(PSY_IS_DURATION(dur));
+    g_return_if_fail(dur != NULL);
 
     psy_stimulus_set_duration(self, dur);
     psy_stimulus_play(self, start_time);

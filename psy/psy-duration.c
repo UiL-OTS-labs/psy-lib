@@ -21,149 +21,19 @@
 #define MS_PER_US 1000
 #define US_PER_S 1000000
 
-typedef struct _PsyDuration {
-    GObject parent;
-    gint64  us;
-} PsyDuration;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
 
-typedef enum {
-    PROP_NULL,    //
-    PROP_US,      // Number of microseconds.
-    PROP_MS,      // Number of milliseconds.
-    PROP_S,       // Number of seconds.
-    PROP_SECONDS, // Number of seconds with floating point result
-    NUM_PROPERTIES
-} PsyDurationProperty;
+G_DEFINE_BOXED_TYPE(PsyDuration,
+                    psy_duration,
+                    psy_duration_copy,
+                    psy_duration_free);
 
-G_DEFINE_TYPE(PsyDuration, psy_duration, G_TYPE_OBJECT)
+#pragma GCC diagnostic pop
 
-static GParamSpec *obj_properties[NUM_PROPERTIES];
-
-static void
-psy_duration_set_property(GObject      *object,
-                          guint         property_id,
-                          const GValue *value,
-                          GParamSpec   *pspec)
-{
-    PsyDuration *self = PSY_DURATION(object);
-
-    switch ((PsyDurationProperty) property_id) {
-    case PROP_US:
-        self->us = g_value_get_int64(value);
-        break;
-    case PROP_MS: // readable
-    case PROP_S:  // readable
-    default:
-        G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
-    }
-}
-
-static void
-psy_duration_get_property(GObject    *object,
-                          guint       property_id,
-                          GValue     *value,
-                          GParamSpec *pspec)
-{
-    PsyDuration *self = PSY_DURATION(object);
-    switch ((PsyDurationProperty) property_id) {
-    case PROP_US:
-        g_value_set_int64(value, psy_duration_get_us(self));
-        break;
-    case PROP_MS:
-        g_value_set_int64(value, psy_duration_get_ms(self));
-        break;
-    case PROP_S:
-        g_value_set_int64(value, psy_duration_get_s(self));
-        break;
-    case PROP_SECONDS:
-        g_value_set_double(value, psy_duration_get_seconds(self));
-        break;
-    default:
-        G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
-    }
-}
-
-static void
-psy_duration_init(PsyDuration *self)
-{
-    (void) self;
-}
-
-static void
-psy_duration_class_init(PsyDurationClass *klass)
-{
-    GObjectClass *obj_class = G_OBJECT_CLASS(klass);
-
-    obj_class->set_property = psy_duration_set_property;
-    obj_class->get_property = psy_duration_get_property;
-
-    /**
-     * PsyDuration:us:
-     *
-     * Get/Set the duration in µs.
-     */
-    obj_properties[PROP_US]
-        = g_param_spec_int64("us",
-                             "µs",
-                             "The number of microseconds of this duration.",
-                             G_MININT64,
-                             G_MAXINT64,
-                             0,
-                             G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY);
-
-    /**
-     * PsyDuration:ms:
-     *
-     * Get/Set the duration in ms, when getting the duration
-     * if the also contains µs, those will be truncated, hence
-     * there is no rounding to the nearest millisecond.
-     */
-    obj_properties[PROP_MS]
-        = g_param_spec_int64("ms",
-                             "milliseconds",
-                             "The number of milliseconds of this duration.",
-                             G_MININT64 / 1000,
-                             G_MAXINT64 / 1000,
-                             0,
-                             G_PARAM_READABLE);
-
-    /**
-     * PsyDuration:s:
-     *
-     * Get/Set the duration in seconds, when the duration
-     * also contains ms/µs, those will be truncated, hence
-     * there is no rounding to the nearest second.
-     * If that would be desired, one could use `PsyDuration:seconds`
-     * as that returns the value as a double precision floating point
-     * number.
-     */
-    obj_properties[PROP_S]
-        = g_param_spec_int64("s",
-                             "seconds",
-                             "The number of seconds of this duration.",
-                             G_MININT64,
-                             G_MAXINT64,
-                             0,
-                             G_PARAM_READABLE);
-
-    /**
-     * PsyDuration:seconds:
-     *
-     * Provides the duration in seconds of this `PsyDuration` instance
-     * The return contains a fractional part.
-     */
-    obj_properties[PROP_SECONDS] = g_param_spec_double(
-        "seconds",
-        "Seconds",
-        "The number of seconds of this duration in floating point format.",
-        (gdouble) G_MININT64 / US_PER_S,
-        (gdouble) G_MAXINT64 / US_PER_S,
-        0,
-        G_PARAM_READABLE);
-
-    g_object_class_install_properties(
-        obj_class, NUM_PROPERTIES, obj_properties);
-}
+struct PsyDuration {
+    gint64 us;
+};
 
 /**
  * psy_duration_new:(constructor)
@@ -173,7 +43,9 @@ psy_duration_class_init(PsyDurationClass *klass)
  * Allows to create a duration in seconds. Internally, the number
  * of seconds specified will be stored with µs precision.
  *
- * Returns:A new `PsyDuration` instance
+ * Objects created this way should be freed with [struct@Duration.free]
+ *
+ * Returns:A new `PsyDuration` instance free with psy_duration_free
  */
 PsyDuration *
 psy_duration_new(gdouble seconds)
@@ -188,23 +60,9 @@ psy_duration_new(gdouble seconds)
 
     gint64 i_us = (gint64) us;
 
-    PsyDuration *dur = g_object_new(PSY_TYPE_DURATION, "us", i_us, NULL);
+    PsyDuration *dur = psy_duration_new_us(i_us);
 
     return dur;
-}
-
-/**
- * psy_duration_destroy:(skip)
- * @self: the instance to destroy
- *
- * This function destroys instances that have previously been created
- * with psy_duration_new(_x).
- */
-void
-psy_duration_destroy(PsyDuration *self)
-{
-    g_return_if_fail(PSY_IS_DURATION(self));
-    g_object_unref(self);
 }
 
 /**
@@ -216,7 +74,8 @@ psy_duration_destroy(PsyDuration *self)
 PsyDuration *
 psy_duration_new_us(gint64 us)
 {
-    PsyDuration *dur = g_object_new(PSY_TYPE_DURATION, "us", us, NULL);
+    PsyDuration *dur = g_new(PsyDuration, 1);
+    dur->us          = us;
     return dur;
 }
 
@@ -235,7 +94,7 @@ psy_duration_new_ms(gint64 ms)
 
     g_return_val_if_fail(!overflows, NULL);
 
-    PsyDuration *dur = g_object_new(PSY_TYPE_DURATION, "us", us, NULL);
+    PsyDuration *dur = psy_duration_new_us(us);
     return dur;
 }
 
@@ -255,26 +114,39 @@ psy_duration_new_s(gint64 s)
     g_return_val_if_fail(!overflows, NULL);
 
     gint64       us  = s * num_us_in_s;
-    PsyDuration *dur = g_object_new(PSY_TYPE_DURATION, "us", us, NULL);
+    PsyDuration *dur = psy_duration_new_us(us);
     return dur;
 }
 
 /**
- * psy_duration_dup:
- * @self: an instace of [class@Duration]
+ * psy_duration_free:
+ * @self: an instance of [struct@Duration] to free/destroy
  *
- * Copies a duration
+ * Destroys instances previously created with psy_duration_new* or
+ * psy_duration_copy functions.
+ */
+void
+psy_duration_free(PsyDuration *self)
+{
+    g_free(self);
+}
+
+/**
+ * psy_duration_copy:
+ * @self: an instace of [struct@Duration]
  *
- * Returns:(transfer full): a new copy of `self`
+ * Copies a duration, the copy should be freed with [struct@Duration.free]
+ *
+ * Returns:(transfer full): a new copy of `self` free with
+ * [struct@Duration.free]
  */
 PsyDuration *
-psy_duration_dup(PsyDuration *self)
+psy_duration_copy(PsyDuration *self)
 {
-    g_return_val_if_fail(PSY_IS_DURATION(self), NULL);
+    g_return_val_if_fail(self != NULL, NULL);
 
-    PsyDuration *dup = g_object_new(PSY_TYPE_DURATION, NULL);
+    PsyDuration *dup = psy_duration_new_us(self->us);
 
-    dup->us = self->us;
     return dup;
 }
 
@@ -287,7 +159,7 @@ psy_duration_dup(PsyDuration *self)
 gint64
 psy_duration_get_us(PsyDuration *self)
 {
-    g_return_val_if_fail(PSY_IS_DURATION(self), G_MININT64);
+    g_return_val_if_fail(self != NULL, G_MININT64);
     return self->us;
 }
 
@@ -300,7 +172,7 @@ psy_duration_get_us(PsyDuration *self)
 gint64
 psy_duration_get_ms(PsyDuration *self)
 {
-    g_return_val_if_fail(PSY_IS_DURATION(self), G_MININT64);
+    g_return_val_if_fail(self != NULL, G_MININT64);
     return self->us / 1000;
 }
 
@@ -317,7 +189,7 @@ psy_duration_get_ms(PsyDuration *self)
 gint64
 psy_duration_get_s(PsyDuration *self)
 {
-    g_return_val_if_fail(PSY_IS_DURATION(self), G_MININT64);
+    g_return_val_if_fail(self != NULL, G_MININT64);
     return self->us / 1000000;
 }
 
@@ -331,7 +203,7 @@ psy_duration_get_s(PsyDuration *self)
 gdouble
 psy_duration_get_seconds(PsyDuration *self)
 {
-    g_return_val_if_fail(PSY_IS_DURATION(self), G_MININT64);
+    g_return_val_if_fail(self != NULL, G_MININT64);
     return ((gdouble) self->us) / 1000000;
 }
 
@@ -350,7 +222,7 @@ psy_duration_get_seconds(PsyDuration *self)
 gint64
 psy_duration_divide(PsyDuration *self, PsyDuration *other)
 {
-    g_return_val_if_fail(PSY_IS_DURATION(self) && PSY_IS_DURATION(other), 0);
+    g_return_val_if_fail(self != NULL && other != NULL, 0);
     return self->us / other->us;
 }
 
@@ -368,7 +240,7 @@ psy_duration_divide(PsyDuration *self, PsyDuration *other)
 gint64
 psy_duration_divide_rounded(PsyDuration *self, PsyDuration *other)
 {
-    g_return_val_if_fail(PSY_IS_DURATION(self) && PSY_IS_DURATION(other), 0);
+    g_return_val_if_fail(self != NULL && other != NULL, 0);
 
     // Thanks to:  https://stackoverflow.com/a/18067292/2082884
 
@@ -388,10 +260,10 @@ psy_duration_divide_rounded(PsyDuration *self, PsyDuration *other)
 PsyDuration *
 psy_duration_divide_scalar(PsyDuration *self, gint64 scalar)
 {
-    g_return_val_if_fail(PSY_IS_DURATION(self), NULL);
+    g_return_val_if_fail(self != NULL, NULL);
 
     gint64 us = self->us / scalar;
-    return g_object_new(PSY_TYPE_DURATION, "us", us, NULL);
+    return psy_duration_new_us(us);
 }
 
 /**
@@ -414,7 +286,7 @@ psy_duration_divide_scalar(PsyDuration *self, gint64 scalar)
 PsyDuration *
 psy_duration_multiply_scalar(PsyDuration *self, gint64 scalar)
 {
-    g_return_val_if_fail(PSY_IS_DURATION(self), NULL);
+    g_return_val_if_fail(self != NULL, NULL);
     gint64   us;
     gboolean over_or_under_flows = psy_safe_mul_gint64(self->us, scalar, &us);
 
@@ -434,14 +306,14 @@ psy_duration_multiply_scalar(PsyDuration *self, gint64 scalar)
 PsyDuration *
 psy_duration_add(PsyDuration *self, PsyDuration *other)
 {
-    g_return_val_if_fail(PSY_IS_DURATION(self) && PSY_IS_DURATION(other), NULL);
+    g_return_val_if_fail(self != NULL && other != NULL, NULL);
     gint64   us;
     gboolean over_flows_or_under_flows;
 
     over_flows_or_under_flows = psy_safe_add_gint64(self->us, other->us, &us);
     g_return_val_if_fail(!over_flows_or_under_flows, NULL);
 
-    return g_object_new(PSY_TYPE_DURATION, "us", us, NULL);
+    return psy_duration_new_us(us);
 }
 
 /**
@@ -455,14 +327,14 @@ psy_duration_add(PsyDuration *self, PsyDuration *other)
 PsyDuration *
 psy_duration_subtract(PsyDuration *self, PsyDuration *other)
 {
-    g_return_val_if_fail(PSY_IS_DURATION(self) && PSY_IS_DURATION(other), NULL);
+    g_return_val_if_fail(self != NULL && other != NULL, NULL);
     gint64   us;
     gboolean over_flows_or_under_flows;
 
     over_flows_or_under_flows = psy_safe_sub_gint64(self->us, other->us, &us);
     g_return_val_if_fail(!over_flows_or_under_flows, NULL);
 
-    return g_object_new(PSY_TYPE_DURATION, "us", us, NULL);
+    return psy_duration_new_us(us);
 }
 
 /**
@@ -475,8 +347,7 @@ psy_duration_subtract(PsyDuration *self, PsyDuration *other)
 gboolean
 psy_duration_less(PsyDuration *self, PsyDuration *other)
 {
-    g_return_val_if_fail(PSY_IS_DURATION(self) && PSY_IS_DURATION(other),
-                         FALSE);
+    g_return_val_if_fail(self != NULL && other != NULL, FALSE);
     return self->us < other->us;
 }
 
@@ -503,8 +374,7 @@ psy_duration_less_equal(PsyDuration *self, PsyDuration *other)
 gboolean
 psy_duration_equal(PsyDuration *self, PsyDuration *other)
 {
-    g_return_val_if_fail(PSY_IS_DURATION(self) && PSY_IS_DURATION(other),
-                         FALSE);
+    g_return_val_if_fail(self != NULL && other != NULL, FALSE);
     return self->us == other->us;
 }
 

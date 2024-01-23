@@ -33,7 +33,7 @@ wait_until(PsyTimePoint *tp, GCancellable *cancellable)
             g_usleep(1000);
         }
 
-        g_clear_object(&dur_test);
+        g_clear_pointer(&dur_test, psy_duration_free);
         g_clear_object(&now);
     }
 
@@ -64,8 +64,8 @@ wait_until(PsyTimePoint *tp, GCancellable *cancellable)
     g_assert(!now);
 
     g_object_unref(clock);
-    g_object_unref(one_ms);
-    g_object_unref(null_ms);
+    psy_duration_free(one_ms);
+    psy_duration_free(null_ms);
 }
 
 // clang-format off
@@ -84,8 +84,8 @@ trigger_data_free(gpointer data)
 {
     TriggerData *d = data;
     g_object_unref(d->trigger_start);
-    g_object_unref(d->trigger_dur);
-    g_slice_free(TriggerData, data);
+    psy_duration_free(d->trigger_dur);
+    g_free(data);
 }
 
 /**
@@ -390,9 +390,9 @@ psy_parallel_trigger_write_async(PsyParallelTrigger *self,
     // PsyParallelTriggerPrivate *priv
     //    = psy_parallel_trigger_get_instance_private(self);
 
-    TriggerData *tdata   = g_slice_new(TriggerData);
+    TriggerData *tdata   = g_new(TriggerData, 1);
     tdata->trigger_start = g_object_ref(tstart);
-    tdata->trigger_dur   = g_object_ref(dur);
+    tdata->trigger_dur   = psy_duration_copy(dur);
     tdata->mask          = mask;
 
     GTask *trigger_task = g_task_new(self, cancellable, callback, data);
