@@ -83,4 +83,6 @@ unit_test = executable (
     cpp_args : UNIT_PP_ARGS,
 )
 
-test('unit-test', unit_test)
+# This runs the unit test verbosely and saves the pictures
+# So we get them as artifact in the CI
+test('unit-test', unit_test, args: ['-v', '-S'])
