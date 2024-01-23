@@ -55,12 +55,13 @@ jobs:
       - name: C Unit tests
         run: |
           xvfb-run meson test -C build/ -v
-        continue-on-error: true # We would like to see the upload artifacts
       - uses: actions/upload-artifact@v4
+        if: '!canceled()'
         with:
           name: Linux_meson_testlog-${{matrix.buildtype}}-${{matrix.compiler}}
           path: build/meson-logs/
       - uses: actions/upload-artifact@v4
+        if: '!canceled()'
         with:
           name: Linux_tmp_log-${{matrix.buildtype}}-${{matrix.compiler}}
           path: /tmp/psy-unit-tests
