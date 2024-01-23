@@ -3,17 +3,23 @@
 #include <CUnit/CUnit.h>
 #include <CUnit/TestRun.h>
 #include <glib.h>
+#include <gst/gst.h>
+#include <portaudio.h>
+#include <psylib.h>
 #include <stdlib.h>
 
 #include "suites.h"
 #include "unit-test-utilities.h"
 
-#define VAL_FALSE "false"
-
+static gboolean g_audio;
 static gboolean verbose;
 static gboolean g_save_images = FALSE;
 static gint     g_port_num    = -1;
 static gint64   g_seed        = -1;
+static gchar   *g_log_domain  = NULL;
+static gchar   *g_log_level   = "info";
+
+static const char *g_audio_backend = "portaudio";
 
 /* clang-format off */
 GOptionEntry options[] = {
@@ -25,6 +31,14 @@ GOptionEntry options[] = {
         "Seed for random functions [0 - 2^32)","-1"},
     {"verbose",  'v',    G_OPTION_FLAG_NONE, G_OPTION_ARG_NONE,  &verbose,
         "Run the suite verbosely", NULL},
+    {"audio",  'a',    G_OPTION_FLAG_NONE, G_OPTION_ARG_NONE,  &g_audio,
+        "Also run the audio tests", NULL},
+    {"audio-backend",  'b', G_OPTION_FLAG_NONE, G_OPTION_ARG_STRING,
+        &g_audio_backend, "the audio backend to use", NULL},
+    {"log-domain",  'd', G_OPTION_FLAG_NONE, G_OPTION_ARG_STRING,
+        &g_log_domain, "the log domain to monitor", NULL},
+    {"log-level",  'l', G_OPTION_FLAG_NONE, G_OPTION_ARG_STRING,
+        &g_log_level, "the log level debug, info, message, warning or critical", "info"},
     {0,},
 };
 
@@ -36,6 +50,20 @@ add_suites_to_registry(void)
     int error = 0;
 
     error = add_ref_count_suite();
+    if (error)
+        return error;
+
+    error = add_audio_channel_mapping_suite();
+    if (error)
+        return error;
+
+    if (g_audio) {
+        error = add_audio_suite(g_audio_backend);
+        if (error)
+            return error;
+    }
+
+    error = add_audio_utils_suite();
     if (error)
         return error;
 
@@ -60,6 +88,10 @@ add_suites_to_registry(void)
         return error;
 
     error = add_picture_suite();
+    if (error)
+        return error;
+
+    error = add_queue_suite();
     if (error)
         return error;
 
@@ -95,7 +127,64 @@ add_suites_to_registry(void)
     if (error)
         return error;
 
+    if (g_audio) {
+        error = add_wave_suite();
+        if (error)
+            return error;
+    }
+
     return error;
+}
+
+static void
+init_libs(void)
+{
+#if defined PSY_HAVE_PORTAUDIO
+    pa_Initialize();
+#endif
+
+    gst_init(NULL, NULL);
+}
+
+static void
+deinitialize_libs(void)
+{
+    gst_deinit();
+
+    Pa_Terminate();
+}
+
+static void
+setup_log_handler(void)
+{
+    install_log_handler();
+    GLogLevelFlags level = G_LOG_LEVEL_INFO;
+
+    if (g_log_domain)
+        set_log_handler_domain(g_log_domain);
+
+    if (g_log_level) {
+        if (g_strcmp0(g_log_level, "debug") == 0) {
+            level = G_LOG_LEVEL_DEBUG;
+        }
+        else if (g_strcmp0(g_log_level, "info") == 0) {
+            level = G_LOG_LEVEL_INFO;
+        }
+        else if (g_strcmp0(g_log_level, "message") == 0) {
+            level = G_LOG_LEVEL_MESSAGE;
+        }
+        else if (g_strcmp0(g_log_level, "warning") == 0) {
+            level = G_LOG_LEVEL_WARNING;
+        }
+        else if (g_strcmp0(g_log_level, "critical") == 0) {
+            level = G_LOG_LEVEL_CRITICAL;
+        }
+        else {
+            level = G_LOG_LEVEL_INFO;
+        }
+    }
+
+    set_log_handler_level(level);
 }
 
 int
@@ -103,6 +192,7 @@ main(int argc, char **argv)
 {
     GOptionContext *context = g_option_context_new("");
     g_option_context_add_main_entries(context, options, NULL);
+
     int     ret, n_test_failed = -1;
     GError *error = NULL;
 
@@ -111,6 +201,8 @@ main(int argc, char **argv)
         g_option_context_free(context);
         return EXIT_FAILURE;
     }
+
+    setup_log_handler();
 
     if (g_seed < 0) {
         if (!init_random()) {
@@ -124,6 +216,8 @@ main(int argc, char **argv)
             return EXIT_FAILURE;
         }
     }
+
+    init_libs();
 
     set_save_images(g_save_images ? TRUE : FALSE);
 
@@ -143,7 +237,12 @@ main(int argc, char **argv)
 
     CU_cleanup_registry();
     g_print("\nRan with a seed of %u\n", random_seed());
+
+    deinitialize_libs();
     deinitialize_random();
+
+    remove_log_handler(); // clear logging stuff.
+
     g_option_context_free(context);
 
     return n_test_failed != 0;

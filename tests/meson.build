@@ -39,28 +39,50 @@ picture_test = executable(
     dependencies : [psy_dep]
 )
 
+#preprocessor args for the unit tests
+UNIT_PP_ARGS = [
+    '-DG_LOG_DOMAIN="Psy-Unit"',
+    '-DG_LOG_USE_STRUCTURED'
+]
+
+buildtype = get_option('buildtype')
+if buildtype != 'debug' and buildtype != 'debugoptimized'
+    # flags for release builds (disable asserts)
+    UNIT_PP_ARGS += '-DG_DISABLE_ASSERTS=1'
+    UNIT_PP_ARGS += '-DNDEBUG=1'
+endif
+
 unit_test = executable (
     'unit-test',
     files (
         'main.c',
+        'test-audio.c',
+        'test-audio-channel-mapping.c',
+        'test-audio-utils.c',
         'test-canvas.c',
         'test-color.c',
         'test-image.c',
         'test-gl-canvas.c',
         'test-parallel.c',
         'test-picture.c',
+        'test-queue.c',
         'test-ref-count.c',
         'test-stepping.c',
         'test-text.c',
         'test-time-utilities.c',
         'test-utility.c',
+        'test-wave.c',
         'test-visual-stimulus.c',
         'unit-test-utilities.c',
         'vector-test.c',
         'vector3-test.c',
         'vector4-test.c',
     ),
-    dependencies : [psy_dep, cunit_dep]
+    dependencies : [psy_dep, cunit_dep],
+    c_args : UNIT_PP_ARGS,
+    cpp_args : UNIT_PP_ARGS,
 )
 
-test('unit-test', unit_test)
+# This runs the unit test verbosely and saves the pictures
+# So we get them as artifact in the CI
+test('unit-test', unit_test, args: ['-v', '-S'])

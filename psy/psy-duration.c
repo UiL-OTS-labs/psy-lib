@@ -194,6 +194,20 @@ psy_duration_new(gdouble seconds)
 }
 
 /**
+ * psy_duration_destroy:(skip)
+ * @self: the instance to destroy
+ *
+ * This function destroys instances that have previously been created
+ * with psy_duration_new(_x).
+ */
+void
+psy_duration_destroy(PsyDuration *self)
+{
+    g_return_if_fail(PSY_IS_DURATION(self));
+    g_object_unref(self);
+}
+
+/**
  * psy_duration_new_us:(constructor)
  * @us: The number of microseconds of the returned duration
  *
@@ -385,6 +399,15 @@ psy_duration_divide_scalar(PsyDuration *self, gint64 scalar)
  * @self: A `PsyDuration` instance.
  * @scalar: A scalar value
  *
+ * This multiplies a duration a number of times, so 3s * 3 = 9s. This
+ * works very nice for typical durations in an experiment like a whole number of
+ * milliseconds or second or even µseconds, however, it does not work so well
+ * for computing the duration of a number of audio sample rates. As 1 sample
+ * sampled at 44100 Hz is roughly 22.68 µs. Since a duration has internally
+ * the resolution of 1 µs you'll lose .68 µs for every sample.
+ *
+ * So if you would like to compute time based on audio sample rates use
+ * [func@Psy.num_audio_samples_to_duration] instead.
  *
  * Returns:(transfer full): The result of @self * scalar.
  */

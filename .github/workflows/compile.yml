@@ -18,10 +18,17 @@ jobs:
         buildtype: [debug, release]
     runs-on: ubuntu-22.04
     steps:
-      - uses: awalsh128/cache-apt-pkgs-action@latest
-        with:
-          packages: libglib2.0-dev libgtk-4-dev libcunit1-dev
-          version: 1.0
+      - name: Install apt dependencies
+        run: |
+          sudo apt-get update
+          # libunwind-dev is a dependency of libgstreamer1.0-dev
+          sudo apt-get install libglib2.0-dev libgtk-4-dev libcunit1-dev libunwind-dev
+          sudo apt-get install libasound-dev portaudio19-dev libboost-dev
+          sudo apt-get install libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libgstreamer-plugins-bad1.0-dev gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly gstreamer1.0-libav gstreamer1.0-tools gstreamer1.0-x gstreamer1.0-alsa gstreamer1.0-gl gstreamer1.0-gtk3 gstreamer1.0-qt5 gstreamer1.0-pulseaudio
+      #      - uses: awalsh128/cache-apt-pkgs-action@latest
+      #        with:
+      #          packages: libglib2.0-dev libgtk-4-dev libcunit1-dev libgstreamer1.0-dev
+      #          version: 1.0.1
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v2
         with:
@@ -46,12 +53,19 @@ jobs:
       - name: Build
         run: xvfb-run meson compile -C build/
       - name: C Unit tests
-        run: xvfb-run meson test -C build/ -v
-      - uses: actions/upload-artifact@v3
-        if: failure()
+        run: |
+          xvfb-run meson test -C build/ -v
+      - uses: actions/upload-artifact@v4
+        if: '!cancelled()'
         with:
-          name: Linux_meson_testlog
+          name: Linux_meson_testlog-${{matrix.buildtype}}-${{matrix.compiler}}
           path: build/meson-logs/
+      - uses: actions/upload-artifact@v4
+        if: '!cancelled()'
+        with:
+          name: Linux_tmp_log-${{matrix.buildtype}}-${{matrix.compiler}}
+          path: /tmp/psy-unit-tests
+
 
 #  see https://mesonbuild.com/Continuous-Integration.html
 #  Compile-psylib-windows:

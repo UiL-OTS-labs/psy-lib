@@ -207,7 +207,7 @@ picture_draw_auto_resize(void)
     PsyPictureSizeStrategy strat_static;
     PsyPictureSizeStrategy strat_dynamic;
 
-    bool static_resized = FALSE, dynamic_resized = FALSE;
+    gboolean static_resized = FALSE, dynamic_resized = FALSE;
 
     PsyPicture *pic_static
         = psy_picture_new_full(PSY_CANVAS(g_canvas), 0, 0, 100, 100, g_path);

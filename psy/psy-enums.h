@@ -2,6 +2,115 @@
 #pragma once
 
 /**
+ * PsyAudioDeviceError:
+ * @PSY_AUDIO_DEVICE_ERROR_NO_SERVER_CONNECTION: This error can occur when a
+ *      jack client is unable to connect to a jack server, perhaps it should
+ *      be started first.
+ * @PSY_AUDIO_DEVICE_ERROR_BUSY: This error can occur when trying to connect
+ *      to an audio device that is already in operation.
+ * @PSY_AUDIO_DEVICE_ERROR_OPEN: This operation cannot be performed when the
+ *      device is open.
+ * @PSY_AUDIO_DEVICE_ERROR_OPEN_NAME: Unable to open a device with this name.
+ * @PSY_AUDIO_DEVICE_ERROR_OPEN_NO_MATCH: Unable to open, no matching devices
+ *      found.
+ * @PSY_AUDIO_DEVICE_ERROR_FAILED: unspecific error read the error message
+ *      for more info.
+ *
+ * An enumeration for errors that may result in operating an audio device
+ */
+typedef enum {
+    PSY_AUDIO_DEVICE_ERROR_NO_SERVER_CONNECTION,
+    PSY_AUDIO_DEVICE_ERROR_BUSY,
+    PSY_AUDIO_DEVICE_ERROR_OPEN,
+    PSY_AUDIO_DEVICE_ERROR_OPEN_NAME,
+    PSY_AUDIO_DEVICE_ERROR_OPEN_NO_MATCH,
+    PSY_AUDIO_DEVICE_ERROR_FAILED,
+} PsyAudioDeviceError;
+
+/**
+ * PsyAudioSampleRate:
+ * @PSY_AUDIO_SAMPLE_RATE_22050: A low quality sample rate (old MP3's)
+ * @PSY_AUDIO_SAMPLE_RATE_24000:
+ * @PSY_AUDIO_SAMPLE_RATE_32000: A quality sufficient for audio tapes FM radio
+ * @PSY_AUDIO_SAMPLE_RATE_44100: The quality of CD audio
+ * @PSY_AUDIO_SAMPLE_RATE_48000: The quality of DVD audio the default for psylib
+ * @PSY_AUDIO_SAMPLE_RATE_88200:
+ * @PSY_AUDIO_SAMPLE_RATE_96000: A high quality likely better than you need
+ * @PSY_AUDIO_SAMPLE_RATE_192000: A very high quality likely much higher than
+ * @PSY_AUDIO_SAMPLE_RATE_UNKNOWN: A unknown/handled samplerate by psylib
+ * you need.
+ *
+ * The sample rates higher then 32000 can represent all audio waves that most
+ * humans can hear, except for the young. The most used sample rates will
+ * probably be PSY_AUDIO_SAMPLE_RATE_44100 and _48000, as these can represent
+ * everything we can hear. You can go higher, but is it necessary???
+ *
+ * Info is taken at july 11th 2023 from the [audacity-wiki]
+ * (https://manual.audacityteam.org/man/sample_rates.html)
+ *
+ * TODO // In python this might map to Psy.AudioSampleRate.48000 and python
+ * doesn't like the .48000, hence we might need to prefix a R to get
+ * Psy.AudioSampleRate.48000
+ *
+ * TODO convert the name of the enum to PsyAudioFrameRate as it is more accurate
+ * according to the definition of Frame and Sample [audio-with-psylib]
+ *
+ * 22000, 88200 have been added as they are in PortAudio
+ */
+typedef enum {
+    PSY_AUDIO_SAMPLE_RATE_22050   = 22050,
+    PSY_AUDIO_SAMPLE_RATE_24000   = 24000,
+    PSY_AUDIO_SAMPLE_RATE_32000   = 32000,
+    PSY_AUDIO_SAMPLE_RATE_44100   = 44100,
+    PSY_AUDIO_SAMPLE_RATE_48000   = 48000,
+    PSY_AUDIO_SAMPLE_RATE_88200   = 88200,
+    PSY_AUDIO_SAMPLE_RATE_96000   = 96000,
+    PSY_AUDIO_SAMPLE_RATE_192000  = 192000,
+    PSY_AUDIO_SAMPLE_RATE_UNKNOWN = -1
+} PsyAudioSampleRate;
+
+/**
+ * PsyAudioChannelStrategy:
+ * @PSY_AUDIO_CHANNEL_STRATEGY_NONE: When there are an equal number of inputs
+ *     and outputs the intput-n is matched to output-n. However, when
+ *     there is a mismatch between the number only channels
+ *     0 to min(num_inputs, num_outputs) are mapped, hence some channels will
+ *     not be mapped at all, and they are stripped from the final result.
+ * @PSY_AUDIO_CHANNEL_STRATEGY_DUPLICATE_INPUTS: When a PsyAudioOutputDevice has
+ *     more channels available that there are in the source audio, channels are
+ *     duplicated in order to write to all outputs, mono audio signals will
+ *     be present on both audio channels. For three output channels the mapping
+ *     will be [left, right, left] for stereo output. So inputs will be
+ *     duplicated when there are more output channels
+ * @PSY_AUDIO_CHANNEL_STRATEGY_MIX_TRAILING_INPUTS: When the sound source has
+ *     more output channels than input channels the trailing outputs of the
+ *     source are summed with the channels already written. So writing a stereo
+ *     signal to a mono PsyAudioOutputDevice will lead from mixing two channels
+ *     [left, right] to one channel [left + right]
+ * @PSY_AUDIO_CHANNEL_STRATEGY_CUSTOM:
+ *     Choose your own mapping using e.g.
+ *     [method@AuditoryStimulus.set_channel_map]
+ * @PSY_AUDIO_CHANNEL_STRATEGY_DEFAULT: The default channel strategy is a
+ *     the same as [enum@AudioChannelStrategy.DUPLICATE_INPUTS]
+ *
+ * With these flags you can specify the default behavior when there is a mis-
+ * match in the number of AudioSource outputs and AudioSink inputs.
+ * By default psylib will generate a mapping between each input channel
+ * is mapped to the channel with the same number on the output. When there
+ * are more output channels, you can choose to use inputs multiple times as
+ * 1 output, this results in that you can mix your mono audio on both (or more)
+ * speakers of an stereo audio output.
+ */
+typedef enum {
+    PSY_AUDIO_CHANNEL_STRATEGY_NONE                = 0,
+    PSY_AUDIO_CHANNEL_STRATEGY_DUPLICATE_INPUTS    = 1 << 0,
+    PSY_AUDIO_CHANNEL_STRATEGY_MIX_TRAILING_INPUTS = 1 << 1,
+    PSY_AUDIO_CHANNEL_STRATEGY_CUSTOM              = 1 << 2,
+    PSY_AUDIO_CHANNEL_STRATEGY_DEFAULT
+    = PSY_AUDIO_CHANNEL_STRATEGY_DUPLICATE_INPUTS
+} PsyAudioChannelStrategy;
+
+/**
  * PsyDrawingContextError:
  * @PSY_DRAWING_CONTEXT_ERROR_NAME_EXISTS: A resouce with that name has
  *      already been registered.
@@ -165,3 +274,33 @@ typedef enum PsyPictureSizeStrategy {
     PSY_PICTURE_STRATEGY_AUTOMATIC,
     PSY_PICTURE_STRATEGY_MANUAL
 } PsyPictureSizeStrategy;
+
+/**
+ * PsyWaveForm:
+ * @PSY_WAVE_FORM_SINE: This is the default shape a pure tone/sine wave
+ * @PSY_WAVE_FORM_SQUARE: A square wave form is generated
+ * @PSY_WAVE_FORM_SAW: A saw tooth wave form is generated
+ * @PSY_WAVE_FORM_TRIANGLE: A triangular wave for is generated
+ * @PSY_WAVE_FORM_SILENCE: A silent wave form is generated
+ * @PSY_WAVE_FORM_WHITE_UNIFORM_NOISE: White noise with a uniform distribution
+ * @PSY_WAVE_FORM_PINK_NOISE: A waveform with pink noise is generated
+ * @PSY_WAVE_FORM_WHITE_GAUSSIAN_NOISE: white gaussian noise is generated
+ * @PSY_WAVE_FORM_RED_NOISE: red noise is generated
+ * @PSY_WAVE_FORM_BLUE_NOISE: blue noise is generated
+ * @PSY_WAVE_FORM_VIOLET_NOISE: violet noise is generated
+
+ * The different types of wave form that PsyWave should be able to generate.
+ */
+typedef enum {
+    PSY_WAVE_FORM_SINE                 = 0,
+    PSY_WAVE_FORM_SQUARE               = 1,
+    PSY_WAVE_FORM_SAW                  = 2,
+    PSY_WAVE_FORM_TRIANGLE             = 3,
+    PSY_WAVE_FORM_SILENCE              = 4,
+    PSY_WAVE_FORM_WHITE_UNIFORM_NOISE  = 5,
+    PSY_WAVE_FORM_PINK_NOISE           = 6,
+    PSY_WAVE_FORM_WHITE_GAUSSIAN_NOISE = 9,
+    PSY_WAVE_FORM_RED_NOISE            = 10,
+    PSY_WAVE_FORM_BLUE_NOISE           = 11,
+    PSY_WAVE_FORM_VIOLET_NOISE         = 12
+} PsyWaveForm;

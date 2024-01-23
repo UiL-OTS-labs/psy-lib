@@ -286,8 +286,8 @@ psy_stimulus_play_for(PsyStimulus  *self,
     g_return_if_fail(PSY_IS_TIME_POINT(start_time));
     g_return_if_fail(PSY_IS_DURATION(dur));
 
-    psy_stimulus_play(self, start_time);
     psy_stimulus_set_duration(self, dur);
+    psy_stimulus_play(self, start_time);
 }
 
 /**
@@ -311,8 +311,8 @@ psy_stimulus_play_until(PsyStimulus  *self,
     g_return_if_fail(PSY_IS_TIME_POINT(start_time));
     g_return_if_fail(PSY_IS_TIME_POINT(stop_time));
 
-    psy_stimulus_play(self, start_time);
     psy_stimulus_stop(self, stop_time);
+    psy_stimulus_play(self, start_time);
 }
 
 /**

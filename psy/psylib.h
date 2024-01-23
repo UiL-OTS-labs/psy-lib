@@ -2,7 +2,12 @@
 #ifndef PSYLIB_H
 #define PSYLIB_H
 
+#include "psy-config.h"
+
 #include "psy-artist.h"
+#include "psy-audio-channel-map.h"
+#include "psy-audio-device.h"
+#include "psy-audio-utils.h"
 #include "psy-canvas.h"
 #include "psy-circle-artist.h"
 #include "psy-circle.h"
@@ -38,10 +43,19 @@
 #include "psy-vector.h"
 #include "psy-vector4.h"
 #include "psy-visual-stimulus.h"
+#include "psy-wave.h"
 #include "psy-widget.h"
 #include "psy-window.h"
 
 #include "backend_gtk/psy-gtk-window.h"
+
+#if defined HAVE_JACK2
+    #include "jack/psy-jack-audio-device.h"
+#endif
+
+#if defined HAVE_PORTAUDIO
+    #include "portaudio/psy-pa-device.h"
+#endif
 
 #include "gl/psy-gl-canvas.h"
 #include "gl/psy-gl-context.h"
