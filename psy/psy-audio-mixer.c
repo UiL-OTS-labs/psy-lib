@@ -498,7 +498,7 @@ psy_audio_mixer_class_init(PsyAudioMixerClass *klass)
 /**
  * psy_audio_mixer_new:(skip)(constructor)
  * @device: An instance of [class@AudioDevice, that is connected to this mixer.
- * @buf_dur:(transfer full): An instance of [struct@Duration] that is connected
+ * @buf_dur:(transfer none): An instance of [struct@Duration] that is connected
  *          to this mixer.
  *
  * Configures a new in- and output audio mixer. The audio mixer will

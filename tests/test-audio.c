@@ -85,7 +85,7 @@ audio_device_enumerate(void)
 
         // free mem
         for (guint i = 0; i < num_infos; i++)
-            g_free(infos[i]);
+            psy_audio_device_info_free(infos[i]);
         g_free(infos);
     }
 

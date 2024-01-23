@@ -120,7 +120,7 @@ stimulus_set_duration(PsyStimulus *stim, PsyDuration *dur)
     PsyStimulusPrivate *priv = psy_stimulus_get_instance_private(stim);
     if (priv->duration)
         psy_duration_free(priv->duration);
-    priv->duration = dur;
+    priv->duration = psy_duration_copy(dur);
 }
 
 static void
@@ -392,8 +392,8 @@ psy_stimulus_get_stop_time(PsyStimulus *self)
 /**
  * psy_stimulus_set_duration:
  * @self: A `PsyStimulus` instance.
- * @duration: A `PsyDuration` instance that tells the framework for how long
- *            this stimulus should be presented.
+ * @duration:(transfer none): An [struct@Duration] instance that tells the
+ *            framework for how long this stimulus should be presented.
  *
  * Sets the duration for the stimulus, in order to succeed the starting
  * time should be known.

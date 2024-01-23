@@ -200,7 +200,7 @@ static void
 pa_time_calculate_clock_offset(PsyPADevice *self, PsyTimePoint *tp_pa)
 {
     PsyTimePoint *tp_now = psy_clock_now(self->clk);
-    g_clear_object(&self->clock_offset);
+    g_clear_pointer(&self->clock_offset, psy_duration_free);
     self->clock_offset = psy_time_point_subtract(tp_now, tp_pa);
     g_debug("The clock offset is roughly %lf s",
             psy_duration_get_seconds(self->clock_offset));
@@ -546,10 +546,6 @@ psy_pa_device_init(PsyPADevice *self)
 static void
 psy_pa_device_dispose(GObject *object)
 {
-    PsyPADevice *pa_self = PSY_PA_DEVICE(object);
-
-    g_clear_object(&pa_self->clock_offset);
-
     G_OBJECT_CLASS(psy_pa_device_parent_class)->dispose(object);
 }
 
@@ -570,6 +566,8 @@ psy_pa_device_finalize(GObject *object)
     }
 
     g_mutex_clear(&self->last_frame.lock);
+
+    g_clear_pointer(&self->clock_offset, psy_duration_free);
 
     G_OBJECT_CLASS(psy_pa_device_parent_class)->finalize(object);
 }

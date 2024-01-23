@@ -400,7 +400,7 @@ audio_device_open(PsyAudioDevice *self, GError **error)
             __FILE__,
             __LINE__,
             G_OBJECT(self)->ref_count);
-    PsyAudioMixer *mixer = psy_audio_mixer_new(self, psy_duration_new(0.020));
+    PsyAudioMixer *mixer = psy_audio_mixer_new(self, priv->buffer_duration);
     g_print("%s:%d,AudioDev->ref_count = %u\n",
             __FILE__,
             __LINE__,

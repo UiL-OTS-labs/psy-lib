@@ -250,6 +250,7 @@ visual_stimulus_set_duration(PsyStimulus *self, PsyDuration *stim_dur)
     priv->num_frames = num_frames;
     PSY_STIMULUS_CLASS(psy_visual_stimulus_parent_class)
         ->set_duration(self, corrected_dur);
+    psy_duration_free(corrected_dur);
 }
 
 static void

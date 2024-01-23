@@ -101,7 +101,7 @@ wave_stopped(PsyStimulus *self, PsyTimePoint *tp, gpointer data)
 
     g_info("Wave duration was: %lf seconds", psy_duration_get_seconds(dur));
 
-    g_object_unref(dur);
+    psy_duration_free(dur);
 
     g_main_loop_quit(status->loop);
 }
@@ -138,7 +138,8 @@ test_wave_set_running(void)
 {
     PsyWave *tone = psy_wave_new(g_device);
     psy_auditory_stimulus_set_num_channels(PSY_AUDITORY_STIMULUS(tone), 1);
-    psy_stimulus_set_duration(PSY_STIMULUS(tone), psy_duration_new(.5));
+    PsyDuration *dur = psy_duration_new(.5);
+    psy_stimulus_set_duration(PSY_STIMULUS(tone), dur);
 
     gboolean running;
 
@@ -156,6 +157,7 @@ test_wave_set_running(void)
     CU_ASSERT_EQUAL(running, FALSE); // until we turn it of
 
     g_object_unref(tone);
+    psy_duration_free(dur);
 }
 
 static void
@@ -199,7 +201,7 @@ test_wave_play(void)
     psy_audio_device_stop(g_device);
 
     g_object_unref(tp_start);
-    g_object_unref(dur);
+    psy_duration_free(dur);
     g_object_unref(now);
     g_object_unref(clk);
     g_main_loop_unref(loop);
@@ -260,7 +262,7 @@ test_wave_play_noise(void)
     psy_audio_device_stop(g_device);
 
     g_object_unref(tp_start);
-    g_object_unref(dur);
+    psy_duration_free(dur);
     g_object_unref(now);
     g_object_unref(clk);
     g_main_loop_unref(loop);
