@@ -263,23 +263,25 @@ libpsy_dep = declare_dependency(
     dependencies : psy_deps 
 )
 
-gir = gnome.generate_gir(
-    libpsy,
-    sources : libpsyfiles + libpsy_headers + enum_files,
-    namespace : 'Psy',
-    nsversion : meson.project_version(),
-    identifier_prefix : 'Psy',
-    export_packages : 'psy',
-    symbol_prefix : 'psy',
-    includes : ['GObject-2.0', 'GLib-2.0', 'Gio-2.0'],
-    include_directories : '/opt/gtk/share/gir-1.0',
-    dependencies : [libpsy_dep],
-#    header : libpsy_public_header,
-    install : true,
-    extra_args : ['--warn-all'],
-    fatal_warnings : true
-)
-gir_target = gir[0]
-typelib_target = gir[1]
+if get_option('introspection')
+    gir = gnome.generate_gir(
+        libpsy,
+        sources : libpsyfiles + libpsy_headers + enum_files,
+        namespace : 'Psy',
+        nsversion : meson.project_version(),
+        identifier_prefix : 'Psy',
+        export_packages : 'psy',
+        symbol_prefix : 'psy',
+        includes : ['GObject-2.0', 'GLib-2.0', 'Gio-2.0'],
+        include_directories : '/opt/gtk/share/gir-1.0',
+        dependencies : [libpsy_dep],
+    #    header : libpsy_public_header,
+        install : true,
+        extra_args : ['--warn-all'],
+        fatal_warnings : true
+    )
+    gir_target = gir[0]
+    typelib_target = gir[1]
+endif
 
 

@@ -93,6 +93,8 @@ psy_picture_finalize(GObject *obj)
     PsyPicturePrivate *priv = psy_picture_get_instance_private(self);
 
     g_clear_pointer(&priv->fn, g_free);
+
+    G_OBJECT_CLASS(psy_picture_parent_class)->finalize(obj);
 }
 
 static void

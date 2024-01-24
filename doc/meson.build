@@ -4,6 +4,13 @@ md_files = files(
 
 if get_option('documentation')
 
+    if not get_option('introspection')
+        error(
+            'introspection is disabled.',
+            'Configure with introspection in order to build the documentation',
+            'or disable the documentation in ordr to build')
+    endif
+
     gidocgen = find_program('gi-docgen', required : true)
 
     toml_conf = configuration_data()
