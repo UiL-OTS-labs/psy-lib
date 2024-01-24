@@ -138,9 +138,7 @@ libpsy_headers = files(
     'psy-vector4.h',
     'psy-visual-stimulus.h',
     'psy-wave.h',
-    'psy-widget.h',
     'psy-window.h',
-    'psy-window-toy.h',
 )
 
 libpsy_header_private = files(
@@ -153,7 +151,6 @@ libpsyfiles = files (
     'psy-audio-channel-map.c',
     'psy-audio-device.c',
     'psy-audio-mixer.c',
-    # 'psy-audio-output-mixer.c',
     'psy-audio-utils.c',
     'psy-auditory-stimulus.c',
     'psy-canvas.c',
@@ -195,9 +192,7 @@ libpsyfiles = files (
     'psy-vector4.cpp',
     'psy-visual-stimulus.c',
     'psy-wave.c',
-    'psy-widget.c',
     'psy-window.c',
-    'psy-window-toy.c',
 )
 
 subdir('gl')

@@ -2,13 +2,6 @@
 cc = meson.get_compiler('c')
 cunit_dep = dependency('cunit')
 
-
-window_prog = executable (
-    '3dwindow_prog',
-    files('window-prog.c'),
-    dependencies : [psy_dep]
-)
-
 test_gtk_window = executable(
     'test_gtk_window',
     files('test-gtk-window.c'),

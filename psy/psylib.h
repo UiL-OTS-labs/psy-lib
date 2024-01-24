@@ -44,7 +44,6 @@
 #include "psy-vector4.h"
 #include "psy-visual-stimulus.h"
 #include "psy-wave.h"
-#include "psy-widget.h"
 #include "psy-window.h"
 
 #include "backend_gtk/psy-gtk-window.h"
