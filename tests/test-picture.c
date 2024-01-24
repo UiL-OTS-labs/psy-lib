@@ -366,6 +366,7 @@ picture_test_drawing(void)
 {
     PsyPicture *pic = psy_picture_new_filename(PSY_CANVAS(g_canvas), g_path);
     PsyImage   *image;
+    psy_canvas_reset(PSY_CANVAS(g_canvas));
 
     psy_stimulus_play(PSY_STIMULUS(pic), g_tstart);
 
