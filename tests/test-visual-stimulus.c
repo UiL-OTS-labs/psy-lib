@@ -50,7 +50,6 @@ test_visual_stimulus_teardown(void)
 {
     g_debug("Entering %s", __func__);
     g_clear_object(&g_canvas);
-#pragma message "free colors"
     g_clear_object(&g_stim_color);
     g_clear_object(&g_bg_color);
     g_clear_pointer(&g_tp_start, psy_time_point_free);
