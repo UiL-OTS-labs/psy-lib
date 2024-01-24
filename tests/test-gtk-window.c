@@ -82,7 +82,7 @@ update_circle(PsyVisualStimulus *stim,
                    * g_amplitude;
 
     psy_circle_set_radius(circle, radius);
-    g_object_unref(dur);
+    psy_duration_free(dur);
 }
 
 void
@@ -98,7 +98,7 @@ update_rect(PsyVisualStimulus *stim,
     gdouble seconds = psy_duration_get_seconds(dur);
     psy_visual_stimulus_set_rotation(stim, seconds);
     psy_visual_stimulus_set_scale_y(stim, 4 + sin(seconds * 2) * 2);
-    g_object_unref(dur);
+    psy_duration_free(dur);
 }
 
 void
@@ -109,8 +109,8 @@ circle_started(PsyCircle *circle, PsyTimePoint *tstart, gpointer data)
     PsyDuration  *dur   = psy_time_point_subtract(tstart, tzero);
     g_print("Circle started after %lf seconds\n",
             psy_duration_get_seconds(dur));
-    g_tstart = psy_time_point_dup(tstart);
-    g_object_unref(dur);
+    g_tstart = psy_time_point_copy(tstart);
+    psy_duration_free(dur);
 }
 
 void
@@ -118,11 +118,11 @@ circle_stopped(PsyCircle *circle, PsyTimePoint *tstop, gpointer data)
 {
     (void) circle;
     PsyTimePoint *tzero = data;
-    g_tstop             = psy_time_point_dup(tstop);
+    g_tstop             = psy_time_point_copy(tstop);
     PsyDuration *dur    = psy_time_point_subtract(tstop, tzero);
     g_print("Circle stopped after %lf seconds\n",
             psy_duration_get_seconds(dur));
-    g_object_unref(dur);
+    psy_duration_free(dur);
 }
 
 void
@@ -256,12 +256,14 @@ main(int argc, char **argv)
 
     GMainLoop *loop = g_main_loop_new(NULL, FALSE);
 
-    PsyGtkWindow *window = g_object_new(PSY_TYPE_GTK_WINDOW,
-                                        "n-monitor",
-                                        n_monitor,
-                                        "enable-debug",
-                                        g_opengl_debug,
-                                        NULL);
+    // clang-format off
+    PsyGtkWindow *window = g_object_new(
+            PSY_TYPE_GTK_WINDOW,
+            "n-monitor", n_monitor,
+            "enable-debug", g_opengl_debug,
+            NULL);
+    // clang-format on
+
     g_signal_connect(
         window, "debug-message", G_CALLBACK(open_gl_error_cb), loop);
 
@@ -349,11 +351,12 @@ main(int argc, char **argv)
     g_main_loop_unref(loop);
     g_object_unref(window);
     g_object_unref(clk);
-    g_object_unref(dur);
-    g_object_unref(start_dur);
+    psy_duration_free(dur);
+    psy_duration_free(start_dur);
     if (diff)
-        g_object_unref(diff);
-    g_object_unref(start);
+        psy_duration_free(diff);
+    psy_time_point_free(start);
+    psy_time_point_free(tp);
 
     return ret;
 }

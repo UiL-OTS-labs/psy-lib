@@ -7,13 +7,19 @@
 G_BEGIN_DECLS
 
 #define PSY_TYPE_DURATION psy_duration_get_type()
-G_DECLARE_FINAL_TYPE(PsyDuration, psy_duration, PSY, DURATION, GObject)
+
+/* Implementation of PsyDuration is considered private */
+
+typedef struct PsyDuration PsyDuration;
+
+G_MODULE_EXPORT GType
+psy_duration_get_type(void);
 
 G_MODULE_EXPORT PsyDuration *
 psy_duration_new(gdouble seconds);
 
 G_MODULE_EXPORT void
-psy_duration_destroy(PsyDuration *self);
+psy_duration_free(PsyDuration *self);
 
 G_MODULE_EXPORT PsyDuration *
 psy_duration_new_us(gint64 us);
@@ -25,7 +31,7 @@ G_MODULE_EXPORT PsyDuration *
 psy_duration_new_s(gint64 s);
 
 G_MODULE_EXPORT PsyDuration *
-psy_duration_dup(PsyDuration *self);
+psy_duration_copy(PsyDuration *self);
 
 G_MODULE_EXPORT gint64
 psy_duration_get_us(PsyDuration *self);

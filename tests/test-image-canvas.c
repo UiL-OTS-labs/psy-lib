@@ -80,7 +80,8 @@ main(void)
     }
 
     g_object_unref(icanvas);
-    g_object_unref(tp_null);
-    g_object_unref(stimdur);
+    psy_time_point_free(tp_null);
+    psy_duration_free(stimdur);
+#pragma message "Create psy_color_free to free stim color"
     g_object_unref(stim_color);
 }

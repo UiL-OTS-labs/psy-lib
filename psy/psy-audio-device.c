@@ -273,7 +273,7 @@ static void
 audio_started_msg_free(gpointer msg)
 {
     AudioStartedMsg *message = msg;
-    g_object_unref(message->tp_started);
+    psy_time_point_free(message->tp_started);
     g_object_unref(message->audio_device);
     g_free(msg);
 }
@@ -339,7 +339,7 @@ psy_audio_device_get_property(GObject    *object,
         g_value_set_uint(value, psy_audio_device_get_num_samples_buffer(self));
         break;
     case PROP_OUTPUT_LATENCY:
-        g_value_set_object(value, psy_audio_device_get_output_latency(self));
+        g_value_take_boxed(value, psy_audio_device_get_output_latency(self));
         break;
     default:
         G_OBJECT_WARN_INVALID_PROPERTY_ID(object, prop_id, pspec);
@@ -373,8 +373,6 @@ psy_audio_device_dispose(GObject *object)
     g_main_context_unref(priv->main_context);
     priv->main_context = NULL;
 
-    g_clear_object(&priv->buffer_duration);
-
     G_OBJECT_CLASS(psy_audio_device_parent_class)->dispose(object);
 }
 
@@ -385,6 +383,7 @@ psy_audio_device_finalize(GObject *object)
     PsyAudioDevicePrivate *priv = psy_audio_device_get_instance_private(self);
 
     g_free(priv->name);
+    g_clear_pointer(&priv->buffer_duration, psy_duration_free);
 
     G_OBJECT_CLASS(psy_audio_device_parent_class)->finalize(object);
 }
@@ -401,7 +400,7 @@ audio_device_open(PsyAudioDevice *self, GError **error)
             __FILE__,
             __LINE__,
             G_OBJECT(self)->ref_count);
-    PsyAudioMixer *mixer = psy_audio_mixer_new(self, psy_duration_new(0.020));
+    PsyAudioMixer *mixer = psy_audio_mixer_new(self, priv->buffer_duration);
     g_print("%s:%d,AudioDev->ref_count = %u\n",
             __FILE__,
             __LINE__,
@@ -582,7 +581,7 @@ psy_audio_device_class_init(PsyAudioDeviceClass *klass)
      * the kernel of your OS. It may be the case that the hardware has
      * it's own internal buffering device that adds additional latency.
      */
-    audio_device_properties[PROP_OUTPUT_LATENCY] = g_param_spec_object(
+    audio_device_properties[PROP_OUTPUT_LATENCY] = g_param_spec_boxed(
         "output-latency",
         "OutputLatency",
         "The estimated output latency of this [class@PsyAudioDevice]",
@@ -953,7 +952,7 @@ psy_audio_device_get_num_output_channels(PsyAudioDevice *self)
  * rate might change to a supported rate.
  * So the duration of a frame can be queried once the device is open.
  *
- * Returns:(transfer full): The [class@Psy.Duration]of a single sample.
+ * Returns:(transfer full): The [struct@Psy.Duration]of a single sample.
  */
 PsyDuration *
 psy_audio_device_get_frame_dur(PsyAudioDevice *self)
@@ -1042,11 +1041,11 @@ psy_audio_device_set_started(PsyAudioDevice *self, PsyTimePoint *tp)
 {
     PsyAudioDevicePrivate *priv = psy_audio_device_get_instance_private(self);
 
-    g_return_if_fail(PSY_IS_AUDIO_DEVICE(self) && PSY_IS_TIME_POINT(tp));
+    g_return_if_fail(PSY_IS_AUDIO_DEVICE(self) && (tp != NULL));
 
     AudioStartedMsg *msg = g_new(AudioStartedMsg, 1);
 
-    msg->tp_started   = g_object_ref(tp);
+    msg->tp_started   = psy_time_point_copy(tp);
     msg->audio_device = g_object_ref(self);
 
     // TODO REMOVE as it is potentially blocking, hence blocking the
@@ -1128,7 +1127,7 @@ psy_audio_device_get_buffer_duration(PsyAudioDevice *self)
 /**
  * psy_audio_device_set_buffer_duration:
  * @self: an instance of [class@PsyAudioDevice]
- * @duration:(transfer full): The desired duration that the audiodevice should
+ * @duration:(transfer none): The desired duration that the audiodevice should
  *                            keep in its buffer.
  *
  * This may be used to set the desired buffering period. This property should
@@ -1142,15 +1141,16 @@ psy_audio_device_set_buffer_duration(PsyAudioDevice *self,
 {
     PsyAudioDevicePrivate *priv = psy_audio_device_get_instance_private(self);
 
-    g_return_if_fail(PSY_IS_AUDIO_DEVICE(self) && PSY_IS_DURATION(duration));
+    g_return_if_fail(PSY_IS_AUDIO_DEVICE(self));
+    g_return_if_fail(duration != NULL);
 
     if (psy_audio_device_get_is_open(self)) {
         g_warning("Unable to set buffer duration when the device is open");
         return;
     }
 
-    g_clear_object(&priv->buffer_duration);
-    priv->buffer_duration = duration;
+    g_clear_pointer(&priv->buffer_duration, psy_duration_free);
+    priv->buffer_duration = psy_duration_copy(duration);
 }
 
 /**
@@ -1158,10 +1158,10 @@ psy_audio_device_set_buffer_duration(PsyAudioDevice *self,
  * @self: The audio device to get some sample info of.
  * @nth_frame:(out caller-allocates): The number of the frame that corresponds
  *                                    to the time points below.
- * @tp_in:(out caller-allocates)(nullable):The time point that corresponds to
+ * @tp_in:(out callee-allocates)(nullable):The time point that corresponds to
  *                                         @nth_frame when it was obtained from
  *                                         the ADC.
- * @tp_out:(out caller-allocates)(nullable): The time point that corresponds to
+ * @tp_out:(out callee-allocates)(nullable): The time point that corresponds to
  *                                           @nth_frame when it will be played
  *                                           by the DAC.
  *

@@ -20,7 +20,7 @@ psy_trial_init(PsyTrial *trial)
 }
 
 PsyTrial *
-psy_trial_new()
+psy_trial_new(void)
 {
     return g_object_new(PSY_TYPE_TRIAL, NULL);
 }

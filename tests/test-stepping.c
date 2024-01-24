@@ -81,7 +81,7 @@ on_basic_step_activate(GApplication *app, gpointer data)
     psy_step_enter(PSY_STEP(trial), now);
 
     g_object_unref(clk);
-    g_object_unref(now);
+    psy_time_point_free(now);
 }
 
 static void
@@ -159,7 +159,7 @@ on_basic_loop_activate(GApplication *app, gpointer data)
     psy_step_enter(PSY_STEP(loop), timestamp);
 
     g_object_unref(clk);
-    g_object_unref(timestamp);
+    psy_time_point_free(timestamp);
 }
 
 static void
@@ -364,7 +364,7 @@ on_stones_trial_enter(PsyStep *step, gint64 timestamp, gpointer data)
     pars->trial_activated++;
 
     g_object_unref(clk);
-    g_object_unref(stamp);
+    psy_time_point_free(stamp);
 }
 
 static void
@@ -383,7 +383,7 @@ on_stones_loop_iterate(PsyLoop *loop,
     PsyTimePoint *now = psy_clock_now(clk);
     psy_loop_iterate(loop, now);
     g_object_unref(clk);
-    g_object_unref(now);
+    psy_time_point_free(now);
 }
 
 static void
@@ -433,7 +433,7 @@ on_basic_stepping_stones_activate(GApplication *app, gpointer data)
 
     now = psy_clock_now(clk);
     psy_step_enter(PSY_STEP(stones), now);
-    g_object_unref(now);
+    psy_time_point_free(now);
     g_object_unref(clk);
 }
 

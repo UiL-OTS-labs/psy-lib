@@ -81,7 +81,7 @@ jack_audio_device_on_process(jack_nframes_t n, void *audio_device)
         memset(samples, '0', sizeof(jack_default_audio_sample_t) * n);
     }
 
-    g_object_unref(tp);
+    psy_time_point_free(tp);
 
     return 0;
 }

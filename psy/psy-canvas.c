@@ -157,7 +157,7 @@ psy_canvas_get_property(GObject    *object,
         g_value_set_float(value, psy_canvas_get_height_vd(self));
         break;
     case FRAME_DUR:
-        g_value_set_object(value, psy_canvas_get_frame_dur(self));
+        g_value_set_boxed(value, psy_canvas_get_frame_dur(self));
         break;
     case PROJECTION_STYLE:
         g_value_set_int(value, psy_canvas_get_projection_style(self));
@@ -207,7 +207,6 @@ psy_canvas_dispose(GObject *gobject)
         priv->artists = NULL;
     }
 
-    g_clear_object(&priv->frame_dur);
     g_clear_object(&priv->context);
     g_clear_object(&priv->projection_matrix);
     g_clear_object(&priv->background_color);
@@ -221,6 +220,8 @@ psy_canvas_finalize(GObject *gobject)
     PsyCanvasPrivate *priv
         = psy_canvas_get_instance_private(PSY_CANVAS(gobject));
     (void) priv;
+
+    g_clear_pointer(&priv->frame_dur, psy_duration_free);
 
     G_OBJECT_CLASS(psy_canvas_parent_class)->finalize(gobject);
 }
@@ -257,9 +258,9 @@ static void
 set_frame_dur(PsyCanvas *self, PsyDuration *dur)
 {
     PsyCanvasPrivate *priv = psy_canvas_get_instance_private(self);
-    g_clear_object(&priv->frame_dur);
+    g_clear_pointer(&priv->frame_dur, psy_duration_free);
 
-    priv->frame_dur = psy_duration_dup(dur);
+    priv->frame_dur = psy_duration_copy(dur);
 }
 
 static void
@@ -331,7 +332,7 @@ draw_stimuli(PsyCanvas *self, guint64 frame_num, PsyTimePoint *tp)
             PsyDuration  *wait  = psy_time_point_subtract(start, tp);
             gint64        num_frames_away
                 = psy_duration_divide_rounded(wait, priv->frame_dur);
-            g_object_unref(wait);
+            psy_duration_free(wait);
             if (num_frames_away < 0) {
                 g_warning(
                     "Scheduling a stimulus that should have been presented "
@@ -368,7 +369,7 @@ draw_stimuli(PsyCanvas *self, guint64 frame_num, PsyTimePoint *tp)
         psy_stimulus_set_is_finished(stim, tend);
         psy_canvas_remove_stimulus(self, PSY_VISUAL_STIMULUS(stim));
     }
-    g_object_unref(tend);
+    psy_time_point_free(tend);
     g_ptr_array_unref(nodes_to_remove);
 }
 
@@ -697,12 +698,11 @@ psy_canvas_class_init(PsyCanvasClass *klass)
      * this canvas, you'll most do not get what you bargain for. For example
      * when the system
      */
-    obj_properties[FRAME_DUR]
-        = g_param_spec_object("frame-dur",
-                              "FrameDur",
-                              "The duration of one frame.",
-                              PSY_TYPE_DURATION,
-                              G_PARAM_READWRITE);
+    obj_properties[FRAME_DUR] = g_param_spec_boxed("frame-dur",
+                                                   "FrameDur",
+                                                   "The duration of one frame.",
+                                                   PSY_TYPE_DURATION,
+                                                   G_PARAM_READWRITE);
 
     /**
      * PsyCanvas:projection-style:
@@ -1175,7 +1175,7 @@ psy_canvas_set_frame_dur(PsyCanvas *self, PsyDuration *dur)
 {
     PsyCanvasClass *cls;
     g_return_if_fail(PSY_IS_CANVAS(self));
-    g_return_if_fail(PSY_IS_DURATION(dur));
+    g_return_if_fail(dur != NULL);
 
     cls = PSY_CANVAS_GET_CLASS(self);
 

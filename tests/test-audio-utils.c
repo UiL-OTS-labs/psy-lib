@@ -51,8 +51,8 @@ test_psy_num_audio_samples_to_duration(void)
     CU_ASSERT_PTR_NOT_NULL_FATAL(dur_second);
     CU_ASSERT_EQUAL(psy_duration_get_us(dur_second), 1000000);
 
-    g_object_unref(dur_sample);
-    g_object_unref(dur_second);
+    psy_duration_free(dur_sample);
+    psy_duration_free(dur_second);
 }
 
 static void
@@ -74,35 +74,35 @@ test_psy_duration_to_num_audio_samples(void)
         psy_duration_to_num_audio_frames(one_s, PSY_AUDIO_SAMPLE_RATE_192000),
         PSY_AUDIO_SAMPLE_RATE_192000);
 
-    g_object_unref(one_s);
+    psy_duration_free(one_s);
 
     one_sample_dur
         = psy_num_audio_samples_to_duration(1, PSY_AUDIO_SAMPLE_RATE_22050);
     CU_ASSERT_EQUAL(1,
                     psy_duration_to_num_audio_frames(
                         one_sample_dur, PSY_AUDIO_SAMPLE_RATE_22050));
-    g_object_unref(one_sample_dur);
+    psy_duration_free(one_sample_dur);
 
     one_sample_dur
         = psy_num_audio_samples_to_duration(1, PSY_AUDIO_SAMPLE_RATE_44100);
     CU_ASSERT_EQUAL(1,
                     psy_duration_to_num_audio_frames(
                         one_sample_dur, PSY_AUDIO_SAMPLE_RATE_44100));
-    g_object_unref(one_sample_dur);
+    psy_duration_free(one_sample_dur);
 
     one_sample_dur
         = psy_num_audio_samples_to_duration(1, PSY_AUDIO_SAMPLE_RATE_48000);
     CU_ASSERT_EQUAL(1,
                     psy_duration_to_num_audio_frames(
                         one_sample_dur, PSY_AUDIO_SAMPLE_RATE_48000));
-    g_object_unref(one_sample_dur);
+    psy_duration_free(one_sample_dur);
 
     one_sample_dur
         = psy_num_audio_samples_to_duration(1, PSY_AUDIO_SAMPLE_RATE_192000);
     CU_ASSERT_EQUAL(1,
                     psy_duration_to_num_audio_frames(
                         one_sample_dur, PSY_AUDIO_SAMPLE_RATE_192000));
-    g_object_unref(one_sample_dur);
+    psy_duration_free(one_sample_dur);
 }
 
 int

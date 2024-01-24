@@ -19,7 +19,7 @@ iteration_free(gpointer iteration)
 {
     Iteration *iter = iteration;
     g_clear_object(&iter->loop);
-    g_clear_object(&iter->timestamp);
+    g_clear_pointer(&iter->timestamp, psy_time_point_free);
     g_free(iter);
 }
 
@@ -315,7 +315,7 @@ psy_loop_iterate(PsyLoop *self, PsyTimePoint *timestamp)
     Iteration *iter = g_new(Iteration, 1);
 
     iter->loop      = g_object_ref(self);
-    iter->timestamp = g_object_ref(timestamp);
+    iter->timestamp = psy_time_point_copy(timestamp);
 
     /*
      * g_main_context_invoke and friends might recurse into stackoverflow, when

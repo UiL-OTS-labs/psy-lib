@@ -250,6 +250,7 @@ visual_stimulus_set_duration(PsyStimulus *self, PsyDuration *stim_dur)
     priv->num_frames = num_frames;
     PSY_STIMULUS_CLASS(psy_visual_stimulus_parent_class)
         ->set_duration(self, corrected_dur);
+    psy_duration_free(corrected_dur);
 }
 
 static void
@@ -558,7 +559,7 @@ psy_visual_stimulus_emit_update(PsyVisualStimulus *self,
                                 gint64             nth_frame)
 {
     g_return_if_fail(PSY_IS_STIMULUS(self));
-    g_return_if_fail(PSY_IS_TIME_POINT(frame_time));
+    g_return_if_fail(frame_time != NULL);
 
     g_signal_emit(
         self, visual_stimulus_signals[SIG_UPDATE], 0, frame_time, nth_frame);

@@ -23,22 +23,17 @@ parallel_port_create(void)
     if (!port)
         return;
 
+    // clang-format off
     g_object_get(port,
-                 "direction",
-                 &dir,
-                 "pins",
-                 &pins,
-                 "port-name",
-                 &name,
-                 "port-num",
-                 &port_num,
-                 "is_open",
-                 &is_open,
-                 "is-output",
-                 &is_output,
-                 "is-input",
-                 &is_input,
+                 "direction", &dir,
+                 "pins", &pins,
+                 "port-name", &name,
+                 "port-num", &port_num,
+                 "is_open", &is_open,
+                 "is-output", &is_output,
+                 "is-input", &is_input,
                  NULL);
+    // clang-format on
 
     CU_ASSERT_EQUAL(dir, PSY_IO_DIRECTION_OUT);
     CU_ASSERT_STRING_EQUAL(name, "");

@@ -43,7 +43,7 @@ psy_int_to_sample_rate(gint sample_rate)
  * Calculates the duration of a number of samples given a sampling rate.
  * This is a much more accurate way to calculate the duration of for a number
  * of audio samples than using [method@Duration.multiply_scalar] as
- * the resolution of [class@PsyDuration] is in microseconds and 1.0/44100 e.g.
+ * the resolution of [struct@Duration] is in microseconds and 1.0/44100 e.g.
  * isn't a whole number of micro seconds. So the multiplication with a large
  * number of samples loses quite some time.
  *

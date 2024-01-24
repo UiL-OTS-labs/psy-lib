@@ -170,7 +170,7 @@ pa_clear_last_frame_info(PsyPADevice *self)
  * reported by [method@Clock.now].
  *
  * Stability: private
- * Returns: An instance of [class@PsyTimePoint], the timepoint returned is an
+ * Returns: An instance of [struct@TimePoint], the timepoint returned is an
  *          timepoint that is a timepoint with the origin of in Port Audio.
  */
 static PsyTimePoint *
@@ -181,8 +181,8 @@ pa_time_to_psy_timepoint(PaTime time)
 
     PsyTimePoint *tp_psy = psy_time_point_add(tp_null, pa_running_dur);
 
-    g_object_unref(tp_null);
-    g_object_unref(pa_running_dur);
+    psy_time_point_free(tp_null);
+    psy_duration_free(pa_running_dur);
     return tp_psy;
 }
 
@@ -200,11 +200,11 @@ static void
 pa_time_calculate_clock_offset(PsyPADevice *self, PsyTimePoint *tp_pa)
 {
     PsyTimePoint *tp_now = psy_clock_now(self->clk);
-    g_clear_object(&self->clock_offset);
+    g_clear_pointer(&self->clock_offset, psy_duration_free);
     self->clock_offset = psy_time_point_subtract(tp_now, tp_pa);
     g_debug("The clock offset is roughly %lf s",
             psy_duration_get_seconds(self->clock_offset));
-    g_object_unref(tp_now);
+    psy_time_point_free(tp_now);
 }
 
 /**
@@ -546,10 +546,6 @@ psy_pa_device_init(PsyPADevice *self)
 static void
 psy_pa_device_dispose(GObject *object)
 {
-    PsyPADevice *pa_self = PSY_PA_DEVICE(object);
-
-    g_clear_object(&pa_self->clock_offset);
-
     G_OBJECT_CLASS(psy_pa_device_parent_class)->dispose(object);
 }
 
@@ -570,6 +566,8 @@ psy_pa_device_finalize(GObject *object)
     }
 
     g_mutex_clear(&self->last_frame.lock);
+
+    g_clear_pointer(&self->clock_offset, psy_duration_free);
 
     G_OBJECT_CLASS(psy_pa_device_parent_class)->finalize(object);
 }
@@ -673,7 +671,7 @@ pa_device_start(PsyAudioDevice *self, GError **error)
 
     pa_time_calculate_clock_offset(pa_self, pa_time);
 
-    g_object_unref(pa_time);
+    psy_time_point_free(pa_time);
 
     g_info("Started PsyPADevice %s", psy_audio_device_get_name(self));
 }
@@ -767,14 +765,14 @@ pa_device_get_last_known_frame(PsyAudioDevice *self,
         PsyTimePoint *tp_pa_in
             = pa_time_to_psy_timepoint(pa_self->last_frame.time_input);
         *tp_in = pa_transform_pa_time_to_psy_time(pa_self, tp_pa_in);
-        g_object_unref(tp_pa_in);
+        psy_time_point_free(tp_pa_in);
     }
 
     if (tp_out) {
         PsyTimePoint *tp_pa_out
             = pa_time_to_psy_timepoint(pa_self->last_frame.time_output);
         *tp_out = pa_transform_pa_time_to_psy_time(pa_self, tp_pa_out);
-        g_object_unref(tp_pa_out);
+        psy_time_point_free(tp_pa_out);
     }
 
     g_mutex_unlock(&pa_self->last_frame.lock);

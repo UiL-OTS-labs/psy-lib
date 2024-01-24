@@ -182,6 +182,7 @@ auditory_stimulus_play(PsyStimulus *stimulus, PsyTimePoint *start_time)
 
     psy_audio_device_schedule_stimulus(audio_device, stim);
 
+    // install a default channel map, or allows a client to set one.
     g_signal_emit(
         stim, auditory_stimulus_signals[SIG_ADD_CHANNEL_MAP], 0, audio_device);
 }
@@ -203,8 +204,12 @@ auditory_stimulus_set_duration(PsyStimulus *self, PsyDuration *stim_dur)
     PsyDuration *corrected_dur
         = psy_duration_multiply_scalar(frame_dur, num_frames);
     priv->num_frames = num_frames;
+
     PSY_STIMULUS_CLASS(psy_auditory_stimulus_parent_class)
         ->set_duration(self, corrected_dur);
+
+    psy_duration_free(frame_dur);
+    psy_duration_free(corrected_dur);
 }
 
 static void

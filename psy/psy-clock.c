@@ -4,7 +4,7 @@
 /**
  * PsyClock:
  *
- * This is a way to get the time in an experiment. The `PsyClock`
+ * This is a way to get the time in an experiment. The [class@Clock]
  * returns monotonic time in microsecond resolution, that means that
  * this time will not be affected by changes to time as a "realtime"
  * clock might be. This is also the clock that will be used internally.
@@ -15,8 +15,8 @@
  * other clocks might have an offset, or drift a little apart from this clock.
  *
  * All timestamps are compared to a "zero" time, that is the time that
- * This class is being defined, when psylib loads or the first PsyClock
- * is instantiated.
+ * This class is being defined, when you or psylib create the first
+ * instance of [class@PsyClock]
  */
 
 typedef struct _PsyClock {
@@ -62,7 +62,7 @@ psy_clock_get_property(GObject    *object,
     PsyClock *self = PSY_CLOCK(object);
     switch ((PsyClockProperty) property_id) {
     case PROP_NOW:
-        g_value_take_object(value, psy_clock_now(self));
+        g_value_take_boxed(value, psy_clock_now(self));
         break;
     default:
         G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
@@ -86,9 +86,12 @@ psy_clock_class_init(PsyClockClass *klass)
     /**
      * PsyClock:now:
      *
-     * Returns a timepoint with respect to the creation of the first PsyClock.
+     * Represents the current time on the clock.
+     *
+     * Returns:(transfer full): a timepoint with respect to the creation of the
+     * first PsyClock.
      */
-    obj_properties[PROP_NOW] = g_param_spec_object(
+    obj_properties[PROP_NOW] = g_param_spec_boxed(
         "now",
         "Now",
         "The current time since the first clock has been instantiated.",
@@ -117,15 +120,21 @@ psy_clock_new(void)
  * psy_clock_now:
  * @self: An instance of a `PsyClock`
  *
- * Returns:(transfer full): A `PsyTimePoint` instance.
+ * This is the way to obtain the current time in a psylib program.
+ * The time starts running at 0 when the first instance of [class@clock]
+ * is instantiated. This function returns the current time.
+ *
+ * Returns:(transfer full): A [struct@TimePoint] instance representing the
+ * current time.
  */
 PsyTimePoint *
 psy_clock_now(PsyClock *self)
 {
     g_return_val_if_fail(PSY_IS_CLOCK(self), NULL);
+
     gint64        num_ticks = g_get_monotonic_time() - self->zero_time;
-    PsyTimePoint *tp
-        = g_object_new(PSY_TYPE_TIME_POINT, "num-ticks", num_ticks, NULL);
+    PsyTimePoint *tp        = psy_time_point_new();
+    tp->ticks_since_start   = num_ticks;
     return tp;
 }
 
@@ -134,8 +143,8 @@ psy_clock_now(PsyClock *self)
  *
  * Returns the global zero_time, if no clock has been created, it will create
  * and destroy one in order to get a valid zero time. This function is used to
- * create instances of #PsyTimePoint from the result of from the monotonic
- * clock.
+ * create instances of [struct@Psy.TimePoint] from the result of from the
+ * monotonic clock.
  *
  * Returns: the zero_time, this is the result of g_get_monotonic_time() at which
  *          the first clock was created.

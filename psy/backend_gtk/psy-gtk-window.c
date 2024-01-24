@@ -420,7 +420,6 @@ psy_gtk_window_dispose(GObject *gobject)
     PsyGtkWindow *self = PSY_GTK_WINDOW(gobject);
 
     g_clear_object(&self->window);
-    g_clear_object(&self->frame_time);
 
     G_OBJECT_CLASS(psy_gtk_window_parent_class)->dispose(gobject);
 }
@@ -429,7 +428,8 @@ static void
 psy_gtk_window_finalize(GObject *gobject)
 {
     PsyGtkWindow *self = PSY_GTK_WINDOW(gobject);
-    (void) self;
+
+    g_clear_pointer(&self->frame_time, psy_time_point_free);
 
     G_OBJECT_CLASS(psy_gtk_window_parent_class)->finalize(gobject);
 }
@@ -463,7 +463,7 @@ set_monitor(PsyWindow *self, gint nth_monitor)
 
     PSY_CANVAS_CLASS(psy_gtk_window_parent_class)
         ->set_frame_dur(PSY_CANVAS(self), frame_duration);
-    g_object_unref(frame_duration);
+    psy_duration_free(frame_duration);
 
     PSY_WINDOW_CLASS(psy_gtk_window_parent_class)
         ->set_monitor(PSY_WINDOW(self), nth_monitor);
@@ -640,7 +640,7 @@ psy_gtk_window_new_for_monitor(gint n)
 static void
 psy_gtk_window_set_last_frame_time(PsyGtkWindow *self, PsyTimePoint *frame_time)
 {
-    g_clear_object(&self->frame_time);
+    psy_time_point_free(self->frame_time);
     self->frame_time = frame_time;
 }
 
@@ -661,6 +661,8 @@ psy_gtk_window_compute_frame_stats(PsyGtkWindow *self, PsyTimePoint *tp_new)
 
         gint64 num_frames = psy_duration_divide_rounded(time_lapsed, frame_dur);
         self->frames_lapsed = num_frames;
+
+        psy_duration_free(time_lapsed);
     }
     else {
         self->frames_lapsed = 1;

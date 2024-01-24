@@ -28,7 +28,7 @@ internal_timestamp_free(gpointer timestamp)
 {
     InternalTimestamp *tstamp = timestamp;
     g_clear_object(&tstamp->step);
-    g_clear_object(&tstamp->timestamp);
+    g_clear_pointer(&tstamp->timestamp, psy_time_point_free);
     g_free(timestamp);
 }
 
@@ -274,7 +274,7 @@ psy_step_enter(PsyStep *self, PsyTimePoint *tstamp)
     GSource        *source;
 
     InternalTimestamp *data = g_new(InternalTimestamp, 1);
-    data->timestamp         = g_object_ref(tstamp);
+    data->timestamp         = psy_time_point_copy(tstamp);
     data->step              = g_object_ref(self);
 
     source = g_idle_source_new();
@@ -303,7 +303,7 @@ psy_step_leave(PsyStep *self, PsyTimePoint *tstamp)
     GSource        *source;
 
     InternalTimestamp *data = g_new(InternalTimestamp, 1);
-    data->timestamp         = g_object_ref(tstamp);
+    data->timestamp         = psy_time_point_copy(tstamp);
     data->step              = g_object_ref(self);
 
     source = g_idle_source_new();

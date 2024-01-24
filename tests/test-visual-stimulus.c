@@ -30,7 +30,7 @@ test_visual_stimulus_setup(void)
     PsyTimePoint *temp = psy_image_canvas_get_time(g_canvas);
     g_tp_start         = psy_time_point_add(
         temp, psy_canvas_get_frame_dur(PSY_CANVAS(g_canvas)));
-    g_object_unref(temp);
+    psy_time_point_free(temp);
 
     if (!g_canvas || !g_stim_color || !g_bg_color || !g_tp_start)
         return 1;
@@ -50,9 +50,10 @@ test_visual_stimulus_teardown(void)
 {
     g_debug("Entering %s", __func__);
     g_clear_object(&g_canvas);
+#pragma message "free colors"
     g_clear_object(&g_stim_color);
     g_clear_object(&g_bg_color);
-    g_clear_object(&g_tp_start);
+    g_clear_pointer(&g_tp_start, psy_time_point_free);
 
     return 0;
 }
@@ -74,7 +75,9 @@ compute_surface_area_by_color(PsyImage *image, PsyColor *color)
 
     guint8 stim_pixel[4];
     gint   r, g, b, a;
+
     g_object_get(color, "ri", &r, "gi", &g, "bi", &b, "ai", &a, NULL);
+
     stim_pixel[0] = (guint8) r;
     stim_pixel[1] = (guint8) g;
     stim_pixel[2] = (guint8) b;
@@ -119,7 +122,9 @@ compute_surface_avg_stim_pos(PsyImage *image,
 
     guint8 stim_pixel[4];
     gint   r, g, b, a;
+
     g_object_get(color, "ri", &r, "gi", &g, "bi", &b, "ai", &a, NULL);
+
     stim_pixel[0] = (guint8) r;
     stim_pixel[1] = (guint8) g;
     stim_pixel[2] = (guint8) b;
@@ -258,7 +263,7 @@ vstim_scale(void)
 
     g_object_unref(image);
     g_object_unref(circle);
-    g_object_unref(stim_dur);
+    psy_duration_free(stim_dur);
 }
 
 void
@@ -517,7 +522,7 @@ vstim_rotate(void)
     g_object_unref(c9);
     g_object_unref(image);
 
-    g_object_unref(dur);
+    psy_duration_free(dur);
     g_object_unref(rect);
 }
 
@@ -611,7 +616,7 @@ vstim_draworder_same_z(void)
     g_object_unref(rect1);
     g_object_unref(rect2_color);
     g_object_unref(rect1_color);
-    g_object_unref(dur);
+    psy_duration_free(dur);
 }
 
 static void
@@ -709,7 +714,7 @@ vstim_draworder_different_z(void)
     g_object_unref(rect1);
     g_object_unref(rect2_color);
     g_object_unref(rect1_color);
-    g_object_unref(dur);
+    psy_duration_free(dur);
 }
 
 int
