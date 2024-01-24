@@ -50,7 +50,7 @@ psy_image_canvas_get_property(GObject    *object,
 
     switch ((PsyImageCanvasProperty) property_id) {
     case PROP_TIME:
-        g_value_take_object(value, psy_image_canvas_get_time(self));
+        g_value_take_boxed(value, psy_image_canvas_get_time(self));
         break;
     default:
         G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, spec);
@@ -74,8 +74,7 @@ psy_image_canvas_dispose(GObject *gobject)
 {
     PsyImageCanvasPrivate *priv
         = psy_image_canvas_get_instance_private(PSY_IMAGE_CANVAS(gobject));
-
-    g_clear_object(&priv->time);
+    (void) priv;
 
     G_OBJECT_CLASS(psy_image_canvas_parent_class)->dispose(gobject);
 }
@@ -85,7 +84,8 @@ psy_image_canvas_finalize(GObject *gobject)
 {
     PsyImageCanvasPrivate *priv
         = psy_image_canvas_get_instance_private(PSY_IMAGE_CANVAS(gobject));
-    (void) priv;
+
+    g_clear_pointer(&priv->time, psy_time_point_free);
 
     G_OBJECT_CLASS(psy_image_canvas_parent_class)->finalize(gobject);
 }
@@ -155,11 +155,11 @@ psy_image_canvas_class_init(PsyImageCanvasClass *klass)
      * [property@Psy.Canvas:frame-dur]
      */
     obj_properties[PROP_TIME]
-        = g_param_spec_object("time",
-                              "Time",
-                              "The current time for the canvas",
-                              PSY_TYPE_TIME_POINT,
-                              G_PARAM_READABLE);
+        = g_param_spec_boxed("time",
+                             "Time",
+                             "The current time for the canvas",
+                             PSY_TYPE_TIME_POINT,
+                             G_PARAM_READABLE);
 
     g_object_class_install_properties(object_class, N_PROPS, obj_properties);
 }
@@ -205,7 +205,7 @@ psy_image_canvas_iterate(PsyImageCanvas *self)
 /**
  * psy_image_canvas_set_time:
  * @self: An instance of [class@PsyImageCanvas]
- * @tp:(transfer full): An instance of [class@PsyTimePoint]
+ * @tp:(transfer full): An instance of [struct@PsyTimePoint]
  *
  * Sets the time for the internal time point of the ImageCanvas
  */
@@ -213,11 +213,11 @@ void
 psy_image_canvas_set_time(PsyImageCanvas *self, PsyTimePoint *tp)
 {
     g_return_if_fail(PSY_IS_IMAGE_CANVAS(self));
-    g_return_if_fail(PSY_IS_TIME_POINT(tp));
+    g_return_if_fail(tp != NULL);
 
     PsyImageCanvasPrivate *priv = psy_image_canvas_get_instance_private(self);
 
-    g_object_unref(priv->time);
+    psy_time_point_free(priv->time);
     priv->time = tp;
 }
 
@@ -236,5 +236,5 @@ psy_image_canvas_get_time(PsyImageCanvas *self)
 
     PsyImageCanvasPrivate *priv = psy_image_canvas_get_instance_private(self);
 
-    return psy_time_point_dup(priv->time);
+    return psy_time_point_copy(priv->time);
 }

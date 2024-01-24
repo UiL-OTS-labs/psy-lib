@@ -32,7 +32,7 @@ psy_stimulus_dispose(GObject *object)
     PsyStimulusPrivate *priv
         = psy_stimulus_get_instance_private(PSY_STIMULUS(object));
 
-    g_clear_object(&priv->start_time);
+    (void) priv;
 
     G_OBJECT_CLASS(psy_stimulus_parent_class)->dispose(object);
 }
@@ -44,6 +44,7 @@ psy_stimulus_finalize(GObject *self)
         = psy_stimulus_get_instance_private(PSY_STIMULUS(self));
 
     psy_duration_free(priv->duration);
+    psy_time_point_free(priv->start_time);
 }
 
 static void
@@ -56,7 +57,7 @@ psy_stimulus_set_property(GObject      *object,
 
     switch ((StimulusProperty) property_id) {
     case PROP_START_TIME:
-        psy_stimulus_play(self, g_value_get_object(value));
+        psy_stimulus_play(self, g_value_get_boxed(value));
         break;
     case PROP_DURATION:
         psy_stimulus_set_duration(self, g_value_get_boxed(value));
@@ -79,10 +80,10 @@ psy_stimulus_get_property(GObject    *object,
     PsyStimulusPrivate *priv = psy_stimulus_get_instance_private(self);
     switch ((StimulusProperty) property_id) {
     case PROP_START_TIME:
-        g_value_set_object(value, priv->start_time);
+        g_value_set_boxed(value, priv->start_time);
         break;
     case PROP_STOP_TIME:
-        g_value_set_object(value, psy_stimulus_get_stop_time(self));
+        g_value_set_boxed(value, psy_stimulus_get_stop_time(self));
         break;
     case PROP_DURATION:
         g_value_set_boxed(value, priv->duration);
@@ -110,8 +111,8 @@ stimulus_play(PsyStimulus *stim, PsyTimePoint *tp)
 {
     PsyStimulusPrivate *priv = psy_stimulus_get_instance_private(stim);
     if (priv->start_time)
-        g_object_unref(priv->start_time);
-    priv->start_time = psy_time_point_dup(tp);
+        psy_time_point_free(priv->start_time);
+    priv->start_time = psy_time_point_copy(tp);
 }
 
 static void
@@ -146,11 +147,11 @@ psy_stimulus_class_init(PsyStimulusClass *klass)
      * the start time will be reset to the nearest vblanking interval.
      */
     stimulus_properties[PROP_START_TIME]
-        = g_param_spec_object("start-time",
-                              "StartTime",
-                              "The time at which the stimulus started.",
-                              PSY_TYPE_TIME_POINT,
-                              G_PARAM_READABLE);
+        = g_param_spec_boxed("start-time",
+                             "StartTime",
+                             "The time at which the stimulus started.",
+                             PSY_TYPE_TIME_POINT,
+                             G_PARAM_READABLE);
 
     /**
      * Stimulus:stop-time:
@@ -161,11 +162,11 @@ psy_stimulus_class_init(PsyStimulusClass *klass)
      * card or monitor.
      */
     stimulus_properties[PROP_STOP_TIME]
-        = g_param_spec_object("stop-time",
-                              "StopTime",
-                              "The time at which the stimulus stopped.",
-                              PSY_TYPE_TIME_POINT,
-                              G_PARAM_READABLE);
+        = g_param_spec_boxed("stop-time",
+                             "StopTime",
+                             "The time at which the stimulus stopped.",
+                             PSY_TYPE_TIME_POINT,
+                             G_PARAM_READABLE);
 
     /**
      * Stimulus:duration:
@@ -230,8 +231,8 @@ psy_stimulus_class_init(PsyStimulusClass *klass)
 
     /**
      * PsyStimulus::stopped:
-     * @stimulus: the `PsyStimulus` that received the signal.
-     * @stop_time: (transfer none): A #PsyTimePoint at which the stimulus
+     * @stimulus: the [class@Stimulus] that received the signal.
+     * @stop_time: (transfer none): A [struct@TimePoint] at which the stimulus
      * stopped.
      *
      * The stopped signal is emitted when the stimulus has just stopped. The
@@ -255,7 +256,7 @@ psy_stimulus_class_init(PsyStimulusClass *klass)
 /**
  * psy_stimulus_play:
  * @self: A #PsyStimulus instance.
- * @start_time:(transfer none): A #PsyTimePoint at which the stimulus
+ * @start_time:(transfer none): A [struct@TimePoint] at which the stimulus
  *                              should start.
  *
  * This method schedules a stimulus at a given start time. It is well possible
@@ -267,7 +268,7 @@ void
 psy_stimulus_play(PsyStimulus *self, PsyTimePoint *start_time)
 {
     g_return_if_fail(PSY_IS_STIMULUS(self));
-    g_return_if_fail(PSY_IS_TIME_POINT(start_time));
+    g_return_if_fail(start_time != NULL);
 
     PsyStimulusClass *klass = PSY_STIMULUS_GET_CLASS(self);
 
@@ -278,7 +279,7 @@ psy_stimulus_play(PsyStimulus *self, PsyTimePoint *start_time)
 
 /**
  * psy_stimulus_play_for:
- * @self: A #PsyStimulus instance
+ * @self: A [class@Stimulus] instance
  * @start_time:(transfer none): The intended start time of the stimulus
  * @duration(transfer none):   The intended duration of the stimulus
  *
@@ -292,7 +293,7 @@ psy_stimulus_play_for(PsyStimulus  *self,
                       PsyDuration  *dur)
 {
     g_return_if_fail(PSY_IS_STIMULUS(self));
-    g_return_if_fail(PSY_IS_TIME_POINT(start_time));
+    g_return_if_fail(start_time != NULL);
     g_return_if_fail(dur != NULL);
 
     psy_stimulus_set_duration(self, dur);
@@ -317,8 +318,8 @@ psy_stimulus_play_until(PsyStimulus  *self,
                         PsyTimePoint *stop_time)
 {
     g_return_if_fail(PSY_IS_STIMULUS(self));
-    g_return_if_fail(PSY_IS_TIME_POINT(start_time));
-    g_return_if_fail(PSY_IS_TIME_POINT(stop_time));
+    g_return_if_fail(start_time != NULL);
+    g_return_if_fail(stop_time != NULL);
 
     psy_stimulus_stop(self, stop_time);
     psy_stimulus_play(self, start_time);
@@ -335,7 +336,7 @@ void
 psy_stimulus_stop(PsyStimulus *self, PsyTimePoint *stop_time)
 {
     g_return_if_fail(PSY_IS_STIMULUS(self));
-    g_return_if_fail(PSY_IS_TIME_POINT(stop_time));
+    g_return_if_fail(stop_time != NULL);
     PsyStimulusClass *klass = PSY_STIMULUS_GET_CLASS(self);
     g_return_if_fail(klass->set_duration);
 
@@ -346,6 +347,7 @@ psy_stimulus_stop(PsyStimulus *self, PsyTimePoint *stop_time)
     }
     PsyDuration *dur = psy_time_point_subtract(stop_time, priv->start_time);
     klass->set_duration(self, dur);
+    psy_duration_free(dur);
 }
 
 /**
@@ -373,9 +375,9 @@ psy_stimulus_get_start_time(PsyStimulus *self)
  *
  * Get the best estimation of when a stimulus is about to stop or has stopped.
  *
- * Returns:(transfer full): An #PsyTimePoint describing when the stimulus will
- * stop or was stopped if it is in the past. Or NULL when the stop time is still
- * not decided on.
+ * Returns:(transfer full)(nullable): An [struct@TimePoint] describing when the
+ * stimulus will stop or was stopped if it is in the past. Or NULL when the stop
+ * time is still not decided on.
  */
 PsyTimePoint *
 psy_stimulus_get_stop_time(PsyStimulus *self)
@@ -383,7 +385,7 @@ psy_stimulus_get_stop_time(PsyStimulus *self)
     g_return_val_if_fail(PSY_IS_STIMULUS(self), NULL);
     PsyStimulusPrivate *priv = psy_stimulus_get_instance_private(self);
 
-    if (!priv->duration)
+    if (!priv->duration || priv->start_time == NULL)
         return NULL;
 
     return psy_time_point_add(priv->start_time, priv->duration);
@@ -447,7 +449,7 @@ psy_stimulus_get_is_started(PsyStimulus *self)
 /**
  * psy_stimulus_set_is_started:
  * @self: An instance of `PsyStimulus` being started.
- * @start_time: An instance of `PsyTimePoint` when the stimulus should be
+ * @start_time: An instance of [struct@PsyTimePoint] when the stimulus should be
  * visible.
  *
  * stability:private
@@ -474,9 +476,9 @@ psy_stimulus_get_is_finished(PsyStimulus *self)
 
 /**
  * psy_stimulus_set_is_finished:
- * @self: An instance of `PsyStimulus` that is about to finish.
- * @stop_time: An instance of `PsyTimePoint` when the stimulus should be
- * visible.
+ * @self: An instance of [class@Stimulus] that is about to finish.
+ * @stop_time:(transfer none): An instance of [struct@TimePoint] when the
+ *            stimulus should be done.
  *
  * stability:private
  */

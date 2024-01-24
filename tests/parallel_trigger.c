@@ -111,9 +111,9 @@ exit:
     if (trigger_dur)
         psy_duration_free(trigger_dur);
     if (trigger_start)
-        g_object_unref(trigger_start);
+        psy_time_point_free(trigger_start);
     if (now)
-        g_object_unref(now);
+        psy_time_point_free(now);
 
     g_object_unref(trigger);
 

@@ -252,6 +252,7 @@ remove_stimulus(PsyAudioMixer *self, PsyAuditoryStimulus *stim)
     g_info("Removing PsyAuditoryStimulus %p", (gpointer) stim);
     g_ptr_array_remove(priv->stimuli, stim);
 
+    psy_time_point_free(stim_end);
     psy_duration_free(stim_dur);
 }
 
@@ -604,7 +605,7 @@ fail:
         psy_duration_free(onset_dur);
     }
     if (tp_sample) {
-        psy_time_point_destroy(tp_sample);
+        psy_time_point_free(tp_sample);
     }
 }
 

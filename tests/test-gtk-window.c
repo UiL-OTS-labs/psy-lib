@@ -109,7 +109,7 @@ circle_started(PsyCircle *circle, PsyTimePoint *tstart, gpointer data)
     PsyDuration  *dur   = psy_time_point_subtract(tstart, tzero);
     g_print("Circle started after %lf seconds\n",
             psy_duration_get_seconds(dur));
-    g_tstart = psy_time_point_dup(tstart);
+    g_tstart = psy_time_point_copy(tstart);
     psy_duration_free(dur);
 }
 
@@ -118,7 +118,7 @@ circle_stopped(PsyCircle *circle, PsyTimePoint *tstop, gpointer data)
 {
     (void) circle;
     PsyTimePoint *tzero = data;
-    g_tstop             = psy_time_point_dup(tstop);
+    g_tstop             = psy_time_point_copy(tstop);
     PsyDuration *dur    = psy_time_point_subtract(tstop, tzero);
     g_print("Circle stopped after %lf seconds\n",
             psy_duration_get_seconds(dur));
@@ -355,7 +355,8 @@ main(int argc, char **argv)
     psy_duration_free(start_dur);
     if (diff)
         psy_duration_free(diff);
-    g_object_unref(start);
+    psy_time_point_free(start);
+    psy_time_point_free(tp);
 
     return ret;
 }

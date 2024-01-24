@@ -617,12 +617,6 @@ psy_text_draw_stimulus(PsyText *text, PsyImage *img)
 PsyImage *
 psy_text_create_stimulus(PsyText *self)
 {
-    PsyClock     *clk;
-    PsyTimePoint *tp0 = NULL, *tp1 = NULL;
-    PsyDuration  *dur = NULL;
-    clk               = psy_clock_new();
-    tp0               = psy_clock_now(clk);
-
     g_return_val_if_fail(PSY_IS_TEXT(self), NULL);
 
     PsyImage *img = NULL;
@@ -679,17 +673,6 @@ psy_text_create_stimulus(PsyText *self)
         (guint) img_width, (guint) img_height, PSY_IMAGE_FORMAT_RGBA);
 
     psy_text_draw_stimulus(self, img);
-
-    tp1 = psy_clock_now(clk);
-    dur = psy_time_point_subtract(tp1, tp0);
-
-    g_info("Rendering text stimulus takes %lfs.\n",
-           psy_duration_get_seconds(dur));
-
-    psy_duration_free(dur);
-    g_object_unref(tp1);
-    g_object_unref(tp0);
-    g_object_unref(clk);
 
     return img;
 }

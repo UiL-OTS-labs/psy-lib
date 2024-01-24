@@ -559,7 +559,7 @@ psy_visual_stimulus_emit_update(PsyVisualStimulus *self,
                                 gint64             nth_frame)
 {
     g_return_if_fail(PSY_IS_STIMULUS(self));
-    g_return_if_fail(PSY_IS_TIME_POINT(frame_time));
+    g_return_if_fail(frame_time != NULL);
 
     g_signal_emit(
         self, visual_stimulus_signals[SIG_UPDATE], 0, frame_time, nth_frame);

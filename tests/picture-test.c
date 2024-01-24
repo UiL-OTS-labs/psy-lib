@@ -24,20 +24,25 @@ GOptionEntry options[] = {
     {0,},
 };
 
+// clang-format on
+
 static void
-run_canvas_test() {
+run_canvas_test(void)
+{
 
-    PsyTimePoint* tnull = psy_time_point_new();
-    GError* error = NULL;
+    PsyTimePoint *tnull = psy_time_point_new();
+    GError       *error = NULL;
 
-    PsyCanvas *canvas = PSY_CANVAS(psy_image_canvas_new(640, 480));
-    PsyDrawingContext* context = psy_canvas_get_context(canvas);
+    PsyCanvas         *canvas  = PSY_CANVAS(psy_image_canvas_new(640, 480));
+    PsyDrawingContext *context = psy_canvas_get_context(canvas);
     psy_drawing_context_load_files_as_texture(context, &g_filename, 1, &error);
-    PsyPicture* pic = psy_picture_new_xy_filename(canvas, g_x, g_y, g_filename);
-    PsyTimePoint* tstart = psy_time_point_add(tnull, psy_canvas_get_frame_dur(canvas));
-    
+    PsyPicture *pic = psy_picture_new_xy_filename(canvas, g_x, g_y, g_filename);
+    PsyTimePoint *tstart
+        = psy_time_point_add(tnull, psy_canvas_get_frame_dur(canvas));
+
     psy_stimulus_play(PSY_STIMULUS(pic), tstart);
 
+    // clang-format off
     g_object_set(
             pic,
             "x", (float) g_x,
@@ -45,25 +50,28 @@ run_canvas_test() {
             "width", (float) g_width,
             "height", (float) g_height,
             NULL);
+    // clang-format on
 
     psy_image_canvas_iterate(PSY_IMAGE_CANVAS(canvas));
 
     if (g_save_file) {
-        GError* error = NULL;
-        PsyImage* img = psy_canvas_get_image(canvas);
+        GError   *error = NULL;
+        PsyImage *img   = psy_canvas_get_image(canvas);
         psy_image_save_path(img, g_save_file, "png", &error);
         if (error) {
             g_printerr("Unable to save image: %s", error->message);
             g_clear_error(&error);
         }
     }
+    psy_time_point_free(tnull);
+    psy_time_point_free(tstart);
 }
 
 static void
-run_gui_test() {
+run_gui_test(void)
+{
 }
 
-// clang-format on
 int
 main(int argc, char **argv)
 {

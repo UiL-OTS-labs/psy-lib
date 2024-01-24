@@ -200,9 +200,9 @@ test_wave_play(void)
 
     psy_audio_device_stop(g_device);
 
-    g_object_unref(tp_start);
+    psy_time_point_free(tp_start);
+    psy_time_point_free(now);
     psy_duration_free(dur);
-    g_object_unref(now);
     g_object_unref(clk);
     g_main_loop_unref(loop);
 
@@ -261,9 +261,10 @@ test_wave_play_noise(void)
 
     psy_audio_device_stop(g_device);
 
-    g_object_unref(tp_start);
+    psy_time_point_free(tp_start);
+    psy_time_point_free(now);
     psy_duration_free(dur);
-    g_object_unref(now);
+
     g_object_unref(clk);
     g_main_loop_unref(loop);
 

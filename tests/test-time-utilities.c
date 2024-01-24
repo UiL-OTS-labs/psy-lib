@@ -18,15 +18,16 @@ test_clock(void)
     for (int i = 0; i < 9; i++) {
         t1 = psy_clock_now(clock);
         t2 = psy_clock_now(clock);
-        g_object_unref(t1);
-        g_object_unref(t2);
+        CU_ASSERT_TRUE(psy_time_point_less_equal(t1, t2));
+        psy_time_point_free(t1);
+        psy_time_point_free(t2);
     }
 
     t1 = psy_clock_now(clock);
     t2 = psy_clock_now(clock);
 
-    CU_ASSERT_PTR_NOT_NULL(t1);
-    CU_ASSERT_PTR_NOT_NULL(t2);
+    CU_ASSERT_PTR_NOT_NULL_FATAL(t1);
+    CU_ASSERT_PTR_NOT_NULL_FATAL(t2);
 
     if (!t1 || !t2)
         goto failure;
@@ -38,8 +39,8 @@ test_clock(void)
     CU_ASSERT_TRUE(us >= 0); // Negative durations would be weird in this case.
 failure:
     g_object_unref(clock);
-    g_object_unref(t1);
-    g_object_unref(t2);
+    psy_time_point_free(t1);
+    psy_time_point_free(t2);
     psy_duration_free(dur);
 }
 
@@ -47,8 +48,8 @@ static void
 check_time_point_arithmetic(void)
 {
     gint64        us;
-    PsyTimePoint *t1     = g_object_new(PSY_TYPE_TIME_POINT, NULL);
-    PsyTimePoint *t2     = g_object_new(PSY_TYPE_TIME_POINT, NULL);
+    PsyTimePoint *t1     = psy_time_point_new();
+    PsyTimePoint *t2     = psy_time_point_new();
     PsyTimePoint *tz     = NULL;
     PsyDuration  *onesec = psy_duration_new_s(1);
 
@@ -67,27 +68,27 @@ check_time_point_arithmetic(void)
     CU_ASSERT_TRUE(psy_duration_equal(dur, onesec));
     tz = psy_time_point_subtract_dur(time, onesec);
     CU_ASSERT_TRUE(psy_time_point_equal(tz, t1));
-    g_clear_object(&time);
+    g_clear_pointer(&time, psy_time_point_free);
     g_clear_pointer(&dur, psy_duration_free);
 
     psy_duration_free(onesec);
-    g_object_unref(t1);
-    g_object_unref(t2);
-    g_object_unref(tz);
+    psy_time_point_free(t1);
+    psy_time_point_free(t2);
+    psy_time_point_free(tz);
 }
 
 static void
-test_psy_time_point_dup(void)
+test_psy_time_point_copy(void)
 {
     PsyClock     *clk = psy_clock_new();
     PsyTimePoint *now = psy_clock_now(clk);
-    PsyTimePoint *dup = psy_time_point_dup(now);
+    PsyTimePoint *dup = psy_time_point_copy(now);
 
     CU_ASSERT_TRUE(psy_time_point_equal(dup, now));
 
     g_object_unref(clk);
-    g_object_unref(now);
-    g_object_unref(dup);
+    psy_time_point_free(now);
+    psy_time_point_free(dup);
 }
 
 static void
@@ -105,8 +106,8 @@ check_time_point_comparisons(void)
     CU_ASSERT_TRUE(psy_time_point_not_equal(t1, t2));
 
     g_object_unref(clock);
-    g_object_unref(t1);
-    g_object_unref(t2);
+    psy_time_point_free(t1);
+    psy_time_point_free(t2);
 }
 
 // static void
@@ -268,7 +269,7 @@ add_time_utilities_suite(void)
     if (!test)
         return 1;
 
-    test = CU_ADD_TEST(suite, test_psy_time_point_dup);
+    test = CU_ADD_TEST(suite, test_psy_time_point_copy);
 
     test = CU_add_test(
         suite, "Test time point comparisons", check_time_point_comparisons);

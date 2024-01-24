@@ -4,92 +4,30 @@
 #include "psy-duration.h"
 #include "psy-safe-int-private.h"
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+
+G_DEFINE_BOXED_TYPE(PsyTimePoint,
+                    psy_time_point,
+                    psy_time_point_copy,
+                    psy_time_point_free);
+
+#pragma GCC diagnostic pop
+
 /**
  * PsyTimePoint:
  *
- * Instances of PsyTimePoint are generally obtained by
- * `psy_clock_now`, which returns the current time as the
- * number of microseconds since the first `PsyClock` is instantiated.
- * common other ways of obtaining PsyTimePoints is the result of
+ * Instances of [struct@TimePoint] are generally obtained by
+ * [method@Psy.Clock.now], which returns the current time as the
+ * number of microseconds since the first instance of [class@Clock] is
+ * instantiated. Common other ways of obtaining PsyTimePoints is the result of
  * a computation between timepoints and durations. One can create a
- * timepoint with the constructor, but than the timepoint isn't really
- * meaning full.
+ * timepoint with the [struct@TimePoint.new], but than the timepoint isn't
+ * really meaning full. It would reflect the timepoint at which the clock
+ * would start ticking. You can however, create a timepoint from a result of
+ * [method@GLib.get_monotonic_time], these timepoint are then shifted so that
+ * they are comparable as if they were returned from our own [class@Clock]
  */
-
-typedef struct _PsyTimePoint {
-    GObject parent;
-    gint64  ticks_since_start;
-} PsyTimePoint;
-
-typedef enum { PROP_NULL, PROP_NUM_TICKS, NUM_PROPERTIES } PsyTimePointProperty;
-
-G_DEFINE_TYPE(PsyTimePoint, psy_time_point, G_TYPE_OBJECT)
-
-static GParamSpec *obj_properties[NUM_PROPERTIES];
-
-static void
-psy_time_point_set_property(GObject      *object,
-                            guint         property_id,
-                            const GValue *value,
-                            GParamSpec   *pspec)
-{
-    PsyTimePoint *tp = PSY_TIME_POINT(object);
-    switch ((PsyTimePointProperty) property_id) {
-    case PROP_NUM_TICKS:
-        tp->ticks_since_start = g_value_get_int64(value);
-        break;
-    default:
-        G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
-    }
-}
-
-static void
-psy_time_point_get_property(GObject    *object,
-                            guint       property_id,
-                            GValue     *value,
-                            GParamSpec *pspec)
-{
-    PsyTimePoint *self = PSY_TIME_POINT(object);
-    switch ((PsyTimePointProperty) property_id) {
-    case PROP_NUM_TICKS:
-        g_value_set_int64(value, self->ticks_since_start);
-        break;
-    default:
-        G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
-    }
-}
-
-static void
-psy_time_point_init(PsyTimePoint *self)
-{
-    (void) self;
-}
-
-static void
-psy_time_point_class_init(PsyTimePointClass *klass)
-{
-    GObjectClass *obj_class = G_OBJECT_CLASS(klass);
-
-    obj_class->set_property = psy_time_point_set_property;
-    obj_class->get_property = psy_time_point_get_property;
-
-    /**
-     * PsyTimePoint:num-ticks:
-     *
-     * This value represents the number of ticks since the first PsyClock
-     * is created/since the type PsyClock is registered.
-     */
-    obj_properties[PROP_NUM_TICKS] = g_param_spec_int64(
-        "num-ticks",
-        "num_ticks",
-        "The number of microseconds since the start of the clock",
-        G_MININT64,
-        G_MAXINT64,
-        0,
-        G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY);
-    g_object_class_install_properties(
-        obj_class, NUM_PROPERTIES, obj_properties);
-}
 
 /**
  * psy_time_point_new:(constructor)
@@ -104,21 +42,8 @@ psy_time_point_class_init(PsyTimePointClass *klass)
 PsyTimePoint *
 psy_time_point_new(void)
 {
-    return g_object_new(PSY_TYPE_TIME_POINT, NULL);
-}
-
-/**
- * psy_time_point_destroy:(skip)
- * @self: the instance of PsyTimePoint to destroy
- *
- * Frees timepoint that have previously created with psy_time_point_new(_x)
- * or have been retured by e.g. [method@Clock.now]
- */
-void
-psy_time_point_destroy(PsyTimePoint *self)
-{
-    g_return_if_fail(PSY_IS_TIME_POINT(self));
-    g_object_unref(self);
+    PsyTimePoint *new = g_new0(PsyTimePoint, 1);
+    return new;
 }
 
 /**
@@ -128,49 +53,63 @@ psy_time_point_destroy(PsyTimePoint *self)
  *
  * GLib e.g. returns monotonic time with [func@GLib.get_monotonic_time]. You
  * can use this function to get a timepoint that is equivalent to psylib's
- * time. The time by psylib starts at 0 when the first clock is loaded.
+ * time. The time by psylib starts at 0 when the first clock is Instantiated.
  *
- * Returns: a `PsyTimePoint` obtained from the monotonic clock of glib.
+ * Returns: a [struct@imePoint] obtained from the monotonic clock of glib.
  */
 PsyTimePoint *
 psy_time_point_new_monotonic(gint64 monotonic_time)
 {
-    gint64 zero_time = psy_clock_get_zero_time();
-    gint64 num_ticks = monotonic_time - zero_time;
-    return g_object_new(PSY_TYPE_TIME_POINT, "num_ticks", num_ticks, NULL);
+    PsyTimePoint *new      = g_new0(PsyTimePoint, 1);
+    gint64 zero_time       = psy_clock_get_zero_time();
+    new->ticks_since_start = monotonic_time - zero_time;
+    return new;
 }
 
 /**
- * psy_time_point_dup:
- * @self: An instance of #PsyTimePoint.
+ * psy_time_point_free:
+ * @self: the instance of [struct@TimePoint] to destroy
+ *
+ * Frees timepoint that have previously created with psy_time_point_new(_x)
+ * or have been retured by e.g. [method@Clock.now]
+ */
+void
+psy_time_point_free(PsyTimePoint *self)
+{
+    g_free(self);
+}
+
+/**
+ * psy_time_point_copy:
+ * @self: An instance of [struct@TimePoint]
  *
  * Creates a new copy of self
  *
  * Returns:(transfer full): a new copy of @self.
  */
 PsyTimePoint *
-psy_time_point_dup(PsyTimePoint *self)
+psy_time_point_copy(PsyTimePoint *self)
 {
-    PsyTimePoint *copy      = g_object_new(PSY_TYPE_TIME_POINT, NULL);
+    PsyTimePoint *copy      = g_new(PsyTimePoint, 1);
     copy->ticks_since_start = self->ticks_since_start;
     return copy;
 }
 
 /**
  * psy_time_point_subtract:
- * @self: An instance of `PsyTimePoint`
- * @other: An instance of `PsyTimePoint`
+ * @self: An instance of [struct@TimePoint]
+ * @other: An instance of [struct@TimePoint]
  *
  * Computes the difference/duration between two timepoints
  *
- * Returns:(transfer full): The `PsyDuration` between two `PsyTimePoints`
+ * Returns:(transfer full): The [struct@Duration] between two `PsyTimePoints`
  *                          Or NULL when the operation overflows.
  */
 PsyDuration *
 psy_time_point_subtract(PsyTimePoint *self, PsyTimePoint *other)
 {
-    g_return_val_if_fail(PSY_IS_TIME_POINT(self), NULL);
-    g_return_val_if_fail(PSY_IS_TIME_POINT(other), NULL);
+    g_return_val_if_fail(self != NULL, NULL);
+    g_return_val_if_fail(other != NULL, NULL);
 
     gint64   us_result;
     gboolean over_or_underflows = psy_safe_sub_gint64(
@@ -182,18 +121,18 @@ psy_time_point_subtract(PsyTimePoint *self, PsyTimePoint *other)
 
 /**
  * psy_time_point_subtract_dur:
- * @self: An instance of `PsyTimePoint`
- * @dur: An instance of `PsyDuration`
+ * @self: An instance of [struct@TimePoint]
+ * @dur: An instance of [struct@Duration]
  *
- * Computes the the new PsyTimePoint by subtracting a duration from @self
+ * Computes the new PsyTimePoint by subtracting a duration from @self
  *
- * Returns:(transfer full): The `PsyTimePoint` that is the result of
+ * Returns:(transfer full): The [struct@TimePoint] that is the result of
  *                          @self - @dur. Or NULL when the operation overflows.
  */
 PsyTimePoint *
 psy_time_point_subtract_dur(PsyTimePoint *self, PsyDuration *dur)
 {
-    g_return_val_if_fail(PSY_IS_TIME_POINT(self), NULL);
+    g_return_val_if_fail(self != NULL, NULL);
     g_return_val_if_fail(dur != NULL, NULL);
 
     gint64 new_ticks, ticks, us;
@@ -204,7 +143,7 @@ psy_time_point_subtract_dur(PsyTimePoint *self, PsyDuration *dur)
     over_or_under_flows = psy_safe_sub_gint64(ticks, us, &new_ticks);
 
     g_return_val_if_fail(!over_or_under_flows, NULL);
-    PsyTimePoint *tret      = g_object_new(PSY_TYPE_TIME_POINT, NULL);
+    PsyTimePoint *tret      = g_new(PsyTimePoint, 1);
     tret->ticks_since_start = new_ticks;
 
     return tret;
@@ -212,19 +151,19 @@ psy_time_point_subtract_dur(PsyTimePoint *self, PsyDuration *dur)
 
 /**
  * psy_time_point_add:
- * @self: An instance of `PsyTimePoint`
- * @dur: An instance of `PsyDuration`
+ * @self: An instance of [struct@TimePoint]
+ * @dur: An instance of [struct@Duration]
  *
  * Computes the the new PsyTimePoint by adding a duration to @self.
  *
- * Returns:(transfer full): The `PsyTimePoint` that is the result of
+ * Returns:(transfer full): The [struct@TimePoint] that is the result of
  *                          @self + @dur Or NULL when the operation
  *                          overflows.
  */
 PsyTimePoint *
 psy_time_point_add(PsyTimePoint *self, PsyDuration *dur)
 {
-    g_return_val_if_fail(PSY_IS_TIME_POINT(self), NULL);
+    g_return_val_if_fail(self != NULL, NULL);
     g_return_val_if_fail(dur != NULL, NULL);
 
     gint64 us        = psy_duration_get_us(dur);
@@ -234,31 +173,31 @@ psy_time_point_add(PsyTimePoint *self, PsyDuration *dur)
         = psy_safe_add_gint64(self->ticks_since_start, us, &new_ticks);
     g_return_val_if_fail(!over_or_under_flows, NULL);
 
-    PsyTimePoint *tp      = g_object_new(PSY_TYPE_TIME_POINT, NULL);
+    PsyTimePoint *tp      = g_new(PsyTimePoint, 1);
     tp->ticks_since_start = new_ticks;
     return tp;
 }
 
 /**
  * psy_time_point_duration_since_start:
- * @self: An instance of `PsyTimePoint`
+ * @self: An instance of [struct@TimePoint]
  *
  * A timepoint should refect the time between the timepoint and the start
  * of the PsyClock. The PsyClock start is roughly 0 the PsyClock type is
  * initialized.
  *
- * Returns:(transfer full): a `PsyDuration` that reflects the time when the
+ * Returns:(transfer full): a [struct@Duration] that reflects the time when the
  * first clock is loaded.
  */
 PsyDuration *
 psy_time_point_duration_since_start(PsyTimePoint *self)
 {
-    g_return_val_if_fail(PSY_IS_TIME_POINT(self), NULL);
-    PsyTimePoint *tzero = g_object_new(PSY_TYPE_TIME_POINT, NULL);
+    g_return_val_if_fail(self != NULL, NULL);
+    PsyTimePoint *tzero = psy_time_point_new();
 
     PsyDuration *dur = psy_time_point_subtract(self, tzero);
 
-    g_object_unref(tzero);
+    psy_time_point_free(tzero);
     return dur;
 }
 
@@ -272,8 +211,7 @@ psy_time_point_duration_since_start(PsyTimePoint *self)
 gboolean
 psy_time_point_less(PsyTimePoint *self, PsyTimePoint *other)
 {
-    g_return_val_if_fail(PSY_IS_TIME_POINT(self) && PSY_IS_TIME_POINT(other),
-                         FALSE);
+    g_return_val_if_fail(self != NULL && other != NULL, FALSE);
     return self->ticks_since_start < other->ticks_since_start;
 }
 
@@ -301,8 +239,7 @@ psy_time_point_less_equal(PsyTimePoint *self, PsyTimePoint *other)
 gboolean
 psy_time_point_equal(PsyTimePoint *self, PsyTimePoint *other)
 {
-    g_return_val_if_fail(PSY_IS_TIME_POINT(self) && PSY_IS_TIME_POINT(other),
-                         FALSE);
+    g_return_val_if_fail(self != NULL && other != NULL, FALSE);
     return self->ticks_since_start == other->ticks_since_start;
 }
 

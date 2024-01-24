@@ -273,7 +273,7 @@ static void
 audio_started_msg_free(gpointer msg)
 {
     AudioStartedMsg *message = msg;
-    g_object_unref(message->tp_started);
+    psy_time_point_free(message->tp_started);
     g_object_unref(message->audio_device);
     g_free(msg);
 }
@@ -1041,11 +1041,11 @@ psy_audio_device_set_started(PsyAudioDevice *self, PsyTimePoint *tp)
 {
     PsyAudioDevicePrivate *priv = psy_audio_device_get_instance_private(self);
 
-    g_return_if_fail(PSY_IS_AUDIO_DEVICE(self) && PSY_IS_TIME_POINT(tp));
+    g_return_if_fail(PSY_IS_AUDIO_DEVICE(self) && (tp != NULL));
 
     AudioStartedMsg *msg = g_new(AudioStartedMsg, 1);
 
-    msg->tp_started   = g_object_ref(tp);
+    msg->tp_started   = psy_time_point_copy(tp);
     msg->audio_device = g_object_ref(self);
 
     // TODO REMOVE as it is potentially blocking, hence blocking the
@@ -1158,10 +1158,10 @@ psy_audio_device_set_buffer_duration(PsyAudioDevice *self,
  * @self: The audio device to get some sample info of.
  * @nth_frame:(out caller-allocates): The number of the frame that corresponds
  *                                    to the time points below.
- * @tp_in:(out caller-allocates)(nullable):The time point that corresponds to
+ * @tp_in:(out callee-allocates)(nullable):The time point that corresponds to
  *                                         @nth_frame when it was obtained from
  *                                         the ADC.
- * @tp_out:(out caller-allocates)(nullable): The time point that corresponds to
+ * @tp_out:(out callee-allocates)(nullable): The time point that corresponds to
  *                                           @nth_frame when it will be played
  *                                           by the DAC.
  *

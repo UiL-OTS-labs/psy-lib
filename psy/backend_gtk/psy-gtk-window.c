@@ -420,7 +420,6 @@ psy_gtk_window_dispose(GObject *gobject)
     PsyGtkWindow *self = PSY_GTK_WINDOW(gobject);
 
     g_clear_object(&self->window);
-    g_clear_object(&self->frame_time);
 
     G_OBJECT_CLASS(psy_gtk_window_parent_class)->dispose(gobject);
 }
@@ -429,7 +428,8 @@ static void
 psy_gtk_window_finalize(GObject *gobject)
 {
     PsyGtkWindow *self = PSY_GTK_WINDOW(gobject);
-    (void) self;
+
+    g_clear_pointer(&self->frame_time, psy_time_point_free);
 
     G_OBJECT_CLASS(psy_gtk_window_parent_class)->finalize(gobject);
 }
@@ -640,7 +640,7 @@ psy_gtk_window_new_for_monitor(gint n)
 static void
 psy_gtk_window_set_last_frame_time(PsyGtkWindow *self, PsyTimePoint *frame_time)
 {
-    g_clear_object(&self->frame_time);
+    psy_time_point_free(self->frame_time);
     self->frame_time = frame_time;
 }
 

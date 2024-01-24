@@ -107,7 +107,7 @@ picture_setup(void)
     PsyTimePoint *tnull = psy_time_point_new();
     g_tstart            = psy_time_point_add(
         tnull, psy_canvas_get_frame_dur(PSY_CANVAS(g_canvas)));
-    g_object_unref(tnull);
+    psy_time_point_free(tnull);
 
     g_path = g_build_filename(g_get_tmp_dir(), "quarters.png", NULL);
 
@@ -131,7 +131,7 @@ picture_teardown(void)
 
     g_clear_object(&g_image);
     g_clear_object(&g_canvas);
-    g_clear_object(&g_tstart);
+    g_clear_pointer(&g_tstart, psy_time_point_free);
 
     GFile *file = g_file_new_for_path(g_path);
 

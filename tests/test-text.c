@@ -29,7 +29,7 @@ test_text_setup(void)
     PsyTimePoint *temp = psy_image_canvas_get_time(g_canvas);
     g_tp_start         = psy_time_point_add(
         temp, psy_canvas_get_frame_dur(PSY_CANVAS(g_canvas)));
-    g_object_unref(temp);
+    psy_time_point_free(temp);
 
     if (!g_canvas || !g_stim_color || !g_bg_color || !g_tp_start)
         return 1;
@@ -49,9 +49,10 @@ test_text_teardown(void)
 {
     g_debug("Entering %s", __func__);
     g_clear_object(&g_canvas);
+#pragma message "_free colors"
     g_clear_object(&g_stim_color);
     g_clear_object(&g_bg_color);
-    g_clear_object(&g_tp_start);
+    g_clear_pointer(&g_tp_start, psy_time_point_free);
 
     return 0;
 }

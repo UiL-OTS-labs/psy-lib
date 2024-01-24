@@ -6,10 +6,10 @@
 /**
  * PsyDuration:
  *
- * PsyDurations specifies the duration between two `PsyTimePoints`
- * A PsyTimePoint can be seen a the number of micro seconds since
- * an arbitrary start point. This duration is the number of microseconds
- * between two of such timepoints.
+ * PsyDurations specifies the duration between two instances of
+ * [struct@TimePoint]. A time point can be seen as the number of micro seconds
+ * since an arbitrary start point. This duration is the number of microseconds
+ * between two of such time points.
  * Internally the duration works with 64bit integer precision, The maximum
  * duration should is: 18446744073709551615 µs and the
  * minimum should is: -18446744073709551616 µs.

@@ -369,7 +369,7 @@ draw_stimuli(PsyCanvas *self, guint64 frame_num, PsyTimePoint *tp)
         psy_stimulus_set_is_finished(stim, tend);
         psy_canvas_remove_stimulus(self, PSY_VISUAL_STIMULUS(stim));
     }
-    g_object_unref(tend);
+    psy_time_point_free(tend);
     g_ptr_array_unref(nodes_to_remove);
 }
 
