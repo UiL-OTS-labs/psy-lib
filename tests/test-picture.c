@@ -276,7 +276,9 @@ test_colors(PsyImage *image)
         if (x < left_bound || x >= right_bound || y < upper_bound
             || y >= lower_bound) {
             // We should be outside the image
-            if (!psy_color_equal(bg, probe)) {
+            // an rgba value of 0 <= rgba < 256 doesn't round nicely to
+            // to a float, hence we allow a epsilon of one rgba value
+            if (!psy_color_equal_eps(bg, probe, (1.0f / 255))) {
                 ret = FALSE;
                 g_printerr(
                     "point (%u, %u) is not equal to the background.\n", x, y);
