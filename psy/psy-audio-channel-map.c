@@ -6,12 +6,12 @@
 
 G_DEFINE_BOXED_TYPE(PsyAudioChannelMapping,
                     psy_audio_channel_mapping,
-                    psy_audio_channel_mapping_dup,
+                    psy_audio_channel_mapping_copy,
                     psy_audio_channel_mapping_free)
 
 G_DEFINE_BOXED_TYPE(PsyAudioChannelMap,
                     psy_audio_channel_map,
-                    psy_audio_channel_map_dup,
+                    psy_audio_channel_map_copy,
                     psy_audio_channel_map_free)
 
 #pragma GCC diagnostic pop
@@ -52,7 +52,7 @@ psy_audio_channel_mapping_free(PsyAudioChannelMapping *self)
 }
 
 /**
- * psy_audio_channel_mapping_dup:
+ * psy_audio_channel_mapping_copy:
  * @self: an instance of [struct@PsyAudioChannelMapping]
  *
  * Create a deep copy of a mapping
@@ -60,7 +60,7 @@ psy_audio_channel_mapping_free(PsyAudioChannelMapping *self)
  * Returns:(transfer full): a new instance of [struct@PsyAudioChannelMapping]
  */
 PsyAudioChannelMapping *
-psy_audio_channel_mapping_dup(PsyAudioChannelMapping *self)
+psy_audio_channel_mapping_copy(PsyAudioChannelMapping *self)
 {
     g_return_val_if_fail(self != NULL, FALSE);
 
@@ -195,11 +195,11 @@ copy_mapping(gconstpointer src, gpointer data)
 {
     (void) data;
     PsyAudioChannelMapping *original = (PsyAudioChannelMapping *) src;
-    return psy_audio_channel_mapping_dup(original);
+    return psy_audio_channel_mapping_copy(original);
 }
 
 /**
- * psy_audio_channel_map_dup:
+ * psy_audio_channel_map_copy:
  * @self: the instance of [struct@AudioChannelMap] to copy
  *
  * Makes a deep copy of @self.
@@ -207,7 +207,7 @@ copy_mapping(gconstpointer src, gpointer data)
  * Returns: A deep copy of self.
  */
 PsyAudioChannelMap *
-psy_audio_channel_map_dup(PsyAudioChannelMap *self)
+psy_audio_channel_map_copy(PsyAudioChannelMap *self)
 {
     PsyAudioChannelMap *new = g_malloc(sizeof(PsyAudioChannelMap));
 
@@ -331,7 +331,7 @@ psy_audio_channel_map_get_mapping(PsyAudioChannelMap *self, guint index)
 
     PsyAudioChannelMapping *original = self->mapping->pdata[index];
 
-    return psy_audio_channel_mapping_dup(original);
+    return psy_audio_channel_mapping_copy(original);
 }
 
 /**
@@ -355,7 +355,7 @@ psy_audio_channel_map_add(PsyAudioChannelMap     *self,
     g_return_val_if_fail(
         mapping->mapped_source < (gint) self->num_source_channels, FALSE);
 
-    g_ptr_array_add(self->mapping, psy_audio_channel_mapping_dup(mapping));
+    g_ptr_array_add(self->mapping, psy_audio_channel_mapping_copy(mapping));
 
     return TRUE;
 }
@@ -391,6 +391,6 @@ psy_audio_channel_map_set(PsyAudioChannelMap     *self,
                          FALSE);
 
     psy_audio_channel_mapping_free(self->mapping->pdata[index]);
-    self->mapping->pdata[index] = psy_audio_channel_mapping_dup(mapping);
+    self->mapping->pdata[index] = psy_audio_channel_mapping_copy(mapping);
     return TRUE;
 }
