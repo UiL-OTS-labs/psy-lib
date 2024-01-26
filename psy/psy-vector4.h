@@ -20,7 +20,7 @@ G_MODULE_EXPORT PsyVector4 *
 psy_vector4_new_data(gsize n, gfloat *values);
 
 G_MODULE_EXPORT void
-psy_vector4_destroy(PsyVector4 *self);
+psy_vector4_free(PsyVector4 *self);
 
 G_MODULE_EXPORT gfloat
 psy_vector4_get_magnitude(PsyVector4 *self);

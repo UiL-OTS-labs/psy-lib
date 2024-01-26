@@ -157,8 +157,9 @@ psy_vector_new_xyz(gfloat x, gfloat y, gfloat z)
 }
 
 void
-psy_vector_destroy(PsyVector *self)
+psy_vector_free(PsyVector *self)
 {
+    g_return_if_fail(PSY_IS_VECTOR(self));
     g_object_unref(self);
 }
 

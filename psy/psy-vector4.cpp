@@ -225,11 +225,11 @@ psy_vector4_new_data(gsize n, gfloat *values)
 }
 
 /**
- * psy_vector4_destroy:
+ * psy_vector4_free:
  * @self: An instance to destroy
  */
 void
-psy_vector4_destroy(PsyVector4 *self)
+psy_vector4_free(PsyVector4 *self)
 {
     g_object_unref(self);
 }

@@ -188,7 +188,7 @@ test_basic_loop(void)
     CU_ASSERT_EQUAL(condition, PSY_LOOP_CONDITION_LESS);
     CU_ASSERT_FALSE(psy_loop_test(loop));
 
-    psy_loop_destroy(loop);
+    psy_loop_free(loop);
 
     // test PSY_LOOP_LESS
     index = 0, increment = 1, stop = 5;

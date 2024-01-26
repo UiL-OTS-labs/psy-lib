@@ -11,14 +11,14 @@ test_create(void)
     g_assert(vec != NULL);
     gfloat x, y, z;
 
-    psy_vector_destroy(vec);
+    psy_vector_free(vec);
     vec = psy_vector_new_x(1.0);
     CU_ASSERT_PTR_NOT_NULL_FATAL(vec);
     g_object_get(vec, "x", &x, "y", &y, "z", &z, NULL);
     CU_ASSERT_DOUBLE_EQUAL(x, 1, 0.0);
     CU_ASSERT_DOUBLE_EQUAL(y, 0, 0.0);
     CU_ASSERT_DOUBLE_EQUAL(z, 0, 0.0);
-    psy_vector_destroy(vec);
+    psy_vector_free(vec);
 
     vec = psy_vector_new_xy(10, 10);
     CU_ASSERT_PTR_NOT_NULL_FATAL(vec);
@@ -26,7 +26,7 @@ test_create(void)
     CU_ASSERT_DOUBLE_EQUAL(x, 10, 0);
     CU_ASSERT_DOUBLE_EQUAL(y, 10, 0);
     CU_ASSERT_DOUBLE_EQUAL(z, 0, 0);
-    psy_vector_destroy(vec);
+    psy_vector_free(vec);
 
     vec = psy_vector_new_xyz(100, 100, 100);
     CU_ASSERT_PTR_NOT_NULL_FATAL(vec);
@@ -35,7 +35,7 @@ test_create(void)
     CU_ASSERT_DOUBLE_EQUAL(y, 100, 0.0);
     CU_ASSERT_DOUBLE_EQUAL(z, 100, 0.0);
 
-    psy_vector_destroy(vec);
+    psy_vector_free(vec);
 }
 
 static void
@@ -66,13 +66,13 @@ test_unit(void)
 
     length = psy_vector_magnitude(unit);
     CU_ASSERT_DOUBLE_EQUAL(length, 1.0f, epsilon);
-    psy_vector_destroy(vec);
-    psy_vector_destroy(unit);
+    psy_vector_free(vec);
+    psy_vector_free(unit);
 
     vec  = psy_vector_new();
     unit = psy_vector_unit(vec);
     CU_ASSERT_PTR_NULL(unit);
-    psy_vector_destroy(vec);
+    psy_vector_free(vec);
 }
 
 static void
@@ -93,8 +93,8 @@ test_negate(void)
 
     CU_ASSERT_EQUAL(psy_vector_magnitude(vec), psy_vector_magnitude(negated));
 
-    psy_vector_destroy(vec);
-    psy_vector_destroy(negated);
+    psy_vector_free(vec);
+    psy_vector_free(negated);
 }
 
 static void
@@ -111,8 +111,8 @@ test_add_scalar(void)
     CU_ASSERT_EQUAL(ry, y + scalar);
     CU_ASSERT_EQUAL(rz, z + scalar);
 
-    psy_vector_destroy(vec);
-    psy_vector_destroy(result);
+    psy_vector_free(vec);
+    psy_vector_free(result);
 }
 
 static void
@@ -126,10 +126,10 @@ test_add_vector(void)
 
     CU_ASSERT_TRUE(psy_vector_equals(result, v3));
 
-    psy_vector_destroy(v1);
-    psy_vector_destroy(v2);
-    psy_vector_destroy(v3);
-    psy_vector_destroy(result);
+    psy_vector_free(v1);
+    psy_vector_free(v2);
+    psy_vector_free(v3);
+    psy_vector_free(result);
 }
 
 static void
@@ -145,8 +145,8 @@ test_sub_scalar(void)
     CU_ASSERT_EQUAL(ry, y - scalar);
     CU_ASSERT_EQUAL(rz, z - scalar);
 
-    psy_vector_destroy(vec);
-    psy_vector_destroy(result);
+    psy_vector_free(vec);
+    psy_vector_free(result);
 }
 
 static void
@@ -160,10 +160,10 @@ test_sub_vector(void)
 
     CU_ASSERT_TRUE(psy_vector_equals(result, expected));
 
-    psy_vector_destroy(v1);
-    psy_vector_destroy(v2);
-    psy_vector_destroy(expected);
-    psy_vector_destroy(result);
+    psy_vector_free(v1);
+    psy_vector_free(v2);
+    psy_vector_free(expected);
+    psy_vector_free(result);
 }
 
 static void
@@ -176,9 +176,9 @@ test_mul_scalar(void)
     PsyVector *expected
         = psy_vector_new_xyz(x * scalar, y * scalar, z * scalar);
     CU_ASSERT_TRUE(psy_vector_equals(expected, result));
-    psy_vector_destroy(v1);
-    psy_vector_destroy(result);
-    psy_vector_destroy(expected);
+    psy_vector_free(v1);
+    psy_vector_free(result);
+    psy_vector_free(expected);
 }
 
 static void
@@ -192,8 +192,8 @@ test_vector_dot(void)
 
     cos = psy_vector_dot(v2, v1);
     g_assert(cos == 0);
-    psy_vector_destroy(v1);
-    psy_vector_destroy(v2);
+    psy_vector_free(v1);
+    psy_vector_free(v2);
 }
 
 static void
@@ -211,12 +211,12 @@ test_vector_cross(void)
     result_reversed = psy_vector_cross(v2, v1);
     CU_ASSERT_TRUE(psy_vector_equals(v3min, result_reversed));
 
-    psy_vector_destroy(v1);
-    psy_vector_destroy(v2);
-    psy_vector_destroy(v3);
-    psy_vector_destroy(v3min);
-    psy_vector_destroy(result);
-    psy_vector_destroy(result_reversed);
+    psy_vector_free(v1);
+    psy_vector_free(v2);
+    psy_vector_free(v3);
+    psy_vector_free(v3min);
+    psy_vector_free(result);
+    psy_vector_free(result_reversed);
 }
 
 int

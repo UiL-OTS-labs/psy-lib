@@ -289,11 +289,11 @@ psy_loop_new_full(gint64           index,
 }
 
 /**
- * psy_loop_destroy:
+ * psy_loop_free:
  * @self:The loop to destroy
  */
 void
-psy_loop_destroy(PsyLoop *loop)
+psy_loop_free(PsyLoop *loop)
 {
     g_return_if_fail(PSY_IS_LOOP(loop));
     g_object_unref(loop);

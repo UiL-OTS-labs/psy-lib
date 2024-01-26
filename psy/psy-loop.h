@@ -30,7 +30,7 @@ psy_loop_new_full(gint64           index,
                   PsyLoopCondition condition);
 
 G_MODULE_EXPORT void
-psy_loop_destroy(PsyLoop *self);
+psy_loop_free(PsyLoop *self);
 
 G_MODULE_EXPORT void
 psy_loop_iterate(PsyLoop *self, PsyTimePoint *timestamp);

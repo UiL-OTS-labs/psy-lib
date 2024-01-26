@@ -34,7 +34,7 @@ psy_matrix4_new_perspective(gfloat fovy,
                             gfloat far);
 
 G_MODULE_EXPORT void
-psy_matrix4_destroy(PsyMatrix4 *v);
+psy_matrix4_free(PsyMatrix4 *v);
 
 G_MODULE_EXPORT void
 psy_matrix4_set_identity(PsyMatrix4 *self);
