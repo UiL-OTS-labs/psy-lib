@@ -14,6 +14,9 @@ G_DECLARE_FINAL_TYPE(
 G_MODULE_EXPORT PsyCircleArtist *
 psy_circle_artist_new(PsyCanvas *canvas, PsyVisualStimulus *stimulus);
 
+G_MODULE_EXPORT void
+psy_circle_artist_free(PsyCircleArtist *self);
+
 G_MODULE_EXPORT guint
 psy_circle_artist_get_object_id(PsyCircleArtist *circle);
 

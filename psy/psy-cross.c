@@ -207,6 +207,9 @@ psy_cross_class_init(PsyCrossClass *klass)
  * @canvas: an instance of [class@PsyCanvas] on which this stimulus should be
  * drawn.
  *
+ * Instances of PsyCross may be freed with g_object_unref and
+ * [method@Cross.free]
+ *
  * Returns: a new instance of [class@PsyCross] with default values.
  */
 PsyCross *
@@ -222,6 +225,9 @@ psy_cross_new(PsyCanvas *canvas)
  * @y: The y coordinate for the cross
  * @length: The length of the cross lines
  * @line_width: The width of the line
+ *
+ * Instances of PsyCross may be freed with g_object_unref and
+ * [method@Cross.free]
  *
  * Returns: a new instance of [class@PsyCross] with the provided values.
  */
@@ -239,6 +245,18 @@ psy_cross_new_full(
             "line-width", line_width,
             NULL);
     // clang-format on
+}
+
+/**
+ * psy_cross_free:skip
+ *
+ * Frees instances previously created with psy_cross_new* family of functions
+ */
+void
+psy_cross_free(PsyCross *self)
+{
+    g_return_if_fail(PSY_IS_CROSS(self));
+    g_object_unref(self);
 }
 
 /**

@@ -520,6 +520,19 @@ psy_audio_mixer_new(PsyAudioDevice *device, PsyDuration *buf_dur)
 }
 
 /**
+ * psy_audio_buffer_free:(skip)
+ *
+ * Frees instances of [class@AudioMixer] previously created with
+ * [ctor@AudioMixer.new] or g_object_new.
+ */
+void
+psy_audio_mixer_free(PsyAudioMixer *self)
+{
+    g_return_if_fail(PSY_IS_AUDIO_MIXER(self));
+    g_object_unref(self);
+}
+
+/**
  * psy_audio_mixer_get_buffer_duration:
  * @self: an instance of[class@AudioMixer]
  *

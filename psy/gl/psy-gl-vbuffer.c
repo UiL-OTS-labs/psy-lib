@@ -261,11 +261,31 @@ psy_gl_vbuffer_class_init(PsyGlVBufferClass *class)
 
 /* ************ public functions ******************** */
 
+/**
+ * psy_gl_vbuffer_new:(constructor)
+ *
+ * Create a new PsyGlVBuffer object.
+ *
+ * Returns: A new instance of [class@PsyGlVBuffer] that should be freed
+ * with g_object_unref or psy_gl_vbuffer_free.
+ */
 PsyGlVBuffer *
 psy_gl_vbuffer_new(void)
 {
     PsyGlVBuffer *gl_vbuffer = g_object_new(PSY_TYPE_GL_VBUFFER, NULL);
     return gl_vbuffer;
+}
+
+/**
+ * psy_gl_vbuffer_free:(skip)
+ *
+ * Free a PsyGlVBuffer object. Previously created with psy_gl_vbuffer_new.
+ */
+void
+psy_gl_vbuffer_free(PsyGlVBuffer *self)
+{
+    g_return_if_fail(PSY_IS_GL_VBUFFER(self));
+    g_object_unref(self);
 }
 
 guint

@@ -35,6 +35,9 @@ psy_picture_new_full(PsyCanvas   *canvas,
                      const gchar *filename);
 
 G_MODULE_EXPORT void
+psy_picture_free(PsyPicture *self);
+
+G_MODULE_EXPORT void
 psy_picture_set_filename(PsyPicture *self, const gchar *filename);
 
 G_MODULE_EXPORT const gchar *

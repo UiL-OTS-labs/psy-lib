@@ -225,7 +225,7 @@ psy_matrix4_new_perspective(gfloat fovy,
 /**
  * psy_matrix4_free:
  *
- * Destroys a `PsyMatrix4` instance
+ * Destroys a [class@Matrix4] instance
  *
  * self: the matrix to destroy
  */

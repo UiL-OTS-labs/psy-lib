@@ -174,15 +174,31 @@ psy_image_canvas_class_init(PsyImageCanvasClass *klass)
  * Creates a possibly platform specific [class@PsyImageCanvas] instance.
  * Currently it will in practice return an instance of [class@PsyGlCanvas]
  * which is a derived instance of PsyImageCanvas. That supports the same
- * methods. If in the future an instance of PsyD3dCanvas is retured on
+ * methods. If in the future an instance of PsyD3dCanvas is returned on
  * windows for example is yet to be determined.
  *
- * Returns: an instance of [class@ImageCanvas].
+ * Returns: an instance of [class@ImageCanvas]. This instance may be freed
+ * with g_object_unref or psy_image_canvas_free
  */
 PsyImageCanvas *
 psy_image_canvas_new(gint width, gint height)
 {
+    g_return_val_if_fail(width > 0, NULL);
+    g_return_val_if_fail(height > 0, NULL);
+
     return PSY_IMAGE_CANVAS(psy_gl_canvas_new(width, height));
+}
+
+/**
+ * psy_image_canvas_free:(skip)
+ *
+ * Free canvases previously created with psy_image_canvas_new
+ */
+void
+psy_image_canvas_free(PsyImageCanvas *self)
+{
+    g_return_if_fail(PSY_IS_IMAGE_CANVAS(self));
+    g_object_unref(self);
 }
 
 /**

@@ -20,6 +20,9 @@ psy_wave_new_volume(PsyAudioDevice *device, gdouble volume);
 G_MODULE_EXPORT PsyWave *
 psy_wave_tone_new(PsyAudioDevice *device, gdouble hz, gdouble volume);
 
+G_MODULE_EXPORT void
+psy_wave_free(PsyWave *self);
+
 G_MODULE_EXPORT gdouble
 psy_wave_get_volume(PsyWave *self);
 

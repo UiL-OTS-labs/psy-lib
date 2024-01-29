@@ -16,7 +16,7 @@ typedef struct AudioBackendAllocater {
 PsyAudioDevice *
 alloc_pa_device(void)
 {
-    return psy_pa_device_new();
+    return PSY_AUDIO_DEVICE(psy_pa_device_new());
 }
 
 AudioBackendAllocater pa_allocater = {.alloc = alloc_pa_device};

@@ -231,6 +231,7 @@ psy_vector4_new_data(gsize n, gfloat *values)
 void
 psy_vector4_free(PsyVector4 *self)
 {
+    g_return_if_fail(PSY_IS_VECTOR4(self));
     g_object_unref(self);
 }
 

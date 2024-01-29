@@ -14,6 +14,9 @@ G_DECLARE_FINAL_TYPE(
 G_MODULE_EXPORT PsyCrossArtist *
 psy_cross_artist_new(PsyCanvas *canvas, PsyVisualStimulus *stimulus);
 
+G_MODULE_EXPORT void
+psy_cross_artist_free(PsyCrossArtist *self);
+
 G_MODULE_EXPORT guint
 psy_cross_artist_get_object_id(PsyCrossArtist *cross);
 

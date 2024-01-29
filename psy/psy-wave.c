@@ -341,7 +341,7 @@ psy_wave_class_init(PsyWaveClass *klass)
  * 440 Hz.
  *
  * Returns: A new object with default parameters free with g_object_unref or
- *          similar function.
+ *          [method@Wave.free].
  */
 PsyWave *
 psy_wave_new(PsyAudioDevice *device)
@@ -361,7 +361,7 @@ psy_wave_new(PsyAudioDevice *device)
  * 440 Hz.
  *
  * Returns: A new instance with representing a tone with specified volume
- * with g_object_unref or similar function.
+ * with g_object_unref or [method@Wave.free].
  */
 PsyWave *
 psy_wave_new_volume(PsyAudioDevice *device, gdouble volume)
@@ -390,7 +390,7 @@ psy_wave_new_volume(PsyAudioDevice *device, gdouble volume)
  * a frequency higher that half the sampling rate.
  *
  * Returns: A new instance with representing a tone with specified volume
- * with g_object_unref or similar function.
+ * with g_object_unref or [method@Wave.free]
  */
 PsyWave *
 psy_wave_tone_new(PsyAudioDevice *device, gdouble hz, gdouble volume)
@@ -406,6 +406,18 @@ psy_wave_tone_new(PsyAudioDevice *device, gdouble hz, gdouble volume)
     // clang-format on
 
     return wave;
+}
+
+/**
+ * psy_wave_free: (skip)
+ *
+ * frees instances of [class@Wave]
+ */
+void
+psy_wave_free(PsyWave *self)
+{
+    g_return_if_fail(PSY_IS_WAVE(self));
+    g_object_unref(self);
 }
 
 /**

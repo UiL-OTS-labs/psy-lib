@@ -597,7 +597,9 @@ psy_gtk_window_class_init(PsyGtkWindowClass *klass)
  * psy_gtk_window_new:(constructor):
  *
  * Returns a new #PsyGtkWindow instance on the first monitor.
- * @return
+ *
+ * Returns: a newly initialized window it may be freed with psy_gtk_window_free
+ * or g_object_unref
  */
 PsyGtkWindow *
 psy_gtk_window_new(void)
@@ -616,7 +618,8 @@ psy_gtk_window_new(void)
  * by @n. If a number larger than n is chosen it will appear on n minus one
  * where n is the number of connected monitors.
  *
- * Returns: a newly initialized window
+ * Returns: a newly initialized window it may be freed with psy_gtk_window_free
+ * or g_object_unref
  */
 PsyGtkWindow *
 psy_gtk_window_new_for_monitor(gint n)
@@ -667,4 +670,16 @@ psy_gtk_window_compute_frame_stats(PsyGtkWindow *self, PsyTimePoint *tp_new)
     else {
         self->frames_lapsed = 1;
     }
+}
+
+/**
+ * psy_gtk_window_free:(skip)
+ *
+ * Destroys a psy window created with psy_gtk_window*new family of functions
+ */
+void
+psy_gtk_window_free(PsyGtkWindow *self)
+{
+    g_return_if_fail(PSY_IS_GTK_WINDOW(self));
+    g_object_unref(self);
 }

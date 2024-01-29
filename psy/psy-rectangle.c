@@ -161,6 +161,7 @@ psy_rectangle_new(PsyCanvas *canvas)
  * @height: the height of the rectangle along(x-axis)
  *
  * Returns: a new instance of [class@Rectangle] with the provided values.
+ *          The rectangle may be freed with g_object_unref or psy_rectangle_free
  */
 PsyRectangle *
 psy_rectangle_new_full(
@@ -176,6 +177,18 @@ psy_rectangle_new_full(
             "height", height,
             NULL);
     // clang-format on
+}
+
+/**
+ * psy_rectangle_free:(skip)
+ *
+ * frees rectangle that are created with psy_rectangle_new* family of functions
+ */
+void
+psy_rectangle_free(PsyRectangle *self)
+{
+    g_return_if_fail(PSY_IS_RECTANGLE(self));
+    g_object_unref(self);
 }
 
 /**

@@ -20,6 +20,9 @@ psy_circle_new_full(
     PsyCanvas *canvas, gfloat x, gfloat y, gfloat radius, guint num_vertices);
 
 G_MODULE_EXPORT void
+psy_circle_free(PsyCircle *self);
+
+G_MODULE_EXPORT void
 psy_circle_set_radius(PsyCircle *circle, gfloat radius);
 
 G_MODULE_EXPORT gfloat

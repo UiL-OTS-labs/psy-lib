@@ -560,7 +560,7 @@ psy_gl_canvas_class_init(PsyGlCanvasClass *klass)
  * @width: The desired width of the context
  * @height: The desired height of the context
  *
- * Returns: a new PsyGlCanvas.
+ * Returns: a new PsyGlCanvas. free with psy_gl_canvas_free or g_object_unref
  */
 PsyGlCanvas *
 psy_gl_canvas_new(gint width, gint height)
@@ -592,7 +592,7 @@ psy_gl_canvas_new(gint width, gint height)
  * least 3.3 version with @gl_major and @gl_minor, for OpenGL ES, you should
  * aim for at least 2.0
  *
- * Returns: a new PsyGlCanvas.
+ * Returns: a new PsyGlCanvas. free with psy_gl_canvas_free or g_object_unref
  */
 PsyGlCanvas *
 psy_gl_canvas_new_full(gint     width,
@@ -616,4 +616,14 @@ psy_gl_canvas_new_full(gint     width,
                         NULL
                         );
     // clang-format on
+}
+
+/**
+ * psy_gl_canvas_free:(skip)
+ */
+void
+psy_gl_canvas_free(PsyGlCanvas *self)
+{
+    g_return_if_fail(PSY_IS_GL_CANVAS(self));
+    g_object_unref(self);
 }

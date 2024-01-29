@@ -120,41 +120,41 @@ cross_artist_draw(PsyArtist *self)
         gfloat x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12;
         gfloat y1, y2, y3, y4, y5, y6, y7, y8, y9, y10, y11, y12;
 
-        x1 = artist->ywidth / 2.0;
-        y1 = artist->ylength / 2.0;
+        x1 = artist->ywidth / 2.0f;
+        y1 = artist->ylength / 2.0f;
 
-        x2 = artist->ywidth / 2.0;
-        y2 = artist->xwidth / 2.0;
+        x2 = artist->ywidth / 2.0f;
+        y2 = artist->xwidth / 2.0f;
 
-        x3 = artist->xlength / 2.0;
-        y3 = artist->xwidth / 2.0;
+        x3 = artist->xlength / 2.0f;
+        y3 = artist->xwidth / 2.0f;
 
-        x4 = artist->xlength / 2.0;
-        y4 = -artist->xwidth / 2.0;
+        x4 = artist->xlength / 2.0f;
+        y4 = -artist->xwidth / 2.0f;
 
-        x5 = artist->ywidth / 2.0;
-        y5 = -artist->xwidth / 2.0;
+        x5 = artist->ywidth / 2.0f;
+        y5 = -artist->xwidth / 2.0f;
 
-        x6 = artist->ywidth / 2.0;
-        y6 = -artist->xlength / 2.0;
+        x6 = artist->ywidth / 2.0f;
+        y6 = -artist->xlength / 2.0f;
 
-        x7 = -artist->ywidth / 2.0;
-        y7 = -artist->xlength / 2.0;
+        x7 = -artist->ywidth / 2.0f;
+        y7 = -artist->xlength / 2.0f;
 
-        x8 = -artist->ywidth / 2.0;
-        y8 = -artist->xwidth / 2.0;
+        x8 = -artist->ywidth / 2.0f;
+        y8 = -artist->xwidth / 2.0f;
 
-        x9 = -artist->xlength / 2.0;
-        y9 = -artist->xwidth / 2.0;
+        x9 = -artist->xlength / 2.0f;
+        y9 = -artist->xwidth / 2.0f;
 
-        x10 = -artist->xlength / 2.0;
-        y10 = artist->xwidth / 2.0;
+        x10 = -artist->xlength / 2.0f;
+        y10 = artist->xwidth / 2.0f;
 
-        x11 = -artist->ywidth / 2.0;
-        y11 = artist->xwidth / 2.0;
+        x11 = -artist->ywidth / 2.0f;
+        y11 = artist->xwidth / 2.0f;
 
-        x12 = -artist->ywidth / 2.0;
-        y12 = artist->ylength / 2.0;
+        x12 = -artist->ywidth / 2.0f;
+        y12 = artist->ylength / 2.0f;
 
         psy_vbuffer_set_xyz(artist->vertices, 1, x1, y1, 0);
         psy_vbuffer_set_xyz(artist->vertices, 2, x2, y2, 0);
@@ -202,6 +202,16 @@ psy_cross_artist_class_init(PsyCrossArtistClass *class)
 
 /* ************ public functions ******************** */
 
+/**
+ * psy_cross_artist_new:(constructor)
+ * @canvas: The instance of[class@Canvas] to draw on
+ * @stimulus: The cross stimulus that should be drawn
+ *
+ * Creates a new Cross artist that is able to paint a cross on the canvas
+ *
+ * Returns: A new artist that should be freed with g_object_unref or
+ * psy_cross_artist_free
+ */
 PsyCrossArtist *
 psy_cross_artist_new(PsyCanvas *canvas, PsyVisualStimulus *stimulus)
 {
@@ -212,4 +222,17 @@ psy_cross_artist_new(PsyCanvas *canvas, PsyVisualStimulus *stimulus)
         PSY_TYPE_CROSS_ARTIST, "canvas", canvas, "stimulus", stimulus, NULL);
 
     return cross_artist;
+}
+
+/**
+ * psy_cross_artist_free:(skip)
+ *
+ * Frees instances of [class@PsyCrossArtist] previously allocated with
+ * psy_cross_artist_new
+ */
+void
+psy_cross_artist_free(PsyCrossArtist *self)
+{
+    g_return_if_fail(PSY_IS_CROSS_ARTIST(self));
+    g_object_unref(self);
 }

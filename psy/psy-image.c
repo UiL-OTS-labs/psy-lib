@@ -251,7 +251,8 @@ psy_image_class_init(PsyImageClass *klass)
  * Create a new instance of PsyImage, with the specified dimensions in
  * pixels. For the num_channels see [method@Psy.Image.set_num_channels]
  *
- * Returns: a new instance of PsyImage.
+ * Returns: a new instance of [class@Image], these instances may be freed
+ * with g_object_unref or [method@Image.free]
  */
 PsyImage *
 psy_image_new(guint width, guint height, PsyImageFormat format)
@@ -263,6 +264,18 @@ psy_image_new(guint width, guint height, PsyImageFormat format)
                         "format", format,
                         NULL);
     // clang-format on
+}
+
+/**
+ * psy_image_free:(skip)
+ *
+ * Frees images previously allocated with [ctor@Image.new]
+ */
+void
+psy_image_free(PsyImage *self)
+{
+    g_return_if_fail(PSY_IS_IMAGE(self));
+    g_object_unref(self);
 }
 
 /**

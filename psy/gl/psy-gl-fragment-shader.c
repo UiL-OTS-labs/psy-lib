@@ -41,9 +41,26 @@ psy_gl_fragment_shader_class_init(PsyGlFragmentShaderClass *klass)
 
 /* ******************** public functions ************************ */
 
+/**
+ * psy_gl_fragment_shader_new:(constructor)
+ *
+ * Returns:
+ */
 PsyGlFragmentShader *
-psy_gl_fragment_shader_new()
+psy_gl_fragment_shader_new(void)
 {
     PsyGlFragmentShader *ret = g_object_new(PSY_TYPE_GL_FRAGMENT_SHADER, NULL);
     return ret;
+}
+
+/**
+ * psy_gl_fragment_shader_free:(skip)
+ *
+ * free a instance previously created with psy_gl_fragment_shader_new()
+ */
+void
+psy_gl_fragment_shader_free(PsyGlFragmentShader *self)
+{
+    g_return_if_fail(PSY_IS_GL_FRAGMENT_SHADER(self));
+    g_object_unref(self);
 }

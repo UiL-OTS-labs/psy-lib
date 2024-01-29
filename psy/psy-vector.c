@@ -126,8 +126,15 @@ psy_vector_class_init(PsyVectorClass *klass)
 
 /* ************* public functions ************* */
 
+/**
+ * psy_vector_new:
+ *
+ * Create a new 3D vector with all elements set to 0.0;
+ *
+ * Returns a new instance of [class@Vector]
+ */
 PsyVector *
-psy_vector_new()
+psy_vector_new(void)
 {
     return psy_vector_new_xyz(0, 0, 0);
 }
@@ -156,6 +163,11 @@ psy_vector_new_xyz(gfloat x, gfloat y, gfloat z)
     return v;
 }
 
+/**
+ * psy_vector_free:(skip)
+ *
+ * Frees instances of [class@Vector]
+ */
 void
 psy_vector_free(PsyVector *self)
 {

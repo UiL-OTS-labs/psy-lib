@@ -20,6 +20,9 @@ psy_cross_new_full(
     PsyCanvas *canvas, gfloat x, gfloat y, gfloat length, gfloat line_width);
 
 G_MODULE_EXPORT void
+psy_cross_free(PsyCross *self);
+
+G_MODULE_EXPORT void
 psy_cross_set_line_length_x(PsyCross *cross, gfloat length);
 
 G_MODULE_EXPORT gfloat

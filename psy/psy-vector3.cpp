@@ -215,6 +215,7 @@ psy_vector3_new_data(gsize n, gfloat *values)
 void
 psy_vector3_free(PsyVector3 *self)
 {
+    g_return_if_fail(PSY_IS_VECTOR3(self));
     g_object_unref(self);
 }
 

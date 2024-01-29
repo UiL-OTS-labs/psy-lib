@@ -34,6 +34,9 @@ psy_text_new_full(PsyCanvas   *canvas,
                   const gchar *content,
                   gboolean     use_markup);
 
+G_MODULE_EXPORT void
+psy_text_free(PsyText *self);
+
 G_MODULE_EXPORT const gchar *
 psy_text_get_content(PsyText *self);
 

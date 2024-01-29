@@ -196,3 +196,15 @@ psy_text_artist_new(PsyCanvas *canvas, PsyVisualStimulus *stimulus)
 
     return text_artist;
 }
+
+/**
+ * psy_text_artist_free:(skip)
+ *
+ * Frees an text artist
+ */
+void
+psy_text_artist_free(PsyTextArtist *self)
+{
+    g_return_if_fail(PSY_IS_TEXT_ARTIST(self));
+    g_object_unref(self);
+}

@@ -25,7 +25,7 @@ G_DEFINE_BOXED_TYPE(PsyTimePoint,
  * timepoint with the [struct@TimePoint.new], but than the timepoint isn't
  * really meaning full. It would reflect the timepoint at which the clock
  * would start ticking. You can however, create a timepoint from a result of
- * [method@GLib.get_monotonic_time], these timepoint are then shifted so that
+ * [func@GLib.get_monotonic_time], these timepoint are then shifted so that
  * they are comparable as if they were returned from our own [class@Clock]
  */
 
@@ -36,8 +36,8 @@ G_DEFINE_BOXED_TYPE(PsyTimePoint,
  * You should take care that if no clock has been created. It only makes sense
  * after an instance of [class@Clock] is created.
  *
- * Returns:An instance of [class@TimePoint] that reflects the start of the
- *         experiment.
+ * Returns:An instance of [struct@TimePoint] that reflects the start of the
+ *         experiment. Free the timepoint with [method@TimePoint.free]
  */
 PsyTimePoint *
 psy_time_point_new(void)
@@ -55,7 +55,8 @@ psy_time_point_new(void)
  * can use this function to get a timepoint that is equivalent to psylib's
  * time. The time by psylib starts at 0 when the first clock is Instantiated.
  *
- * Returns: a [struct@imePoint] obtained from the monotonic clock of glib.
+ * Returns: a [struct@TimePoint] obtained from the monotonic clock of glib.
+ *          Free the timepoint with [method@TimePoint.free].
  */
 PsyTimePoint *
 psy_time_point_new_monotonic(gint64 monotonic_time)

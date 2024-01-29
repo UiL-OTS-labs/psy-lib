@@ -136,7 +136,7 @@ psy_circle_class_init(PsyCircleClass *klass)
  * psy_circle_new:(constructor)
  * @canvas: an instance of [class@Canvas] on which this stimulus should be drawn
  *
- * Returns: a new instance of `PsyCircle` with default values.
+ * Returns: a new instance of [class@Circle] with default values.
  */
 PsyCircle *
 psy_circle_new(PsyCanvas *canvas)
@@ -159,7 +159,7 @@ psy_circle_new(PsyCanvas *canvas)
  * vertices required depends a little on the radius of the triangle, the
  * larger the circle, the larger the number of vertices is required.
  *
- * Returns: a new instance of `PsyCircle` with the provided values.
+ * Returns: a new instance of [class@Circle] with the provided values.
  */
 PsyCircle *
 psy_circle_new_full(
@@ -176,6 +176,13 @@ psy_circle_new_full(
             NULL);
     // clang-format on
 }
+
+/**
+ * psy_circle_free: (skip)
+ *
+ * Frees Circles previously allocated with the psy_circle_new_* family
+ * of constructors.
+ */
 
 /**
  * psy_circle_set_radius:

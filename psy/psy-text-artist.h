@@ -13,6 +13,9 @@ G_DECLARE_FINAL_TYPE(
 G_MODULE_EXPORT PsyTextArtist *
 psy_text_artist_new(PsyCanvas *canvas, PsyVisualStimulus *stimulus);
 
+G_MODULE_EXPORT void
+psy_text_artist_free(PsyTextArtist *self);
+
 G_END_DECLS
 
 #endif

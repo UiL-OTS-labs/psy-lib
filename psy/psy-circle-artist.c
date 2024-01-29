@@ -157,3 +157,10 @@ psy_circle_artist_new(PsyCanvas *canvas, PsyVisualStimulus *stimulus)
 
     return circle_artist;
 }
+
+void
+psy_circle_artist_free(PsyCircleArtist *self)
+{
+    g_return_if_fail(PSY_IS_CIRCLE_ARTIST(self));
+    g_object_unref(self);
+}

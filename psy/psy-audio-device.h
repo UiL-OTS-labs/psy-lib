@@ -145,6 +145,9 @@ G_MODULE_EXPORT PsyAudioDevice *
 psy_audio_device_new(void);
 
 G_MODULE_EXPORT void
+psy_audio_device_free(PsyAudioDevice *self);
+
+G_MODULE_EXPORT void
 psy_audio_device_open(PsyAudioDevice *self, GError **error);
 
 G_MODULE_EXPORT void

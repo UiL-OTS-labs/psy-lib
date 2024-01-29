@@ -128,6 +128,7 @@ psy_duration_new_s(gint64 s)
 void
 psy_duration_free(PsyDuration *self)
 {
+    g_return_if_fail(self != NULL);
     g_free(self);
 }
 

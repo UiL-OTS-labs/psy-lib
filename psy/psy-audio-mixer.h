@@ -49,6 +49,9 @@ typedef struct _PsyAudioMixerClass {
 G_MODULE_EXPORT PsyAudioMixer *
 psy_audio_mixer_new(PsyAudioDevice *device, PsyDuration *buf_dur);
 
+G_MODULE_EXPORT void
+psy_audio_mixer_free(PsyAudioMixer *self);
+
 G_MODULE_EXPORT PsyDuration *
 psy_audio_mixer_get_buffer_duration(PsyAudioMixer *self);
 

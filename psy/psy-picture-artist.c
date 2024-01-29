@@ -214,6 +214,9 @@ psy_picture_artist_class_init(PsyPictureArtistClass *class)
  * @stimulus: An instance of [class@Picture], which this artist will be drawing
  *
  * Create a new [class@PsyPictureArtist] that is going to draw @stimulus.
+ *
+ * Returns: A new instance to be freed with g_object_unref
+ *          or[method@PictureArtist.free]
  */
 PsyPictureArtist *
 psy_picture_artist_new(PsyCanvas *canvas, PsyVisualStimulus *stimulus)
@@ -231,4 +234,16 @@ psy_picture_artist_new(PsyCanvas *canvas, PsyVisualStimulus *stimulus)
     // clang-format on
 
     return picture_artist;
+}
+
+/**
+ * psy_picture_artist_free:(skip)
+ *
+ * Frees a PictureArtist previously allocated with [ctor@PictureArtist.new]
+ */
+void
+psy_picuture_artist_free(PsyPictureArtist *self)
+{
+    g_return_if_fail(PSY_IS_PICTURE_ARTIST(self));
+    g_object_unref(self);
 }

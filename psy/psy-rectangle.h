@@ -35,6 +35,9 @@ psy_rectangle_new_full(
     PsyCanvas *canvas, gfloat x, gfloat y, gfloat width, gfloat height);
 
 G_MODULE_EXPORT void
+psy_rectangle_free(PsyRectangle *rect);
+
+G_MODULE_EXPORT void
 psy_rectangle_set_width(PsyRectangle *self, gfloat width);
 
 G_MODULE_EXPORT gfloat

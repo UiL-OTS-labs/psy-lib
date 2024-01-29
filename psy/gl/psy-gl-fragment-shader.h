@@ -14,7 +14,10 @@ G_DECLARE_FINAL_TYPE(PsyGlFragmentShader,
                      PsyGlShader)
 
 G_MODULE_EXPORT PsyGlFragmentShader *
-psy_gl_fragment_shader_new();
+psy_gl_fragment_shader_new(void);
+
+G_MODULE_EXPORT void
+psy_gl_fragment_shader_free(PsyGlFragmentShader *self);
 
 G_END_DECLS
 

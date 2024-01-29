@@ -216,7 +216,7 @@ visual_stimulus_set_color(PsyVisualStimulus *self, PsyColor *color)
     PsyVisualStimulusPrivate *priv
         = psy_visual_stimulus_get_instance_private(self);
     g_clear_object(&priv->color);
-    priv->color = psy_color_dup(color);
+    priv->color = psy_color_copy(color);
 }
 
 static void

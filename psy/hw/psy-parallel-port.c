@@ -318,6 +318,18 @@ psy_parallel_port_new(void)
 }
 
 /**
+ * psy_parallel_port_free:(skip)
+ *
+ * Frees instance created with [ctor@ParallelPort.new]
+ */
+void
+psy_parallel_port_free(PsyParallelPort *self)
+{
+    g_return_if_fail(PSY_IS_PARALLEL_PORT(self));
+    g_object_unref(self);
+}
+
+/**
  * psy_parallel_port_open:
  * @self: an instance of PsyParallelPort
  * @dev_num: The nth device to open.

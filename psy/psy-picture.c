@@ -14,6 +14,9 @@
  * to use a method like [method@Psy.DrawingContext.load_files_as_texture] in
  * advance. This will load, decode and turn a file into a texture. Then drawing
  * is very fast.
+ *
+ * Instances of PsyPicture may be freed with [method@Picture.free] or
+ * g_object_unref
  */
 
 typedef struct _PsyPicturePrivate {
@@ -298,6 +301,19 @@ psy_picture_new_full(PsyCanvas   *canvas,
             "filename", filename,
             NULL);
     // clang-format on
+}
+
+/**
+ * psy_picture_free:(skip)
+ *
+ * frees pictures previously created with the psy_picture_new* family of
+ * constructors.
+ */
+void
+psy_picture_free(PsyPicture *self)
+{
+    g_return_if_fail(PSY_IS_PICTURE(self));
+    g_object_unref(self);
 }
 
 /**
