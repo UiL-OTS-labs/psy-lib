@@ -3,7 +3,7 @@
 
 #include "psy-canvas.h"
 #include "psy-drawing-context.h"
-#include "psy-program.h"
+#include "psy-shader-program.h"
 #include "psy-visual-stimulus.h"
 
 #include <glib-object.h>
@@ -38,7 +38,7 @@ typedef struct _PsyArtistClass {
     GObjectClass parent;
 
     void (*draw)(PsyArtist *self);
-    PsyProgram *(*get_program)(PsyArtist *self);
+    PsyShaderProgram *(*get_program)(PsyArtist *self);
 
     gpointer reserved[16];
 
@@ -65,7 +65,7 @@ psy_artist_draw(PsyArtist *self);
 G_MODULE_EXPORT PsyDrawingContext *
 psy_artist_get_context(PsyArtist *self);
 
-G_MODULE_EXPORT PsyProgram *
+G_MODULE_EXPORT PsyShaderProgram *
 psy_artist_get_program(PsyArtist *self);
 
 G_END_DECLS

@@ -11,14 +11,14 @@
 #include <epoxy/gl_generated.h>
 
 typedef struct _PsyGlProgram {
-    PsyProgram           parent;
+    PsyShaderProgram     parent;
     GLuint               object_id;
     PsyGlVertexShader   *vertex_shader;
     PsyGlFragmentShader *fragment_shader;
     guint                is_linked : 1;
 } PsyGlProgram;
 
-G_DEFINE_TYPE(PsyGlProgram, psy_gl_program, PSY_TYPE_PROGRAM)
+G_DEFINE_TYPE(PsyGlProgram, psy_gl_program, PSY_TYPE_SHADER_PROGRAM)
 
 typedef enum {
     PROP_NULL,
@@ -97,9 +97,9 @@ psy_gl_program_finalize(GObject *object)
 }
 
 static void
-psy_gl_program_set_vertex_shader(PsyProgram *program,
-                                 PsyShader  *shader,
-                                 GError    **error)
+psy_gl_program_set_vertex_shader(PsyShaderProgram *program,
+                                 PsyShader        *shader,
+                                 GError          **error)
 {
     g_return_if_fail(PSY_IS_GL_PROGRAM(program));
     g_return_if_fail(PSY_IS_GL_SHADER(shader));
@@ -119,13 +119,13 @@ psy_gl_program_set_vertex_shader(PsyProgram *program,
 }
 
 static void
-psy_gl_program_set_vertex_shader_source(PsyProgram  *program,
-                                        const gchar *shader_src,
-                                        GError     **error)
+psy_gl_program_set_vertex_shader_source(PsyShaderProgram *program,
+                                        const gchar      *shader_src,
+                                        GError          **error)
 {
     g_return_if_fail(PSY_IS_GL_PROGRAM(program));
 
-    PsyProgramClass *klass = PSY_PROGRAM_GET_CLASS(program);
+    PsyShaderProgramClass *klass = PSY_SHADER_PROGRAM_GET_CLASS(program);
 
     PsyGlVertexShader *shader = psy_gl_vertex_shader_new();
     psy_shader_set_source(PSY_SHADER(shader), shader_src);
@@ -134,13 +134,13 @@ psy_gl_program_set_vertex_shader_source(PsyProgram  *program,
 }
 
 static void
-psy_gl_program_set_vertex_shader_from_file(PsyProgram *program,
-                                           GFile      *shader_file,
-                                           GError    **error)
+psy_gl_program_set_vertex_shader_from_file(PsyShaderProgram *program,
+                                           GFile            *shader_file,
+                                           GError          **error)
 {
     g_return_if_fail(PSY_IS_GL_PROGRAM(program));
 
-    PsyProgramClass *klass = PSY_PROGRAM_GET_CLASS(program);
+    PsyShaderProgramClass *klass = PSY_SHADER_PROGRAM_GET_CLASS(program);
 
     PsyGlVertexShader *shader = psy_gl_vertex_shader_new();
     psy_shader_source_from_file(PSY_SHADER(shader), shader_file, error);
@@ -151,13 +151,13 @@ psy_gl_program_set_vertex_shader_from_file(PsyProgram *program,
 }
 
 static void
-psy_gl_program_set_vertex_shader_from_path(PsyProgram  *program,
-                                           const gchar *shader_path,
-                                           GError     **error)
+psy_gl_program_set_vertex_shader_from_path(PsyShaderProgram *program,
+                                           const gchar      *shader_path,
+                                           GError          **error)
 {
     g_return_if_fail(PSY_IS_GL_PROGRAM(program));
 
-    PsyProgramClass *klass = PSY_PROGRAM_GET_CLASS(program);
+    PsyShaderProgramClass *klass = PSY_SHADER_PROGRAM_GET_CLASS(program);
 
     PsyGlVertexShader *shader = psy_gl_vertex_shader_new();
     psy_shader_source_from_path(PSY_SHADER(shader), shader_path, error);
@@ -168,9 +168,9 @@ psy_gl_program_set_vertex_shader_from_path(PsyProgram  *program,
 }
 
 static void
-psy_gl_program_set_fragment_shader(PsyProgram *program,
-                                   PsyShader  *shader,
-                                   GError    **error)
+psy_gl_program_set_fragment_shader(PsyShaderProgram *program,
+                                   PsyShader        *shader,
+                                   GError          **error)
 {
     g_return_if_fail(PSY_IS_GL_PROGRAM(program));
     g_return_if_fail(PSY_IS_GL_SHADER(shader));
@@ -190,13 +190,13 @@ psy_gl_program_set_fragment_shader(PsyProgram *program,
 }
 
 static void
-psy_gl_program_set_fragment_shader_source(PsyProgram  *program,
-                                          const gchar *shader_src,
-                                          GError     **error)
+psy_gl_program_set_fragment_shader_source(PsyShaderProgram *program,
+                                          const gchar      *shader_src,
+                                          GError          **error)
 {
     g_return_if_fail(PSY_IS_GL_PROGRAM(program));
 
-    PsyProgramClass *klass = PSY_PROGRAM_GET_CLASS(program);
+    PsyShaderProgramClass *klass = PSY_SHADER_PROGRAM_GET_CLASS(program);
 
     PsyGlFragmentShader *shader = psy_gl_fragment_shader_new();
     psy_shader_set_source(PSY_SHADER(shader), shader_src);
@@ -205,13 +205,13 @@ psy_gl_program_set_fragment_shader_source(PsyProgram  *program,
 }
 
 static void
-psy_gl_program_set_fragment_shader_from_file(PsyProgram *program,
-                                             GFile      *shader_file,
-                                             GError    **error)
+psy_gl_program_set_fragment_shader_from_file(PsyShaderProgram *program,
+                                             GFile            *shader_file,
+                                             GError          **error)
 {
     g_return_if_fail(PSY_IS_GL_PROGRAM(program));
 
-    PsyProgramClass *klass = PSY_PROGRAM_GET_CLASS(program);
+    PsyShaderProgramClass *klass = PSY_SHADER_PROGRAM_GET_CLASS(program);
 
     PsyGlFragmentShader *shader = psy_gl_fragment_shader_new();
     psy_shader_source_from_file(PSY_SHADER(shader), shader_file, error);
@@ -222,13 +222,13 @@ psy_gl_program_set_fragment_shader_from_file(PsyProgram *program,
 }
 
 static void
-psy_gl_program_set_fragment_shader_from_path(PsyProgram  *program,
-                                             const gchar *shader_path,
-                                             GError     **error)
+psy_gl_program_set_fragment_shader_from_path(PsyShaderProgram *program,
+                                             const gchar      *shader_path,
+                                             GError          **error)
 {
     g_return_if_fail(PSY_IS_GL_PROGRAM(program));
 
-    PsyProgramClass *klass = PSY_PROGRAM_GET_CLASS(program);
+    PsyShaderProgramClass *klass = PSY_SHADER_PROGRAM_GET_CLASS(program);
 
     PsyGlFragmentShader *shader = psy_gl_fragment_shader_new();
     psy_shader_source_from_path(PSY_SHADER(shader), shader_path, error);
@@ -239,7 +239,7 @@ psy_gl_program_set_fragment_shader_from_path(PsyProgram  *program,
 }
 
 static void
-psy_gl_program_link(PsyProgram *program, GError **error)
+psy_gl_program_link(PsyShaderProgram *program, GError **error)
 {
     gint          link_succes;
     PsyGlProgram *self = PSY_GL_PROGRAM(program);
@@ -250,7 +250,7 @@ psy_gl_program_link(PsyProgram *program, GError **error)
     guint vertex_id   = 0;
     guint fragment_id = 0;
 
-    if (psy_program_is_linked(PSY_PROGRAM(self)))
+    if (psy_shader_program_is_linked(PSY_SHADER_PROGRAM(self)))
         return;
 
     if (!psy_shader_is_compiled(PSY_SHADER(self->vertex_shader))) {
@@ -292,14 +292,14 @@ psy_gl_program_link(PsyProgram *program, GError **error)
 }
 
 static gboolean
-psy_gl_program_is_linked(PsyProgram *self)
+psy_gl_program_is_linked(PsyShaderProgram *self)
 {
     PsyGlProgram *gl_program = PSY_GL_PROGRAM(self);
     return gl_program->is_linked;
 }
 
 static void
-psy_gl_program_use_program(PsyProgram *self, GError **error)
+psy_gl_program_use_program(PsyShaderProgram *self, GError **error)
 {
     if (!psy_gl_program_is_linked(self)) {
         psy_gl_program_link(self, error);
@@ -312,10 +312,10 @@ psy_gl_program_use_program(PsyProgram *self, GError **error)
 }
 
 static void
-psy_gl_program_set_uniform_matrix_4(PsyProgram  *self,
-                                    const gchar *name,
-                                    PsyMatrix4  *matrix,
-                                    GError     **error)
+psy_gl_program_set_uniform_matrix_4(PsyShaderProgram *self,
+                                    const gchar      *name,
+                                    PsyMatrix4       *matrix,
+                                    GError          **error)
 {
     PsyGlProgram *program = PSY_GL_PROGRAM(self);
     GLfloat       elements[16];
@@ -337,10 +337,10 @@ psy_gl_program_set_uniform_matrix_4(PsyProgram  *self,
 }
 
 static void
-psy_gl_program_set_uniform_4f(PsyProgram  *self,
-                              const gchar *name,
-                              gfloat      *values,
-                              GError     **error)
+psy_gl_program_set_uniform_4f(PsyShaderProgram *self,
+                              const gchar      *name,
+                              gfloat           *values,
+                              GError          **error)
 {
     PsyGlProgram *program = PSY_GL_PROGRAM(self);
 
@@ -362,8 +362,8 @@ psy_gl_program_set_uniform_4f(PsyProgram  *self,
 static void
 psy_gl_program_class_init(PsyGlProgramClass *class)
 {
-    GObjectClass    *gobject_class = G_OBJECT_CLASS(class);
-    PsyProgramClass *program_class = PSY_PROGRAM_CLASS(class);
+    GObjectClass          *gobject_class = G_OBJECT_CLASS(class);
+    PsyShaderProgramClass *program_class = PSY_SHADER_PROGRAM_CLASS(class);
 
     gobject_class->set_property = psy_gl_program_set_property;
     gobject_class->get_property = psy_gl_program_get_property;

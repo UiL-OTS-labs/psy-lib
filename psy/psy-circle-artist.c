@@ -5,7 +5,7 @@
 #include "psy-circle.h"
 #include "psy-drawing-context.h"
 #include "psy-matrix4.h"
-#include "psy-program.h"
+#include "psy-shader-program.h"
 #include "psy-vbuffer.h"
 #include "psy-window.h"
 
@@ -67,7 +67,7 @@ circle_artist_draw(PsyArtist *self)
     PsyCircleArtist *artist = PSY_CIRCLE_ARTIST(self);
     PsyCircle       *circle = PSY_CIRCLE(psy_artist_get_stimulus(self));
 
-    PsyProgram *program = psy_artist_get_program(self);
+    PsyShaderProgram *program = psy_artist_get_program(self);
 
     // clang-format off
     g_object_get(circle,
@@ -89,7 +89,7 @@ circle_artist_draw(PsyArtist *self)
         // clang-format on
     }
 
-    psy_program_set_uniform_4f(program, color_name, rgba, &error);
+    psy_shader_program_set_uniform_4f(program, color_name, rgba, &error);
     if (error) {
         g_critical("%s: Unable to set the color: %s", __func__, error->message);
         g_clear_error(&error);

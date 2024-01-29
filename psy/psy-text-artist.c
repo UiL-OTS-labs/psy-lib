@@ -4,7 +4,7 @@
 #include "psy-drawing-context.h"
 #include "psy-duration.h"
 #include "psy-matrix4.h"
-#include "psy-program.h"
+#include "psy-shader-program.h"
 #include "psy-text.h"
 #include "psy-texture.h"
 #include "psy-vbuffer.h"
@@ -56,7 +56,7 @@ psy_text_artist_dispose(GObject *object)
     G_OBJECT_CLASS(psy_text_artist_parent_class)->dispose(object);
 }
 
-static PsyProgram *
+static PsyShaderProgram *
 text_artist_get_program(PsyArtist *artist)
 {
     PsyDrawingContext *context = psy_artist_get_context(artist);

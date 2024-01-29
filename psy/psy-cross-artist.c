@@ -5,7 +5,7 @@
 #include "psy-cross.h"
 #include "psy-drawing-context.h"
 #include "psy-matrix4.h"
-#include "psy-program.h"
+#include "psy-shader-program.h"
 #include "psy-vbuffer.h"
 #include "psy-window.h"
 
@@ -69,7 +69,7 @@ cross_artist_draw(PsyArtist *self)
     gfloat   line_length_x, line_length_y;
     gfloat   line_width_x, line_width_y;
 
-    PsyProgram *program = psy_artist_get_program(self);
+    PsyShaderProgram *program = psy_artist_get_program(self);
 
     // clang-format off
     g_object_get(cross,
@@ -92,7 +92,7 @@ cross_artist_draw(PsyArtist *self)
                 NULL);
         // clang-format on
     }
-    psy_program_set_uniform_4f(program, color_name, rgba, &error);
+    psy_shader_program_set_uniform_4f(program, color_name, rgba, &error);
     if (error) {
         g_critical("%s: failed to set color: %s", __func__, error->message);
         g_clear_error(&error);

@@ -2,7 +2,7 @@
 
 #include "psy-drawing-context.h"
 #include "psy-enums.h"
-#include "psy-program.h"
+#include "psy-shader-program.h"
 #include "psy-shader.h"
 #include "psy-vbuffer.h"
 
@@ -197,12 +197,12 @@ psy_drawing_context_free_resources(PsyDrawingContext *self)
 void
 psy_drawing_context_register_program(PsyDrawingContext *self,
                                      const gchar       *name,
-                                     PsyProgram        *program,
+                                     PsyShaderProgram  *program,
                                      GError           **error)
 {
     g_return_if_fail(PSY_IS_DRAWING_CONTEXT(self));
     g_return_if_fail(name);
-    g_return_if_fail(PSY_IS_PROGRAM(program));
+    g_return_if_fail(PSY_IS_SHADER_PROGRAM(program));
     g_return_if_fail(error == NULL || *error == NULL);
 
     PsyDrawingContextPrivate *priv
@@ -327,11 +327,11 @@ psy_drawing_context_load_files_as_texture(PsyDrawingContext *self,
  * @self: an instance of `PsyDrawingContext`
  * @name: the name used to register the Program
  *
- * Obtain a PsyProgram that was previously registered.
+ * Obtain a PsyShaderProgram that was previously registered.
  *
- * Returns:(transfer none): an Instance of `PsyProgram` or NULL
+ * Returns:(transfer none): an Instance of [class@PsyShaderProgram] or NULL
  */
-PsyProgram *
+PsyShaderProgram *
 psy_drawing_context_get_program(PsyDrawingContext *self, const gchar *name)
 {
     g_return_val_if_fail(PSY_IS_DRAWING_CONTEXT(self), NULL);
@@ -366,12 +366,12 @@ psy_drawing_context_get_texture(PsyDrawingContext *self, const gchar *name)
 
 /**
  * psy_drawing_context_create_program:
- * @self: An instance of `PsyDrawingContext`
+ * @self: An instance of class@DrawingContext
  *
- * Returns:(transfer full): A default ShaderProgram suitable for use with
- *                          this context.
+ * Returns:(transfer full): A default instance of [class@ShaderProgram] suitable
+ *                          for use with this context.
  */
-PsyProgram *
+PsyShaderProgram *
 psy_drawing_context_create_program(PsyDrawingContext *self)
 {
     g_return_val_if_fail(PSY_IS_DRAWING_CONTEXT(self), NULL);

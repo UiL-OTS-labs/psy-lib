@@ -6,7 +6,7 @@
 #include "psy-gl-texture.h"
 #include "psy-gl-vbuffer.h"
 #include "psy-gl-vertex-shader.h"
-#include "psy-program.h"
+#include "psy-shader-program.h"
 #include "psy-vbuffer.h"
 
 struct _PsyGlContext {
@@ -36,11 +36,11 @@ psy_gl_context_dispose(GObject *object)
     G_OBJECT_CLASS(psy_gl_context_parent_class)->dispose(object);
 }
 
-static PsyProgram *
+static PsyShaderProgram *
 psy_gl_create_program(PsyDrawingContext *self)
 {
     g_assert(PSY_IS_GL_CONTEXT(self));
-    return PSY_PROGRAM(psy_gl_program_new());
+    return PSY_SHADER_PROGRAM(psy_gl_program_new());
 }
 
 static PsyShader *

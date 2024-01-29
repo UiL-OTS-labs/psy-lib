@@ -112,7 +112,7 @@ artist_get_property(GObject    *object,
     }
 }
 
-static PsyProgram *
+static PsyShaderProgram *
 artist_get_program(PsyArtist *self)
 {
     PsyArtistPrivate *priv = psy_artist_get_instance_private(self);
@@ -132,7 +132,7 @@ static void
 artist_draw(PsyArtist *self)
 {
     PsyArtistPrivate *priv       = psy_artist_get_instance_private(self);
-    PsyProgram       *program    = psy_artist_get_program(self);
+    PsyShaderProgram *program    = psy_artist_get_program(self);
     GError           *error      = NULL;
     const gchar      *model_name = "model";
 
@@ -159,13 +159,13 @@ artist_draw(PsyArtist *self)
     psy_matrix4_rotate(priv->model, rotation_degrees, z_axis);
     psy_matrix4_scale(priv->model, scale_vec);
 
-    psy_program_use(psy_artist_get_program(self), &error);
+    psy_shader_program_use(psy_artist_get_program(self), &error);
     if (error) {
         g_critical("Unable to use program: %s", error->message);
         g_clear_error(&error);
     }
     else {
-        psy_program_set_uniform_matrix4(
+        psy_shader_program_set_uniform_matrix4(
             program, model_name, priv->model, &error);
         if (error) {
             static int once = 0;
@@ -332,7 +332,7 @@ psy_artist_draw(PsyArtist *self)
  * Returns:(transfer none): The shader for this object, deriving classes
  * may pick a shader to there suiting.
  */
-PsyProgram *
+PsyShaderProgram *
 psy_artist_get_program(PsyArtist *self)
 {
     g_return_val_if_fail(PSY_IS_ARTIST(self), NULL);

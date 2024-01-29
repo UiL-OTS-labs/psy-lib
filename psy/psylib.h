@@ -25,7 +25,7 @@
 #include "psy-matrix4.h"
 #include "psy-picture-artist.h"
 #include "psy-picture.h"
-#include "psy-program.h"
+#include "psy-shader-program.h"
 #include "psy-random.h"
 #include "psy-rectangle-artist.h"
 #include "psy-rectangle.h"
