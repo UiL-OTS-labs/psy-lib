@@ -463,8 +463,20 @@ psy_jack_audio_device_class_init(PsyJackAudioDeviceClass *klass)
  *
  * Returns: a instance of [class@PsyJackAudioDevice]
  */
-PsyAudioDevice *
+PsyJackAudioDevice *
 psy_jack_audio_device_new(void)
 {
     return g_object_new(PSY_TYPE_JACK_AUDIO_DEVICE, NULL);
+}
+
+/**
+ * psy_jack_audio_device_free:(skip)
+ *
+ * Frees instances created with psy_jack_audio_device_new
+ */
+void
+psy_jack_audio_device_free(PsyJackAudioDevice *self)
+{
+    g_return_if_fail(PSY_IS_JACK_AUDIO_DEVICE(self));
+    g_object_unref(self);
 }

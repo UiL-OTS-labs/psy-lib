@@ -19,4 +19,7 @@ psy_gl_canvas_new_full(gint     width,
                        gint     gl_major,
                        gint     gl_minor);
 
+G_MODULE_EXPORT void
+psy_gl_canvas_free(PsyGlCanvas *self);
+
 G_END_DECLS

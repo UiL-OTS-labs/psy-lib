@@ -163,3 +163,15 @@ psy_rectangle_artist_new(PsyCanvas *canvas, PsyVisualStimulus *stimulus)
 
     return rectangle_artist;
 }
+
+/**
+ * psy_rectangle_artist_free:(skip)
+ *
+ * Frees instances of [class@RectangleArtist]
+ */
+void
+psy_rectangle_artist_free(PsyRectangleArtist *self)
+{
+    g_return_if_fail(PSY_IS_RECTANGLE_ARTIST(self));
+    g_object_unref(self);
+}

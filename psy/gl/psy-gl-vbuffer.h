@@ -9,7 +9,10 @@ G_BEGIN_DECLS
 G_DECLARE_FINAL_TYPE(PsyGlVBuffer, psy_gl_vbuffer, PSY, GL_VBUFFER, PsyVBuffer)
 
 G_MODULE_EXPORT PsyGlVBuffer *
-psy_gl_vbuffer_new();
+psy_gl_vbuffer_new(void);
+
+G_MODULE_EXPORT void
+psy_gl_vbuffer_free(PsyGlVBuffer *self);
 
 G_MODULE_EXPORT guint
 psy_gl_vbuffer_get_object_id(PsyGlVBuffer *vbuffer);

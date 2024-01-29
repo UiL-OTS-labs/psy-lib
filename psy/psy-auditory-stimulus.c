@@ -581,7 +581,7 @@ psy_auditory_stimulus_get_channel_map(PsyAuditoryStimulus *self)
     if (priv->channel_map == NULL)
         return NULL;
 
-    return psy_audio_channel_map_dup(priv->channel_map);
+    return psy_audio_channel_map_copy(priv->channel_map);
 }
 
 /**
@@ -602,7 +602,7 @@ psy_auditory_stimulus_set_channel_map(PsyAuditoryStimulus *self,
     g_return_if_fail(map != NULL);
 
     g_clear_pointer(&priv->channel_map, psy_audio_channel_map_free);
-    priv->channel_map = psy_audio_channel_map_dup(map);
+    priv->channel_map = psy_audio_channel_map_copy(map);
 }
 
 /**

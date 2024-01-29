@@ -209,12 +209,13 @@ psy_vector3_new_data(gsize n, gfloat *values)
 }
 
 /**
- * psy_vector3_destroy:
+ * psy_vector3_free:
  * @self: An instance to destroy
  */
 void
-psy_vector3_destroy(PsyVector3 *self)
+psy_vector3_free(PsyVector3 *self)
 {
+    g_return_if_fail(PSY_IS_VECTOR3(self));
     g_object_unref(self);
 }
 

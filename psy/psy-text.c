@@ -269,6 +269,8 @@ psy_text_class_init(PsyTextClass *klass)
  * @canvas: an instance of [class@Canvas] on which this stimulus should be
  * drawn
  *
+ * Returned instances may be destroyed with [method@Text.free] or g_object_unref
+ *
  * Returns: a new instance of [class@PsyText] with default values.
  */
 PsyText *
@@ -294,6 +296,8 @@ psy_text_new(PsyCanvas *canvas)
  * default the [property@Psy.Text:use-markup] is false, so if the content
  * contains markup you should set that property to %TRUE.
  *
+ * Returned instances may be destroyed with [method@Text.free] or g_object_unref
+ *
  * Returns: a new instance of [class@Text] with the provided values.
  */
 PsyText *
@@ -317,6 +321,18 @@ psy_text_new_full(PsyCanvas   *canvas,
             "use-markup", use_markup,
             NULL);
     // clang-format on
+}
+
+/**
+ * psy_text_free:(skip)
+ *
+ * Frees instances of [class@Text]
+ */
+void
+psy_text_free(PsyText *self)
+{
+    g_return_if_fail(PSY_IS_TEXT(self));
+    g_object_unref(self);
 }
 
 /**

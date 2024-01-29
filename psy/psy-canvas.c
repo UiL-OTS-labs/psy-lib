@@ -843,7 +843,7 @@ psy_canvas_set_background_color(PsyCanvas *self, PsyColor *color)
     PsyCanvasPrivate *priv = psy_canvas_get_instance_private(self);
 
     g_clear_object(&priv->background_color);
-    priv->background_color = psy_color_dup(color);
+    priv->background_color = psy_color_copy(color);
 }
 
 /**

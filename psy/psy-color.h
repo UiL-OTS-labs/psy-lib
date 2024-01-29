@@ -14,7 +14,7 @@ G_BEGIN_DECLS
  */
 #define PSY_TYPE_RGB (psy_rgba_get_type())
 G_MODULE_EXPORT GType
-psy_rgba_get_type();
+psy_rgba_get_type(void);
 
 typedef struct _PsyRgba PsyRgba;
 
@@ -65,8 +65,11 @@ psy_color_new_rgbi(gint r, gint g, gint b);
 G_MODULE_EXPORT PsyColor *
 psy_color_new_rgbai(gint r, gint g, gint b, gint a);
 
+G_MODULE_EXPORT void
+psy_color_free(PsyColor *self);
+
 G_MODULE_EXPORT PsyColor *
-psy_color_dup(PsyColor *self);
+psy_color_copy(PsyColor *self);
 
 G_MODULE_EXPORT gfloat
 psy_color_get_red(PsyColor *self);

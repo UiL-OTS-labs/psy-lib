@@ -9,7 +9,4 @@ G_BEGIN_DECLS
 
 G_DECLARE_FINAL_TYPE(PsyParport, psy_parport, PSY, PARPORT, PsyParallelPort)
 
-G_MODULE_EXPORT PsyParport *
-psy_parport_new(void);
-
 G_END_DECLS

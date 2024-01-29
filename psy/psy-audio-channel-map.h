@@ -36,7 +36,7 @@ G_MODULE_EXPORT void
 psy_audio_channel_mapping_free(PsyAudioChannelMapping *self);
 
 G_MODULE_EXPORT PsyAudioChannelMapping *
-psy_audio_channel_mapping_dup(PsyAudioChannelMapping *self);
+psy_audio_channel_mapping_copy(PsyAudioChannelMapping *self);
 
 G_MODULE_EXPORT gboolean
 psy_audio_channel_mapping_eq(PsyAudioChannelMapping *self,
@@ -72,7 +72,7 @@ G_MODULE_EXPORT GType
 psy_audio_channel_map_get_type(void);
 
 G_MODULE_EXPORT PsyAudioChannelMap *
-psy_audio_channel_map_dup(PsyAudioChannelMap *self);
+psy_audio_channel_map_copy(PsyAudioChannelMap *self);
 
 G_MODULE_EXPORT void
 psy_audio_channel_map_free(PsyAudioChannelMap *self);

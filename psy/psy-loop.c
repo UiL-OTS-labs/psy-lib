@@ -257,10 +257,12 @@ psy_loop_init(PsyLoop *self)
  * psy_loop_new:(constructor)
  *
  * Returns a new loop.
- * Returns:a new loop with its default - not so useful - parameters.
+ *
+ * Returns: a new loop with its default - not so useful - parameters. The
+ *          instance may be freed with g_object_unref or psy_loop_free
  */
 PsyLoop *
-psy_loop_new()
+psy_loop_new(void)
 {
     return g_object_new(PSY_TYPE_LOOP, NULL);
 }
@@ -269,7 +271,9 @@ psy_loop_new()
  * psy_loop_new_full:(constructor):
  *
  * Creates a new loop with all parameters specified.
+ *
  * Returns: A new loop with all parameters specified.
+ *          May be freed with g_object_unref or psy_loop_free
  */
 PsyLoop *
 psy_loop_new_full(gint64           index,
@@ -289,11 +293,11 @@ psy_loop_new_full(gint64           index,
 }
 
 /**
- * psy_loop_destroy:
+ * psy_loop_free:
  * @self:The loop to destroy
  */
 void
-psy_loop_destroy(PsyLoop *loop)
+psy_loop_free(PsyLoop *loop)
 {
     g_return_if_fail(PSY_IS_LOOP(loop));
     g_object_unref(loop);

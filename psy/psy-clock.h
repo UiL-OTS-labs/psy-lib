@@ -11,6 +11,9 @@ G_DECLARE_FINAL_TYPE(PsyClock, psy_clock, PSY, CLOCK, GObject)
 G_MODULE_EXPORT PsyClock *
 psy_clock_new(void);
 
+G_MODULE_EXPORT void
+psy_clock_free(PsyClock *self);
+
 G_MODULE_EXPORT PsyTimePoint *
 psy_clock_now(PsyClock *self);
 

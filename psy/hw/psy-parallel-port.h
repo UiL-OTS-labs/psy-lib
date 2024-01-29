@@ -102,6 +102,9 @@ G_MODULE_EXPORT PsyParallelPort *
 psy_parallel_port_new(void);
 
 G_MODULE_EXPORT void
+psy_parallel_port_free(PsyParallelPort *self);
+
+G_MODULE_EXPORT void
 psy_parallel_port_open(PsyParallelPort *self, gint dev_num, GError **error);
 
 G_MODULE_EXPORT void

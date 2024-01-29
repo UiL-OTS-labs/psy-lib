@@ -12,6 +12,9 @@ G_DECLARE_FINAL_TYPE(PsyTrial, psy_trial, PSY, TRIAL, PsyStep)
 G_MODULE_EXPORT PsyTrial *
 psy_trial_new(void);
 
+G_MODULE_EXPORT void
+psy_trial_free(PsyTrial *trial);
+
 G_END_DECLS
 
 #endif

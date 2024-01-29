@@ -24,6 +24,9 @@ psy_gl_texture_new_for_file(GFile *file);
 G_MODULE_EXPORT PsyGlTexture *
 psy_gl_texture_new_for_path(const gchar *path);
 
+G_MODULE_EXPORT void
+psy_gl_texture_free(PsyGlTexture *self);
+
 G_MODULE_EXPORT guint
 psy_gl_texture_get_object_id(PsyGlTexture *self);
 

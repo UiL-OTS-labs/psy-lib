@@ -352,24 +352,76 @@ psy_gl_texture_class_init(PsyGlTextureClass *class)
 
 /* ************ public functions ******************** */
 
+/**
+ * psy_gl_texture_new:(constructor)
+ *
+ * Frees PsyGlTextures previously created with psy_gl_texture_new*() familiy
+ * of functions.
+ *
+ * Returns: A new PsyGlTexture to be freed with g_object_unref of
+ * psy_gl_texture_free
+ */
 PsyGlTexture *
 psy_gl_texture_new(void)
 {
     return g_object_new(PSY_TYPE_GL_TEXTURE, NULL);
 }
 
+/**
+ * psy_gl_texture_new_for_file:(constructor)
+ *
+ * Create a new PsyGlTexture with the [property@Texture:file] specified
+ * So that the texture knows about which file we are talking.
+ *
+ * Frees PsyGlTextures previously created with psy_gl_texture_new*() familiy
+ * of function.
+ *
+ * Returns: A new PsyGlTexture to be freed with g_object_unref of
+ * psy_gl_texture_free.
+ */
 PsyGlTexture *
 psy_gl_texture_new_for_file(GFile *file)
 {
     return g_object_new(PSY_TYPE_GL_TEXTURE, "file", file, NULL);
 }
 
+/**
+ * psy_gl_texture_new_for_path:(constructor)
+ *
+ * Create a new PsyGlTexture with the [property@Texture:path] specified
+ * So that the texture knows about which file we are talking.
+ *
+ * Returns: A new PsyGlTexture to be freed with g_object_unref or
+ * psy_gl_texture_free.
+ */
 PsyGlTexture *
 psy_gl_texture_new_for_path(const gchar *path)
 {
     return g_object_new(PSY_TYPE_GL_TEXTURE, "path", path, NULL);
 }
 
+/**
+ * psy_gl_texture_free:(skip)
+ *
+ * Frees PsyGlTextures previously created with psy_gl_texture_new*() familiy
+ * of functions.
+ */
+void
+psy_gl_texture_free(PsyGlTexture *self)
+{
+    g_return_if_fail(PSY_IS_GL_TEXTURE(self));
+    g_object_unref(self);
+}
+
+/**
+ * psy_gl_texture_get_object_id:
+ *
+ * OpenGL stores textures with an id, returned from glGenTextures. When
+ * the texture exists, you'll typically first need to bind it before using it.
+ * glBindTexture
+ *
+ * Returns: An integer that identifies this texture for opengl
+ */
 guint
 psy_gl_texture_get_object_id(PsyGlTexture *self)
 {

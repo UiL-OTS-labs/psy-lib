@@ -9,7 +9,10 @@ G_BEGIN_DECLS
 G_DECLARE_FINAL_TYPE(PsyGlProgram, psy_gl_program, PSY, GL_PROGRAM, PsyProgram)
 
 G_MODULE_EXPORT PsyGlProgram *
-psy_gl_program_new();
+psy_gl_program_new(void);
+
+G_MODULE_EXPORT void
+psy_gl_program_free(PsyGlProgram *self);
 
 G_MODULE_EXPORT guint
 psy_gl_program_get_object_id(PsyGlProgram *program);

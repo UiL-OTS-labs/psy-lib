@@ -620,18 +620,18 @@ psy_audio_device_class_init(PsyAudioDeviceClass *klass)
  *
  * Constructs an audio device. This constructor will check which backends
  * are available on this machine and if so, it will try to get the best one
- * possible.
- * The returned device will implement a PsyAudioDevice for one specific
- * backend.
+ * possible. The returned device will implement a PsyAudioDevice for one
+ * specific backend.
  *
  * Returns: A platform specific instance of [class@PsyAudioDevice] that will
- *          implement this class.
+ *          implement this class. Free with psy_audio_device_free or
+ *          g_object_unref
  */
 PsyAudioDevice *
 psy_audio_device_new(void)
 {
 #if defined HAVE_PORTAUDIO
-    return psy_pa_device_new();
+    return PSY_AUDIO_DEVICE(psy_pa_device_new());
 #elif defined HAVE_ALSA
     return psy_alsa_audio_device_new();
 #elif defined HAVE_JACK2
@@ -639,6 +639,18 @@ psy_audio_device_new(void)
 #else
     return NULL;
 #endif
+}
+
+/**
+ * psy_audio_device_free:(skip)
+ *
+ * frees instance previously created with [ctor@AudioDevice.new]
+ */
+void
+psy_audio_device_free(PsyAudioDevice *self)
+{
+    g_return_if_fail(PSY_IS_AUDIO_DEVICE(self));
+    g_object_unref(self);
 }
 
 gboolean

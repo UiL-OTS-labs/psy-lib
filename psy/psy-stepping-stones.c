@@ -152,7 +152,14 @@ psy_stepping_stones_class_init(PsySteppingStonesClass *klass)
  * psy_stepping_stones_new:(constructor)
  *
  * Creates a new `PsySteppingStones` object
- * Returns: a new `PsySteppingStones` instance
+ *
+ * Create a new instance of PsySteppingStones. You can use
+ * psy_stepping_stones_free or g_object_unref on the instance in order to free
+ * it. psy_stepping_stones_free does a type check before calling g_object_unref
+ * on the object, so it is slightly more safe.
+ *
+ * Returns: Instance of [class@SteppingStones], may be freed with
+ * [method@SteppingStones.free]
  */
 PsySteppingStones *
 psy_stepping_stones_new(void)
@@ -160,8 +167,14 @@ psy_stepping_stones_new(void)
     return g_object_new(PSY_TYPE_STEPPING_STONES, NULL);
 }
 
+/**
+ * psy_stepping_stones_free:(skip)
+ *
+ * Frees an instance of [class@SteppingStones] previously allocated with
+ * [ctor@PsySteppingStones.new]
+ */
 void
-psy_stepping_stones_destroy(PsySteppingStones *self)
+psy_stepping_stones_free(PsySteppingStones *self)
 {
     g_return_if_fail(PSY_IS_STEPPING_STONES(self));
     g_object_unref(self);

@@ -815,14 +815,26 @@ psy_pa_device_class_init(PsyPADeviceClass *klass)
 /**
  * psy_pa_device_new:(constructor)
  *
- * Constructs an jack audio device.
- * This object will try to connect to or instantiate a jack server in order
- * to obtain the playback and capture devices.
+ * Constructs an Portaudio audio device. This object uses portaudio in order
+ * to comunnicate with the audio devices.
  *
- * Returns: a instance of [class@PsyPADevice]
+ * Returns: a instance of [class@PsyPADevice] free with g_object_unref of
+ * psy_pa_device_free
  */
-PsyAudioDevice *
+PsyPADevice *
 psy_pa_device_new(void)
 {
     return g_object_new(PSY_TYPE_PA_DEVICE, NULL);
+}
+
+/**
+ * psy_pa_device_free:(skip)
+ *
+ * Frees instances of [class@PADevice]
+ */
+void
+psy_pa_device_free(PsyPADevice *self)
+{
+    g_return_if_fail(PSY_IS_PA_DEVICE(self));
+    g_object_unref(self);
 }

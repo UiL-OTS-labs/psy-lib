@@ -26,7 +26,7 @@ G_MODULE_EXPORT PsySteppingStones *
 psy_stepping_stones_new(void);
 
 G_MODULE_EXPORT void
-psy_stepping_stones_destroy(PsySteppingStones *self);
+psy_stepping_stones_free(PsySteppingStones *self);
 
 G_MODULE_EXPORT void
 psy_stepping_stones_add_step(PsySteppingStones *self, PsyStep *step);

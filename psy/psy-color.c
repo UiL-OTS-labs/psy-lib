@@ -400,7 +400,20 @@ psy_color_new_rgbai(gint r, gint g, gint b, gint a)
 }
 
 /**
- * psy_color_dup:
+ * psy_color_free:(skip)
+ *
+ * frees instances of [class@Color] previously allocated with the
+ * psy_color_new* family of Color constructors
+ */
+void
+psy_color_free(PsyColor *self)
+{
+    g_return_if_fail(PSY_IS_COLOR(self));
+    g_object_unref(self);
+}
+
+/**
+ * psy_color_copy:
  * @self: a color to duplicate
  *
  * This duplicates an existing color.
@@ -408,7 +421,7 @@ psy_color_new_rgbai(gint r, gint g, gint b, gint a)
  * Returns:(transfer full): A copy of the input.
  */
 PsyColor *
-psy_color_dup(PsyColor *self)
+psy_color_copy(PsyColor *self)
 {
     g_return_val_if_fail(PSY_IS_COLOR(self), NULL);
     // clang-format off

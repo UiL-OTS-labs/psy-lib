@@ -28,6 +28,12 @@ typedef struct _PsyImageCanvasClass {
     gpointer padding[12];
 } PsyImageCanvasClass;
 
+G_MODULE_EXPORT PsyImageCanvas *
+psy_image_canvas_new(gint width, gint height);
+
+G_MODULE_EXPORT void
+psy_image_canvas_free(PsyImageCanvas *self);
+
 G_MODULE_EXPORT void
 psy_image_canvas_iterate(PsyImageCanvas *self);
 
@@ -36,8 +42,5 @@ psy_image_canvas_set_time(PsyImageCanvas *self, PsyTimePoint *tp);
 
 G_MODULE_EXPORT PsyTimePoint *
 psy_image_canvas_get_time(PsyImageCanvas *self);
-
-G_MODULE_EXPORT PsyImageCanvas *
-psy_image_canvas_new(gint width, gint height);
 
 G_END_DECLS

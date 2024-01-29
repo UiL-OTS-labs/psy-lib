@@ -415,11 +415,29 @@ psy_gl_program_class_init(PsyGlProgramClass *class)
 
 /* ************ public functions ******************** */
 
+/**
+ * psy_gl_program_new:(constructor)
+ *
+ * Construct a new PsyGlProgram.
+ *
+ * Returns: A freshly created PsyGlProgram, this object may be freed with
+ * psy_gl_program_free or g_object_unref.
+ */
 PsyGlProgram *
-psy_gl_program_new()
+psy_gl_program_new(void)
 {
     PsyGlProgram *gl_program = g_object_new(PSY_TYPE_GL_PROGRAM, NULL);
     return gl_program;
+}
+
+/**
+ * psy_gl_program_free:(skip)
+ */
+void
+psy_gl_program_free(PsyGlProgram *self)
+{
+    g_return_if_fail(PSY_IS_GL_PROGRAM(self));
+    g_object_unref(self);
 }
 
 guint

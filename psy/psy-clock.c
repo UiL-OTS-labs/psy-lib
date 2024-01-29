@@ -107,7 +107,7 @@ psy_clock_class_init(PsyClockClass *klass)
  *
  * Creates a clock for retrieving the current time.
  *
- * Returns: A new `PsyClock` instance.
+ * Returns: A new [class@Clock] instance.
  */
 PsyClock *
 psy_clock_new(void)
@@ -117,11 +117,23 @@ psy_clock_new(void)
 }
 
 /**
+ * psy_clock_free:(skip)
+ *
+ * Free instances of [class@Clock].
+ */
+void
+psy_clock_free(PsyClock *self)
+{
+    g_return_if_fail(PSY_IS_CLOCK(self));
+    g_object_unref(self);
+}
+
+/**
  * psy_clock_now:
  * @self: An instance of a `PsyClock`
  *
  * This is the way to obtain the current time in a psylib program.
- * The time starts running at 0 when the first instance of [class@clock]
+ * The time starts running at 0 when the first instance of [class@Clock]
  * is instantiated. This function returns the current time.
  *
  * Returns:(transfer full): A [struct@TimePoint] instance representing the

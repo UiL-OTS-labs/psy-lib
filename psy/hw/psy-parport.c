@@ -13,7 +13,9 @@
  * PsyParport:
  *
  * PsyParport is a final class for parallel ports on Linux. It derives from
- * PsyParallePort and implements it.
+ * PsyParallelPort and implements it. Typically you can instantiate instances
+ * of this class with [ctor@ParallelPort.new] and that constructor
+ * determines the right backend for your system.
  */
 
 typedef struct _PsyParport {

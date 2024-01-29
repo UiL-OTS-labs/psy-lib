@@ -11,7 +11,10 @@ G_DECLARE_FINAL_TYPE(
     PsyGlVertexShader, psy_gl_vertex_shader, PSY, GL_VERTEX_SHADER, PsyGlShader)
 
 G_MODULE_EXPORT PsyGlVertexShader *
-psy_gl_vertex_shader_new();
+psy_gl_vertex_shader_new(void);
+
+G_MODULE_EXPORT void
+psy_gl_vertex_shader_free(void);
 
 G_END_DECLS
 

@@ -14,6 +14,9 @@ G_MODULE_EXPORT PsyImage *
 psy_image_new(guint width, guint height, PsyImageFormat format);
 
 G_MODULE_EXPORT void
+psy_image_free(PsyImage *self);
+
+G_MODULE_EXPORT void
 psy_image_set_width(PsyImage *self, guint width);
 
 G_MODULE_EXPORT guint

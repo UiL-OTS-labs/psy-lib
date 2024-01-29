@@ -11,7 +11,7 @@ test_create(void)
 {
     PsyVector3 *vec = psy_vector3_new();
     CU_ASSERT_PTR_NOT_NULL_FATAL(vec);
-    psy_vector3_destroy(vec);
+    psy_vector3_free(vec);
 
     gfloat data[3] = {1, 2, 3};
     gfloat x, y, z;
@@ -21,7 +21,7 @@ test_create(void)
     CU_ASSERT_EQUAL(y, data[1]);
     CU_ASSERT_EQUAL(z, data[2]);
 
-    psy_vector3_destroy(vec);
+    psy_vector3_free(vec);
 }
 
 static void
@@ -53,14 +53,14 @@ test_unit(void)
 
     length = psy_vector3_get_magnitude(unit);
     CU_ASSERT_EQUAL(length, 1.0f);
-    psy_vector3_destroy(vec);
-    psy_vector3_destroy(unit);
+    psy_vector3_free(vec);
+    psy_vector3_free(unit);
 
     vec  = psy_vector3_new();
     unit = psy_vector3_unit(vec);
     CU_ASSERT_PTR_NULL(unit);
 
-    psy_vector3_destroy(vec);
+    psy_vector3_free(vec);
 }
 
 static void
@@ -82,8 +82,8 @@ test_negate(void)
     CU_ASSERT_EQUAL(psy_vector3_get_magnitude(vec),
                     psy_vector3_get_magnitude(negated));
 
-    psy_vector3_destroy(vec);
-    psy_vector3_destroy(negated);
+    psy_vector3_free(vec);
+    psy_vector3_free(negated);
 }
 
 static void
@@ -101,8 +101,8 @@ test_add_scalar(void)
     CU_ASSERT_EQUAL(ry, y + scalar);
     CU_ASSERT_EQUAL(rz, z + scalar);
 
-    psy_vector3_destroy(vec);
-    psy_vector3_destroy(result);
+    psy_vector3_free(vec);
+    psy_vector3_free(result);
 }
 
 static void
@@ -117,10 +117,10 @@ test_add_vector(void)
     PsyVector3 *v3     = psy_vector3_mul_s(v1, 2.0);
     CU_ASSERT_TRUE(psy_vector3_equals(result, v3));
 
-    psy_vector3_destroy(v1);
-    psy_vector3_destroy(v2);
-    psy_vector3_destroy(v3);
-    psy_vector3_destroy(result);
+    psy_vector3_free(v1);
+    psy_vector3_free(v2);
+    psy_vector3_free(v3);
+    psy_vector3_free(result);
 }
 
 static void
@@ -137,8 +137,8 @@ test_sub_scalar(void)
     CU_ASSERT_EQUAL(ry, y - scalar);
     CU_ASSERT_EQUAL(rz, z - scalar);
 
-    psy_vector3_destroy(vec);
-    psy_vector3_destroy(result);
+    psy_vector3_free(vec);
+    psy_vector3_free(result);
 }
 
 static void
@@ -150,8 +150,8 @@ test_sub_vector(void)
     PsyVector3 *result = psy_vector3_sub(v1, v1);
     CU_ASSERT_TRUE(psy_vector3_is_null(result));
 
-    psy_vector3_destroy(v1);
-    psy_vector3_destroy(result);
+    psy_vector3_free(v1);
+    psy_vector3_free(result);
 }
 
 static void
@@ -173,9 +173,9 @@ test_mul_scalar(void)
 
     CU_ASSERT_TRUE(psy_vector3_equals(expected, result));
 
-    psy_vector3_destroy(v1);
-    psy_vector3_destroy(result);
-    psy_vector3_destroy(expected);
+    psy_vector3_free(v1);
+    psy_vector3_free(result);
+    psy_vector3_free(expected);
 }
 
 static void
@@ -190,8 +190,8 @@ test_vector_dot(void)
 
     cos = psy_vector3_dot(v2, v1);
     CU_ASSERT_EQUAL(cos, 0.0f);
-    psy_vector3_destroy(v1);
-    psy_vector3_destroy(v2);
+    psy_vector3_free(v1);
+    psy_vector3_free(v2);
 }
 
 int
