@@ -9,7 +9,7 @@
  * will be hooked to a GMainContext. Via this context entering
  * and leaving step happens using events. This events are typically
  * accompanied by a `PsyTimePoint` that indicates when this part of
- * teh
+ * the
  *
  */
 
@@ -32,7 +32,7 @@ internal_timestamp_free(gpointer timestamp)
     g_free(timestamp);
 }
 
-G_DEFINE_TYPE_WITH_PRIVATE(PsyStep, psy_step, G_TYPE_OBJECT)
+G_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE(PsyStep, psy_step, G_TYPE_OBJECT)
 
 typedef enum { ENTER, LEAVE, NUM_SIGNALS } PsyStepSignal;
 
