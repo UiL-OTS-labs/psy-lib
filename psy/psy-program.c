@@ -9,7 +9,7 @@ typedef struct _PsyProgramPrivate {
     PsyShader *fragment_shader;
 } PsyProgramPrivate;
 
-G_DEFINE_TYPE_WITH_PRIVATE(PsyProgram, psy_program, G_TYPE_OBJECT)
+G_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE(PsyProgram, psy_program, G_TYPE_OBJECT)
 
 typedef enum { PROP_NULL, NUM_PROPERTIES } PsyProgramProperty;
 

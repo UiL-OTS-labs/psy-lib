@@ -5,7 +5,7 @@ typedef struct PsyShaderPrivate {
     GArray *vertices;
 } PsyVBufferPrivate;
 
-G_DEFINE_TYPE_WITH_PRIVATE(PsyVBuffer, psy_vbuffer, G_TYPE_OBJECT)
+G_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE(PsyVBuffer, psy_vbuffer, G_TYPE_OBJECT)
 
 typedef enum {
     PROP_NULL,
