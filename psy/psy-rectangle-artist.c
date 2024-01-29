@@ -3,9 +3,9 @@
 
 #include "psy-drawing-context.h"
 #include "psy-matrix4.h"
-#include "psy-program.h"
 #include "psy-rectangle-artist.h"
 #include "psy-rectangle.h"
+#include "psy-shader-program.h"
 #include "psy-vbuffer.h"
 
 typedef struct _PsyRectangleArtist {
@@ -65,7 +65,7 @@ rectangle_artist_draw(PsyArtist *self)
     PsyRectangleArtist *artist = PSY_RECTANGLE_ARTIST(self);
     PsyRectangle *rectangle    = PSY_RECTANGLE(psy_artist_get_stimulus(self));
 
-    PsyProgram *program = psy_artist_get_program(self);
+    PsyShaderProgram *program = psy_artist_get_program(self);
 
     // clang-format off
     g_object_get(rectangle,
@@ -86,7 +86,7 @@ rectangle_artist_draw(PsyArtist *self)
                 NULL);
         // clang-format on
     }
-    psy_program_set_uniform_4f(program, color_name, rgba, &error);
+    psy_shader_program_set_uniform_4f(program, color_name, rgba, &error);
     if (error) {
         g_critical("%s: Unable to set the color: %s", __func__, error->message);
         g_clear_error(&error);

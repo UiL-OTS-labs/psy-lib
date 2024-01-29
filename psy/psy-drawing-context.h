@@ -4,7 +4,7 @@
 #include <gio/gio.h>
 
 #include <psy-matrix4.h>
-#include <psy-program.h>
+#include <psy-shader-program.h>
 #include <psy-texture.h>
 #include <psy-vbuffer.h>
 
@@ -21,7 +21,7 @@ G_DECLARE_DERIVABLE_TYPE(
 typedef struct _PsyDrawingContextClass {
     GObjectClass parent_class;
 
-    PsyProgram *(*create_program)(PsyDrawingContext *self);
+    PsyShaderProgram *(*create_program)(PsyDrawingContext *self);
     PsyShader *(*create_vertex_shader)(PsyDrawingContext *self);
     PsyShader *(*create_fragment_shader)(PsyDrawingContext *self);
     PsyTexture *(*create_texture)(PsyDrawingContext *self);
@@ -34,7 +34,7 @@ typedef struct _PsyDrawingContextClass {
 G_MODULE_EXPORT void
 psy_drawing_context_free_resources(PsyDrawingContext *self);
 
-G_MODULE_EXPORT PsyProgram *
+G_MODULE_EXPORT PsyShaderProgram *
 psy_drawing_context_create_program(PsyDrawingContext *self);
 
 G_MODULE_EXPORT PsyShader *
@@ -52,7 +52,7 @@ psy_drawing_context_create_vbuffer(PsyDrawingContext *self);
 G_MODULE_EXPORT void
 psy_drawing_context_register_program(PsyDrawingContext *self,
                                      const gchar       *name,
-                                     PsyProgram        *program,
+                                     PsyShaderProgram  *program,
                                      GError           **error);
 
 G_MODULE_EXPORT void
@@ -67,7 +67,7 @@ psy_drawing_context_load_files_as_texture(PsyDrawingContext *self,
                                           gsize              num_files,
                                           GError           **error);
 
-G_MODULE_EXPORT PsyProgram *
+G_MODULE_EXPORT PsyShaderProgram *
 psy_drawing_context_get_program(PsyDrawingContext *self, const gchar *name);
 
 G_MODULE_EXPORT PsyTexture *

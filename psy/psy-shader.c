@@ -6,7 +6,7 @@ typedef struct _PsyShaderPrivate {
     char *source;
 } PsyShaderPrivate;
 
-G_DEFINE_TYPE_WITH_PRIVATE(PsyShader, psy_shader, G_TYPE_OBJECT)
+G_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE(PsyShader, psy_shader, G_TYPE_OBJECT)
 
 typedef enum {
     PROP_NULL,

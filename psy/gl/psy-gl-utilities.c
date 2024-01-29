@@ -17,19 +17,19 @@ psy_gl_canvas_init_default_shaders(PsyCanvas *self, GError **error)
     // Uniform color program
     PsyDrawingContext *context = psy_canvas_get_context(PSY_CANVAS(self));
 
-    PsyProgram *program = psy_drawing_context_create_program(context);
+    PsyShaderProgram *program = psy_drawing_context_create_program(context);
 
-    psy_program_set_vertex_shader_from_path(
+    psy_shader_program_set_vertex_shader_from_path(
         program, "./psy/uniform-color.vert", error);
     if (*error)
         goto fail;
 
-    psy_program_set_fragment_shader_from_path(
+    psy_shader_program_set_fragment_shader_from_path(
         program, "./psy/uniform-color.frag", error);
     if (*error)
         goto fail;
 
-    psy_program_link(program, error);
+    psy_shader_program_link(program, error);
     if (*error)
         goto fail;
 
@@ -43,17 +43,17 @@ psy_gl_canvas_init_default_shaders(PsyCanvas *self, GError **error)
     // Picture program
     program = psy_drawing_context_create_program(context);
 
-    psy_program_set_vertex_shader_from_path(
+    psy_shader_program_set_vertex_shader_from_path(
         program, "./psy/picture.vert", error);
     if (*error)
         goto fail;
 
-    psy_program_set_fragment_shader_from_path(
+    psy_shader_program_set_fragment_shader_from_path(
         program, "./psy/picture.frag", error);
     if (*error)
         goto fail;
 
-    psy_program_link(program, error);
+    psy_shader_program_link(program, error);
     if (*error)
         goto fail;
 
@@ -80,18 +80,18 @@ psy_gl_canvas_upload_projection_matrices(PsyCanvas *self)
     GError     *error      = NULL;
 
     PsyDrawingContext *context = psy_canvas_get_context(self);
-    PsyProgram        *program = psy_drawing_context_get_program(
+    PsyShaderProgram  *program = psy_drawing_context_get_program(
         context, PSY_UNIFORM_COLOR_PROGRAM_NAME);
 
     if (program) {
-        psy_program_use(program, &error);
+        psy_shader_program_use(program, &error);
         if (error) {
             g_critical("Unable to set picture projection matrix: %s",
                        error->message);
             g_error_free(error);
             error = NULL;
         }
-        psy_program_set_uniform_matrix4(
+        psy_shader_program_set_uniform_matrix4(
             program, "projection", projection, &error);
         if (error) {
             g_critical("Unable to set picture projection matrix: %s",
@@ -103,14 +103,14 @@ psy_gl_canvas_upload_projection_matrices(PsyCanvas *self)
     program
         = psy_drawing_context_get_program(context, PSY_PICTURE_PROGRAM_NAME);
     if (program) {
-        psy_program_use(program, &error);
+        psy_shader_program_use(program, &error);
         if (error) {
             g_critical("Unable to set picture projection matrix: %s",
                        error->message);
             g_error_free(error);
             error = NULL;
         }
-        psy_program_set_uniform_matrix4(
+        psy_shader_program_set_uniform_matrix4(
             program, "projection", projection, &error);
         if (error) {
             g_critical("Unable to set picture projection matrix: %s",

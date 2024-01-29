@@ -4,7 +4,7 @@
 #include "psy-drawing-context.h"
 #include "psy-matrix4.h"
 #include "psy-picture.h"
-#include "psy-program.h"
+#include "psy-shader-program.h"
 #include "psy-vbuffer.h"
 #include "psy-window.h"
 
@@ -60,7 +60,7 @@ psy_picture_artist_finalize(GObject *object)
     G_OBJECT_CLASS(psy_picture_artist_parent_class)->finalize(object);
 }
 
-static PsyProgram *
+static PsyShaderProgram *
 picture_artist_get_program(PsyArtist *artist)
 {
     PsyDrawingContext *context = psy_artist_get_context(artist);

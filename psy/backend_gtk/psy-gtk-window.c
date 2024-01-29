@@ -11,7 +11,6 @@
 #include "psy-drawing-context.h"
 #include "psy-duration.h"
 #include "psy-gtk-window.h"
-#include "psy-program.h"
 #include "psy-window.h"
 
 /* forward declarations */
@@ -167,19 +166,19 @@ init_shaders(PsyGtkWindow *self, GError **error)
     // Uniform color program
     PsyDrawingContext *context = psy_canvas_get_context(PSY_CANVAS(self));
 
-    PsyProgram *program = psy_drawing_context_create_program(context);
+    PsyShaderProgram *program = psy_drawing_context_create_program(context);
 
-    psy_program_set_vertex_shader_from_path(
+    psy_shader_program_set_vertex_shader_from_path(
         program, "./psy/uniform-color.vert", error);
     if (*error)
         goto fail;
 
-    psy_program_set_fragment_shader_from_path(
+    psy_shader_program_set_fragment_shader_from_path(
         program, "./psy/uniform-color.frag", error);
     if (*error)
         goto fail;
 
-    psy_program_link(program, error);
+    psy_shader_program_link(program, error);
     if (*error)
         goto fail;
 
@@ -193,17 +192,17 @@ init_shaders(PsyGtkWindow *self, GError **error)
     // Picture program
     program = psy_drawing_context_create_program(context);
 
-    psy_program_set_vertex_shader_from_path(
+    psy_shader_program_set_vertex_shader_from_path(
         program, "./psy/picture.vert", error);
     if (*error)
         goto fail;
 
-    psy_program_set_fragment_shader_from_path(
+    psy_shader_program_set_fragment_shader_from_path(
         program, "./psy/picture.frag", error);
     if (*error)
         goto fail;
 
-    psy_program_link(program, error);
+    psy_shader_program_link(program, error);
     if (*error)
         goto fail;
 
