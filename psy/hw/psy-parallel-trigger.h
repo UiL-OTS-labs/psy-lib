@@ -2,18 +2,13 @@
 #pragma once
 
 #include "../psy-duration.h"
+#include "../psy-enums.h"
 #include "../psy-time-point.h"
 #include "psy-parallel-port.h"
 
 G_BEGIN_DECLS
 
 #define PSY_PARALLEL_TRIGGER_ERROR psy_parallel_trigger_error_quark()
-
-typedef enum {
-    PSY_PARALLEL_TRIGGER_ERROR_BUSY,
-    PSY_PARALLEL_TRIGGER_INVALID_PARAMETER,
-    PSY_PARALLEL_TRIGGER_ERROR_FAILED,
-} PsyParallelTriggerError;
 
 G_MODULE_EXPORT GQuark
 psy_parallel_trigger_error_quark(void);
