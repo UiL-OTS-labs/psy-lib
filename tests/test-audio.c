@@ -134,7 +134,7 @@ audio_device_open(void)
     GError         *error = NULL;
     GMainLoop      *loop  = g_main_loop_new(NULL, FALSE);
 
-    g_print("Device = %p\n", (void *) device);
+    g_info("Device = %p\n", (void *) device);
 
     OnStarted cb_data   = {.loop = loop, .started = FALSE};
     OnStop    stop_data = {.loop = loop, .device = device};

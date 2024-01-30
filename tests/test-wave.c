@@ -13,7 +13,7 @@ typedef struct {
 } WaveStatus;
 
 static int
-create_audio_device(void)
+wave_setup(void)
 {
     set_log_handler_file("test-wave.txt");
 
@@ -43,7 +43,7 @@ create_audio_device(void)
 }
 
 static int
-destroy_audio_device(void)
+wave_teardown(void)
 {
     psy_audio_device_close(g_device);
     g_message("%s: g_device refcount = %u",
@@ -188,7 +188,7 @@ test_wave_play(void)
     psy_audio_device_start(g_device, &error);
     CU_ASSERT_PTR_NULL(error);
     if (error) {
-        g_printerr("Unable to start the audio device: %s\n", error->message);
+        g_error("Unable to start the audio device: %s\n", error->message);
         g_clear_error(&error);
     }
 
@@ -249,7 +249,7 @@ test_wave_play_noise(void)
     psy_audio_device_start(g_device, &error);
     CU_ASSERT_PTR_NULL(error);
     if (error) {
-        g_printerr("Unable to start the audio device: %s\n", error->message);
+        g_error("Unable to start the audio device: %s\n", error->message);
         g_clear_error(&error);
     }
 
@@ -277,9 +277,8 @@ test_wave_play_noise(void)
 int
 add_wave_suite(void)
 {
-    CU_Suite *suite = CU_add_suite(
-        "audio tests", create_audio_device, destroy_audio_device);
-    CU_Test *test = NULL;
+    CU_Suite *suite = CU_add_suite("audio tests", wave_setup, wave_teardown);
+    CU_Test  *test  = NULL;
 
     if (!suite)
         return 1;
