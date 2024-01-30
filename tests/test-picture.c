@@ -95,6 +95,7 @@ init_squares(PsyImage *image)
 static int
 picture_setup(void)
 {
+    set_log_handler_file("test-picture.txt");
     GError *error = NULL;
     g_image  = psy_image_new(g_img_width, g_img_height, PSY_IMAGE_FORMAT_RGB);
     g_canvas = psy_image_canvas_new(g_canvas_width, g_canvas_height);
@@ -137,10 +138,12 @@ picture_teardown(void)
 
     g_file_delete(file, NULL, &error);
     if (error) {
-        g_printerr("Unable to delete %s:%s\n", g_path, error->message);
+        g_warning("Unable to delete %s:%s\n", g_path, error->message);
     }
     g_object_unref(file);
     g_free(g_path);
+
+    set_log_handler_file(NULL);
 
     return 0;
 }
@@ -280,7 +283,7 @@ test_colors(PsyImage *image)
             // to a float, hence we allow a epsilon of one rgba value
             if (!psy_color_equal_eps(bg, probe, (1.0f / 255))) {
                 ret = FALSE;
-                g_printerr(
+                g_warning(
                     "point (%u, %u) is not equal to the background.\n", x, y);
             }
         }
@@ -289,15 +292,13 @@ test_colors(PsyImage *image)
             guint ix = x - (g_canvas_width - g_img_width) / 2;
             guint iy = y - (g_canvas_height - g_img_height) / 2;
 
-            // g_print("x = %u, y = %u, ix = %u, iy = %u\n", x, y, ix, iy);
-
             g_assert(ix < g_img_width);
             g_assert(iy < g_img_height);
 
             if (is_upper_left(g_img_width, g_img_height, iy, ix)) {
                 if (!psy_color_equal(red, probe)) {
                     ret = FALSE;
-                    g_printerr(
+                    g_warning(
                         "point g(%u, %u), i(%u, %u) is not equal to red.\n",
                         x,
                         y,
@@ -308,7 +309,7 @@ test_colors(PsyImage *image)
             else if (is_upper_right(g_img_width, g_img_height, iy, ix)) {
                 if (!psy_color_equal(green, probe)) {
                     ret = FALSE;
-                    g_printerr(
+                    g_warning(
                         "point g(%u, %u), i(%u, %u) is not equal to green.\n",
                         x,
                         y,
@@ -319,7 +320,7 @@ test_colors(PsyImage *image)
             else if (is_lower_left(g_img_width, g_img_height, iy, ix)) {
                 if (!psy_color_equal(blue, probe)) {
                     ret = FALSE;
-                    g_printerr(
+                    g_warning(
                         "point g(%u, %u), i(%u, %u) is not equal to blue.\n",
                         x,
                         y,
@@ -330,7 +331,7 @@ test_colors(PsyImage *image)
             else if (is_lower_right(g_img_width, g_img_height, iy, ix)) {
                 if (!psy_color_equal(purple, probe)) {
                     ret = FALSE;
-                    g_printerr(
+                    g_warning(
                         "point g(%u, %u), i(%u, %u) is not equal to purple.\n",
                         x,
                         y,
@@ -339,11 +340,11 @@ test_colors(PsyImage *image)
                 }
             }
             else {
-                g_printerr("No sensible coordinate x=%u, y=%u; ix=%u, iy=%u\n",
-                           x,
-                           y,
-                           ix,
-                           iy);
+                g_warning("No sensible coordinate x=%u, y=%u; ix=%u, iy=%u\n",
+                          x,
+                          y,
+                          ix,
+                          iy);
                 g_assert_not_reached();
             }
         }

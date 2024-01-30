@@ -22,7 +22,7 @@ psy_trial_init(PsyTrial *trial)
 /**
  * psy_trial_new:(constructor)
  *
- * Create a new trial, to be freed with g_object_unref or [method@Tria.free]
+ * Create a new trial, to be freed with g_object_unref or [method@Trial.free]
  *
  * Returns: a new [class@Trial] instance
  */

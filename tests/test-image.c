@@ -2,9 +2,24 @@
 #include <math.h>
 #include <string.h>
 
+#include "unit-test-utilities.h"
 #include <CUnit/CUnit.h>
 
 #include <psylib.h>
+
+static int
+image_setup(void)
+{
+    set_log_handler_file("test-image.txt");
+    return 0;
+}
+
+static int
+image_teardown(void)
+{
+    set_log_handler_file(NULL);
+    return 0;
+}
 
 static void
 test_image_create1(void)
@@ -104,8 +119,9 @@ test_image_change_format(void)
 int
 add_image_suite(void)
 {
-    CU_Suite *suite = CU_add_suite("PsyImage suite", NULL, NULL);
-    CU_Test  *test;
+    CU_Suite *suite
+        = CU_add_suite("PsyImage suite", image_setup, image_teardown);
+    CU_Test *test;
     if (!suite)
         return 1;
 

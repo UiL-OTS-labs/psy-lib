@@ -16,8 +16,9 @@ static PsyColor       *g_bg_color   = NULL;
 static PsyTimePoint *g_tp_start     = NULL;
 
 static int
-test_visual_stimulus_setup(void)
+visual_stimulus_setup(void)
 {
+    set_log_handler_file("test-visual-stimulus.txt");
     g_debug("Entering %s", __func__);
     g_canvas     = psy_image_canvas_new(WIDTH, HEIGHT);
     g_stim_color = psy_color_new_rgbi(random_int_range(0, 255),
@@ -46,13 +47,15 @@ test_visual_stimulus_setup(void)
 }
 
 static int
-test_visual_stimulus_teardown(void)
+visual_stimulus_teardown(void)
 {
     g_debug("Entering %s", __func__);
     g_clear_object(&g_canvas);
     g_clear_object(&g_stim_color);
     g_clear_object(&g_bg_color);
     g_clear_pointer(&g_tp_start, psy_time_point_free);
+
+    set_log_handler_file(NULL);
 
     return 0;
 }
@@ -305,8 +308,7 @@ vstim_translate(void)
                                avg_y,
                                &avg_x,
                                &avg_y);
-    g_printerr(
-        "\ntx =%lf, ty%lf, avg_x=%lf, avg_y=%lf\n", tx, ty, avg_x, avg_y);
+    g_info("\ntx =%lf, ty%lf, avg_x=%lf, avg_y=%lf\n", tx, ty, avg_x, avg_y);
     CU_ASSERT_DOUBLE_EQUAL(avg_x, tx, 1);
     CU_ASSERT_DOUBLE_EQUAL(avg_y, ty, 1);
 
@@ -720,8 +722,8 @@ int
 add_visual_stimulus_suite(void)
 {
     CU_Suite *suite = CU_add_suite("Visual stimulus suite",
-                                   test_visual_stimulus_setup,
-                                   test_visual_stimulus_teardown);
+                                   visual_stimulus_setup,
+                                   visual_stimulus_teardown);
 
     CU_Test *test = NULL;
 

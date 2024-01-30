@@ -332,7 +332,6 @@ typedef struct StoneParams {
 static void
 on_stones_enter(PsyStep *step, gint64 timestamp, gpointer data)
 {
-    // g_print("%s\n", __func__);
     g_assert(PSY_IS_STEPPING_STONES(step));
     (void) step;
     (void) timestamp;
@@ -343,7 +342,6 @@ on_stones_enter(PsyStep *step, gint64 timestamp, gpointer data)
 static void
 on_stones_leave(PsyStep *step, gint64 timestamp, gpointer data)
 {
-    // g_print("%s\n", __func__);
     (void) step;
     (void) timestamp;
 
@@ -354,7 +352,6 @@ on_stones_leave(PsyStep *step, gint64 timestamp, gpointer data)
 static void
 on_stones_trial_enter(PsyStep *step, gint64 timestamp, gpointer data)
 {
-    // g_print("%s\n", __func__);
     (void) timestamp;
     StoneParams *pars = data;
     PsyClock    *clk  = psy_clock_new();
@@ -373,7 +370,6 @@ on_stones_loop_iterate(PsyLoop *loop,
                        gint64   timestamp,
                        gpointer data)
 {
-    // g_print("%s\n", __func__);
     StoneParams *pars = data;
     (void) index;
     (void) timestamp;
