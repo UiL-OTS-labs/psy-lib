@@ -4,56 +4,15 @@
 #include <gio/gio.h>
 #include <glib-object.h>
 
+#include "../psy-enums.h"
+
 G_BEGIN_DECLS
 
 #define PSY_TYPE_PARALLEL_PORT psy_parallel_port_get_type()
 G_DECLARE_DERIVABLE_TYPE(
     PsyParallelPort, psy_parallel_port, PSY, PARALLEL_PORT, GObject)
 
-/**
- * PsyIoDirection:
- * @PSY_IO_DIRECTION_INPUT: The device is/should be configured as input
- * @PSY_IO_DIRECTION_OUTPUT: The device is/should be configured as output
- *
- * These values may be used to configure a device as in- or output.
- */
-typedef enum PsyIoDirection {
-    PSY_IO_DIRECTION_IN,
-    PSY_IO_DIRECTION_OUT,
-} PsyIoDirection;
-
-/**
- * PsyIoLevel:
- * @PSY_IO_LEVEL_HIGH: The logical high level of an signal
- * @PSY_IO_LEVEL_LOW: The logical low level of an signal
- *
- * These values may be used to configure a line etc to have a
- * high or low level voltage, it depends on the device what is the precise
- * level.
- */
-typedef enum PsyIoLevel {
-    PSY_IO_LEVEL_LOW,
-    PSY_IO_LEVEL_HIGH,
-} PsyIoLevel;
-
 #define PSY_PARALLEL_PORT_ERROR psy_parallel_port_error_quark()
-
-/**
- * PsyParallelPortError:
- * @PSY_PARALLEL_PORT_ERROR_OPEN: Unable to open the device
- * @PSY_PARALLEL_PORT_ERROR_DEV_CLOSED: Unable to perform action on a device
- *     that isn't open yet.
- * @PSY_PARALLEL_PORT_ERROR_DIRECTION: Unable to perform action because the
- *     devices is not configured in the desired direction for the action
- *     e.g. writing to a deviced configured as #PSY_IO_DIRECTION_INPUT
- * @PSY_PARALLEL_PORT_ERROR_FAILED: Operation failed (check error message?).
- */
-typedef enum {
-    PSY_PARALLEL_PORT_ERROR_OPEN,
-    PSY_PARALLEL_PORT_ERROR_DEV_CLOSED,
-    PSY_PARALLEL_PORT_ERROR_DIRECTION,
-    PSY_PARALLEL_PORT_ERROR_FAILED,
-} PsyParallelPortError;
 
 G_MODULE_EXPORT GQuark
 psy_parallel_port_error_quark(void);

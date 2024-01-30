@@ -129,6 +129,34 @@ typedef enum {
 } PsyDrawingContextError;
 
 /**
+ * PsyGlError:
+ * @PSY_GL_ERROR_SHADER_COMPILE: Unable to compile shader
+ * @PSY_GL_ERROR_PROGRAM_LINK: Unable to link program,
+ * @PSY_GL_ERROR_INVALID_ENUM: glError returned GL_INVALID_ENUM
+ * @PSY_GL_ERROR_INVALID_VALUE: glError returned GL_INVALID_VALUE
+ * @PSY_GL_ERROR_INVALID_OPERATION: glError returned GL_INVALID_OPERATION
+ * @PSY_GL_ERROR_INVALID_FRAMEBUFFER_OPERATION: glError returned
+ * GL_INVALID_FRAMEBUFFER_OPERATION
+ * @PSY_GL_ERROR_OUT_OF_MEMORY: glError returned GL_OUT_OF_MEMORY
+ * @PSY_GL_ERROR_STACK_UNDERFLOW: glError returned GL_STACK_UNDERFLOW
+ * @PSY_GL_ERROR_STACK_OVERFLOW: glError returned GL_STACK_OVERFLOW
+ *
+ * An operation related to OpenGL failed.
+ */
+typedef enum {
+    PSY_GL_ERROR_SHADER_COMPILE,
+    PSY_GL_ERROR_PROGRAM_LINK,
+
+    PSY_GL_ERROR_INVALID_ENUM,
+    PSY_GL_ERROR_INVALID_VALUE,
+    PSY_GL_ERROR_INVALID_OPERATION,
+    PSY_GL_ERROR_INVALID_FRAMEBUFFER_OPERATION,
+    PSY_GL_ERROR_OUT_OF_MEMORY,
+    PSY_GL_ERROR_STACK_UNDERFLOW,
+    PSY_GL_ERROR_STACK_OVERFLOW
+} PsyGlError;
+
+/**
  * PsyImageFormat:
  * @PSY_IMAGE_FORMAT_LUM:         a 1 byte per pixel corresponding with
  *                                luminance each pixels is in the range 0-255.
@@ -151,6 +179,32 @@ typedef enum {
     PSY_IMAGE_FORMAT_RGBA,
     PSY_IMAGE_FORMAT_INVALID,
 } PsyImageFormat;
+
+/**
+ * PsyIoDirection:
+ * @PSY_IO_DIRECTION_INPUT: The device is/should be configured as input
+ * @PSY_IO_DIRECTION_OUTPUT: The device is/should be configured as output
+ *
+ * These values may be used to configure a device as in- or output.
+ */
+typedef enum PsyIoDirection {
+    PSY_IO_DIRECTION_IN,
+    PSY_IO_DIRECTION_OUT,
+} PsyIoDirection;
+
+/**
+ * PsyIoLevel:
+ * @PSY_IO_LEVEL_HIGH: The logical high level of an signal
+ * @PSY_IO_LEVEL_LOW: The logical low level of an signal
+ *
+ * These values may be used to configure a line etc to have a
+ * high or low level voltage, it depends on the device what is the precise
+ * level.
+ */
+typedef enum PsyIoLevel {
+    PSY_IO_LEVEL_LOW,
+    PSY_IO_LEVEL_HIGH,
+} PsyIoLevel;
 
 /**
  * PsyLoopCondition:
@@ -178,6 +232,46 @@ typedef enum {
     PSY_LOOP_CONDITION_GREATER_EQUAL,
     PSY_LOOP_CONDITION_GREATER
 } PsyLoopCondition;
+
+/**
+ * PsyParallelPortError:
+ * @PSY_PARALLEL_PORT_ERROR_OPEN: Unable to open the device
+ * @PSY_PARALLEL_PORT_ERROR_DEV_CLOSED: Unable to perform action on a device
+ *     that isn't open yet.
+ * @PSY_PARALLEL_PORT_ERROR_DIRECTION: Unable to perform action because the
+ *     devices is not configured in the desired direction for the action
+ *     e.g. writing to a deviced configured as #PSY_IO_DIRECTION_INPUT
+ * @PSY_PARALLEL_PORT_ERROR_FAILED: Operation failed (check error message?).
+ */
+typedef enum {
+    PSY_PARALLEL_PORT_ERROR_OPEN,
+    PSY_PARALLEL_PORT_ERROR_DEV_CLOSED,
+    PSY_PARALLEL_PORT_ERROR_DIRECTION,
+    PSY_PARALLEL_PORT_ERROR_FAILED,
+} PsyParallelPortError;
+
+/**
+ * PsyParallelTriggerError:
+ * @PSY_PARALLEL_TRIGGER_ERROR_BUSY: This error is thrown when you are trying
+ *                                   to schedule a new trigger when the old
+ *                                   one hasn't finished yet.
+ * @PSY_PARALLEL_TRIGGER_ERROR_INVALID_PARAMETER:
+ *                                   This error isn't currently used. But
+ *                                   could in the future be necessary.
+ * @PSY_PARALLEL_TRIGGER_ERROR_FAILED:
+ *                                   A unspecific error occurred when using the
+ *                                   parallel port, you should check the message
+ *                                   of the error to get an idea of what is
+ *                                   failing.
+ *
+ * This enum is used for errors while operating the parallelport as a trigger
+ * interface.
+ */
+typedef enum {
+    PSY_PARALLEL_TRIGGER_ERROR_BUSY,
+    PSY_PARALLEL_TRIGGER_ERROR_INVALID_PARAMETER,
+    PSY_PARALLEL_TRIGGER_ERROR_FAILED,
+} PsyParallelTriggerError;
 
 /**
  * PsySteppingStoneError:
