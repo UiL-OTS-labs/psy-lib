@@ -222,6 +222,8 @@ psy_stepping_stones_add_step_by_name(PsySteppingStones *self,
     g_return_if_fail(PSY_IS_STEP(step));
     g_return_if_fail(error == NULL || *error == NULL);
 
+    g_debug("Adding step %p under name %s", (void *) step, name);
+
     PsySteppingStonesPrivate *priv
         = psy_stepping_stones_get_instance_private(self);
 
@@ -234,7 +236,7 @@ psy_stepping_stones_add_step_by_name(PsySteppingStones *self,
         return;
     }
 
-    g_hash_table_add(priv->step_table, g_strdup(name));
+    g_hash_table_insert(priv->step_table, g_strdup(name), step);
     psy_stepping_stones_add_step(self, step);
 }
 
@@ -282,7 +284,7 @@ psy_stepping_stones_activate_next_by_name(PsySteppingStones *self,
                                           GError           **error)
 {
     g_return_if_fail(PSY_IS_STEPPING_STONES(self));
-    g_return_if_fail(name == NULL);
+    g_return_if_fail(name != NULL);
     g_return_if_fail(error == NULL || *error == NULL);
 
     PsySteppingStonesPrivate *priv
@@ -296,6 +298,7 @@ psy_stepping_stones_activate_next_by_name(PsySteppingStones *self,
                     "There is no step with the name: %s",
                     name);
     }
+
     guint    index;
     gboolean found = g_ptr_array_find(priv->steps, step, &index);
     if (!found) {
