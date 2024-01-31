@@ -242,7 +242,7 @@ psy_loop_class_init(PsyLoopClass *klass)
                        G_TYPE_NONE,
                        2,
                        G_TYPE_INT64,
-                       G_TYPE_INT64);
+                       PSY_TYPE_TIME_POINT);
 }
 
 static void
