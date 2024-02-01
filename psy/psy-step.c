@@ -203,7 +203,7 @@ psy_step_class_init(PsyStepClass *klass)
      */
     step_signals[ENTER] = g_signal_new("enter",
                                        G_TYPE_FROM_CLASS(obj_class),
-                                       G_SIGNAL_RUN_FIRST | G_SIGNAL_NO_RECURSE,
+                                       G_SIGNAL_RUN_LAST,
                                        G_STRUCT_OFFSET(PsyStepClass, on_enter),
                                        NULL,
                                        NULL,
