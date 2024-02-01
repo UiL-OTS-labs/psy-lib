@@ -297,6 +297,7 @@ psy_stepping_stones_activate_next_by_name(PsySteppingStones *self,
                     PSY_STEPPING_STONES_ERROR_NO_SUCH_KEY,
                     "There is no step with the name: %s",
                     name);
+        return;
     }
 
     guint    index;
