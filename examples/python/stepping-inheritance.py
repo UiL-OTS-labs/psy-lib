@@ -11,6 +11,7 @@ from gi.repository import Psy, GLib
 
 window: Psy.Canvas
 _NUM_CIRCLES = 12
+_NUM_ITERATIONS = 50
 DUR = Psy.Duration.new(0.100)
 BLACK = Psy.Color.new()
 RED = Psy.Color.new_rgb(1, 0, 0)
@@ -146,6 +147,7 @@ def main():
         "-n",
         "--num-iterations",
         type=int,
+        default=_NUM_ITERATIONS,
         help="Specify the number of iterations of the loop",
     )
     cmd_parser.add_argument(
