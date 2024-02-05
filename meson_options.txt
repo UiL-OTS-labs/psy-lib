@@ -40,3 +40,13 @@ option (
     description : 'Enabe ALSA as a backend for audio Linux only depends on ' +
                   'libasound2-dev / alsa development libs'
 )
+
+# examples
+
+option (
+    'build-examples',
+    type:'boolean',
+    value: true,
+    description: 'build the C/C++ examples'
+)
+

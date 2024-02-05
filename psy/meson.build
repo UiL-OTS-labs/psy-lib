@@ -9,6 +9,11 @@ cdata.set_quoted('PSY_VERSION', meson.project_version())
 cdata.set_quoted('PSY_SOURCE_ROOT', meson.project_source_root())
 cdata.set_quoted('PSY_BUILD_ROOT', meson.project_build_root())
 
+
+# the folder where we are building psylib, hence the .so and .gir
+# are stored here
+library_build_dir = meson.current_build_dir()
+
 # check for compiler buildins
 
 if cc.has_function('__builtin_add_overflow')

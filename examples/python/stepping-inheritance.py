@@ -54,41 +54,70 @@ def draw(n, tp: Psy.TimePoint, color: Psy.Color, step: Psy.Loop):
     cross.connect("started", on_cross_started, step)
 
 
-def on_red_loop_iter(loop: Psy.Loop, index: int, tp: Psy.TimePoint):
-    """Run an iteration of the red loop"""
-    draw(index % _NUM_CIRCLES, tp, RED, loop)
+class RedLoop(Psy.Loop):
+    """Is responsible for drawing the red dot's"""
+
+    def __init__(self, num_circles, steps: Psy.SteppingStones, blue_first):
+        super().__init__(
+            index=0, stop=num_circles, increment=1, condition=Psy.LoopCondition.LESS
+        )
+        self.blue_first = blue_first
+        self.stepping_stones = steps
+
+    def do_iteration(self, index: int, tp: Psy.TimePoint) -> None:
+        """Overwrite parents iteration, is called on each iteration of the loop"""
+        draw(index % _NUM_CIRCLES, tp, RED, self)
+        Psy.Loop.do_iteration(self, index, tp)  # chainup to parent
+
+    def do_on_leave(self, tp: Psy.TimePoint) -> None:
+        """Do something when leaving the loop"""
+        if self.blue_first:
+            self.stepping_stones.activate_next_by_name("exit")
+        Psy.Loop.do_on_leave(self, tp)  # chainup to parent
 
 
-def on_blue_loop_iter(loop: Psy.Loop, index: int, tp: Psy.TimePoint):
-    """Run an iteration of the blue loop"""
-    draw(index % _NUM_CIRCLES, tp, BLUE, loop)
+class BlueLoop(Psy.Loop):
+    """Is responsible for drawing the blue dot's"""
+
+    def __init__(self, num_circles, steps: Psy.SteppingStones, blue_first):
+        super().__init__(
+            index=0, stop=num_circles, increment=1, condition=Psy.LoopCondition.LESS
+        )
+        self.blue_first = blue_first
+        self.stepping_stones = steps
+
+    def do_iteration(self, index: int, tp: Psy.TimePoint) -> None:
+        """Overwrite parents iteration, is called on each iteration of the loop"""
+        draw(index % _NUM_CIRCLES, tp, BLUE, self)
+        Psy.Loop.do_iteration(self, index, tp)  # chainup to parent
+
+    def do_on_leave(self, tp: Psy.TimePoint) -> None:
+        """Do something when leaving the loop"""
+        if self.blue_first:
+            self.stepping_stones.activate_next_by_name("red")
+        Psy.Loop.do_on_leave(self, tp)  # chainup to parent
 
 
-def on_blue_loop_leave(loop: Psy.Loop, tp: Psy.TimePoint, blue_first):
-    """Activate the red loop when presenting blue first, or simply continue to
-    the exit_trial."""
-    if blue_first:
-        loop.props.parent.activate_next_by_name("red")
+class ExperimentSteps(Psy.SteppingStones):
+    """The main steps of the experiment, controls the order of the blocks of
+    the experiment.
+    """
 
+    def __init__(self, blue_first, main_loop):
+        super().__init__()
+        self.blue_first = blue_first
+        self.main_loop = main_loop
 
-def on_red_loop_leave(loop: Psy.Loop, tp: Psy.TimePoint, blue_first):
-    """When blue first is true, the blue loop should already have played,
-    hence we skip to the exit"""
-    if blue_first:
-        loop.props.parent.activate_next_by_name("exit")
+    def do_on_enter(self, tp: Psy.TimePoint) -> None:
+        """Choose whether to enter the red or the blue loop"""
+        if self.blue_first:
+            self.activate_next_by_name("blue")
+        Psy.SteppingStones.do_on_enter(self, tp)  # chain up
 
-
-def on_main_step_finish(step: Psy.Step, tp: Psy.TimePoint, loop: GLib.MainLoop) -> None:
-    """Stop the mainloop"""
-    loop.quit()
-
-
-def on_steps_enter(
-    step: Psy.SteppingStones, tp: Psy.TimePoint, blue_first: bool
-) -> None:
-    """Choose whether to enter the red or the blue loop"""
-    if blue_first:
-        step.activate_next_by_name("blue")
+    def do_on_leave(self, tp: Psy.TimePoint) -> None:
+        """Stop the mainloop"""
+        self.main_loop.quit()
+        Psy.SteppingStones.do_on_leave(self, tp)
 
 
 def on_exit_trial_enter(trial: Psy.Trial, tp: Psy.TimePoint) -> None:
@@ -140,18 +169,14 @@ def main():
         # The gl canvas doesn't iterate out of it's own, so we do it manually
         GLib.idle_add(iterate_canvas, window)
 
-    steps = Psy.SteppingStones.new()
+    # Contains the main parts of this "experiment"
+    steps = ExperimentSteps(args.blue_first, main_loop)
 
     # loop starting from 0 to 10 with steps of one, while the loops index is
     # smaller than 10
-    red_loop = Psy.Loop.new_full(0, args.num_iterations, 1, Psy.LoopCondition.LESS)
-    blue_loop = Psy.Loop.new_full(0, args.num_iterations, 1, Psy.LoopCondition.LESS)
+    red_loop = RedLoop(args.num_iterations, steps, args.blue_first)
+    blue_loop = BlueLoop(args.num_iterations, steps, args.blue_first)
     exit_trial = Psy.Trial()  # We can jump to this step to exit the steps
-
-    red_loop.connect("iteration", on_red_loop_iter)
-    blue_loop.connect("iteration", on_blue_loop_iter)
-    red_loop.connect("leave", on_red_loop_leave, args.blue_first)
-    blue_loop.connect("leave", on_blue_loop_leave, args.blue_first)
 
     exit_trial.connect("enter", on_exit_trial_enter)
 
@@ -159,9 +184,7 @@ def main():
     steps.add_step_by_name("blue", blue_loop)
     steps.add_step_by_name("exit", exit_trial)
 
-    steps.connect("enter", on_steps_enter, args.blue_first)
-    steps.connect("leave", on_main_step_finish, main_loop)
-
+    # enter the step with a time in the future
     steps.enter(clock.now().add(Psy.Duration.new(1.0)))
 
     exit(main_loop.run())
