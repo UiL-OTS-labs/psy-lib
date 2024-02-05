@@ -126,7 +126,7 @@ psy_loop_activate(PsyStep *step, PsyTimePoint *timestamp)
 }
 
 static void
-psy_loop_iteration(PsyLoop *self, gint64 index, gint64 timestamp)
+psy_loop_iteration(PsyLoop *self, gint64 index, PsyTimePoint *timestamp)
 {
     (void) index;
     (void) timestamp;
