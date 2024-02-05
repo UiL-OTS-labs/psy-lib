@@ -2,6 +2,67 @@
 #include "psy-loop.h"
 #include "enum-types.h"
 
+// clang-format off
+/**
+ * PsyLoop:
+ *
+ * # Loops are objects that help to setup a timeline for your experiment.
+ *
+ * Loops allow to run fragments of code in a loop as the name suggests. When
+ * you are running a Psylib application, all events are handled in an event
+ * loop [struct@GLib.MainLoop]. The mainloop handles events and triggers other
+ * code that is written to handle those events.
+ *
+ * # The loop is generally started by entering it
+ *
+ * You can call the [method@Step.enter] on the loop in order to start it.
+ * If the loop is embedded in a [class@SteppingStones], it will enter the loop
+ * on your behalf. When you enter it the first time the iteration will be
+ * started until an iteration is ran that for which
+ * [property@Loop:index] [enum@LoopCondition] [property@Loop:stop] no longer
+ * holds, then the loop will be left, activating the parent [class@Step],
+ * continuing the steps of your experiment.
+ *
+ * Psy.Loops help with setting up events that trigger an iteration
+ * of a Psy.Loop. You may choose two ways to do something on a iteration of the
+ * loop:
+ *
+ * 1. **Connect to the [signal@Loop::iteration] signal**. This way you
+ *    register a function to be called when the "iteration" signal is emitted.
+ * 2. The preferred method should be to **override the,
+ *    [vfunc@Loop.iteration] method.** From the iteration override you should
+ *    remember to chainup to the parent, as the [class@Loop] as the base class
+ *    handler is involved, in setting up the next iteration.
+ *
+ * The Loops are agnostic to whether the index is 0-based or 1-based, you can
+ * set this up yourself. To demonstrate using python see examples/python/loop.py
+ *
+ * Looping from 0 - 9 might work like this in a language such as python
+ * ```python
+ * def on_iteration():
+ *     print(f"index = {index}")
+ *
+ * loop = Psy.Loop(index=0, stop=10, increment=1, condition=Psy.LoopCondition.LESS)
+ * loop.enter(clock.now())
+ * ```
+ *
+ * So in order create a loop:
+ *
+ * 1. you specify the **index** at which the loop starts.
+ * 1. You specify the **stop** The stop is used in conjunction with the
+ *    index to see wheter the loop should continue to iterate.
+ * 1. You specify the **increment** to increment the index with after each
+ *    iteration. This may be negative, in order to count down
+ * 1. you specify the **condition** to check whether the loop should continue.
+ *    This is a member from the [enum@LoopCondition]. See the documentation of
+ *    that enum to see what the mean.
+ *
+ * And you typically to this at creation time of the loop, but you are totally
+ * free to do this while running the loop.
+ *
+ */
+// clang-format on
+
 typedef struct PsyLoopPrivate {
     gint64 index;
     gint64 stop;
