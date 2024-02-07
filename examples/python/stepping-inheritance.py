@@ -8,6 +8,7 @@ gi.require_version("Psy", "0.1")
 gi.require_version("GLib", "2.0")
 
 from gi.repository import Psy, GLib
+import psy_operators
 
 window: Psy.Canvas
 _NUM_CIRCLES = 12
@@ -45,13 +46,13 @@ def draw(n, tp: Psy.TimePoint, color: Psy.Color, step: Psy.Loop):
         else:
             circle.props.color = window.props.background_color
         circle.props.duration = DUR
-        circle.play(tp.add(DUR))
+        circle.play(tp + DUR)
     cross = Psy.Cross.new(window)
     cross.props.color = BLACK
     cross.props.line_length = cradius
     cross.props.line_width = 10
     cross.props.duration = DUR
-    cross.play(tp.add(DUR))
+    cross.play(tp + DUR)
     cross.connect("started", on_cross_started, step)
 
 
@@ -170,6 +171,7 @@ def main():
         window.props.frame_dur = Psy.Duration.new(1.0 / 60)
         # The gl canvas doesn't iterate out of it's own, so we do it manually
         GLib.idle_add(iterate_canvas, window)
+        window.set_time(clock.now())
 
     # Contains the main parts of this "experiment"
     steps = ExperimentSteps(args.blue_first, main_loop)
@@ -187,7 +189,7 @@ def main():
     steps.add_step_by_name("exit", exit_trial)
 
     # enter the step with a time in the future
-    steps.enter(clock.now().add(Psy.Duration.new(1.0)))
+    steps.enter(clock.now() + Psy.Duration.new(1.0))
 
     exit(main_loop.run())
 

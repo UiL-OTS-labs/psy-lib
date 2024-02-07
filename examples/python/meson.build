@@ -18,6 +18,18 @@ test(
 )
 
 test(
+   'python-step-inheritance-example',
+   python3, 
+   timeout : 5,
+   suite : ['examples', 'python-examples'],
+   args : [meson.current_source_dir() + '/stepping-inheritance.py'],
+   env : {
+       'GI_TYPELIB_PATH' : gi_typelib_path,
+       'LD_LIBRARY_PATH' : ld_library_path
+   }
+)
+
+test(
    'python-loop-example',
    python3, 
    timeout : 5,
