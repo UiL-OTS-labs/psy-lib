@@ -102,13 +102,14 @@ static void
 image_canvas_iterate(PsyImageCanvas *self)
 {
     PsyImageCanvasPrivate *priv = psy_image_canvas_get_instance_private(self);
+    gint64 nf = psy_canvas_get_num_frames_total(PSY_CANVAS(self));
 
     PsyDuration  *dur      = psy_canvas_get_frame_dur(PSY_CANVAS(self));
     PsyTimePoint *new_time = psy_time_point_add(priv->time, dur);
 
     psy_image_canvas_set_time(self, new_time);
 
-    PSY_CANVAS_GET_CLASS(self)->draw(PSY_CANVAS(self), 0, new_time);
+    PSY_CANVAS_GET_CLASS(self)->draw(PSY_CANVAS(self), nf + 1, new_time);
 }
 
 /**
