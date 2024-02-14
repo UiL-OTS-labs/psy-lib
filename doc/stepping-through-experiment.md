@@ -1,9 +1,9 @@
-Title:Stepping through your experiment using psylib
+Title:Stepping through your experiment
 
 # Introduction into the control flow in a psylib experiment
 
 When you run a psylib experiment, you'll typically want to structure your task
-in a fashion that suits your experiment. A possible experiment might consists
+in a fashion that suits your experiment. A possible experiment might consist
 of the following parts:
 
 1. Practice Instruction
@@ -13,7 +13,7 @@ of the following parts:
 1. When the performance of the practice wasn't optimal, go back to instruction.
    Otherwise, move on to the test instruction.
 1. Run a loop with test trials.
-     And here a stimulus is presented in a loop
+   And here a stimulus is presented in each iteration of a loop.
 1. Thank the participant for taking part in the experiment stop the program
 
 This document tries to make sense of how to do this with using psylib.
@@ -27,7 +27,7 @@ you typically want to leave that trial. Leaving a step means to enter
 a next step. The main trials of an experiment are [class@SteppingStones],
 [class@Loop] and [class@Trial]. A trial is more or less a concrete kind of step.
 
-### Stepping Stones
+## Stepping Stones
 
 The entire list of steps in the experiment above may be considered as a
 [class@SteppingStones] object. The SteppingStones are steps you can go through
@@ -40,11 +40,21 @@ the practice fase.
 The stepping stones are pretty flexible, you could run an entire experiment
 with just adding a lot of steps to the stepping stones.
 
-### Loops
+## Loops
 
+[class@Loop]s are about repeating a particular step. The loop is iterating until
+the running condition isn't met anymore. You can use a loop a bit in the sense
+of a C(++), Java style for loop. You set the (start) **index**, an **increment**
+that the index will be incremented with after each iteration of the loop and a
+**stop** on a loop. Finally, you can set a predefined manner to test the
+condition whether the loop should continue to run or a next step should
+be activated.
 
-### Trials
+## Trials
 
+[class@Trial]s, are designed to run one trial in an experiment. They are,
+more or less a plain [class@Step], with the only exception that a Step is an
+abstract class whereas a Trial is a concrete class - it may be instantiated.
 
 ## Meta Steps
 
