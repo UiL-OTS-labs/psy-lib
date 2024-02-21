@@ -58,6 +58,12 @@ psy_loop_set_condition(PsyLoop *self, PsyLoopCondition condition);
 G_MODULE_EXPORT PsyLoopCondition
 psy_loop_get_condition(PsyLoop *self);
 
+G_MODULE_EXPORT void
+psy_loop_set_child(PsyLoop *self, PsyStep *child);
+
+G_MODULE_EXPORT PsyStep *
+psy_loop_get_child(PsyLoop *self);
+
 G_MODULE_EXPORT gboolean
 psy_loop_test(PsyLoop *self);
 

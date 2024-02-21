@@ -274,6 +274,17 @@ typedef enum {
 } PsyParallelTriggerError;
 
 /**
+ * PsyStepError:
+ * @PSY_STEP_ERROR_NO_SUCH_LOOP: An error returned when the traversing the step
+ *                               and its parents to find a loop.
+ * @PSY_STEP_ERROR_FAILED: A unspecific error occurred.
+ */
+typedef enum {
+    PSY_STEP_ERROR_NO_SUCH_LOOP,
+    PSY_STEP_ERROR_FAILED,
+} PsyStepError;
+
+/**
  * PsySteppingStoneError:
  * @PSY_STEPPING_STONES_ERROR_KEY_EXISTS:Unable to add step, because the name
  * already exits.
