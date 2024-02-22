@@ -183,24 +183,32 @@ psy_stepping_stones_free(PsySteppingStones *self)
 /**
  * psy_stepping_stones_add_step:
  * @self: The `PsySteppingStones` instance to which a `PsyStep` @step
- * @step: The `PsyStep` to add to @self
+ * @step: The `PsyStep` to add to @self The step should not already have a
+ *        parent.
  *
- * To a `PsySteppingStones` multiple steps/stones may be added when
- * added like this, this allows to step through them in the order
+ * To an instance of [class@SteppingStones] multiple steps/stones may be added
+ * when added like this, this allows to step through them in the order
  * in which the are added.
+ * When adding an instance of [class@Step], @self, becomes its parent.
+ * So you have to make sure that the @step instance doesn't already have a
+ * parent.
+ *
+ * Returns: True when successfully adding the step as child, false otherwise.
  */
-void
+gboolean
 psy_stepping_stones_add_step(PsySteppingStones *self, PsyStep *step)
 {
-    g_return_if_fail(PSY_IS_STEPPING_STONES(self));
-    g_return_if_fail(PSY_IS_STEP(step));
-    g_return_if_fail(psy_step_get_parent(step) == NULL
-                     || psy_step_get_parent(step) == PSY_STEP(self));
+    g_return_val_if_fail(PSY_IS_STEPPING_STONES(self), FALSE);
+    g_return_val_if_fail(PSY_IS_STEP(step), FALSE);
+    g_return_val_if_fail(psy_step_get_parent(step) == NULL
+                             || psy_step_get_parent(step) == PSY_STEP(self),
+                         FALSE);
 
     PsySteppingStonesPrivate *priv
         = psy_stepping_stones_get_instance_private(self);
     g_ptr_array_add(priv->steps, g_object_ref(step));
     psy_step_set_parent(step, PSY_STEP(self));
+    return TRUE;
 }
 
 /**
@@ -210,17 +218,20 @@ psy_stepping_stones_add_step(PsySteppingStones *self, PsyStep *step)
  * or skip subsequent steps. The name should be unique.
  * @step: The step to add
  * @error: optional errors may be returned here.
+ *
+ * Returns: TRUE when the step was successfully added as child, false otherwise.
  */
-void
+gboolean
 psy_stepping_stones_add_step_by_name(PsySteppingStones *self,
                                      const gchar       *name,
                                      PsyStep           *step,
                                      GError           **error)
 {
-    g_return_if_fail(PSY_IS_STEPPING_STONES(self));
-    g_return_if_fail(name != NULL);
-    g_return_if_fail(PSY_IS_STEP(step));
-    g_return_if_fail(error == NULL || *error == NULL);
+    g_return_val_if_fail(PSY_IS_STEPPING_STONES(self), FALSE);
+    g_return_val_if_fail(name != NULL, FALSE);
+    g_return_val_if_fail(PSY_IS_STEP(step), FALSE);
+    g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
+    g_return_val_if_fail(psy_step_get_parent(step) == NULL, FALSE);
 
     g_debug("Adding step %p under name %s", (void *) step, name);
 
@@ -233,11 +244,12 @@ psy_stepping_stones_add_step_by_name(PsySteppingStones *self,
                     PSY_STEPPING_STONES_ERROR_KEY_EXISTS,
                     "The name '%s', already exists",
                     name);
-        return;
+        return FALSE;
     }
 
     g_hash_table_insert(priv->step_table, g_strdup(name), step);
     psy_stepping_stones_add_step(self, step);
+    return TRUE;
 }
 
 /**

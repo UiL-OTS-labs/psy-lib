@@ -62,8 +62,8 @@ outer_loop = Psy.Loop(index=0, increment=1, stop=2)
 inner_loop = Psy.Loop(index=0, increment=1, stop=2)
 trial = PrintIndicesTrial()
 
-outer_loop.set_child(inner_loop)
-inner_loop.set_child(trial)
+outer_loop.set_step(inner_loop)
+inner_loop.set_step(trial)
 inner_loop.connect("enter", on_inner_enter)
 
 outer_loop.enter(clk.now())

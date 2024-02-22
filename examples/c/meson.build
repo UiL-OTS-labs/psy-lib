@@ -13,9 +13,27 @@ loop = executable (
     c_args : EXAMPLE_PP_ARGS,
 )
 
+nested_loops = executable (
+    'nested_loops',
+    files (
+        'nested-loops.c',
+    ),
+    dependencies : [psy_dep],
+    c_args : EXAMPLE_PP_ARGS,
+)
+
 test(
    'c-loop-example',
    loop, 
    timeout : 5,
    suite : ['examples', 'c-examples'],
 )
+
+test(
+   'c-nested-loops-example',
+   loop, 
+   timeout : 5,
+   suite : ['examples', 'c-examples'],
+)
+
+

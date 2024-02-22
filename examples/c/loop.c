@@ -31,7 +31,7 @@ main(void)
 
     PsyLoop *loop = psy_loop_new_full(0, 10, 1, PSY_LOOP_CONDITION_LESS);
     g_signal_connect(loop, "leave", G_CALLBACK(on_loop_leave), mainloop);
-    // psy_loop_set_child(loop, PSY_STEP(trial));
+    // psy_loop_set_step(loop, PSY_STEP(trial));
     g_object_set(loop, "child", trial, NULL);
 
     psy_step_enter(PSY_STEP(loop), tp);

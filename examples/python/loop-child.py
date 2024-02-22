@@ -42,7 +42,7 @@ def main():
 
     loop = Psy.Loop(index=0, stop=10)
     trial = Trial()
-    loop.set_child(trial)
+    loop.set_step(trial)
     loop.connect("leave", on_leave_loop, main_loop)
 
     # loop from 1 to 10

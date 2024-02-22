@@ -57,8 +57,13 @@
  *    This is a member from the [enum@LoopCondition]. See the documentation of
  *    that enum to see what the mean.
  *
- * And you typically to this at creation time of the loop, but you are totally
- * free to do this while running the loop.
+ * And you typically do this at creation time of the loop, but you are totally
+ * free to do this while running the loop, or during the [signal@Step::enter]
+ * event. Actually, it's **advised** to do so. When running a PsyTrial, PsyLoop,
+ * PsySteppingStones etc. from a loop. At the second iteration, the nested
+ * instance of [class@Step] needs to reinitalize it's values, otherwise
+ * the values from the previous iteration are still in place.
+ *
  *
  */
 // clang-format on
@@ -121,7 +126,7 @@ psy_loop_set_property(GObject      *object,
         psy_loop_set_condition(self, g_value_get_enum(value));
         break;
     case PROP_CHILD:
-        psy_loop_set_child(self, g_value_get_object(value));
+        psy_loop_set_step(self, g_value_get_object(value));
         break;
     default:
         /* We don't have any other property... */
@@ -219,7 +224,7 @@ psy_loop_iteration(PsyLoop *self, gint64 index, PsyTimePoint *timestamp)
 }
 
 static void
-psy_loop_post_activate(PsyStep* self)
+psy_loop_post_activate(PsyStep *self)
 {
     PsyLoopPrivate *priv = psy_loop_get_instance_private(PSY_LOOP(self));
     priv->index += priv->increment;
@@ -237,7 +242,7 @@ psy_loop_class_init(PsyLoopClass *klass)
     obj_class->get_property = psy_loop_get_property;
     obj_class->dispose      = psy_loop_dispose;
 
-    step_class->activate = psy_loop_activate;
+    step_class->activate      = psy_loop_activate;
     step_class->post_activate = psy_loop_post_activate;
 
     klass->iteration = psy_loop_iteration;
@@ -311,7 +316,7 @@ psy_loop_class_init(PsyLoopClass *klass)
         "The condition used to determine whether to stop the loop",
         PSY_TYPE_LOOP_CONDITION,
         PSY_LOOP_CONDITION_LESS,
-        G_PARAM_READWRITE);
+        G_PARAM_READWRITE | G_PARAM_CONSTRUCT);
 
     /**
      * PsyLoop:child:
@@ -567,29 +572,41 @@ psy_loop_get_condition(PsyLoop *self)
 }
 
 /**
- * psy_loop_set_child:
+ * psy_loop_set_step:
  * @self: The psyloop in need of a child, that can be run at every iteration
  *        of the loop.
  * @child: (nullable)(transfer full): The Step that is going to be activated on
  *         every loop. Make sure that the step is nicely reset on enter or
  *         leave, because otherwise you might inherit values inside the child
- *         step from a previous iteration.
+ *         step from a previous iteration. The child should not already have
+ *         have a parent.
  *
  * Set the child step of this loop. The child is activated on every activation
  * of the loop. When passing NULL the child is cleared and no step will be
  * activated on each iteration.
+ *
+ * Returns: TRUE when the step is added as child, FALSE otherwise.
  */
-void
-psy_loop_set_child(PsyLoop *self, PsyStep *child)
+gboolean
+psy_loop_set_step(PsyLoop *self, PsyStep *child)
 {
-    g_return_if_fail(PSY_IS_LOOP(self));
-    g_return_if_fail(child == NULL || PSY_IS_STEP(child));
+    g_return_val_if_fail(PSY_IS_LOOP(self), FALSE);
+    g_return_val_if_fail(child == NULL || PSY_IS_STEP(child), FALSE);
 
     PsyLoopPrivate *priv = psy_loop_get_instance_private(self);
+    if (child != NULL) {
+        if (psy_step_get_parent(child) != NULL) {
+            g_critical(
+                "PsyLoop: unable to set a child that already has a parent");
+            return FALSE;
+        }
+        psy_step_set_parent(child, PSY_STEP(self));
+    }
+
     g_clear_object(&priv->child);
     priv->child = child;
-    if (priv->child)
-        psy_step_set_parent(priv->child, PSY_STEP(self));
+
+    return TRUE;
 }
 
 /**

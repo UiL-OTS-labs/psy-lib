@@ -28,10 +28,10 @@ psy_stepping_stones_new(void);
 G_MODULE_EXPORT void
 psy_stepping_stones_free(PsySteppingStones *self);
 
-G_MODULE_EXPORT void
+G_MODULE_EXPORT gboolean
 psy_stepping_stones_add_step(PsySteppingStones *self, PsyStep *step);
 
-G_MODULE_EXPORT void
+G_MODULE_EXPORT gboolean
 psy_stepping_stones_add_step_by_name(PsySteppingStones *self,
                                      const gchar       *name,
                                      PsyStep           *step,

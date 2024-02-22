@@ -454,6 +454,43 @@ test_stepping_stones(void)
     CU_ASSERT_EQUAL(params.loop_iterations, 10000);
 }
 
+static void
+steps_add_children(void)
+{
+    PsySteppingStones *stones = psy_stepping_stones_new();
+    PsyLoop           *loop   = psy_loop_new();
+
+    PsyTrial *stones1 = psy_trial_new();
+    PsyTrial *stones2 = psy_trial_new();
+    PsyTrial *loop1   = psy_trial_new();
+
+    gboolean ret;
+
+    // Add fresh trials to a parent.
+    ret = psy_stepping_stones_add_step(stones, PSY_STEP(stones1));
+    CU_ASSERT_TRUE(ret);
+    ret = psy_stepping_stones_add_step_by_name(
+        stones, "name", PSY_STEP(stones2), NULL);
+    CU_ASSERT_TRUE(ret);
+    ret = psy_loop_set_step(loop, PSY_STEP(loop1));
+    CU_ASSERT_TRUE(ret);
+
+    // Add trials that have a parent to as child step.
+    ret = psy_loop_set_step(loop, PSY_STEP(stones1));
+    CU_ASSERT_FALSE(ret);
+
+    ret = psy_loop_set_step(loop, PSY_STEP(stones1));
+    CU_ASSERT_FALSE(ret);
+    ret = psy_stepping_stones_add_step(stones, PSY_STEP(loop1));
+    CU_ASSERT_FALSE(ret);
+    ret = psy_stepping_stones_add_step_by_name(
+        stones, "name2", PSY_STEP(loop1), NULL);
+    CU_ASSERT_FALSE(ret);
+
+    psy_stepping_stones_free(stones);
+    psy_loop_free(loop);
+}
+
 int
 add_stepping_suite(void)
 {
@@ -472,6 +509,10 @@ add_stepping_suite(void)
         return 1;
 
     test = CU_add_test(suite, "Test PsySteppingStones", test_stepping_stones);
+    if (!test)
+        return 1;
+
+    test = CU_ADD_TEST(suite, steps_add_children);
     if (!test)
         return 1;
 
