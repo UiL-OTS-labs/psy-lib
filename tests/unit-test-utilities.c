@@ -176,7 +176,8 @@ remove_log_handler(void)
     g_clear_object(&g_log_data.main);
     g_clear_pointer(&g_log_data.domain, g_free);
 
-    g_log_set_writer_func(g_log_writer_default, NULL, NULL);
+    // Can't reset the log writer func as g_log_set_writer_func may only be
+    // called once
 }
 
 void

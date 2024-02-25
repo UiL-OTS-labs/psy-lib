@@ -101,7 +101,6 @@ psy_step_dispose(GObject *gobject)
 {
     PsyStepPrivate *priv = psy_step_get_instance_private(PSY_STEP(gobject));
 
-    g_clear_object(&priv->parent);
     if (priv->context) {
         g_main_context_unref(priv->context);
         priv->context = NULL;
@@ -363,7 +362,7 @@ psy_step_leave(PsyStep *self, PsyTimePoint *tstamp)
  * psy_step_set_parent:
  *
  * self: a `PsyStep`
- * parent:(transfer full)The parent that gets signalled when this step is done.
+ * parent:(transfer none)The parent that gets signalled when this step is done.
  *
  * Sets the parent of the current `PsyStep` object This parent is signalled
  * when we step out of the current step, causing an interation of a loop part
@@ -375,9 +374,8 @@ psy_step_set_parent(PsyStep *self, PsyStep *parent)
     g_return_if_fail(PSY_IS_STEP(self));
     PsyStepPrivate *priv = psy_step_get_instance_private(self);
 
-    g_clear_object(&priv->parent);
     if (parent)
-        priv->parent = g_object_ref(parent);
+        priv->parent = parent;
 }
 
 /**

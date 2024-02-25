@@ -27,6 +27,12 @@ you typically want to leave that trial. Leaving a step means to enter
 a next step. The main trials of an experiment are [class@SteppingStones],
 [class@Loop] and [class@Trial]. A trial is more or less a concrete kind of step.
 
+## Trials
+
+[class@Trial]s, are designed to run one trial in an experiment. They are,
+more or less a plain [class@Step], with the only exception that a Step is an
+abstract class whereas a Trial is a concrete class - it may be instantiated.
+
 ## Stepping Stones
 
 The entire list of steps in the experiment above may be considered as a
@@ -50,18 +56,28 @@ that the index will be incremented with after each iteration of the loop and a
 condition whether the loop should continue to run or a next step should
 be activated.
 
-## Trials
+## Note about Steps that take children
 
-[class@Trial]s, are designed to run one trial in an experiment. They are,
-more or less a plain [class@Step], with the only exception that a Step is an
-abstract class whereas a Trial is a concrete class - it may be instantiated.
+There are a number of steps that take other instances of [class@Step] as
+a substep/child. What is important is that every instance of [class@Step]
+can only have one parent, so when adding a step to an instance of
+[class@Loop] or [class@SteppingStones], it should not have been added to another
+step. The reason is, most likely when the substep is done, it will only
+reactivate the parent to which it would have been added as last, and not
+the parent to which it has been added before. Just create a new instance
+of the step when you want one step to be added.
 
 ## Meta Steps
 
 This is a todo we could add steps just for the sake of jumping to it. A
-**PsyJumpStep**. The idea is that when you enter the step, it will just activate the
-next step. So when you have it in your stepping stones object, it won't do
-anything, but to step to the next step.
+**PsySideStep**. The idea is that when you enter/activate the step, it will
+automatically activate the next step. So when you have it in your stepping
+stones object, it won't do anything, but to step to the next step. You
+you might add it by name to an instance of [class@SteppingStones], so
+you can easily jump to it. You might just add it to do check something
+You may still connect to the [sigal@Step::activate] or override the virtual
+activate method  (as long as you chain the activate up to its parent).
+So you typically use this step for it side effects, hence the name.
 **ApplicationStep** A step that will nicely quit the experiment when leaving
 it. It should be similar to [class@SteppingStones], but it will end the
 program when it is done.

@@ -1,4 +1,3 @@
-
 #ifndef PSYLIB_H
 #define PSYLIB_H
 
@@ -25,11 +24,12 @@
 #include "psy-matrix4.h"
 #include "psy-picture-artist.h"
 #include "psy-picture.h"
-#include "psy-shader-program.h"
 #include "psy-random.h"
 #include "psy-rectangle-artist.h"
 #include "psy-rectangle.h"
+#include "psy-shader-program.h"
 #include "psy-shader.h"
+#include "psy-side-step.h"
 #include "psy-step.h"
 #include "psy-stepping-stones.h"
 #include "psy-stimulus.h"

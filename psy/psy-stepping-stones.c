@@ -38,24 +38,6 @@ static GParamSpec *obj_properties[NUM_PROPERTIES] = {NULL};
 // static guint       signals[NUM_SIGNALS]           = {0};
 
 static void
-psy_stepping_stones_set_property(GObject      *object,
-                                 guint         property_id,
-                                 const GValue *value,
-                                 GParamSpec   *pspec)
-{
-    PsySteppingStones *self = PSY_STEPPING_STONES(object);
-    (void) self;
-    (void) value;
-
-    switch ((PsySteppingStonesProperty) property_id) {
-    default:
-        /* We don't have any other property... */
-        G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
-        break;
-    }
-}
-
-static void
 psy_stepping_stones_get_property(GObject    *object,
                                  guint       property_id,
                                  GValue     *value,
@@ -127,7 +109,6 @@ psy_stepping_stones_class_init(PsySteppingStonesClass *klass)
 {
     GObjectClass *obj_class = G_OBJECT_CLASS(klass);
 
-    obj_class->set_property = psy_stepping_stones_set_property;
     obj_class->get_property = psy_stepping_stones_get_property;
     obj_class->finalize     = psy_stepping_stones_finalize;
 
@@ -215,9 +196,17 @@ psy_stepping_stones_add_step(PsySteppingStones *self, PsyStep *step)
  * psy_stepping_stones_add_step_by_name:
  * @self: The instance self
  * @name: The name for the step to add this name may be used to jump back
- * or skip subsequent steps. The name should be unique.
+ *        or skip subsequent steps. The name should be unique.
  * @step: The step to add
  * @error: optional errors may be returned here.
+ *
+ * Using this function you can add steps with a name that identifies one
+ * specific step. You can select this step for the next activation of
+ * the SteppingStones instance when using
+ * [method@SteppingStones.activate_next_by_name], then the next time @self
+ * is activated @step will be entered, hence activated too.
+ * Every name, for this step must be unique, other wise an error will
+ * be returned.
  *
  * Returns: TRUE when the step was successfully added as child, false otherwise.
  */
