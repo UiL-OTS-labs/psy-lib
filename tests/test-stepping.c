@@ -320,6 +320,20 @@ test_basic_loop(void)
     CU_ASSERT_EQUAL(lparams.stats.index_at_end, regular.index_at_end);
 }
 
+static void
+loop_add_children(void)
+{
+    PsyLoop  *loop  = psy_loop_new();
+    PsyTrial *trial = psy_trial_new();
+    PsyTrial *child = NULL;
+
+    psy_loop_set_step(loop, PSY_STEP(trial));
+    g_object_get(loop, "child", &child, NULL);
+    CU_ASSERT_EQUAL(trial, child);
+
+    psy_loop_free(loop);
+}
+
 typedef struct StoneParams {
     gint stones_activated;
     gint trial_activated;
@@ -452,19 +466,43 @@ test_stepping_stones(void)
 }
 
 static void
+stepping_stones_errors(void)
+{
+    GError            *error  = NULL;
+    PsySteppingStones *stones = psy_stepping_stones_new();
+
+    psy_stepping_stones_activate_next_by_name(stones, "blablah", &error);
+
+    CU_ASSERT_PTR_NOT_NULL(error);
+    CU_ASSERT_TRUE(g_error_matches(error,
+                                   PSY_STEPPING_STONES_ERROR,
+                                   PSY_STEPPING_STONES_ERROR_NO_SUCH_KEY));
+    g_clear_error(&error);
+
+    psy_stepping_stones_activate_next_by_index(stones, 0, &error);
+    CU_ASSERT_TRUE(g_error_matches(error,
+                                   PSY_STEPPING_STONES_ERROR,
+                                   PSY_STEPPING_STONES_ERROR_INVALID_INDEX));
+
+    g_clear_error(&error);
+
+    psy_stepping_stones_free(stones);
+}
+
+static void
 steps_add_children(void)
 {
     PsySteppingStones *stones = psy_stepping_stones_new();
     PsyLoop           *loop   = psy_loop_new();
 
     guint num_steps = -1;
-    
+
     g_object_get(stones, "num-steps", &num_steps, NULL);
     CU_ASSERT_EQUAL(num_steps, 0);
 
-    PsyTrial *strial1= psy_trial_new();
+    PsyTrial *strial1 = psy_trial_new();
     PsyTrial *strial2 = psy_trial_new();
-    PsyTrial *ltrial= psy_trial_new();
+    PsyTrial *ltrial  = psy_trial_new();
 
     gboolean ret;
 
@@ -505,6 +543,14 @@ steps_add_children(void)
 
     psy_stepping_stones_free(stones);
     psy_loop_free(loop);
+}
+
+static void
+side_step_construct(void)
+{
+    PsySideStep *step = psy_side_step_new();
+    CU_ASSERT_PTR_NOT_NULL(step);
+    psy_side_step_free(step);
 }
 
 typedef struct SideStepData {
@@ -549,7 +595,7 @@ steps_side_stepping(void)
     GMainLoop    *loop = g_main_loop_new(NULL, FALSE);
     PsyTimePoint *now  = NULL;
     PsyClock     *clk  = psy_clock_new();
-    now = psy_clock_now(clk);
+    now                = psy_clock_now(clk);
 
     SideStepData data = {0};
 
@@ -562,8 +608,7 @@ steps_side_stepping(void)
     psy_stepping_stones_add_step_by_name(
         data.stones, "step2", PSY_STEP(data.step2), NULL);
 
-    g_signal_connect(
-        data.stones, "leave", G_CALLBACK(side_stones_leave), loop);
+    g_signal_connect(data.stones, "leave", G_CALLBACK(side_stones_leave), loop);
     g_signal_connect(
         data.step1, "activate", G_CALLBACK(side_step_activate), &data);
     g_signal_connect(
@@ -600,7 +645,15 @@ add_stepping_suite(void)
     if (!test)
         return 1;
 
+    test = CU_ADD_TEST(suite, loop_add_children);
+    if (!test)
+        return 1;
+
     test = CU_add_test(suite, "Test PsySteppingStones", test_stepping_stones);
+    if (!test)
+        return 1;
+
+    test = CU_ADD_TEST(suite, stepping_stones_errors);
     if (!test)
         return 1;
 
@@ -608,6 +661,9 @@ add_stepping_suite(void)
     if (!test)
         return 1;
 
+    test = CU_ADD_TEST(suite, side_step_construct);
+    if (!test)
+        return 1;
     test = CU_ADD_TEST(suite, steps_side_stepping);
     if (!test)
         return 1;

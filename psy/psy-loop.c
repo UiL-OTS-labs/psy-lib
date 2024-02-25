@@ -141,21 +141,20 @@ psy_loop_get_property(GObject    *object,
                       GValue     *value,
                       GParamSpec *pspec)
 {
-    PsyLoop        *self = PSY_LOOP(object);
-    PsyLoopPrivate *priv = psy_loop_get_instance_private(self);
+    PsyLoop *self = PSY_LOOP(object);
 
     switch ((PsyLoopProperty) property_id) {
     case PROP_INDEX:
-        g_value_set_int64(value, priv->index);
+        g_value_set_int64(value, psy_loop_get_index(self));
         break;
     case PROP_STOP:
-        g_value_set_int64(value, priv->stop);
+        g_value_set_int64(value, psy_loop_get_stop(self));
         break;
     case PROP_INCREMENT:
-        g_value_set_int64(value, priv->increment);
+        g_value_set_int64(value, psy_loop_get_increment(self));
         break;
     case PROP_CONDITION:
-        g_value_set_enum(value, priv->condition);
+        g_value_set_enum(value, psy_loop_get_condition(self));
         break;
     case PROP_CHILD:
         g_value_set_object(value, psy_loop_get_child(self));

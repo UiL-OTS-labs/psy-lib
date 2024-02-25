@@ -75,7 +75,7 @@ automatically activate the next step. So when you have it in your stepping
 stones object, it won't do anything, but to step to the next step. You
 you might add it by name to an instance of [class@SteppingStones], so
 you can easily jump to it. You might just add it to do check something
-You may still connect to the [sigal@Step::activate] or override the virtual
+You may still connect to the [signal@Step::activate] or override the virtual
 activate method  (as long as you chain the activate up to its parent).
 So you typically use this step for it side effects, hence the name.
 **ApplicationStep** A step that will nicely quit the experiment when leaving
