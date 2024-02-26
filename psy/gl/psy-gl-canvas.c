@@ -145,6 +145,10 @@ psy_gl_canvas_constructed(GObject *obj)
     // clang-format on
 
     canvas->display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
+    if (canvas->display == EGL_NO_DISPLAY) {
+        egl_ret = eglGetError();
+        g_critical("Unable to obtain an EGLDispay %s", psy_egl_strerr(egl_ret));
+    }
     eglBindAPI(canvas->use_es ? EGL_OPENGL_ES_API : EGL_OPENGL_API);
     // eglBindAPI(EGL_OPENGL_API);
     egl_ret = eglGetError();
