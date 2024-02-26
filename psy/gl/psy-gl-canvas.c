@@ -113,7 +113,7 @@ static void
 psy_gl_canvas_constructed(GObject *obj)
 {
     PsyGlCanvas *canvas = PSY_GL_CANVAS(obj);
-    EGLint       egl_major, egl_minor, num_configs;
+    EGLint       egl_major, egl_minor, num_configs, egl_ret = EGL_SUCCESS;
     GError      *error = NULL;
 
     G_OBJECT_CLASS(psy_gl_canvas_parent_class)->constructed(obj);
@@ -147,45 +147,49 @@ psy_gl_canvas_constructed(GObject *obj)
     canvas->display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
     eglBindAPI(canvas->use_es ? EGL_OPENGL_ES_API : EGL_OPENGL_API);
     // eglBindAPI(EGL_OPENGL_API);
-    g_assert(eglGetError() == EGL_SUCCESS);
+    egl_ret = eglGetError();
+    g_assert(egl_ret == EGL_SUCCESS);
 
-    if (eglInitialize(canvas->display, &egl_major, &egl_minor) != EGL_TRUE)
-        g_critical("Unable to initialize egl display");
+    if (eglInitialize(canvas->display, &egl_major, &egl_minor) != EGL_TRUE) {
+        egl_ret = eglGetError();
+        g_critical("Unable to initialize egl display: %s",
+                   psy_egl_strerr(egl_ret));
+    }
     else
         g_debug("Initialized display for egl %d.%d", egl_major, egl_minor);
-    g_assert(eglGetError() == EGL_SUCCESS);
 
     if (eglChooseConfig(
             canvas->display, config_attrs, &(canvas->config), 1, &num_configs)
-        != EGL_TRUE)
-        g_critical("Unable to choose an egl config");
-    g_assert(eglGetError() == EGL_SUCCESS);
+        != EGL_TRUE) {
+        egl_ret = eglGetError();
+        g_critical("Unable to choose an egl config: %s",
+                   psy_egl_strerr(egl_ret));
+    }
 
     canvas->egl_context = eglCreateContext(
         canvas->display, canvas->config, EGL_NO_CONTEXT, context_attributes);
     if (!canvas->egl_context) {
-        EGLint error = eglGetError();
-        g_critical("Unable to create egl context: %s", psy_egl_strerr(error));
+        egl_ret = eglGetError();
+        g_critical("Unable to create egl context: %s", psy_egl_strerr(egl_ret));
     }
     g_assert(eglGetError() == EGL_SUCCESS);
 
     canvas->surface = eglCreatePbufferSurface(
         canvas->display, canvas->config, surf_attributes);
     if (!canvas->surface) {
-        EGLint error = eglGetError();
+        egl_ret = eglGetError();
         g_critical("Unable to create Pbuffer surface: %s",
-                   psy_egl_strerr(error));
+                   psy_egl_strerr(egl_ret));
     }
-    g_assert(eglGetError() == EGL_SUCCESS);
 
     if (eglMakeCurrent(canvas->display,
                        canvas->surface,
                        canvas->surface,
                        canvas->egl_context)
         != EGL_TRUE) {
-        EGLint error = eglGetError();
+        egl_ret = eglGetError();
         g_critical("Unable to make the context current: %s",
-                   psy_egl_strerr(error));
+                   psy_egl_strerr(egl_ret));
     }
 
     if (canvas->debug) {
