@@ -4,9 +4,70 @@
 /**
  * PsySteppingStones:
  *
- * The `PsySteppingStones` object is a `PsyStep` instance that may
- * be used to contain substeps. The contained steps may be processed in
- * order, by index or by the name of the steps.
+ *
+ * Instances of [class@SteppingStones] are designed to to structure your
+ * flow of the experiment. You can add substeps using the
+ * [method@SteppingStones.add_step], in this case the steps are added, the
+ * first step will get index 0, then 1, etc. Additionally, you can add
+ * step using [method@SteppingStones.add_step_by_name], in this case
+ * you'll add a step, by index, but also you'll register a name for this
+ * specific substep. This allows to jump for- or backward to this step
+ * by calling the [method@SteppingStones.activate_next_by_name], another
+ * way is calling [method@SteppingStones.activate_next_by_index]. However,
+ * the one using the name is probably more flexible.
+ *
+ * An example experiment might look like:
+ *
+ * ```
+ * SteppingStones:experiment
+ *     |
+ *     |-- Trial:practice-instruction
+ *     |
+ *     |-- loop:practice
+ *         |
+ *         |-- Trial:practice_trial
+ *     |
+ *     |-- SideStep: test whether participant has understood the instructions
+ *     |
+ *     |-- Trial: test-instruction
+ *     |
+ *     |-- loop:test
+ *         |
+ *         |-- Trial:test_trial
+ *     |
+ *     | -- Trial:thank-you instructions.
+ * ```
+ *
+ * In the experiment above, a SteppingStones object is created, that contains
+ * a number of sub parts:
+ *
+ * 1. Practice instructions
+ * 1. Loop
+ *     - A number of practice trials
+ * 1. A sidestep where we check whether the participant has understood the
+ *    instructions. If **yes**, we do nothing, the test will advance to the
+ *    pretest instructions, the next part. If **no**, we call one of
+ *    [method@SteppingStones.activate_next_by_index] or
+ *    [method@SteppingStones.activate_next_by_name] on the Experiment stepping
+ *    stones instance, so that when we leave the sidestep, we step back to
+ *    the practice instruction
+ * 1. Loop of test trials
+ * 1. Thank the participant for participating.
+ *
+ * We could also split up the practice trial in a new stepping stones object
+ * that exists of two parts:
+ *
+ * ```
+ * SteppingStones:PracTrial:
+ *    |
+ *    | -- Trial:PresentStimuli
+ *    | -- Trial:Feedback
+ * ```
+ *
+ * This might be a nice setup to add an extra feedback to after a practice
+ * trial and skip this in the actual experiment. So in order to do that
+ * you would replace the `Trial:practice_trial` in the example above with the
+ * `SteppingStones:PracTrial` instead.
  */
 
 typedef struct _PsySteppingStonesPrivate {

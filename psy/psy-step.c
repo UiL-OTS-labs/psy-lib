@@ -6,15 +6,76 @@
 /**
  * PsyStep:
  *
- * Instances of `PsyStep` allow control flow in the context
- * of an event loop. When an instance of `PsyStep` is created it
- * will be hooked to a GMainContext. Via this context entering
- * and leaving step happens using events. This events are typically
- * accompanied by a `PsyTimePoint` that indicates when this part of
- * the
+ * # PsySteps allow to structure your experiment over time
+ *
+ * PsySteps is the parent class for structuring steps in your experiment
+ * over time. Typically you create a subclass of [class@Step], that does
+ * something for your experiment. An instance of [class@Trial] presents
+ * some stimulus and waits for a response of the participant. When the
+ * Trial is done, you can leave the trial and continue to the next part/step
+ * of your experiment. Other instances of steps are [class@Loop]s, to
+ * repeat one specific sub step a number of times and [class@SteppingStones]
+ * That contains a number of sub steps that are processed in order by default,
+ * but the order of the substeps is gone through in a specific order when
+ * required.
+ *
+ * # Entering steps
+ *
+ * **Firstly** the [signal@Step::enter] is emitted. In the enter signal you can
+ * setup the step for use. For example you can set the number of iterations of
+ * a loop. You can setup your [class@Trial] etc. It's recommended to connect
+ * to this signal, or override the [vfunc@Step.on_enter], to setup the step you
+ * are entering. When putting steps in Loops, the might be setup correctly
+ * on the first iteration of the loop, but not in a second, because the step
+ * has already run. So the [signal@Step::enter] is important to setup the step
+ * before use.
+ * **Secondly**, the step is activated. For instance of [class@SteppingStones]
+ * or [class@Loop], will enter their child/sub steps, so they are also entered,
+ * hence activated. For instances of [class@Trial], the acitvate does something
+ * that should be specified by the user. The [signal@Step::activate] is emitted
+ * which may be used to start the presentation of stimuli. Or you can inherit
+ * from Trial and decide to override the [vfunc@Step.activate] and run your
+ * stimuli from there.
+ *
+ * What is important is when a step is done, you'll have
+ * to leave it.
+ *
+ * ## Leaving steps
+ *
+ * A step becomes [property@Step:active] when it is activated. So to deactivate
+ * it you'll have to leave it. When leaving a step, the parent gets activated
+ * again, so loops will go through a new iteration and stepping stones will
+ * activate the next step or leave when all steps have been presented.
+ *
+ * ## TimePoints
+ *
+ * When you enter a step you hand it an instance of [struct@TimePoint], when
+ * the experiment starts this can be the result of [method@Clock.now], but
+ * typically this is the time a stimulus finished or a response from a
+ * participant was obtained. This timepoint is use as reference for the start
+ * of a new trial. When you leave a [class@Trial], the next step will be
+ * activated using this time stamp.
+ *
+ * ## Tree like structure
+ *
+ * When you setup the structure of your experiment you'll see that you
+ * end up with a tree like structure. This tree like structure is demonstrated
+ * in the docs of [class@SteppingStones]. So when you'll add an instance of
+ * Step to a [class@Loop] or [class@SteppingStones] the Loop or SteppingStones
+ * will become a parent of the substep and in contrast the substep will
+ * become a child of the loop/stepping stones object. So when child is leaving
+ * it will reactivate it's parent, and this is key to structuring your
+ * experiment over time. For C(++) users of psylib this means that the parent
+ * will own its children and not the other way around. This means that adding a
+ * child to a parent, you'll only have to free the parent, as the parent should
+ * be able free its children.
+ *
  */
 
-G_DEFINE_QUARK(psy - step - error - quark, psy_step_error)
+// clang-format off
+G_DEFINE_QUARK(psy-step-error-quark, psy_step_error)
+
+// clang-format on
 
 typedef struct _PsyStepPrivate {
     PsyStep      *parent;

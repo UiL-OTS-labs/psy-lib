@@ -1,3 +1,47 @@
+/**
+ * SideStep:
+ *
+ * # SideSteps are steps used for its side effects
+ *
+ * Sometimes when using [class@SteppingStones] you just want to have
+ * a step where you want to jump to, or to test something without running
+ * a complete trial. This is where [class@SideStep] comes in. Steps
+ * like the are auto leaving, this means when the step is activated, it
+ * will leave it self, with the same timestamp it was activated with.
+ *
+ * so when you have an experiment like this:
+ *
+ * ```
+ * SteppingStones: experiment
+ *   |
+ *   |-- Trial: Elaborate Instruction
+ *   |
+ *   |-- SideStep: added with key "post-instruction"
+ *   |
+ *   |-- Trial: instruction "Respond as quickly as possible"
+ *   |
+ *   |-- Loop:
+ *       |
+ *       | Trial:PracticeTrial
+ *
+ *   |-- SideStep: test if loop of trials had suffcient performance
+ *   |             if not, jump back to step with key "post-instruction"
+ *   .
+ *   . the rest of the experiment.
+ *   .
+ * ```
+ *
+ * So in the experiment above, you first have an elaborate instruction,
+ * The you step in the "post-instruction" SideStep, which will leave it self
+ * and the short instruction is displayed. Then a loop of practice trials
+ * is presented and when that is done, we can test in the 2nd sidestep
+ * whether we jump back to the first side step and this way, the paricipant
+ * only needs to read the short instruction.
+ *
+ * This is a bit of a toy example, because you can also do this from the
+ * `Loop`s [signal@Step.leave] signal and jump straight back to the short
+ * instruction trial.
+ */
 
 #include "psy-side-step.h"
 
