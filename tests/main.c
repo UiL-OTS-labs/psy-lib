@@ -6,6 +6,7 @@
 #include <gst/gst.h>
 #include <portaudio.h>
 #include <psylib.h>
+#include <signal.h>
 #include <stdlib.h>
 
 #include "suites.h"
@@ -20,6 +21,19 @@ static gchar   *g_log_domain  = NULL;
 static gchar   *g_log_level   = "info";
 
 static const char *g_audio_backend = "portaudio";
+
+static void
+signal_handler(int sig)
+{
+    switch (sig) {
+    case SIGINT:
+    case SIGABRT:
+    case SIGSEGV:
+        remove_log_handler();
+        g_print("Recieved signal %d / %x\nquitting", sig, sig);
+        exit(sig);
+    }
+}
 
 /* clang-format off */
 GOptionEntry options[] = {
@@ -187,6 +201,20 @@ setup_log_handler(void)
     set_log_handler_level(level);
 }
 
+static void
+setup_signal_handlers(void)
+{
+    if (signal(SIGINT, signal_handler) == SIG_ERR) {
+        g_printerr("Unable to catch SIGINT");
+    }
+    if (signal(SIGABRT, signal_handler) == SIG_ERR) {
+        g_printerr("Unable to catch SIGABRT");
+    }
+    if (signal(SIGSEGV, signal_handler) == SIG_ERR) {
+        g_printerr("Unable to catch SIGABRT");
+    }
+}
+
 int
 main(int argc, char **argv)
 {
@@ -203,6 +231,7 @@ main(int argc, char **argv)
     }
 
     setup_log_handler();
+    setup_signal_handlers();
 
     if (g_seed < 0) {
         if (!init_random()) {
