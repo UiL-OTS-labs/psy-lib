@@ -131,7 +131,7 @@ list_egl_devices(PsyGlCanvas *canvas)
     for (int i = 0; i < num_devices; i++) {
         g_debug("Extensions = %s",
                 eglQueryDeviceStringEXT(egl_devices[i], EGL_EXTENSIONS));
-        canvas->devices = egl_devices[i];
+        canvas->devices[i] = egl_devices[i];
     }
 }
 
@@ -183,7 +183,7 @@ psy_gl_canvas_constructed(GObject *obj)
 
         if (canvas->display == EGL_NO_DISPLAY) {
             egl_ret = eglGetError();
-            g_info("Unable to obtain an EGLDispay %d: %s",
+            g_info("Unable to obtain an EGLDisplay %d: %s",
                    i,
                    psy_egl_strerr(egl_ret));
             continue;
