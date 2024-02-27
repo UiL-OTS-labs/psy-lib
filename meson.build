@@ -147,6 +147,10 @@ psy_dep = declare_dependency(
 subdir('tests')
 subdir('programs')
 
+if get_option('build-examples')
+    subdir('examples')
+endif
+
 if get_option('documentation')
     subdir('doc')
 endif

@@ -78,4 +78,4 @@ unit_test = executable (
 
 # This runs the unit test verbosely and saves the pictures
 # So we get them as artifact in the CI
-test('unit-test', unit_test, args: ['-v', '-S'])
+test('unit-test', unit_test, args: ['-v', '-S', '-l', 'debug'])

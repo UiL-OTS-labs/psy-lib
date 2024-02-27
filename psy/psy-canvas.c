@@ -117,6 +117,8 @@ psy_canvas_set_property(GObject      *object,
         psy_canvas_set_projection_style(self, g_value_get_int(value));
         break;
     case FRAME_DUR:
+        psy_canvas_set_frame_dur(self, g_value_get_boxed(value));
+        break;
     case NUM_STIMULI:
     default:
         G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, spec);

@@ -4,9 +4,70 @@
 /**
  * PsySteppingStones:
  *
- * The `PsySteppingStones` object is a `PsyStep` instance that may
- * be used to contain substeps. The contained steps may be processed in
- * order, by index or by the name of the steps.
+ *
+ * Instances of [class@SteppingStones] are designed to to structure your
+ * flow of the experiment. You can add substeps using the
+ * [method@SteppingStones.add_step], in this case the steps are added, the
+ * first step will get index 0, then 1, etc. Additionally, you can add
+ * step using [method@SteppingStones.add_step_by_name], in this case
+ * you'll add a step, by index, but also you'll register a name for this
+ * specific substep. This allows to jump for- or backward to this step
+ * by calling the [method@SteppingStones.activate_next_by_name], another
+ * way is calling [method@SteppingStones.activate_next_by_index]. However,
+ * the one using the name is probably more flexible.
+ *
+ * An example experiment might look like:
+ *
+ * ```
+ * SteppingStones:experiment
+ *     |
+ *     |-- Trial:practice-instruction
+ *     |
+ *     |-- loop:practice
+ *         |
+ *         |-- Trial:practice_trial
+ *     |
+ *     |-- SideStep: test whether participant has understood the instructions
+ *     |
+ *     |-- Trial: test-instruction
+ *     |
+ *     |-- loop:test
+ *         |
+ *         |-- Trial:test_trial
+ *     |
+ *     | -- Trial:thank-you instructions.
+ * ```
+ *
+ * In the experiment above, a SteppingStones object is created, that contains
+ * a number of sub parts:
+ *
+ * 1. Practice instructions
+ * 1. Loop
+ *     - A number of practice trials
+ * 1. A sidestep where we check whether the participant has understood the
+ *    instructions. If **yes**, we do nothing, the test will advance to the
+ *    pretest instructions, the next part. If **no**, we call one of
+ *    [method@SteppingStones.activate_next_by_index] or
+ *    [method@SteppingStones.activate_next_by_name] on the Experiment stepping
+ *    stones instance, so that when we leave the sidestep, we step back to
+ *    the practice instruction
+ * 1. Loop of test trials
+ * 1. Thank the participant for participating.
+ *
+ * We could also split up the practice trial in a new stepping stones object
+ * that exists of two parts:
+ *
+ * ```
+ * SteppingStones:PracTrial:
+ *    |
+ *    | -- Trial:PresentStimuli
+ *    | -- Trial:Feedback
+ * ```
+ *
+ * This might be a nice setup to add an extra feedback to after a practice
+ * trial and skip this in the actual experiment. So in order to do that
+ * you would replace the `Trial:practice_trial` in the example above with the
+ * `SteppingStones:PracTrial` instead.
  */
 
 typedef struct _PsySteppingStonesPrivate {
@@ -36,24 +97,6 @@ typedef enum {
 static GParamSpec *obj_properties[NUM_PROPERTIES] = {NULL};
 
 // static guint       signals[NUM_SIGNALS]           = {0};
-
-static void
-psy_stepping_stones_set_property(GObject      *object,
-                                 guint         property_id,
-                                 const GValue *value,
-                                 GParamSpec   *pspec)
-{
-    PsySteppingStones *self = PSY_STEPPING_STONES(object);
-    (void) self;
-    (void) value;
-
-    switch ((PsySteppingStonesProperty) property_id) {
-    default:
-        /* We don't have any other property... */
-        G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
-        break;
-    }
-}
 
 static void
 psy_stepping_stones_get_property(GObject    *object,
@@ -127,7 +170,6 @@ psy_stepping_stones_class_init(PsySteppingStonesClass *klass)
 {
     GObjectClass *obj_class = G_OBJECT_CLASS(klass);
 
-    obj_class->set_property = psy_stepping_stones_set_property;
     obj_class->get_property = psy_stepping_stones_get_property;
     obj_class->finalize     = psy_stepping_stones_finalize;
 
@@ -183,44 +225,65 @@ psy_stepping_stones_free(PsySteppingStones *self)
 /**
  * psy_stepping_stones_add_step:
  * @self: The `PsySteppingStones` instance to which a `PsyStep` @step
- * @step: The `PsyStep` to add to @self
+ * @step: The `PsyStep` to add to @self The step should not already have a
+ *        parent.
  *
- * To a `PsySteppingStones` multiple steps/stones may be added when
- * added like this, this allows to step through them in the order
+ * To an instance of [class@SteppingStones] multiple steps/stones may be added
+ * when added like this, this allows to step through them in the order
  * in which the are added.
+ * When adding an instance of [class@Step], @self, becomes its parent.
+ * So you have to make sure that the @step instance doesn't already have a
+ * parent.
+ *
+ * Returns: True when successfully adding the step as child, false otherwise.
  */
-void
+gboolean
 psy_stepping_stones_add_step(PsySteppingStones *self, PsyStep *step)
 {
-    g_return_if_fail(PSY_IS_STEPPING_STONES(self));
-    g_return_if_fail(PSY_IS_STEP(step));
-    g_return_if_fail(psy_step_get_parent(step) == NULL
-                     || psy_step_get_parent(step) == PSY_STEP(self));
+    g_return_val_if_fail(PSY_IS_STEPPING_STONES(self), FALSE);
+    g_return_val_if_fail(PSY_IS_STEP(step), FALSE);
+    g_return_val_if_fail(psy_step_get_parent(step) == NULL
+                             || psy_step_get_parent(step) == PSY_STEP(self),
+                         FALSE);
 
     PsySteppingStonesPrivate *priv
         = psy_stepping_stones_get_instance_private(self);
     g_ptr_array_add(priv->steps, g_object_ref(step));
     psy_step_set_parent(step, PSY_STEP(self));
+    return TRUE;
 }
 
 /**
  * psy_stepping_stones_add_step_by_name:
  * @self: The instance self
  * @name: The name for the step to add this name may be used to jump back
- * or skip subsequent steps. The name should be unique.
+ *        or skip subsequent steps. The name should be unique.
  * @step: The step to add
  * @error: optional errors may be returned here.
+ *
+ * Using this function you can add steps with a name that identifies one
+ * specific step. You can select this step for the next activation of
+ * the SteppingStones instance when using
+ * [method@SteppingStones.activate_next_by_name], then the next time @self
+ * is activated @step will be entered, hence activated too.
+ * Every name, for this step must be unique, other wise an error will
+ * be returned.
+ *
+ * Returns: TRUE when the step was successfully added as child, false otherwise.
  */
-void
+gboolean
 psy_stepping_stones_add_step_by_name(PsySteppingStones *self,
                                      const gchar       *name,
                                      PsyStep           *step,
                                      GError           **error)
 {
-    g_return_if_fail(PSY_IS_STEPPING_STONES(self));
-    g_return_if_fail(name != NULL);
-    g_return_if_fail(PSY_IS_STEP(step));
-    g_return_if_fail(error == NULL || *error == NULL);
+    g_return_val_if_fail(PSY_IS_STEPPING_STONES(self), FALSE);
+    g_return_val_if_fail(name != NULL, FALSE);
+    g_return_val_if_fail(PSY_IS_STEP(step), FALSE);
+    g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
+    g_return_val_if_fail(psy_step_get_parent(step) == NULL, FALSE);
+
+    g_debug("Adding step %p under name %s", (void *) step, name);
 
     PsySteppingStonesPrivate *priv
         = psy_stepping_stones_get_instance_private(self);
@@ -231,11 +294,12 @@ psy_stepping_stones_add_step_by_name(PsySteppingStones *self,
                     PSY_STEPPING_STONES_ERROR_KEY_EXISTS,
                     "The name '%s', already exists",
                     name);
-        return;
+        return FALSE;
     }
 
-    g_hash_table_add(priv->step_table, g_strdup(name));
+    g_hash_table_insert(priv->step_table, g_strdup(name), step);
     psy_stepping_stones_add_step(self, step);
+    return TRUE;
 }
 
 /**
@@ -282,7 +346,7 @@ psy_stepping_stones_activate_next_by_name(PsySteppingStones *self,
                                           GError           **error)
 {
     g_return_if_fail(PSY_IS_STEPPING_STONES(self));
-    g_return_if_fail(name == NULL);
+    g_return_if_fail(name != NULL);
     g_return_if_fail(error == NULL || *error == NULL);
 
     PsySteppingStonesPrivate *priv
@@ -295,7 +359,9 @@ psy_stepping_stones_activate_next_by_name(PsySteppingStones *self,
                     PSY_STEPPING_STONES_ERROR_NO_SUCH_KEY,
                     "There is no step with the name: %s",
                     name);
+        return;
     }
+
     guint    index;
     gboolean found = g_ptr_array_find(priv->steps, step, &index);
     if (!found) {

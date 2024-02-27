@@ -55,6 +55,7 @@ doc_url = "https://docs.gtk.org/pango/"
 # The generated files will be placed in the root output directory
 content_files = [
     "introduction.md",
+    "stepping-through-experiment.md",
     "drawing-with-psylib-developer.md",
     "audio-with-psylib.md",
 ]

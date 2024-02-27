@@ -9,6 +9,11 @@ cdata.set_quoted('PSY_VERSION', meson.project_version())
 cdata.set_quoted('PSY_SOURCE_ROOT', meson.project_source_root())
 cdata.set_quoted('PSY_BUILD_ROOT', meson.project_build_root())
 
+
+# the folder where we are building psylib, hence the .so and .gir
+# are stored here
+library_build_dir = meson.current_build_dir()
+
 # check for compiler buildins
 
 if cc.has_function('__builtin_add_overflow')
@@ -100,8 +105,8 @@ libpsy_headers = files(
     'psy-audio-utils.h',
     'psy-auditory-stimulus.h',
     'psy-canvas.h',
-    'psy-circle.h',
     'psy-circle-artist.h',
+    'psy-circle.h',
     'psy-clock.h',
     'psy-color.h',
     'psy-cross-artist.h',
@@ -122,6 +127,7 @@ libpsy_headers = files(
     'psy-rectangle.h',
     'psy-rectangle-artist.h',
     'psy-shader.h',
+    'psy-side-step.h',
     'psy-step.h',
     'psy-stepping-stones.h',
     'psy-canvas.h',
@@ -177,6 +183,7 @@ libpsyfiles = files (
     'psy-rectangle-artist.c',
     'psy-safe-int-private.c',
     'psy-shader.c',
+    'psy-side-step.c',
     'psy-step.c',
     'psy-stepping-stones.c',
     'psy-stimulus.c',

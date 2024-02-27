@@ -22,9 +22,11 @@ test_clock(void)
         psy_time_point_free(t1);
         psy_time_point_free(t2);
     }
+    t1 = NULL;
+    t2 = NULL;
 
     t1 = psy_clock_now(clock);
-    t2 = psy_clock_now(clock);
+    g_object_get(clock, "now", &t2, NULL);
 
     CU_ASSERT_PTR_NOT_NULL_FATAL(t1);
     CU_ASSERT_PTR_NOT_NULL_FATAL(t2);
@@ -38,7 +40,7 @@ test_clock(void)
     us = psy_duration_get_us(dur);
     CU_ASSERT_TRUE(us >= 0); // Negative durations would be weird in this case.
 failure:
-    g_object_unref(clock);
+    psy_clock_free(clock);
     psy_time_point_free(t1);
     psy_time_point_free(t2);
     psy_duration_free(dur);

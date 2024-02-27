@@ -14,8 +14,7 @@ G_DECLARE_DERIVABLE_TYPE(PsyLoop, psy_loop, PSY, LOOP, PsyStep)
 struct _PsyLoopClass {
     PsyStepClass parent;
 
-    // void (*iterate)   (PsyLoop* self, gint64 timestamp);
-    void (*iteration)(PsyLoop *self, gint64 index, gint64 timestamp);
+    void (*iteration)(PsyLoop *self, gint64 index, PsyTimePoint *timestamp);
 
     gpointer padding[12];
 };
@@ -58,6 +57,12 @@ psy_loop_set_condition(PsyLoop *self, PsyLoopCondition condition);
 
 G_MODULE_EXPORT PsyLoopCondition
 psy_loop_get_condition(PsyLoop *self);
+
+G_MODULE_EXPORT gboolean
+psy_loop_set_step(PsyLoop *self, PsyStep *child);
+
+G_MODULE_EXPORT PsyStep *
+psy_loop_get_child(PsyLoop *self);
 
 G_MODULE_EXPORT gboolean
 psy_loop_test(PsyLoop *self);
