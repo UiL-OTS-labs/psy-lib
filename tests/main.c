@@ -30,7 +30,7 @@ signal_handler(int sig)
     case SIGABRT:
     case SIGSEGV:
         remove_log_handler();
-        g_print("Recieved signal %d / %x\nquitting", sig, sig);
+        g_print("Recieved signal %d\nquitting\n", sig);
         exit(sig);
     }
 }
