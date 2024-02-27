@@ -19,10 +19,13 @@ struct _PsyGlCanvas {
     PsyImageCanvas parent;
 
     /* stuff related to egl */
-    EGLDisplay display;
+    EGLDisplay display; // used display
     EGLConfig  config;
     EGLContext egl_context;
     EGLSurface surface;
+
+    EGLDisplay *devices;
+    gint        num_devices;
 
     /* object properties */
     gint     gl_major, gl_minor; // OpenGL (ES) version.
@@ -109,6 +112,29 @@ psy_gl_canvas_init(PsyGlCanvas *self)
     (void) self;
 }
 
+// Taken from:
+// https://developer.nvidia.com/blog/egl-eye-opengl-visualization-without-x-server/
+
+static void
+list_egl_devices(PsyGlCanvas *canvas)
+{
+    (void) canvas;
+    static const int max_devices = 16;
+    int              num_devices;
+
+    EGLDeviceEXT egl_devices[max_devices];
+
+    eglQueryDevicesEXT(max_devices, egl_devices, &num_devices);
+    g_debug("EGL found %d devices", num_devices);
+    canvas->devices     = g_malloc(num_devices * sizeof(EGLDeviceEXT));
+    canvas->num_devices = num_devices;
+    for (int i = 0; i < num_devices; i++) {
+        g_debug("Extensions = %s",
+                eglQueryDeviceStringEXT(egl_devices[i], EGL_EXTENSIONS));
+        canvas->devices = egl_devices[i];
+    }
+}
+
 static void
 psy_gl_canvas_constructed(GObject *obj)
 {
@@ -118,13 +144,17 @@ psy_gl_canvas_constructed(GObject *obj)
 
     G_OBJECT_CLASS(psy_gl_canvas_parent_class)->constructed(obj);
 
+    list_egl_devices(canvas);
+
     // clang-format off
     EGLint const config_attrs[] = {
+        EGL_SURFACE_TYPE, EGL_PBUFFER_BIT,
+        EGL_RENDERABLE_TYPE, canvas->use_es ? EGL_OPENGL_ES_BIT : EGL_OPENGL_BIT,
         EGL_RED_SIZE,   8,
         EGL_GREEN_SIZE, 8,
         EGL_BLUE_SIZE,  8,
         EGL_ALPHA_SIZE, 8,
-        EGL_DEPTH_SIZE, 24,
+        EGL_DEPTH_SIZE, 16,
         EGL_NONE
     };
 
@@ -143,24 +173,42 @@ psy_gl_canvas_constructed(GObject *obj)
         EGL_NONE
     };
     // clang-format on
+    //
+    bool init_egl = FALSE;
 
-    canvas->display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
-    if (canvas->display == EGL_NO_DISPLAY) {
-        egl_ret = eglGetError();
-        g_critical("Unable to obtain an EGLDispay %s", psy_egl_strerr(egl_ret));
-    }
-    eglBindAPI(canvas->use_es ? EGL_OPENGL_ES_API : EGL_OPENGL_API);
-    // eglBindAPI(EGL_OPENGL_API);
-    egl_ret = eglGetError();
-    g_assert(egl_ret == EGL_SUCCESS);
+    for (int i = 0; i < canvas->num_devices; i++) {
+        // const char *extension = "";
+        canvas->display = eglGetPlatformDisplayEXT(
+            EGL_PLATFORM_DEVICE_EXT, canvas->devices[i], 0);
 
-    if (eglInitialize(canvas->display, &egl_major, &egl_minor) != EGL_TRUE) {
-        egl_ret = eglGetError();
-        g_critical("Unable to initialize egl display: %s",
+        if (canvas->display == EGL_NO_DISPLAY) {
+            egl_ret = eglGetError();
+            g_info("Unable to obtain an EGLDispay %d: %s",
+                   i,
                    psy_egl_strerr(egl_ret));
+            continue;
+        }
+
+        if (eglInitialize(canvas->display, &egl_major, &egl_minor)
+            != EGL_TRUE) {
+            egl_ret = eglGetError();
+            g_info("Unable to initialize egl for device %d: %s",
+                   i,
+                   psy_egl_strerr(egl_ret));
+        }
+        else {
+            // Use the first device for which we can initialize egl.
+            g_debug("Initialized display for egl %d.%d", egl_major, egl_minor);
+            g_debug("device %d", i);
+            init_egl = TRUE;
+            break;
+        }
     }
-    else
-        g_debug("Initialized display for egl %d.%d", egl_major, egl_minor);
+
+    if (init_egl != TRUE) {
+        g_critical("Unable to initialize egl for any EGL display");
+        return;
+    }
 
     if (eglChooseConfig(
             canvas->display, config_attrs, &(canvas->config), 1, &num_configs)
@@ -170,14 +218,6 @@ psy_gl_canvas_constructed(GObject *obj)
                    psy_egl_strerr(egl_ret));
     }
 
-    canvas->egl_context = eglCreateContext(
-        canvas->display, canvas->config, EGL_NO_CONTEXT, context_attributes);
-    if (!canvas->egl_context) {
-        egl_ret = eglGetError();
-        g_critical("Unable to create egl context: %s", psy_egl_strerr(egl_ret));
-    }
-    g_assert(eglGetError() == EGL_SUCCESS);
-
     canvas->surface = eglCreatePbufferSurface(
         canvas->display, canvas->config, surf_attributes);
     if (!canvas->surface) {
@@ -185,6 +225,18 @@ psy_gl_canvas_constructed(GObject *obj)
         g_critical("Unable to create Pbuffer surface: %s",
                    psy_egl_strerr(egl_ret));
     }
+
+    eglBindAPI(canvas->use_es ? EGL_OPENGL_ES_API : EGL_OPENGL_API);
+    egl_ret = eglGetError();
+    g_assert(egl_ret == EGL_SUCCESS);
+
+    canvas->egl_context = eglCreateContext(
+        canvas->display, canvas->config, EGL_NO_CONTEXT, context_attributes);
+    if (!canvas->egl_context) {
+        egl_ret = eglGetError();
+        g_critical("Unable to create egl context: %s", psy_egl_strerr(egl_ret));
+    }
+    g_assert(eglGetError() == EGL_SUCCESS);
 
     if (eglMakeCurrent(canvas->display,
                        canvas->surface,
@@ -568,7 +620,8 @@ psy_gl_canvas_class_init(PsyGlCanvasClass *klass)
  * @width: The desired width of the context
  * @height: The desired height of the context
  *
- * Returns: a new PsyGlCanvas. free with psy_gl_canvas_free or g_object_unref
+ * Returns: a new PsyGlCanvas. free with psy_gl_canvas_free or
+ * g_object_unref
  */
 PsyGlCanvas *
 psy_gl_canvas_new(gint width, gint height)
@@ -600,7 +653,8 @@ psy_gl_canvas_new(gint width, gint height)
  * least 3.3 version with @gl_major and @gl_minor, for OpenGL ES, you should
  * aim for at least 2.0
  *
- * Returns: a new PsyGlCanvas. free with psy_gl_canvas_free or g_object_unref
+ * Returns: a new PsyGlCanvas. free with psy_gl_canvas_free or
+ * g_object_unref
  */
 PsyGlCanvas *
 psy_gl_canvas_new_full(gint     width,
