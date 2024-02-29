@@ -7,6 +7,7 @@ on_trial_activate(PsyStep *self, PsyTimePoint *tp)
     (void) self;
     (void) tp;
     psy_step_leave(self, tp);
+    g_print("Trial activated %ld.\n", psy_step_get_loop_index(self, 0, NULL));
 }
 
 void
@@ -14,6 +15,7 @@ on_loop_leave(PsyStep *step, PsyTimePoint *tp, gpointer data)
 {
     (void) step;
     (void) tp;
+    g_print("Leaving loop.\n");
     GMainLoop *loop = data;
     g_main_loop_quit(loop);
 }
@@ -38,7 +40,7 @@ main(void)
 
     g_main_loop_run(mainloop);
 
-    //g_object_unref(loop);
+    // g_object_unref(loop);
     g_object_unref(clk);
     psy_time_point_free(tp);
 }
