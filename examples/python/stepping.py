@@ -42,21 +42,19 @@ def draw(n, tp: Psy.TimePoint, color: Psy.Color, step: Psy.Loop):
     log.info("drawing")
     radius = 400
     cradius = 0.1 * radius
-    dur = tp - window.get_time()
-    log.info(f"scheduling the stimulus in {dur.get_seconds()} seconds")
     for i in range(_NUM_CIRCLES):
         angle = 2 * pi / _NUM_CIRCLES * i
         circle = Psy.Circle.new_full(
             window, sin(angle) * radius, cos(angle) * radius, cradius, 60
         )
         if i != n:
-            circle.props.color = color
+            circle.set_color(color)
         else:
-            circle.props.color = window.props.background_color
+            circle.set_color(window.props.background_color)
         circle.props.duration = DUR
         circle.play(tp + DUR)
     cross = Psy.Cross.new(window)
-    cross.props.color = BLACK
+    cross.set_color(BLACK)
     cross.props.line_length = cradius
     cross.props.line_width = 10
     cross.props.duration = DUR
