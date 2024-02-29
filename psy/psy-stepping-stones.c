@@ -120,19 +120,31 @@ psy_stepping_stones_get_property(GObject    *object,
 }
 
 static void
-psy_stepping_stones_finalize(GObject *gobject)
+psy_stepping_stones_dispose(GObject *gobject)
 {
-    PsySteppingStonesPrivate *priv = psy_stepping_stones_get_instance_private(
-        PSY_STEPPING_STONES(gobject));
+    PsySteppingStones        *self = PSY_STEPPING_STONES(gobject);
+    PsySteppingStonesPrivate *priv
+        = psy_stepping_stones_get_instance_private(self);
 
     if (priv->steps) {
         g_ptr_array_unref(priv->steps);
         priv->steps = NULL;
     }
+
     if (priv->step_table) {
         g_hash_table_destroy(priv->step_table);
         priv->step_table = NULL;
     }
+    G_OBJECT_CLASS(psy_stepping_stones_parent_class)->dispose(gobject);
+}
+
+static void
+psy_stepping_stones_finalize(GObject *gobject)
+{
+    PsySteppingStonesPrivate *priv = psy_stepping_stones_get_instance_private(
+        PSY_STEPPING_STONES(gobject));
+
+    (void) priv;
 
     G_OBJECT_CLASS(psy_stepping_stones_parent_class)->finalize(gobject);
 }
@@ -172,6 +184,7 @@ psy_stepping_stones_class_init(PsySteppingStonesClass *klass)
 
     obj_class->get_property = psy_stepping_stones_get_property;
     obj_class->finalize     = psy_stepping_stones_finalize;
+    obj_class->dispose      = psy_stepping_stones_dispose;
 
     PsyStepClass *step_klass = PSY_STEP_CLASS(klass);
     step_klass->activate     = stepping_stones_activate;
@@ -225,8 +238,8 @@ psy_stepping_stones_free(PsySteppingStones *self)
 /**
  * psy_stepping_stones_add_step:
  * @self: The `PsySteppingStones` instance to which a `PsyStep` @step
- * @step: The `PsyStep` to add to @self The step should not already have a
- *        parent.
+ * @step:(transfer full): The `PsyStep` to add to @self The step should not
+ *                        already have a parent.
  *
  * To an instance of [class@SteppingStones] multiple steps/stones may be added
  * when added like this, this allows to step through them in the order
@@ -258,7 +271,7 @@ psy_stepping_stones_add_step(PsySteppingStones *self, PsyStep *step)
  * @self: The instance self
  * @name: The name for the step to add this name may be used to jump back
  *        or skip subsequent steps. The name should be unique.
- * @step: The step to add
+ * @step:(transfer full): The step to add
  * @error: optional errors may be returned here.
  *
  * Using this function you can add steps with a name that identifies one
