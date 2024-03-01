@@ -31,7 +31,7 @@ test(
 
 test(
    'c-nested-loops-example',
-   loop, 
+   nested_loops, 
    timeout : 5,
    suite : ['examples', 'c-examples'],
 )
