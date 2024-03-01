@@ -19,21 +19,6 @@ typedef enum { PROP_NULL, PROP_OBJECT_ID, NUM_PROPERTIES } PsyGlVBufferProperty;
 static GParamSpec *gl_vbuffer_properties[NUM_PROPERTIES];
 
 static void
-psy_gl_vbuffer_set_property(GObject      *object,
-                            guint         prop_id,
-                            const GValue *value,
-                            GParamSpec   *pspec)
-{
-    PsyGlVBuffer *self = PSY_GL_VBUFFER(object);
-    (void) self, (void) value;
-
-    switch ((PsyGlVBufferProperty) prop_id) {
-    default:
-        G_OBJECT_WARN_INVALID_PROPERTY_ID(object, prop_id, pspec);
-    }
-}
-
-static void
 psy_gl_vbuffer_get_property(GObject    *object,
                             guint       prop_id,
                             GValue     *value,
@@ -43,7 +28,7 @@ psy_gl_vbuffer_get_property(GObject    *object,
 
     switch ((PsyGlVBufferProperty) prop_id) {
     case PROP_OBJECT_ID:
-        g_value_set_uint(value, self->vertex_buffer_id);
+        g_value_set_uint(value, psy_gl_vbuffer_get_object_id(self));
         break;
     default:
         G_OBJECT_WARN_INVALID_PROPERTY_ID(object, prop_id, pspec);
@@ -55,15 +40,6 @@ psy_gl_vbuffer_init(PsyGlVBuffer *self)
 {
     self->vertex_buffer_id = 0;
     self->is_uploaded      = 0;
-}
-
-static void
-psy_gl_vbuffer_dispose(GObject *object)
-{
-    PsyGlVBuffer *self = PSY_GL_VBUFFER(object);
-    (void) self;
-
-    G_OBJECT_CLASS(psy_gl_vbuffer_parent_class)->dispose(object);
 }
 
 static void
@@ -237,10 +213,8 @@ psy_gl_vbuffer_class_init(PsyGlVBufferClass *class)
     GObjectClass    *gobject_class = G_OBJECT_CLASS(class);
     PsyVBufferClass *vbuffer_class = PSY_VBUFFER_CLASS(class);
 
-    gobject_class->set_property = psy_gl_vbuffer_set_property;
     gobject_class->get_property = psy_gl_vbuffer_get_property;
     gobject_class->finalize     = psy_gl_vbuffer_finalize;
-    gobject_class->dispose      = psy_gl_vbuffer_dispose;
 
     vbuffer_class->upload              = psy_gl_vbuffer_upload;
     vbuffer_class->is_uploaded         = psy_gl_vbuffer_is_uploaded;

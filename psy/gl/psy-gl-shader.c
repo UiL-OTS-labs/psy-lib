@@ -17,32 +17,16 @@ typedef enum { PROP_NULL, PROP_OBJECT_ID, NUM_PROPERTIES } PsyGlShaderProperty;
 static GParamSpec *gl_shader_properties[NUM_PROPERTIES];
 
 static void
-psy_gl_shader_set_property(GObject      *object,
-                           guint         prop_id,
-                           const GValue *value,
-                           GParamSpec   *pspec)
-{
-    PsyShader *self = PSY_SHADER(object);
-    (void) self, (void) value;
-
-    switch ((PsyGlShaderProperty) prop_id) {
-    default:
-        G_OBJECT_WARN_INVALID_PROPERTY_ID(object, prop_id, pspec);
-    }
-}
-
-static void
 psy_gl_shader_get_property(GObject    *object,
                            guint       prop_id,
                            GValue     *value,
                            GParamSpec *pspec)
 {
-    PsyGlShader        *self = PSY_GL_SHADER(object);
-    PsyGlShaderPrivate *priv = psy_gl_shader_get_instance_private(self);
+    PsyGlShader *self = PSY_GL_SHADER(object);
 
     switch ((PsyGlShaderProperty) prop_id) {
     case PROP_OBJECT_ID:
-        g_value_set_uint(value, priv->object_id);
+        g_value_set_uint(value, psy_gl_shader_get_object_id(self));
         break;
     default:
         G_OBJECT_WARN_INVALID_PROPERTY_ID(object, prop_id, pspec);
@@ -141,7 +125,6 @@ psy_gl_shader_class_init(PsyGlShaderClass *class)
     GObjectClass   *gobject_class = G_OBJECT_CLASS(class);
     PsyShaderClass *shader_class  = PSY_SHADER_CLASS(class);
 
-    gobject_class->set_property = psy_gl_shader_set_property;
     gobject_class->get_property = psy_gl_shader_get_property;
     gobject_class->finalize     = psy_gl_shader_finalize;
     gobject_class->dispose      = psy_gl_shader_dispose;
@@ -151,11 +134,13 @@ psy_gl_shader_class_init(PsyGlShaderClass *class)
     shader_class->is_compiled = psy_gl_shader_is_compiled;
 
     gl_shader_properties[PROP_OBJECT_ID]
-        = g_param_spec_string("object-id",
-                              "Object ID",
-                              "The OpenGL id of the object",
-                              0,
-                              G_PARAM_READWRITE);
+        = g_param_spec_uint("object-id",
+                            "Object ID",
+                            "The OpenGL id of the object",
+                            0,
+                            G_MAXUINT,
+                            0,
+                            G_PARAM_READABLE);
 
     g_object_class_install_properties(
         gobject_class, NUM_PROPERTIES, gl_shader_properties);

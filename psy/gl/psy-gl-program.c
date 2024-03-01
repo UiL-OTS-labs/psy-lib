@@ -11,11 +11,9 @@
 #include <epoxy/gl_generated.h>
 
 typedef struct _PsyGlProgram {
-    PsyShaderProgram     parent;
-    GLuint               object_id;
-    PsyGlVertexShader   *vertex_shader;
-    PsyGlFragmentShader *fragment_shader;
-    guint                is_linked : 1;
+    PsyShaderProgram parent;
+    GLuint           object_id;
+    guint            is_linked : 1;
 } PsyGlProgram;
 
 G_DEFINE_TYPE(PsyGlProgram, psy_gl_program, PSY_TYPE_SHADER_PROGRAM)
@@ -30,21 +28,6 @@ typedef enum {
 static GParamSpec *gl_program_properties[NUM_PROPERTIES];
 
 static void
-psy_gl_program_set_property(GObject      *object,
-                            guint         prop_id,
-                            const GValue *value,
-                            GParamSpec   *pspec)
-{
-    PsyGlProgram *self = PSY_GL_PROGRAM(object);
-    (void) self, (void) value;
-
-    switch ((PsyGlProgramProperty) prop_id) {
-    default:
-        G_OBJECT_WARN_INVALID_PROPERTY_ID(object, prop_id, pspec);
-    }
-}
-
-static void
 psy_gl_program_get_property(GObject    *object,
                             guint       prop_id,
                             GValue     *value,
@@ -54,7 +37,7 @@ psy_gl_program_get_property(GObject    *object,
 
     switch ((PsyGlProgramProperty) prop_id) {
     case PROP_OBJECT_ID:
-        g_value_set_uint(value, self->object_id);
+        g_value_set_uint(value, psy_gl_program_get_object_id(self));
         break;
     case PROP_IS_LINKED:
         g_value_set_boolean(value, self->is_linked);
@@ -72,18 +55,6 @@ psy_gl_program_init(PsyGlProgram *self)
 }
 
 static void
-psy_gl_program_dispose(GObject *object)
-{
-    PsyGlProgram *self = PSY_GL_PROGRAM(object);
-    (void) self;
-
-    g_clear_object(&self->fragment_shader);
-    g_clear_object(&self->vertex_shader);
-
-    G_OBJECT_CLASS(psy_gl_program_parent_class)->dispose(object);
-}
-
-static void
 psy_gl_program_finalize(GObject *object)
 {
     PsyGlProgram *self = PSY_GL_PROGRAM(object);
@@ -91,31 +62,11 @@ psy_gl_program_finalize(GObject *object)
 
     if (self->object_id) {
         glDeleteProgram(self->object_id);
+        self->object_id = 0;
+        self->is_linked = 0;
     }
 
     G_OBJECT_CLASS(psy_gl_program_parent_class)->finalize(object);
-}
-
-static void
-psy_gl_program_set_vertex_shader(PsyShaderProgram *program,
-                                 PsyShader        *shader,
-                                 GError          **error)
-{
-    g_return_if_fail(PSY_IS_GL_PROGRAM(program));
-    g_return_if_fail(PSY_IS_GL_SHADER(shader));
-
-    PsyGlProgram *self = PSY_GL_PROGRAM(program);
-
-    if (!psy_shader_is_compiled(shader)) {
-        psy_shader_compile(shader, error);
-        if (*error)
-            return;
-    }
-
-    if (self->vertex_shader)
-        g_object_unref(self->vertex_shader);
-
-    self->vertex_shader = PSY_GL_VERTEX_SHADER(shader);
 }
 
 static void
@@ -165,28 +116,6 @@ psy_gl_program_set_vertex_shader_from_path(PsyShaderProgram *program,
         return;
 
     klass->set_vertex_shader(program, PSY_SHADER(shader), error);
-}
-
-static void
-psy_gl_program_set_fragment_shader(PsyShaderProgram *program,
-                                   PsyShader        *shader,
-                                   GError          **error)
-{
-    g_return_if_fail(PSY_IS_GL_PROGRAM(program));
-    g_return_if_fail(PSY_IS_GL_SHADER(shader));
-
-    PsyGlProgram *self = PSY_GL_PROGRAM(program);
-
-    if (!psy_shader_is_compiled(shader)) {
-        psy_shader_compile(shader, error);
-        if (*error)
-            return;
-    }
-
-    if (self->fragment_shader)
-        g_object_unref(self->fragment_shader);
-
-    self->fragment_shader = PSY_GL_FRAGMENT_SHADER(shader);
 }
 
 static void
@@ -253,20 +182,22 @@ psy_gl_program_link(PsyShaderProgram *program, GError **error)
     if (psy_shader_program_is_linked(PSY_SHADER_PROGRAM(self)))
         return;
 
-    if (!psy_shader_is_compiled(PSY_SHADER(self->vertex_shader))) {
-        psy_shader_compile(PSY_SHADER(self->vertex_shader), error);
+    PsyShader *vertex_shader = psy_shader_program_get_vertex_shader(program);
+    if (!psy_shader_is_compiled(vertex_shader)) {
+        psy_shader_compile(vertex_shader, error);
         if (*error != NULL)
             return;
     }
-    vertex_id = psy_gl_shader_get_object_id(PSY_GL_SHADER(self->vertex_shader));
+    vertex_id = psy_gl_shader_get_object_id(PSY_GL_SHADER(vertex_shader));
 
-    if (!psy_shader_is_compiled(PSY_SHADER(self->fragment_shader))) {
-        psy_shader_compile(PSY_SHADER(self->vertex_shader), error);
+    PsyShader *frag_shader = psy_shader_program_get_fragment_shader(program);
+    if (!psy_shader_is_compiled(frag_shader)) {
+        psy_shader_compile(frag_shader, error);
         if (*error != NULL)
             return;
     }
-    fragment_id
-        = psy_gl_shader_get_object_id(PSY_GL_SHADER(self->fragment_shader));
+
+    fragment_id = psy_gl_shader_get_object_id(PSY_GL_SHADER(frag_shader));
 
     glAttachShader(prog_id, vertex_id);
     glAttachShader(prog_id, fragment_id);
@@ -365,12 +296,9 @@ psy_gl_program_class_init(PsyGlProgramClass *class)
     GObjectClass          *gobject_class = G_OBJECT_CLASS(class);
     PsyShaderProgramClass *program_class = PSY_SHADER_PROGRAM_CLASS(class);
 
-    gobject_class->set_property = psy_gl_program_set_property;
     gobject_class->get_property = psy_gl_program_get_property;
     gobject_class->finalize     = psy_gl_program_finalize;
-    gobject_class->dispose      = psy_gl_program_dispose;
 
-    program_class->set_vertex_shader = psy_gl_program_set_vertex_shader;
     program_class->set_vertex_shader_source
         = psy_gl_program_set_vertex_shader_source;
     program_class->set_vertex_shader_from_file
@@ -378,7 +306,6 @@ psy_gl_program_class_init(PsyGlProgramClass *class)
     program_class->set_vertex_shader_from_path
         = psy_gl_program_set_vertex_shader_from_path;
 
-    program_class->set_fragment_shader = psy_gl_program_set_fragment_shader;
     program_class->set_fragment_shader_source
         = psy_gl_program_set_fragment_shader_source;
     program_class->set_fragment_shader_from_file
@@ -440,6 +367,14 @@ psy_gl_program_free(PsyGlProgram *self)
     g_object_unref(self);
 }
 
+/**
+ * psy_gl_get_object_id:
+ *
+ * Objects within OpenGL are identified via an id, this is that id. When
+ * the id is 0, it is either not yet initialized or initialization failed.
+ *
+ * Returns: the object id of this program
+ */
 guint
 psy_gl_program_get_object_id(PsyGlProgram *self)
 {

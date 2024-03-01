@@ -69,6 +69,10 @@ G_MODULE_EXPORT void
 psy_shader_program_set_vertex_shader(PsyShaderProgram *self,
                                      PsyShader        *shader,
                                      GError          **error);
+
+G_MODULE_EXPORT PsyShader *
+psy_shader_program_get_vertex_shader(PsyShaderProgram *self);
+
 G_MODULE_EXPORT void
 psy_shader_program_set_vertex_shader_source(PsyShaderProgram *self,
                                             const gchar      *source,
@@ -88,6 +92,10 @@ G_MODULE_EXPORT void
 psy_shader_program_set_fragment_shader(PsyShaderProgram *self,
                                        PsyShader        *shader,
                                        GError          **error);
+
+G_MODULE_EXPORT PsyShader *
+psy_shader_program_get_fragment_shader(PsyShaderProgram *self);
+
 G_MODULE_EXPORT void
 psy_shader_program_set_fragment_shader_source(PsyShaderProgram *self,
                                               const gchar      *source,

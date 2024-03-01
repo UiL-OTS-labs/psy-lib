@@ -3,6 +3,7 @@
 #include <CUnit/CUnit.h>
 #include <CUnit/TestDB.h>
 
+#include "unit-test-utilities.h"
 #include <gl/psy-gl-canvas.h>
 
 const gint WIDTH  = 640;
@@ -14,14 +15,30 @@ canvas_initialization(void)
     // Use PsyGlCanvas as PsyCanvas is abstract
     PsyGlCanvas *canvas = psy_gl_canvas_new(WIDTH, HEIGHT);
     gint         width, height;
+    gint         gl_major, gl_minor;
+    gboolean     debug, use_es;
 
     CU_ASSERT_PTR_NOT_NULL_FATAL(canvas);
 
-    g_object_get(canvas, "height", &height, "width", &width, NULL);
+    // clang-format off
+    g_object_get(
+        canvas,
+        "height", &height,
+        "width", &width,
+        "enable-debug", &debug,
+        "use-es", &use_es,
+        "gl-major", &gl_major,
+        "gl-minor", &gl_minor,
+        NULL);
+    // clang-format on
     CU_ASSERT_EQUAL(width, WIDTH);
+    CU_ASSERT_EQUAL(gl_major, 3);
+    CU_ASSERT_EQUAL(gl_minor, 3);
     CU_ASSERT_EQUAL(height, HEIGHT);
+    CU_ASSERT_FALSE(debug);
+    CU_ASSERT_FALSE(use_es);
 
-    g_object_unref(canvas);
+    psy_gl_canvas_free(canvas);
 }
 
 static void
@@ -43,10 +60,33 @@ canvas_background_color(void)
     CU_ASSERT_EQUAL(g, 0.5);
     CU_ASSERT_EQUAL(b, 0.5);
 
+    // Draw to test whether the color is applied
+    psy_image_canvas_iterate(PSY_IMAGE_CANVAS(canvas));
+
+    PsyImage *image = psy_canvas_get_image(PSY_CANVAS(canvas));
+    PsyColor *probe = psy_image_get_pixel(
+        image,
+        random_int_range(0, (gint) psy_image_get_height(image)) - 1,
+        random_int_range(0, (gint) psy_image_get_width(image)) - 1);
+    CU_ASSERT_TRUE(psy_color_equal_eps(default_bg, probe, 1.0 / 255));
+
+    g_clear_object(&image);
+    g_clear_object(&probe);
+
     g_object_set(canvas, "background-color", new_color, NULL);
 
-    CU_ASSERT(psy_color_equal(
-        new_color, psy_canvas_get_background_color(PSY_CANVAS(canvas))));
+    // Draw to test whether the color is applied
+    psy_image_canvas_iterate(PSY_IMAGE_CANVAS(canvas));
+
+    image = psy_canvas_get_image(PSY_CANVAS(canvas));
+    probe = psy_image_get_pixel(
+        image,
+        random_int_range(0, (gint) psy_image_get_height(image)) - 1,
+        random_int_range(0, (gint) psy_image_get_width(image)) - 1);
+    CU_ASSERT_TRUE(psy_color_equal_eps(new_color, probe, 1.0 / 255));
+
+    g_clear_object(&image);
+    g_clear_object(&probe);
 
     g_object_unref(new_color);
     g_object_unref(default_bg);
