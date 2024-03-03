@@ -223,11 +223,13 @@ psy_gl_vbuffer_class_init(PsyGlVBufferClass *class)
     vbuffer_class->draw_triangle_fan   = psy_gl_vbuffer_draw_triangle_fan;
 
     gl_vbuffer_properties[PROP_OBJECT_ID]
-        = g_param_spec_string("object-id",
-                              "Object ID",
-                              "The OpenGL id of the object",
-                              0,
-                              G_PARAM_READWRITE);
+        = g_param_spec_uint("object-id",
+                            "Object ID",
+                            "The OpenGL id of the object",
+                            0,
+                            G_MAXUINT,
+                            0,
+                            G_PARAM_READABLE);
 
     g_object_class_install_properties(
         gobject_class, NUM_PROPERTIES, gl_vbuffer_properties);
