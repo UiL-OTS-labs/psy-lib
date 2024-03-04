@@ -133,6 +133,10 @@ add_suites_to_registry(void)
     if (error)
         return error;
 
+    error = add_visual_stimuli_suite();
+    if (error)
+        return error;
+
     error = add_vector_suite();
     if (error)
         return error;

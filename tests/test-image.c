@@ -116,6 +116,97 @@ test_image_change_format(void)
     g_object_unref(img);
 }
 
+static void
+test_image_clear(void)
+{
+    const guint WIDTH = 100, HEIGHT = 100;
+
+    PsyImage *img = psy_image_new(WIDTH, HEIGHT, PSY_IMAGE_FORMAT_RGB);
+    CU_ASSERT_PTR_NOT_NULL_FATAL(img);
+    PsyColor *bg = psy_color_new_rgb(random_double_range(0, 1),
+                                     random_double_range(0, 1),
+                                     random_double_range(0, 1));
+    CU_ASSERT_PTR_NOT_NULL_FATAL(bg);
+
+    psy_image_clear(img, bg);
+
+    PsyColor *probe = psy_image_get_pixel(
+        img, random_int_range(0, WIDTH), random_int_range(0, HEIGHT));
+
+    CU_ASSERT_TRUE(psy_color_equal_eps(probe, bg, 1 / 255.0));
+    psy_color_free(probe);
+
+    // clang-format off
+    g_object_set(bg,
+            "red", random_double_range(0, 1),
+            "blue", random_double_range(0,1),
+            "green", random_double_range(0, 1),
+            "alpha", random_double_range(0, 1),
+            NULL);
+    // clang-format on
+    g_object_set(img, "format", PSY_IMAGE_FORMAT_RGBA, NULL);
+    psy_image_clear(img, bg);
+
+    probe = psy_image_get_pixel(
+        img, random_int_range(0, WIDTH), random_int_range(0, HEIGHT));
+    CU_ASSERT_TRUE(psy_color_equal_eps(probe, bg, 1 / 255.0));
+
+    psy_color_free(bg);
+    psy_color_free(probe);
+    psy_image_free(img);
+}
+
+static void
+test_image_set_pixel(void)
+{
+    const gint WIDTH = 100, HEIGHT = 100;
+
+    PsyImage *img   = psy_image_new(WIDTH, HEIGHT, PSY_IMAGE_FORMAT_RGB);
+    PsyColor *color = psy_color_new_rgb((float) random_double_range(0, 1),
+                                        (float) random_double_range(0, 1),
+                                        (float) random_double_range(0, 1));
+    gint      row   = random_int_range(0, HEIGHT);
+    gint      col   = random_int_range(0, WIDTH);
+    psy_image_set_pixel(img, row, col, color);
+
+    PsyColor *probe = psy_image_get_pixel(img, row, col);
+
+    CU_ASSERT_TRUE(psy_color_equal_eps(color, probe, 1.0 / 255));
+
+    psy_color_free(probe);
+    psy_color_free(color);
+    psy_image_free(img);
+}
+
+static void
+test_image_get_bytes(void)
+{
+    const gint WIDTH = 100, HEIGHT = 100;
+
+    PsyImage *img   = psy_image_new(WIDTH, HEIGHT, PSY_IMAGE_FORMAT_RGB);
+    PsyColor *color = psy_color_new_rgb((float) random_double_range(0, 1),
+                                        (float) random_double_range(0, 1),
+                                        (float) random_double_range(0, 1));
+    psy_image_clear(img, color);
+
+    gsize bytes_size;
+    gsize img_size = psy_image_get_num_bytes(img);
+
+    GBytes       *bytes     = psy_image_get_bytes(img);
+    const guint8 *bytes_ptr = g_bytes_get_data(bytes, &bytes_size);
+    const guint8 *img_ptr   = psy_image_get_ptr(img);
+
+    CU_ASSERT_EQUAL(img_size, bytes_size);
+    // memcmp should return 0 when memory is equal... like strcmp.
+    CU_ASSERT_EQUAL(memcmp(img_ptr, bytes_ptr, bytes_size), 0);
+    // A deep copy should be made
+    CU_ASSERT_PTR_NOT_EQUAL(img_ptr, bytes_ptr);
+
+    psy_color_free(color);
+    psy_image_free(img);
+    g_bytes_unref(bytes);
+}
+
 int
 add_image_suite(void)
 {
@@ -134,6 +225,18 @@ add_image_suite(void)
         return 1;
 
     test = CU_ADD_TEST(suite, test_image_change_format);
+    if (!test)
+        return 1;
+
+    test = CU_ADD_TEST(suite, test_image_clear);
+    if (!test)
+        return 1;
+
+    test = CU_ADD_TEST(suite, test_image_set_pixel);
+    if (!test)
+        return 1;
+
+    test = CU_ADD_TEST(suite, test_image_get_bytes);
     if (!test)
         return 1;
 

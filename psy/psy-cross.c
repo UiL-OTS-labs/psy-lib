@@ -64,21 +64,20 @@ cross_get_property(GObject    *object,
                    GValue     *value,
                    GParamSpec *pspec)
 {
-    PsyCross        *self = PSY_CROSS(object);
-    PsyCrossPrivate *priv = psy_cross_get_instance_private(self);
+    PsyCross *self = PSY_CROSS(object);
 
     switch ((CrossProperty) property_id) {
     case PROP_X_LENGTH:
-        g_value_set_float(value, priv->x_length);
+        g_value_set_float(value, psy_cross_get_line_length_x(self));
         break;
     case PROP_Y_LENGTH:
-        g_value_set_float(value, priv->y_length);
+        g_value_set_float(value, psy_cross_get_line_length_y(self));
         break;
     case PROP_X_WIDTH:
-        g_value_set_float(value, priv->x_width);
+        g_value_set_float(value, psy_cross_get_line_width_x(self));
         break;
     case PROP_Y_WIDTH:
-        g_value_set_float(value, priv->y_width);
+        g_value_set_float(value, psy_cross_get_line_width_y(self));
         break;
     default:
         G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
