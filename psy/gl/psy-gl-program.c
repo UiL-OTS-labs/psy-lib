@@ -206,17 +206,15 @@ psy_gl_program_link(PsyShaderProgram *program, GError **error)
     glGetProgramiv(prog_id, GL_LINK_STATUS, &link_succes);
 
     if (!link_succes) {
-        GString *log = NULL;
-        gint     logsize;
+        gchar log_buffer[16384];
+        gint  logsize;
         glGetProgramiv(prog_id, GL_INFO_LOG_LENGTH, &logsize);
-        log = g_string_new_len("", logsize);
-        glGetProgramInfoLog(prog_id, logsize, &logsize, log->str);
+        glGetProgramInfoLog(prog_id, sizeof(log_buffer), &logsize, log_buffer);
         g_set_error(error,
                     PSY_GL_ERROR,
                     PSY_GL_ERROR_PROGRAM_LINK,
                     "Unable to link program:\n%s",
-                    log->str);
-        g_string_free(log, TRUE);
+                    log_buffer);
         return;
     }
     self->is_linked = true;

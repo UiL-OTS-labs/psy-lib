@@ -92,19 +92,17 @@ psy_gl_shader_compile(PsyShader *self, GError **error)
     glGetShaderiv(object_id, GL_COMPILE_STATUS, &compile_success);
 
     if (!compile_success) {
-        GString *log = NULL;
-        gint     logsize;
+        gchar log_buffer[16384];
+        gint  logsize;
 
         glGetShaderiv(object_id, GL_INFO_LOG_LENGTH, &logsize);
-        log = g_string_new_len("", logsize);
 
-        glGetShaderInfoLog(object_id, logsize, &logsize, log->str);
+        glGetShaderInfoLog(object_id, sizeof(log_buffer), &logsize, log_buffer);
         g_set_error(error,
                     PSY_GL_ERROR,
                     PSY_GL_ERROR_SHADER_COMPILE,
                     "Unable to compile shader:\n%s",
-                    log->str);
-        g_string_free(log, TRUE);
+                    log_buffer);
         return;
     }
     priv->is_compiled = TRUE;
