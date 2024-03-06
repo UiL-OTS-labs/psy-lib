@@ -256,7 +256,8 @@ libpsy = library (
     include_directories : [libpsy_incdirs, config_incdirs],
     c_args : PP_ARGS,
     cpp_args : PP_ARGS,
-    install: true
+    install: true,
+    symbol_visibility: 'hidden'
 )
 
 libpsy_dep = declare_dependency(
