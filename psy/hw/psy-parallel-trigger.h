@@ -14,6 +14,8 @@ G_MODULE_EXPORT GQuark
 psy_parallel_trigger_error_quark(void);
 
 #define PSY_TYPE_PARALLEL_TRIGGER psy_parallel_trigger_get_type()
+
+G_MODULE_EXPORT
 G_DECLARE_DERIVABLE_TYPE(
     PsyParallelTrigger, psy_parallel_trigger, PSY, PARALLEL_TRIGGER, GObject)
 

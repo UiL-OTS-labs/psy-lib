@@ -7,6 +7,8 @@
 G_BEGIN_DECLS
 
 #define PSY_TYPE_PICTURE psy_picture_get_type()
+
+G_MODULE_EXPORT
 G_DECLARE_DERIVABLE_TYPE(PsyPicture, psy_picture, PSY, PICTURE, PsyRectangle)
 
 typedef struct _PsyPictureClass {

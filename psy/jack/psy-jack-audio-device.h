@@ -6,6 +6,8 @@
 G_BEGIN_DECLS
 
 #define PSY_TYPE_JACK_AUDIO_DEVICE psy_jack_audio_device_get_type()
+
+G_MODULE_EXPORT
 G_DECLARE_FINAL_TYPE(PsyJackAudioDevice,
                      psy_jack_audio_device,
                      PSY,

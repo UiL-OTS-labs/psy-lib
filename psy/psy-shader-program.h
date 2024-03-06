@@ -9,6 +9,8 @@
 G_BEGIN_DECLS
 
 #define PSY_TYPE_SHADER_PROGRAM psy_shader_program_get_type()
+
+G_MODULE_EXPORT
 G_DECLARE_DERIVABLE_TYPE(
     PsyShaderProgram, psy_shader_program, PSY, SHADER_PROGRAM, GObject)
 

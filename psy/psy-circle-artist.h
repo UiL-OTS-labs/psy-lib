@@ -8,6 +8,7 @@
 G_BEGIN_DECLS
 
 #define PSY_TYPE_CIRCLE_ARTIST psy_circle_artist_get_type()
+G_MODULE_EXPORT
 G_DECLARE_FINAL_TYPE(
     PsyCircleArtist, psy_circle_artist, PSY, CIRCLE_ARTIST, PsyArtist)
 

@@ -6,6 +6,8 @@
 G_BEGIN_DECLS
 
 #define PSY_TYPE_GL_CANVAS psy_gl_canvas_get_type()
+
+G_MODULE_EXPORT
 G_DECLARE_FINAL_TYPE(PsyGlCanvas, psy_gl_canvas, PSY, GL_CANVAS, PsyImageCanvas)
 
 G_MODULE_EXPORT PsyGlCanvas *

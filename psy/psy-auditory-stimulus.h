@@ -10,6 +10,7 @@ typedef struct _PsyAudioDevice PsyAudioDevice;
 G_BEGIN_DECLS
 
 #define PSY_TYPE_AUDITORY_STIMULUS psy_auditory_stimulus_get_type()
+G_MODULE_EXPORT
 G_DECLARE_DERIVABLE_TYPE(PsyAuditoryStimulus,
                          psy_auditory_stimulus,
                          PSY,

@@ -9,6 +9,7 @@
 G_BEGIN_DECLS
 
 #define PSY_TYPE_GST_STIMULUS psy_gst_stimulus_get_type()
+G_MODULE_EXPORT
 G_DECLARE_DERIVABLE_TYPE(
     PsyGstStimulus, psy_gst_stimulus, PSY, GST_STIMULUS, PsyAuditoryStimulus)
 

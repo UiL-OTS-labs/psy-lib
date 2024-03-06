@@ -215,7 +215,12 @@ if get_option('portaudio')
 endif
 
 
-enum_files = gnome.mkenums_simple('enum-types', sources : libpsy_headers)
+enum_files = gnome.mkenums_simple(
+    'enum-types',
+    header_prefix : '#include<gio/gio.h>',
+    decorator : 'G_MODULE_EXPORT',
+    sources : libpsy_headers
+)
 
 configure_file(input : 'v-shader.vert',
                output: 'v-shader.vert',
@@ -257,7 +262,7 @@ libpsy = library (
     c_args : PP_ARGS,
     cpp_args : PP_ARGS,
     install: true,
-    symbol_visibility: 'hidden'
+    gnu_symbol_visibility: 'hidden'
 )
 
 libpsy_dep = declare_dependency(

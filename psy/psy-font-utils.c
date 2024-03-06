@@ -1,4 +1,6 @@
 
+#include <psy-font-utils.h>
+
 #include <pango/pangocairo.h>
 
 /**
@@ -12,7 +14,7 @@
  * it as an error.
  */
 void
-psy_enumerate_font_families(gchar ***families, gsize *n)
+psy_enumerate_font_families(gchar ***families, gint *n)
 {
     PangoFontMap *fm = pango_cairo_font_map_get_default();
 

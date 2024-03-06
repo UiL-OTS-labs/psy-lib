@@ -9,6 +9,7 @@ G_BEGIN_DECLS
 
 #define PSY_TYPE_WAVE psy_wave_get_type()
 
+G_MODULE_EXPORT
 G_DECLARE_FINAL_TYPE(PsyWave, psy_wave, PSY, WAVE, PsyGstStimulus)
 
 G_MODULE_EXPORT PsyWave *

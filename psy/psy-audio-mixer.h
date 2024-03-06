@@ -19,6 +19,7 @@ typedef struct _PsyAudioDevice      PsyAudioDevice;
 typedef struct _PsyAuditoryStimulus PsyAuditoryStimulus;
 
 #define PSY_TYPE_AUDIO_MIXER psy_audio_mixer_get_type()
+G_MODULE_EXPORT
 G_DECLARE_DERIVABLE_TYPE(
     PsyAudioMixer, psy_audio_mixer, PSY, AUDIO_MIXER, GObject)
 

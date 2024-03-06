@@ -11,6 +11,8 @@
 G_BEGIN_DECLS
 
 #define PSY_TYPE_MATRIX4 psy_matrix4_get_type()
+
+G_MODULE_EXPORT
 G_DECLARE_FINAL_TYPE(PsyMatrix4, psy_matrix4, PSY, MATRIX4, GObject)
 
 G_MODULE_EXPORT PsyMatrix4 *

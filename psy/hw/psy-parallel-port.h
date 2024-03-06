@@ -9,6 +9,8 @@
 G_BEGIN_DECLS
 
 #define PSY_TYPE_PARALLEL_PORT psy_parallel_port_get_type()
+
+G_MODULE_EXPORT
 G_DECLARE_DERIVABLE_TYPE(
     PsyParallelPort, psy_parallel_port, PSY, PARALLEL_PORT, GObject)
 

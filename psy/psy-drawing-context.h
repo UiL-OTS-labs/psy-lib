@@ -15,6 +15,7 @@ G_MODULE_EXPORT GQuark
 psy_drawing_context_error_quark(void);
 
 #define PSY_TYPE_DRAWING_CONTEXT psy_drawing_context_get_type()
+G_MODULE_EXPORT
 G_DECLARE_DERIVABLE_TYPE(
     PsyDrawingContext, psy_drawing_context, PSY, DRAWING_CONTEXT, GObject)
 

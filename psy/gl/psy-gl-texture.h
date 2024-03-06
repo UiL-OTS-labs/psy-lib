@@ -7,6 +7,8 @@
 G_BEGIN_DECLS
 
 #define PSY_TYPE_GL_TEXTURE psy_gl_texture_get_type()
+
+G_MODULE_EXPORT
 G_DECLARE_FINAL_TYPE(PsyGlTexture, psy_gl_texture, PSY, GL_TEXTURE, PsyTexture)
 
 /*

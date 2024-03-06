@@ -17,6 +17,7 @@ struct _PsyCanvas;
 typedef struct _PsyCanvas PsyCanvas;
 
 #define PSY_TYPE_ARTIST psy_artist_get_type()
+G_MODULE_EXPORT
 G_DECLARE_DERIVABLE_TYPE(PsyArtist, psy_artist, PSY, ARTIST, GObject)
 
 /**

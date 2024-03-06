@@ -6,6 +6,8 @@
 G_BEGIN_DECLS
 
 #define PSY_TYPE_GL_VBUFFER psy_gl_vbuffer_get_type()
+
+G_MODULE_EXPORT
 G_DECLARE_FINAL_TYPE(PsyGlVBuffer, psy_gl_vbuffer, PSY, GL_VBUFFER, PsyVBuffer)
 
 G_MODULE_EXPORT PsyGlVBuffer *

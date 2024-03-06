@@ -8,6 +8,7 @@
 G_BEGIN_DECLS
 
 #define PSY_TYPE_IMAGE psy_image_get_type()
+G_MODULE_EXPORT
 G_DECLARE_FINAL_TYPE(PsyImage, psy_image, PSY, IMAGE, GObject)
 
 G_MODULE_EXPORT PsyImage *
@@ -73,7 +74,7 @@ psy_image_pixel_num_bytes(PsyImage *self);
 G_MODULE_EXPORT void
 psy_image_flip_upside_down(PsyImage *self);
 
-guint8 *
+G_MODULE_EXPORT guint8 *
 psy_image_get_ptr(PsyImage *self);
 
 G_END_DECLS

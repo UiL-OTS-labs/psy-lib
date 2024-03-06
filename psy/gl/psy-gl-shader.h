@@ -7,6 +7,8 @@
 G_BEGIN_DECLS
 
 #define PSY_TYPE_GL_SHADER psy_gl_shader_get_type()
+
+G_MODULE_EXPORT
 G_DECLARE_DERIVABLE_TYPE(PsyGlShader, psy_gl_shader, PSY, GL_SHADER, PsyShader)
 
 typedef struct _PsyGlShaderClass {
