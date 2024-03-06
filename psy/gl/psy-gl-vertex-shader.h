@@ -7,6 +7,8 @@
 G_BEGIN_DECLS
 
 #define PSY_TYPE_GL_VERTEX_SHADER psy_gl_vertex_shader_get_type()
+
+G_MODULE_EXPORT
 G_DECLARE_FINAL_TYPE(
     PsyGlVertexShader, psy_gl_vertex_shader, PSY, GL_VERTEX_SHADER, PsyGlShader)
 

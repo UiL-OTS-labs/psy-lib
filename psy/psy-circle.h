@@ -6,6 +6,7 @@
 G_BEGIN_DECLS
 
 #define PSY_TYPE_CIRCLE psy_circle_get_type()
+G_MODULE_EXPORT
 G_DECLARE_DERIVABLE_TYPE(PsyCircle, psy_circle, PSY, CIRCLE, PsyVisualStimulus)
 
 typedef struct _PsyCircleClass {

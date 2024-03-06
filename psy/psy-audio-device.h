@@ -50,10 +50,10 @@ typedef struct PsyAudioDeviceInfo {
     guint private_index;
 } PsyAudioDeviceInfo;
 
-GType
+G_MODULE_EXPORT GType
 psy_audio_device_info_get_type(void);
 
-PsyAudioDeviceInfo *
+G_MODULE_EXPORT PsyAudioDeviceInfo *
 psy_audio_device_info_new(gint                device_num,
                           gchar              *psy_api,
                           gchar              *host_api,
@@ -64,21 +64,21 @@ psy_audio_device_info_new(gint                device_num,
                           guint               num_sample_rates,
                           guint               private_index);
 
-void
+G_MODULE_EXPORT void
 psy_audio_device_info_get_sample_rates(PsyAudioDeviceInfo  *self,
                                        PsyAudioSampleRate **sample_rates,
                                        guint               *num_sample_rates);
 
-PsyAudioDeviceInfo *
+G_MODULE_EXPORT PsyAudioDeviceInfo *
 psy_audio_device_info_copy(PsyAudioDeviceInfo *self);
 
-void
+G_MODULE_EXPORT void
 psy_audio_device_info_free(PsyAudioDeviceInfo *self);
 
-char *
+G_MODULE_EXPORT char *
 psy_audio_device_info_as_string(PsyAudioDeviceInfo *self);
 
-gboolean
+G_MODULE_EXPORT gboolean
 psy_audio_device_info_contains_sr(PsyAudioDeviceInfo *self,
                                   PsyAudioSampleRate  sr);
 
@@ -87,6 +87,7 @@ G_MODULE_EXPORT GQuark
 psy_audio_device_error_quark(void);
 
 #define PSY_TYPE_AUDIO_DEVICE psy_audio_device_get_type()
+G_MODULE_EXPORT
 G_DECLARE_DERIVABLE_TYPE(
     PsyAudioDevice, psy_audio_device, PSY, AUDIO_DEVICE, GObject)
 
@@ -210,7 +211,7 @@ void
 psy_audio_device_schedule_stimulus(PsyAudioDevice      *self,
                                    PsyAuditoryStimulus *stim);
 
-void
+G_MODULE_EXPORT void
 psy_audio_device_enumerate_devices(PsyAudioDevice       *self,
                                    PsyAudioDeviceInfo ***infos,
                                    guint                *n_infos);

@@ -11,13 +11,13 @@
 extern "C" {
 #endif
 
-PsyAudioSampleRate
+G_MODULE_EXPORT PsyAudioSampleRate
 psy_int_to_sample_rate(gint sample_rate);
 
-PsyDuration *
+G_MODULE_EXPORT PsyDuration *
 psy_num_audio_samples_to_duration(gint64 num_samples, PsyAudioSampleRate sr);
 
-gint64
+G_MODULE_EXPORT gint64
 psy_duration_to_num_audio_frames(PsyDuration *dur, PsyAudioSampleRate sr);
 
 #ifdef __cplusplus

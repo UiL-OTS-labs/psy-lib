@@ -7,6 +7,7 @@
 G_BEGIN_DECLS
 
 #define PSY_TYPE_PICTURE_ARTIST psy_picture_artist_get_type()
+G_MODULE_EXPORT
 G_DECLARE_FINAL_TYPE(
     PsyPictureArtist, psy_picture_artist, PSY, PICTURE_ARTIST, PsyArtist)
 

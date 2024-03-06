@@ -8,6 +8,7 @@
 G_BEGIN_DECLS
 
 #define PSY_TYPE_CROSS_ARTIST psy_cross_artist_get_type()
+G_MODULE_EXPORT
 G_DECLARE_FINAL_TYPE(
     PsyCrossArtist, psy_cross_artist, PSY, CROSS_ARTIST, PsyArtist)
 

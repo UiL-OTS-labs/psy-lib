@@ -8,6 +8,8 @@
 G_BEGIN_DECLS
 
 #define PSY_TYPE_TEXT psy_text_get_type()
+
+G_MODULE_EXPORT
 G_DECLARE_DERIVABLE_TYPE(PsyText, psy_text, PSY, TEXT, PsyRectangle)
 
 /**

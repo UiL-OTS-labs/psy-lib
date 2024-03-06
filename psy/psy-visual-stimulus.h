@@ -18,6 +18,8 @@ struct _PsyArtist;
 typedef struct _PsyArtist PsyArtist;
 
 #define PSY_TYPE_VISUAL_STIMULUS psy_visual_stimulus_get_type()
+
+G_MODULE_EXPORT
 G_DECLARE_DERIVABLE_TYPE(
     PsyVisualStimulus, psy_visual_stimulus, PSY, VISUAL_STIMULUS, PsyStimulus)
 
