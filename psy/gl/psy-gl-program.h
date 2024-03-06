@@ -6,6 +6,8 @@
 G_BEGIN_DECLS
 
 #define PSY_TYPE_GL_PROGRAM psy_gl_program_get_type()
+
+G_MODULE_EXPORT
 G_DECLARE_FINAL_TYPE(
     PsyGlProgram, psy_gl_program, PSY, GL_PROGRAM, PsyShaderProgram)
 

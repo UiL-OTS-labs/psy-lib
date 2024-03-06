@@ -6,6 +6,7 @@
 G_BEGIN_DECLS
 
 #define PSY_TYPE_CLOCK psy_clock_get_type()
+G_MODULE_EXPORT
 G_DECLARE_FINAL_TYPE(PsyClock, psy_clock, PSY, CLOCK, GObject)
 
 G_MODULE_EXPORT PsyClock *

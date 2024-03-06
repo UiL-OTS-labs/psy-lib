@@ -12,6 +12,8 @@ typedef struct _PsyMatrix4 PsyMatrix4;
 G_BEGIN_DECLS
 
 #define PSY_TYPE_VECTOR4 psy_vector4_get_type()
+
+G_MODULE_EXPORT
 G_DECLARE_FINAL_TYPE(PsyVector4, psy_vector4, PSY, VECTOR4, GObject)
 
 G_MODULE_EXPORT PsyVector4 *

@@ -7,6 +7,8 @@
 G_BEGIN_DECLS
 
 #define PSY_TYPE_WINDOW psy_window_get_type()
+
+G_MODULE_EXPORT
 G_DECLARE_DERIVABLE_TYPE(PsyWindow, psy_window, PSY, WINDOW, PsyCanvas)
 
 /**

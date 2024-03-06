@@ -6,6 +6,8 @@
 G_BEGIN_DECLS
 
 #define PSY_TYPE_RECTANGLE psy_rectangle_get_type()
+
+G_MODULE_EXPORT
 G_DECLARE_DERIVABLE_TYPE(
     PsyRectangle, psy_rectangle, PSY, RECTANGLE, PsyVisualStimulus)
 

@@ -8,6 +8,8 @@
 G_BEGIN_DECLS
 
 #define PSY_TYPE_VECTOR3 psy_vector3_get_type()
+
+G_MODULE_EXPORT
 G_DECLARE_FINAL_TYPE(PsyVector3, psy_vector3, PSY, VECTOR3, GObject)
 
 G_MODULE_EXPORT PsyVector3 *

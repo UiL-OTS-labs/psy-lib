@@ -8,11 +8,11 @@
 G_BEGIN_DECLS
 
 /**
- * PSY_TYPE_RGB:
+ * PSY_TYPE_RGBA:
  *
  * The #GType for a boxed holding a floating point RGB range
  */
-#define PSY_TYPE_RGB (psy_rgba_get_type())
+#define PSY_TYPE_RGBA (psy_rgba_get_type())
 G_MODULE_EXPORT GType
 psy_rgba_get_type(void);
 
@@ -48,6 +48,7 @@ psy_rgba_free(PsyRgba *self);
 /* ******* psy-color ********** */
 
 #define PSY_TYPE_COLOR psy_color_get_type()
+G_MODULE_EXPORT
 G_DECLARE_FINAL_TYPE(PsyColor, psy_color, PSY, COLOR, GObject)
 
 G_MODULE_EXPORT PsyColor *

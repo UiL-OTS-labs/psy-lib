@@ -10,10 +10,13 @@
 G_BEGIN_DECLS
 
 #define PSY_TEXTURE_ERROR psy_texture_error_quark()
-GQuark
+
+G_MODULE_EXPORT GQuark
 psy_texture_error_quark(void);
 
 #define PSY_TYPE_TEXTURE psy_texture_get_type()
+
+G_MODULE_EXPORT
 G_DECLARE_DERIVABLE_TYPE(PsyTexture, psy_texture, PSY, TEXTURE, GObject)
 
 typedef struct _PsyTextureClass {

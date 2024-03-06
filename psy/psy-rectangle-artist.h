@@ -8,6 +8,8 @@
 G_BEGIN_DECLS
 
 #define PSY_TYPE_RECTANGLE_ARTIST psy_rectangle_artist_get_type()
+
+G_MODULE_EXPORT
 G_DECLARE_FINAL_TYPE(
     PsyRectangleArtist, psy_rectangle_artist, PSY, RECTANGLE_ARTIST, PsyArtist)
 

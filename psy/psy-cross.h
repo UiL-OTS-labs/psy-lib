@@ -6,6 +6,7 @@
 G_BEGIN_DECLS
 
 #define PSY_TYPE_CROSS psy_cross_get_type()
+G_MODULE_EXPORT
 G_DECLARE_DERIVABLE_TYPE(PsyCross, psy_cross, PSY, CROSS, PsyVisualStimulus)
 
 typedef struct _PsyCrossClass {

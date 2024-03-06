@@ -13,6 +13,7 @@
 G_BEGIN_DECLS
 
 #define PSY_TYPE_CANVAS psy_canvas_get_type()
+G_MODULE_EXPORT
 G_DECLARE_DERIVABLE_TYPE(PsyCanvas, psy_canvas, PSY, CANVAS, GObject)
 
 /* Forward declaration of PsyArtist and PsyVisualStimulus*/

@@ -8,6 +8,8 @@
 G_BEGIN_DECLS
 
 #define PSY_TYPE_VBUFFER psy_vbuffer_get_type()
+
+G_MODULE_EXPORT
 G_DECLARE_DERIVABLE_TYPE(PsyVBuffer, psy_vbuffer, PSY, VBUFFER, GObject)
 
 typedef struct PsyVertexPos {

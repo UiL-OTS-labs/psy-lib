@@ -9,6 +9,7 @@ G_BEGIN_DECLS
 
 #define PSY_TYPE_LOOP psy_loop_get_type()
 
+G_MODULE_EXPORT
 G_DECLARE_DERIVABLE_TYPE(PsyLoop, psy_loop, PSY, LOOP, PsyStep)
 
 struct _PsyLoopClass {

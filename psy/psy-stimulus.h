@@ -8,6 +8,8 @@
 G_BEGIN_DECLS
 
 #define PSY_TYPE_STIMULUS psy_stimulus_get_type()
+
+G_MODULE_EXPORT
 G_DECLARE_DERIVABLE_TYPE(PsyStimulus, psy_stimulus, PSY, STIMULUS, GObject)
 
 typedef struct _PsyStimulusClass {

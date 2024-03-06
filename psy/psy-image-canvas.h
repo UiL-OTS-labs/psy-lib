@@ -8,6 +8,7 @@
 G_BEGIN_DECLS
 
 #define PSY_TYPE_IMAGE_CANVAS psy_image_canvas_get_type()
+G_MODULE_EXPORT
 G_DECLARE_DERIVABLE_TYPE(
     PsyImageCanvas, psy_image_canvas, PSY, IMAGE_CANVAS, PsyCanvas)
 

@@ -9,10 +9,13 @@
 G_BEGIN_DECLS
 
 #define PSY_STEPPING_STONES_ERROR psy_stepping_stones_error_quark()
+
 G_MODULE_EXPORT GQuark
 psy_stepping_stones_error_quark(void);
 
 #define PSY_TYPE_STEPPING_STONES psy_stepping_stones_get_type()
+
+G_MODULE_EXPORT
 G_DECLARE_DERIVABLE_TYPE(
     PsySteppingStones, psy_stepping_stones, PSY, STEPPING_STONES, PsyStep)
 
