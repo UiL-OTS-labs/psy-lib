@@ -101,6 +101,10 @@ add_suites_to_registry(void)
     if (error)
         return error;
 
+    error = add_matrix4_suite();
+    if (error)
+        return error;
+
     error = add_parallel_suite(g_port_num);
     if (error)
         return error;

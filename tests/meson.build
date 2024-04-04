@@ -57,6 +57,7 @@ unit_test = executable (
         'test-image.c',
         'test-gl-canvas.c',
         'test-gl-utils.c',
+        'test-matrix4.c',
         'test-parallel.c',
         'test-picture.c',
         'test-queue.c',

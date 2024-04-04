@@ -28,6 +28,9 @@ int
 add_gl_utils_suite(void);
 
 int
+add_matrix4_suite(void);
+
+int
 add_parallel_suite(gint port_num);
 
 int
