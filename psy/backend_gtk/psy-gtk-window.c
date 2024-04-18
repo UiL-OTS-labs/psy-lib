@@ -163,57 +163,7 @@ create_drawing_context(PsyGtkWindow *window)
 static void
 init_shaders(PsyGtkWindow *self, GError **error)
 {
-    // Uniform color program
-    PsyDrawingContext *context = psy_canvas_get_context(PSY_CANVAS(self));
-
-    PsyShaderProgram *program = psy_drawing_context_create_program(context);
-
-    psy_shader_program_set_vertex_shader_from_path(
-        program, "./psy/uniform-color.vert", error);
-    if (*error)
-        goto fail;
-
-    psy_shader_program_set_fragment_shader_from_path(
-        program, "./psy/uniform-color.frag", error);
-    if (*error)
-        goto fail;
-
-    psy_shader_program_link(program, error);
-    if (*error)
-        goto fail;
-
-    psy_drawing_context_register_program(
-        context, PSY_UNIFORM_COLOR_PROGRAM_NAME, program, error);
-    if (*error)
-        return;
-
-    g_clear_object(&program);
-
-    // Picture program
-    program = psy_drawing_context_create_program(context);
-
-    psy_shader_program_set_vertex_shader_from_path(
-        program, "./psy/picture.vert", error);
-    if (*error)
-        goto fail;
-
-    psy_shader_program_set_fragment_shader_from_path(
-        program, "./psy/picture.frag", error);
-    if (*error)
-        goto fail;
-
-    psy_shader_program_link(program, error);
-    if (*error)
-        goto fail;
-
-    psy_drawing_context_register_program(
-        context, PSY_PICTURE_PROGRAM_NAME, program, error);
-
-    g_clear_object(&program);
-    return;
-
-fail:
-    g_object_unref(program);
+    psy_gl_canvas_init_default_shaders(PSY_CANVAS(self), error);
 }
 
 static void

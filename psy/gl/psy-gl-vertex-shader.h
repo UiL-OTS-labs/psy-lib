@@ -16,7 +16,7 @@ G_MODULE_EXPORT PsyGlVertexShader *
 psy_gl_vertex_shader_new(void);
 
 G_MODULE_EXPORT void
-psy_gl_vertex_shader_free(void);
+psy_gl_vertex_shader_free(PsyGlVertexShader *self);
 
 G_END_DECLS
 

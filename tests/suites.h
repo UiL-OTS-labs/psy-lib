@@ -25,6 +25,12 @@ int
 add_gl_canvas_suite(void);
 
 int
+add_gl_utils_suite(void);
+
+int
+add_matrix4_suite(void);
+
+int
 add_parallel_suite(gint port_num);
 
 int
@@ -50,6 +56,9 @@ add_utility_suite(void);
 
 int
 add_visual_stimulus_suite(void);
+
+int
+add_visual_stimuli_suite(void);
 
 int
 add_vector_suite(void);

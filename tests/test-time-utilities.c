@@ -253,6 +253,17 @@ check_duration_comparisons(void)
     psy_duration_free(alittleless);
 }
 
+static void
+check_clock_zero_time(void)
+{
+    PsyClock *clock = psy_clock_new();
+
+    gint64 zero_time = psy_clock_get_zero_time();
+    CU_ASSERT(zero_time > 0);
+
+    psy_clock_free(clock);
+}
+
 int
 add_time_utilities_suite(void)
 {
@@ -294,6 +305,10 @@ add_time_utilities_suite(void)
         return 1;
     test = CU_add_test(
         suite, "Test duration comparisons", check_duration_comparisons);
+    if (!test)
+        return 1;
+
+    test = CU_ADD_TEST(suite, check_clock_zero_time);
     if (!test)
         return 1;
 

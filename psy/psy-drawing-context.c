@@ -66,40 +66,6 @@ typedef enum { PROP_NULL, NUM_PROPERTIES } PsyDrawingContextProperty;
  */
 
 static void
-psy_drawing_context_set_property(GObject      *object,
-                                 guint         prop_id,
-                                 const GValue *value,
-                                 GParamSpec   *pspec)
-{
-    PsyDrawingContext *self = PSY_DRAWING_CONTEXT(object);
-    (void) self;
-    (void) value;
-
-    switch ((PsyDrawingContextProperty) prop_id) {
-    default:
-        G_OBJECT_WARN_INVALID_PROPERTY_ID(object, prop_id, pspec);
-    }
-}
-
-static void
-psy_drawing_context_get_property(GObject    *object,
-                                 guint       prop_id,
-                                 GValue     *value,
-                                 GParamSpec *pspec)
-{
-    PsyDrawingContext        *self = PSY_DRAWING_CONTEXT(object);
-    PsyDrawingContextPrivate *priv
-        = psy_drawing_context_get_instance_private(self);
-    (void) value;
-    (void) priv;
-
-    switch ((PsyDrawingContextProperty) prop_id) {
-    default:
-        G_OBJECT_WARN_INVALID_PROPERTY_ID(object, prop_id, pspec);
-    }
-}
-
-static void
 psy_drawing_context_init(PsyDrawingContext *self)
 {
     PsyDrawingContextPrivate *priv
@@ -113,16 +79,10 @@ psy_drawing_context_init(PsyDrawingContext *self)
 static void
 psy_drawing_context_dispose(GObject *object)
 {
-    PsyDrawingContext        *self = PSY_DRAWING_CONTEXT(object);
-    PsyDrawingContextPrivate *priv
-        = psy_drawing_context_get_instance_private(self);
+    PsyDrawingContext *self = PSY_DRAWING_CONTEXT(object);
 
-    if (priv->shader_programs) {
-        g_hash_table_destroy(priv->shader_programs);
-        priv->shader_programs = NULL;
-    }
-    if (priv->textures)
-        g_clear_pointer(&priv->textures, g_hash_table_destroy);
+    // frees priv->shader_programs and priv->textures
+    psy_drawing_context_free_resources(self);
 
     G_OBJECT_CLASS(psy_drawing_context_parent_class)->dispose(object);
 }
@@ -143,10 +103,8 @@ psy_drawing_context_class_init(PsyDrawingContextClass *class)
 {
     GObjectClass *gobject_class = G_OBJECT_CLASS(class);
 
-    gobject_class->set_property = psy_drawing_context_set_property;
-    gobject_class->get_property = psy_drawing_context_get_property;
-    gobject_class->finalize     = psy_drawing_context_finalize;
-    gobject_class->dispose      = psy_drawing_context_dispose;
+    gobject_class->finalize = psy_drawing_context_finalize;
+    gobject_class->dispose  = psy_drawing_context_dispose;
 }
 
 /* ************ public functions ******************** */
@@ -217,7 +175,6 @@ psy_drawing_context_register_program(PsyDrawingContext *self,
         return;
     }
     g_hash_table_insert(priv->shader_programs, g_strdup(name), program);
-    g_object_ref(program);
 }
 
 /**

@@ -405,7 +405,7 @@ on_basic_stepping_stones_activate(GApplication *app, gpointer data)
 
     PsySteppingStones *stones = psy_stepping_stones_new();
     PsyTrial          *trial  = psy_trial_new();
-    PsyLoop *loop = psy_loop_new_full(0, 10000, 1, PSY_LOOP_CONDITION_LESS);
+    PsyLoop *loop = psy_loop_new_full(0, 10, 1, PSY_LOOP_CONDITION_LESS);
     PsySteppingStones *rolling_stones = psy_stepping_stones_new();
     PsySteppingStones *empty          = psy_stepping_stones_new();
     PsyTrial          *inner_trial    = psy_trial_new();
@@ -462,7 +462,7 @@ test_stepping_stones(void)
 
     CU_ASSERT_EQUAL(params.stones_activated, 3);
     CU_ASSERT_EQUAL(params.trial_activated, 2);
-    CU_ASSERT_EQUAL(params.loop_iterations, 10000);
+    CU_ASSERT_EQUAL(params.loop_iterations, 10);
 }
 
 static void

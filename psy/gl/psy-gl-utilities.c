@@ -38,8 +38,6 @@ psy_gl_canvas_init_default_shaders(PsyCanvas *self, GError **error)
     if (*error)
         return;
 
-    g_clear_object(&program);
-
     // Picture program
     program = psy_drawing_context_create_program(context);
 
@@ -60,7 +58,6 @@ psy_gl_canvas_init_default_shaders(PsyCanvas *self, GError **error)
     psy_drawing_context_register_program(
         context, PSY_PICTURE_PROGRAM_NAME, program, error);
 
-    g_clear_object(&program);
     return;
 
 fail:

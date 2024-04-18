@@ -42,7 +42,7 @@ psy_gl_vertex_shader_class_init(PsyGlVertexShaderClass *klass)
 /* ************ public functions *************/
 
 /**
- * psy_gl_vertext_shader_new:(constructor)
+ * psy_gl_vertex_shader_new:(constructor)
  *
  * Creates a new vertex shader for OpenGL
  *
@@ -57,12 +57,12 @@ psy_gl_vertex_shader_new(void)
 }
 
 /**
- * psy_gl_vertext_shader_free:(skip)
+ * psy_gl_vertex_shader_free:(skip)
  *
  * frees vertex shader created with psy_gl_vertext_shader new before
  */
 void
-psy_gl_vertext_shader_free(PsyGlVertexShader *self)
+psy_gl_vertex_shader_free(PsyGlVertexShader *self)
 {
     g_return_if_fail(PSY_IS_GL_VERTEX_SHADER(self));
     g_object_unref(self);

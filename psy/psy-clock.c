@@ -40,20 +40,6 @@ G_DEFINE_TYPE_WITH_CODE(PsyClock,
 static GParamSpec *obj_properties[NUM_PROPERTIES];
 
 static void
-psy_clock_set_property(GObject      *object,
-                       guint         property_id,
-                       const GValue *value,
-                       GParamSpec   *pspec)
-{
-    (void) value;
-    switch ((PsyClockProperty) property_id) {
-    // no writable properties
-    default:
-        G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
-    }
-}
-
-static void
 psy_clock_get_property(GObject    *object,
                        guint       property_id,
                        GValue     *value,
@@ -80,7 +66,6 @@ psy_clock_class_init(PsyClockClass *klass)
 {
     GObjectClass *obj_class = G_OBJECT_CLASS(klass);
 
-    obj_class->set_property = psy_clock_set_property;
     obj_class->get_property = psy_clock_get_property;
 
     /**

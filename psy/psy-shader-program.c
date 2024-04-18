@@ -20,10 +20,10 @@ typedef enum { PROP_NULL, NUM_PROPERTIES } PsyShaderProgramProperty;
  */
 
 static void
-psy_shader_program_set_property(GObject      *object,
-                                guint         prop_id,
-                                const GValue *value,
-                                GParamSpec   *pspec)
+shader_program_set_property(GObject      *object,
+                            guint         prop_id,
+                            const GValue *value,
+                            GParamSpec   *pspec)
 {
     PsyShaderProgram *self = PSY_SHADER_PROGRAM(object);
     (void) self;
@@ -36,10 +36,10 @@ psy_shader_program_set_property(GObject      *object,
 }
 
 static void
-psy_shader_program_get_property(GObject    *object,
-                                guint       prop_id,
-                                GValue     *value,
-                                GParamSpec *pspec)
+shader_program_get_property(GObject    *object,
+                            guint       prop_id,
+                            GValue     *value,
+                            GParamSpec *pspec)
 {
     PsyShaderProgram        *self = PSY_SHADER_PROGRAM(object);
     PsyShaderProgramPrivate *priv
@@ -62,7 +62,7 @@ psy_shader_program_init(PsyShaderProgram *self)
 }
 
 static void
-psy_shader_program_dispose(GObject *object)
+shader_program_dispose(GObject *object)
 {
     PsyShaderProgram        *self = PSY_SHADER_PROGRAM(object);
     PsyShaderProgramPrivate *priv
@@ -76,7 +76,7 @@ psy_shader_program_dispose(GObject *object)
 }
 
 static void
-psy_shader_program_finalize(GObject *object)
+shader_program_finalize(GObject *object)
 {
     PsyShaderProgram        *self = PSY_SHADER_PROGRAM(object);
     PsyShaderProgramPrivate *priv
@@ -87,18 +87,80 @@ psy_shader_program_finalize(GObject *object)
 }
 
 static void
+shader_program_set_vertex_shader(PsyShaderProgram *self,
+                                 PsyShader        *shader,
+                                 GError          **error)
+{
+    PsyShaderProgramPrivate *priv
+        = psy_shader_program_get_instance_private(self);
+
+    if (!psy_shader_is_compiled(shader)) {
+        psy_shader_compile(shader, error);
+        if (*error)
+            return;
+    }
+
+    if (priv->vertex_shader) {
+        g_object_unref(priv->vertex_shader);
+    }
+    priv->vertex_shader = shader;
+}
+
+static void
+shader_program_set_fragment_shader(PsyShaderProgram *self,
+                                   PsyShader        *shader,
+                                   GError          **error)
+{
+    (void) error; // for subclasses
+    PsyShaderProgramPrivate *priv
+        = psy_shader_program_get_instance_private(self);
+
+    if (!psy_shader_is_compiled(shader)) {
+        psy_shader_compile(shader, error);
+        if (*error)
+            return;
+    }
+
+    if (priv->fragment_shader) {
+        g_object_unref(priv->fragment_shader);
+    }
+
+    priv->fragment_shader = shader;
+}
+
+static void
 psy_shader_program_class_init(PsyShaderProgramClass *class)
 {
     GObjectClass *gobject_class = G_OBJECT_CLASS(class);
 
-    gobject_class->set_property = psy_shader_program_set_property;
-    gobject_class->get_property = psy_shader_program_get_property;
-    gobject_class->finalize     = psy_shader_program_finalize;
-    gobject_class->dispose      = psy_shader_program_dispose;
+    gobject_class->set_property = shader_program_set_property;
+    gobject_class->get_property = shader_program_get_property;
+    gobject_class->finalize     = shader_program_finalize;
+    gobject_class->dispose      = shader_program_dispose;
+
+    class->set_vertex_shader   = shader_program_set_vertex_shader;
+    class->set_fragment_shader = shader_program_set_fragment_shader;
 }
 
 /* ************ public functions ******************** */
 
+/**
+ * psy_shader_program_set_vertex_shader:
+ * @self: The program to which you want to add a shader
+ * @shader:(transfer full): The instance of [class@Shader] that you want add
+ *                          to this program. The program will be compiled if
+ *                         neccessary.
+ * @error:(out): If an error occurs it will be returned here.
+ *               An optional error that might occur is for example that
+ *               the shader can't be compiled.
+ *
+ * Adds a shader to the program if the shader isn't ready for use the
+ * backend of this Shader program (currently only a OpenGL program) will
+ * try to make it ready for use. When the Shader hasn't a valid source
+ * for example you can expect that this function will fail, as it
+ * needs a valid source.
+ * If this program already has a vertex shader it will be removed.
+ */
 void
 psy_shader_program_set_vertex_shader(PsyShaderProgram *self,
                                      PsyShader        *shader,
@@ -115,10 +177,50 @@ psy_shader_program_set_vertex_shader(PsyShaderProgram *self,
     klass->set_vertex_shader(self, shader, error);
 }
 
+/**
+ * psy_shader_program_get_vertex_shader:
+ * @self: An instance of [class@ShaderProgram]
+ *
+ * Get the vertex shader of this program if it has been set.
+ *
+ * Returns:(transfer none)(nullable): The instance of [class@Shader] that
+ *         that represents the vertex shader of this class.
+ */
+PsyShader *
+psy_shader_program_get_vertex_shader(PsyShaderProgram *self)
+{
+    g_return_val_if_fail(PSY_IS_SHADER_PROGRAM(self), NULL);
+
+    PsyShaderProgramPrivate *priv
+        = psy_shader_program_get_instance_private(self);
+
+    return priv->vertex_shader;
+}
+
+/**
+ * psy_shader_program_set_vertex_shader_source:
+ * @self: The program to which a shader should be added.
+ * @source:(transfer none): The string that should be a valid source code
+ *                          for a vertex shader.
+ * @error:(out): If an error occurs it will be returned here.
+ *               An optional error that might occur is for example that
+ *               the shader can't be compiled.
+ *
+ * Adds a shader to the program via adding source to a to be created shader.
+ * The backend of this Shader program (currently only a OpenGL program) will
+ * try to make it ready for use. When the Shader hasn't a valid source
+ * for example you can expect that this function will fail, as it
+ * needs a valid source.
+ * This method is abstract, hence subclasses must implement it. Sub classes
+ * create a appropriate shader for this program. So a opengl program create
+ * a opengl vertex shader. The derived method will call
+ * [method@ShaderProgram.set_vertex_shader] on you behalf, to finalize this
+ * process.
+ */
 void
-psy_shader_program_set_vertex_source(PsyShaderProgram *self,
-                                     const gchar      *source,
-                                     GError          **error)
+psy_shader_program_set_vertex_shader_source(PsyShaderProgram *self,
+                                            const gchar      *source,
+                                            GError          **error)
 {
     g_return_if_fail(PSY_IS_SHADER_PROGRAM(self));
     g_return_if_fail(source != NULL);
@@ -177,6 +279,26 @@ psy_shader_program_set_fragment_shader(PsyShaderProgram *self,
     g_return_if_fail(klass->set_fragment_shader != NULL);
 
     klass->set_fragment_shader(self, shader, error);
+}
+
+/**
+ * psy_shader_program_get_fragment_shader:
+ * @self: An instance of [class@ShaderProgram]
+ *
+ * Get the fragment shader of this program if it has been set.
+ *
+ * Returns:(transfer none)(nullable): The instance of [class@Shader] that
+ *         that represents the fragment shader of this class.
+ */
+PsyShader *
+psy_shader_program_get_fragment_shader(PsyShaderProgram *self)
+{
+    g_return_val_if_fail(PSY_IS_SHADER_PROGRAM(self), NULL);
+
+    PsyShaderProgramPrivate *priv
+        = psy_shader_program_get_instance_private(self);
+
+    return priv->fragment_shader;
 }
 
 void
