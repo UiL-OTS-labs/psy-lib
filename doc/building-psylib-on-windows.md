@@ -28,8 +28,11 @@ Open a mintty terminal: When you click the start menu/bar, (all apps) go to
 MSYS2->MSYS2_UCRT64.
 
 install packages:
+A trap might be to install meson and ninja using msys2's pacman. Install python
+and python-pip using pacboy :p option, to have a version of python (and pip)
+packages suitable with the current msys2 environment
 
-```console
+```bash
 # install git
 pacman -S git
 
@@ -49,11 +52,8 @@ pipboy -S python:p
 #install pip
 pipboy -S python-pip:p
 
-#install meson and ninja in order to build make sure it's on the path
-pacboy -S meson:p
-
 #install gcc/g++ 
-pacboy -S gcc
+pacboy -S gcc:p
 
 #install required packages
 pacboy -S glib2:p
@@ -61,6 +61,7 @@ pacboy -S gstreamer:p
 pacboy -S gst-plugins-base:p
 pacboy -S gst-plugins-good:p
 pacboy -S gtk4:p
+pacboy -S libepoxy:p
 pacboy -S portaudio:p
 pacboy -S boost:p
 
@@ -68,18 +69,21 @@ pacboy -S boost:p
 pacboy -S cunit:p
 
 # optional for documentation
-pacboy -S gi-docgen:p
+python -m pip install gi-docgen:p
+
+#finally install CMake (for ninja), ninja and meson
+pacboy -S cmake:p
+
+# use pip to install meson and ninja
+python -m pip install meson ninja
 
 # configure the build directory
-meson build -Dalsa=false
+meson setup build -Dalsa=false
 
 # cd to the build directory
 cd build
 ninja
 ```
-
-
-
 
 [1]: https://msys2.org
 [2]: https://MinGW-w64.org
