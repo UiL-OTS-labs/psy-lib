@@ -33,10 +33,12 @@ doc_url = "https://docs.gtk.org/glib/"
 name = "GObject"
 description = "The base type system library"
 doc_url = "https://docs.gtk.org/gobject/"
+
 [dependencies."Gtk-4.0"]
 name = "Gtk"
 description = "The Gtk toolkit"
 doc_url = "https://docs.gtk.org/gtk4/"
+
 [dependencies."Pango-1.0"]
 name = "Pango"
 description = "Internationalized text layout and rendering"
@@ -55,6 +57,9 @@ doc_url = "https://docs.gtk.org/pango/"
 # The generated files will be placed in the root output directory
 content_files = [
     "introduction.md",
+    "building-psylib.md",
+    "building-psylib-on-linux.md",
+    "building-psylib-on-windows.md",
     "stepping-through-experiment.md",
     "drawing-with-psylib-developer.md",
     "audio-with-psylib.md",
