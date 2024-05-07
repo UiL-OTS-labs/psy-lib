@@ -1,4 +1,6 @@
 
+#include <inttypes.h>
+
 #include "enum-types.h"
 
 #include "psy-audio-device.h"

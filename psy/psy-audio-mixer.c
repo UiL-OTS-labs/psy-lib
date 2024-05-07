@@ -1,4 +1,5 @@
 
+#include <inttypes.h>
 
 #include "psy-config.h"
 
@@ -239,7 +240,7 @@ remove_stimulus(PsyAudioMixer *self, PsyAuditoryStimulus *stim)
     PsyAudioSampleRate rate = psy_audio_device_get_sample_rate(priv->device);
 
     if (num_pres > num_frames) {
-        g_warning("Stimulus has been presented for to many frames %ld > %ld",
+        g_warning("Stimulus has been presented for to many frames %" PRId64 " > %" PRId64 "",
                   num_pres,
                   num_frames);
     }
@@ -312,7 +313,7 @@ audio_mixer_process_output_frames(PsyAudioMixer *self, gint64 num_frames)
 
     window_start = priv->num_out_frames;
     window_stop  = priv->num_out_frames + num_frames;
-    g_debug("window_start = %ld, stop = %ld", window_start, window_stop);
+    g_debug("window_start = %" PRId64 ", stop = %" PRId64 "", window_start, window_stop);
 
     for (guint i = 0; i < priv->stimuli->len; i++) {
 
@@ -327,7 +328,8 @@ audio_mixer_process_output_frames(PsyAudioMixer *self, gint64 num_frames)
         stim_stop      = stim_start + stim_dur;
 
         g_debug(
-            "stimulus %u: start = %ld, presented = %ld dur = %ld stop = %ld",
+            "stimulus %" PRIu32 ": start = %" PRId64 ", presented = %" PRId64
+	    "dur = %" PRId64 " stop = %" PRId64 "",
             priv->stimuli->len,
             stim_start,
             stim_presented,
@@ -339,7 +341,7 @@ audio_mixer_process_output_frames(PsyAudioMixer *self, gint64 num_frames)
                 window_start, window_stop, stim_start, stim_stop)) {
             if (stim_stop < window_start) {
                 g_critical("Mixer encountered stimulus that is in the past "
-                           "window_start = %ld, stim_stop = %ld, removing it.",
+                           "window_start = %" PRId64 ", stim_stop = %" PRId64 ", removing it.",
                            window_start,
                            stim_stop);
                 g_ptr_array_add(priv->to_remove, stim);
@@ -359,7 +361,8 @@ audio_mixer_process_output_frames(PsyAudioMixer *self, gint64 num_frames)
         gint64 num_stim_frames = num_frames - stim_index_frame_start;
         num_stim_frames        = MIN(num_stim_frames, num_frames_in_stim);
 
-        g_debug("if_start %ld, is_start %ld, ns_frames %ld, nf_left %ld",
+        g_debug("if_start %" PRId64 ", is_start %" PRId64 ", ns_frames %" PRId64 
+                ", nf_left %" PRId64 "",
                 stim_index_frame_start,
                 stim_index_sample_start,
                 num_stim_frames,
@@ -601,7 +604,8 @@ psy_audio_mixer_schedule_stimulus(PsyAudioMixer       *self,
 
     g_info(
         "Scheduled instance of %s at %p with the audiomixer %p, ref_frame = "
-        "%ld, num_wait_frames = %ld, start_frame = %ld, wait duration = %lfs",
+        "%" PRId64 ", num_wait_frames = %" PRId64
+        ", start_frame = %" PRId64 ", wait duration = %lfs",
         G_OBJECT_CLASS_NAME(G_OBJECT_GET_CLASS(stimulus)),
         (gpointer) stimulus,
         (gpointer) self,
