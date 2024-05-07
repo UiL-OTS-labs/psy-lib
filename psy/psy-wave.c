@@ -1,4 +1,6 @@
 
+#include <inttypes.h>
+
 #include <gst/app/gstappsink.h>
 #include <gst/gst.h>
 
@@ -215,7 +217,7 @@ wave_create_gst_pipeline(PsyGstStimulus *self)
     gint64 num_frames
         = psy_auditory_stimulus_get_num_frames(PSY_AUDITORY_STIMULUS(self));
     if (num_frames < 0) {
-        g_critical("The stimulus has a negative number of frames: %ld",
+        g_critical("The stimulus has a negative number of frames: %" PRId64 "",
                    num_frames);
         return;
     }

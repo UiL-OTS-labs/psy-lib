@@ -1,4 +1,5 @@
 
+#include <inttypes.h>
 #include <math.h>
 #include <psylib.h>
 #include <stdlib.h>
@@ -332,14 +333,14 @@ main(int argc, char **argv)
     if (g_tstop && g_tstart)
         diff = psy_time_point_subtract(g_tstop, g_tstart);
 
-    g_print("The width = %d mm and height = %d mm\n",
+    g_print("The width = %" PRId32 " mm and height = %" PRId32 " mm\n",
             psy_canvas_get_width_mm(PSY_CANVAS(window)),
             psy_canvas_get_height_mm(PSY_CANVAS(window)));
 
-    g_print("circle->num_frames = %ld\n",
+    g_print("circle->num_frames = %" PRId64 "\n",
             psy_visual_stimulus_get_num_frames(PSY_VISUAL_STIMULUS(circle)));
-    g_print("cavas->num_frames = %ld, num_frames_missed  = %ld, num_frames_tot "
-            "=  %ld\n",
+    g_print("cavas->num_frames = %" PRId64 ", num_frames_missed  = %" PRId64 ", num_frames_tot "
+            "= %" PRId64 "\n",
             psy_canvas_get_num_frames(PSY_CANVAS(window)),
             psy_canvas_get_num_frames_missed(PSY_CANVAS(window)),
             psy_canvas_get_num_frames_total(PSY_CANVAS(window)));

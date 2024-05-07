@@ -1,4 +1,5 @@
 
+#include <cinttypes>
 
 #include "psy-config.h"
 
@@ -134,7 +135,7 @@ psy_audio_queue_pop_samples(PsyAudioQueue *self,
 
     gsize num_popped = self->p_queue->pop(samples, num_samples);
     if (G_UNLIKELY(num_samples > G_MAXUINT)) {
-        g_critical("Popped %lu sample more than G_MAXUINT", num_popped);
+        g_critical("Popped %" PRIu64 " sample more than G_MAXUINT", num_popped);
     }
 
     guint ret = (guint) num_popped;
@@ -163,7 +164,7 @@ psy_audio_queue_push_samples(PsyAudioQueue *self,
 
     gsize num_pushed = self->p_queue->push(samples, num_samples);
     if (G_UNLIKELY(num_samples > G_MAXUINT)) {
-        g_critical("Pushed %lu sample more than G_MAXUINT", num_pushed);
+        g_critical("Pushed %" PRIu64 " samples more than G_MAXUINT", num_pushed);
     }
 
     guint ret = (guint) num_pushed;
