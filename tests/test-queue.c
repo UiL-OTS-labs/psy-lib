@@ -1,7 +1,7 @@
 
 #include <CUnit/CUnit.h>
+#include <glib.h>
 #include <psy-queue.h>
-#include <threads.h>
 
 static void
 queue_create(void)
@@ -78,7 +78,7 @@ typedef struct PushPullContext {
     PsyAudioQueue *queue;
 } PushPullContext;
 
-static int
+static void *
 push_samples(gpointer data)
 {
     gsize n;
@@ -97,10 +97,10 @@ push_samples(gpointer data)
     }
     g_info("push thread stopping");
 
-    return 0;
+    return NULL;
 }
 
-static int
+static void *
 pull_samples(gpointer data)
 {
     gsize n;
@@ -120,16 +120,14 @@ pull_samples(gpointer data)
     }
 
     g_info("pull thread stopping");
-    return 0;
+    return NULL;
 }
 
 static void
 queue_simultaneous_push_pull(void)
 {
-    int status;
-
-    thrd_t push_thread;
-    thrd_t pull_thread;
+    GThread *push_thread = NULL;
+    GThread *pull_thread = NULL;
 
     PushPullContext context = {.data_in     = NULL,
                                .data_out    = NULL,
@@ -145,14 +143,14 @@ queue_simultaneous_push_pull(void)
     memset(context.data_out, 0, context.num_samples * sizeof(float));
 
     g_info("starting threads");
-    status = thrd_create(&push_thread, push_samples, &context);
-    g_assert(status == thrd_success);
-    status = thrd_create(&pull_thread, pull_samples, &context);
-    g_assert(status == thrd_success);
+    push_thread = g_thread_new("push_thread", push_samples, &context);
+    g_assert(push_thread != NULL);
+    pull_thread = g_thread_new("pull_thread", pull_samples, &context);
+    g_assert(pull_thread != NULL);
     g_info("Threads started");
 
-    thrd_join(push_thread, NULL);
-    thrd_join(pull_thread, NULL);
+    g_thread_join(push_thread);
+    g_thread_join(pull_thread);
 
     g_info("Threads are joined.");
 
