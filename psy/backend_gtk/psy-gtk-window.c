@@ -360,7 +360,7 @@ psy_gtk_window_init(PsyGtkWindow *self)
 
     create_drawing_context(self);
 
-    gtk_widget_show(GTK_WIDGET(self->window));
+    gtk_widget_set_visible(GTK_WIDGET(self->window), TRUE);
 }
 
 static void
