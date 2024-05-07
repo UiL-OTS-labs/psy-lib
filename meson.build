@@ -3,7 +3,7 @@ project('libpsy',
     version : '0.1',
     default_options : [
         'warning_level=3',
-#        'werror=true',
+        'werror=true',
         'buildtype=debugoptimized',
         'c_std=gnu11,c11', # this makes it easier to compile sub projects
         'cpp_std=gnu++11,c++11' # use c++ 11

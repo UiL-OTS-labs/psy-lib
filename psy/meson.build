@@ -28,6 +28,15 @@ if cc.has_function('__builtin_mul_overflow')
     cdata.set('HAVE_BUILTIN_MUL_OVERFLOW', 1)
 endif
 
+if cc.has_function(
+        'usleep', 
+        prefix : [
+            '#include<unistd.h>'
+        ]
+    )
+    cdata.set('HAVE_USLEEP', 1)
+endif
+
 # check for headers
 if cc.has_header('unistd.h')
     cdata.set('HAVE_UNISTD_H', true)
@@ -63,6 +72,10 @@ endif
 
 if cxx.has_header('boost/lockfree/spsc_queue.hpp')
     cdata.set('HAVE_BOOST_LOCKFREE_SPSC_QUEUE_HPP', true)
+endif
+
+if cc.has_header('windows.h')
+    cdata.set('HAVE_WINDOWS_H', true)
 endif
 
 # set predefines whether psylib is compile with the following backends/options
