@@ -151,7 +151,7 @@ add_parallel_suite(gint port_num)
     }
 
 #else
-    #message "Can't test with parallel device"
+    #pragma message "Can't test with parallel device"
 #endif
 
     return 0;
