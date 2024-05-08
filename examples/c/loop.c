@@ -1,5 +1,6 @@
 
 #include <psylib.h>
+#include <inttypes.h>
 
 static void
 on_trial_activate(PsyStep *self, PsyTimePoint *tp)
@@ -7,7 +8,7 @@ on_trial_activate(PsyStep *self, PsyTimePoint *tp)
     (void) self;
     (void) tp;
     psy_step_leave(self, tp);
-    g_print("Trial activated %ld.\n", psy_step_get_loop_index(self, 0, NULL));
+    g_print("Trial activated %" PRId64 "\n", psy_step_get_loop_index(self, 0, NULL));
 }
 
 void

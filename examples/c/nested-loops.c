@@ -39,7 +39,7 @@ on_trial_activate(PsyTrial *trial, PsyTimePoint *tp)
 {
     gint64 outer = psy_step_get_loop_index(PSY_STEP(trial), 1, NULL);
     gint64 inner = psy_step_get_loop_index(PSY_STEP(trial), 0, NULL);
-    g_print("{outer : %ld, inner : %ld}\n", outer, inner);
+    g_print("{outer : %" PRId64 ", inner : %" PRId64 "}\n", outer, inner);
     psy_step_leave(PSY_STEP(trial), tp);
 }
 
