@@ -48,9 +48,9 @@ cd ucrt-github
 cd psy-lib
 
 #install python within msys environment
-pipboy -S python:p
+pacboy -S python:p
 #install pip
-pipboy -S python-pip:p
+pacboy -S python-pip:p
 
 #install gcc/g++ 
 pacboy -S gcc:p
