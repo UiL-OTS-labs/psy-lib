@@ -48,22 +48,20 @@ cd ucrt-github
 cd psy-lib
 
 #install python within msys environment
-pacboy -S python:p
-#install pip
-pacboy -S python-pip:p
+pacboy -S python:p python-pip:p
 
-#install gcc/g++ 
-pacboy -S gcc:p
+#install gcc/g++ etc.
+pacboy -S toolchain:p
 
 #install required packages
-pacboy -S glib2:p
-pacboy -S gstreamer:p
-pacboy -S gst-plugins-base:p
-pacboy -S gst-plugins-good:p
-pacboy -S gtk4:p
-pacboy -S libepoxy:p
-pacboy -S portaudio:p
-pacboy -S boost:p
+pacboy -S glib2:p\
+          gstreamer:p\
+          gst-plugins-base:p\
+          gst-plugins-good:p\
+          gtk4:p\
+          libepoxy:p\
+          portaudio:p\
+          boost:p
 
 # optional for unit tests
 pacboy -S cunit:p
