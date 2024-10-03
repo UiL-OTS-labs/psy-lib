@@ -10,12 +10,12 @@ install compile it using the VisualStudio backend of the Meson build system.
 
 Microsoft has developer [virtual machine][3] images available. These vm's are
 for developers are valid for a limited period. This guide is written with
-a Windows 11 vm running using virtual box.
+a Windows 11 vm running using virtual box or QEMU/KVM using virtmanager.
 
 ## Building using msys2 and MinGW-w64
 
-The following steps are used to build psylib using msys2 and MinGW-w64. msys2
-is a Software Distribution and building platform for windows.
+The following steps are used to build psylib using msys2 and the toolchains
+listed in the [msys2-environments][4]
 
 ### install [msys2][1]
 
@@ -27,21 +27,18 @@ standard C++ library.
 Open a mintty terminal: When you click the start menu/bar, (all apps) go to
 MSYS2->MSYS2_UCRT64.
 
-install packages:
-A trap might be to install meson and ninja using msys2's pacman. Install python
-and python-pip using pacboy :p option, to have a version of python (and pip)
-packages suitable with the current msys2 environment
 
 ```bash
 # install git
 pacman -S git
 
+# cd to the directory where to git clone psylib
+mkdir git
+cd git
+
 # install pactoys for installing packages with short name
 pacman -S pactoys
 
-# cd to the directory where to git clone psylib
-mkdir ucrt-github
-cd ucrt-github
 
 # clone psylib
  git clone git@github.com:UiL-OTS-labs/psy-lib.git
@@ -50,7 +47,7 @@ cd psy-lib
 #install python within msys environment
 pacboy -S python:p python-pip:p
 
-#install gcc/g++ etc.
+#install gcc/g++ or clang etc. depending on the chose environment.
 pacboy -S toolchain:p
 
 #install required packages
@@ -61,21 +58,21 @@ pacboy -S glib2:p\
           gtk4:p\
           libepoxy:p\
           portaudio:p\
-          boost:p
+          boost:p\
+          gobject-introspection:p
 
 # optional for unit tests
 pacboy -S cunit:p
 
 # optional for documentation
-python -m pip install gi-docgen:p
+packboy -S gi-docgen:p
 
 #finally install CMake (for ninja), ninja and meson
-pacboy -S cmake:p
+pacboy -S cmake:p\
+          meson:p\
+          ninja:p
 
-# use pip to install meson and ninja
-python -m pip install meson ninja
-
-# configure the build directory
+# configure the build directory you
 meson setup build -Dalsa=false
 
 # cd to the build directory
@@ -86,3 +83,4 @@ ninja
 [1]: https://msys2.org
 [2]: https://MinGW-w64.org
 [3]: https://developer.microsoft.com/en-us/windows/downloads/virtual-machines/
+[4]: https://www.msys2.org/docs/environments/#__tabbed_1_1
