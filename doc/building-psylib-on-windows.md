@@ -73,7 +73,7 @@ pacboy -S cmake:p\
           ninja:p
 
 # configure the build directory you
-meson setup build -Dalsa=false
+meson setup build
 
 # cd to the build directory
 cd build
