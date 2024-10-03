@@ -34,19 +34,21 @@ psy_texture_set_path(PsyTexture *self, const char *path);
 G_MODULE_EXPORT void
 psy_texture_set_file(PsyTexture *self, GFile *file);
 
-G_MODULE_EXPORT void
-psy_texture_set_file_async(PsyTexture         *self,
-                           GFile              *file,
-                           GCancellable       *cancellable,
-                           GAsyncReadyCallback callback,
-                           gpointer            data);
-
-G_MODULE_EXPORT void
-psy_texture_set_path_async(PsyTexture         *self,
-                           const gchar        *path,
-                           GCancellable       *cancellable,
-                           GAsyncReadyCallback callback,
-                           gpointer            data);
+//
+// G_MODULE_EXPORT void
+// psy_texture_set_file_async(PsyTexture         *self,
+//                            GFile              *file,
+//                            GCancellable       *cancellable,
+//                            GAsyncReadyCallback callback,
+//                            gpointer            data);
+//
+//
+// G_MODULE_EXPORT void
+// psy_texture_set_path_async(PsyTexture         *self,
+//                            const gchar        *path,
+//                            GCancellable       *cancellable,
+//                            GAsyncReadyCallback callback,
+//                            gpointer            data);
 
 G_MODULE_EXPORT guint
 psy_texture_get_num_channels(PsyTexture *self);
