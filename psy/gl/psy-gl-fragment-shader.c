@@ -10,7 +10,7 @@ typedef struct _PsyGlFragmentShader {
 G_DEFINE_TYPE(PsyGlFragmentShader, psy_gl_fragment_shader, PSY_TYPE_GL_SHADER)
 
 static GLuint
-psy_gl_fragment_shader_create_shader()
+psy_gl_fragment_shader_create_shader(void)
 {
     GLuint object_id;
     object_id = glCreateShader(GL_FRAGMENT_SHADER);

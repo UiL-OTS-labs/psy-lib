@@ -8,7 +8,7 @@ if get_option('documentation')
         error(
             'introspection is disabled.',
             'Configure with introspection in order to build the documentation',
-            'or disable the documentation in ordr to build')
+            'or disable the documentation in order to build')
     endif
 
     gidocgen = find_program('gi-docgen', required : true)

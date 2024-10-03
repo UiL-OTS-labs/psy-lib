@@ -1,5 +1,6 @@
 
 #include <math.h>
+#include <inttypes.h>
 #include <psylib.h>
 
 const int WIDTH  = 1920;
@@ -42,7 +43,7 @@ update_rectangle(PsyVisualStimulus *stim,
 {
     (void) data;
     (void) tp;
-    g_print("p0 = %ld\n", p0);
+    g_print("p0 = %" PRId64 "\n", p0);
     psy_visual_stimulus_set_rotation(stim, g_rotation);
     g_rotation += 2 * M_PI / g_num_frames;
 }

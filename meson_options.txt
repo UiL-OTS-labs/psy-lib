@@ -18,6 +18,22 @@ option(
 # enable features for specific backends
 
 option (
+    'portaudio',
+    type: 'feature',
+    value : 'auto',
+    description : 'Enable portaudio as backend for audio you\'ll need the ' +
+                  'portaudio development libraries/packages'
+)
+
+option (
+    'alsa',
+    type : 'feature',
+    value : 'auto',
+    description : 'Enabe ALSA as a backend for audio Linux only depends on ' +
+                  'libasound2-dev / alsa development libs'
+)
+
+option (
     'jack2',
     type : 'boolean',
     value : false,
@@ -25,21 +41,6 @@ option (
                   'windows) you\'ll need the Jack2 development libraries'
 )
 
-option (
-    'portaudio',
-    type: 'boolean',
-    value : true,
-    description : 'Enable portaudio as backend for audio you\'ll need the ' +
-                  'portaudio development libraries/packages'
-)
-
-option (
-    'alsa',
-    type : 'boolean',
-    value : true,
-    description : 'Enabe ALSA as a backend for audio Linux only depends on ' +
-                  'libasound2-dev / alsa development libs'
-)
 
 # examples
 
