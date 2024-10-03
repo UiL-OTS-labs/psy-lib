@@ -84,11 +84,11 @@ if get_option('jack2') == true
     cdata.set('HAVE_JACK2', true)
 endif
 
-if get_option('alsa')
+if alsa_dep.found()
     cdata.set('HAVE_ALSA', true)
 endif
 
-if get_option('portaudio')
+if portaudio_dep.found()
     cdata.set('HAVE_PORTAUDIO', true)
 endif
 
@@ -223,7 +223,7 @@ if get_option('jack2')
     subdir('jack')
 endif
 
-if get_option('portaudio')
+if portaudio_dep.found()
     subdir('portaudio')
 endif
 

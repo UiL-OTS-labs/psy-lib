@@ -5,8 +5,8 @@ project('libpsy',
         'warning_level=3',
         'werror=true',
         'buildtype=debugoptimized',
-        'c_std=gnu11,c11', # this makes it easier to compile sub projects
-        'cpp_std=gnu++11,c++11' # use c++ 11
+        'c_std=gnu11', # this makes it easier to compile sub projects
+        'cpp_std=gnu++11' # use c++ 11
     ],
     license : 'MIT'
 )
@@ -90,21 +90,32 @@ psy_deps = [
     gtk_dep,
     epoxy_dep,
     gstreamer_dep,
-    gstreamer_app_dep
+    gstreamer_app_dep,
 ]
 
 # add optional dependencies
 
-if get_option('alsa')
-    message('Using alsa')
-    alsa_dep = dependency (
-        'alsa',
-        version : alsa_req,
-        required : true
-    )
+alsa_dep = dependency (
+    'alsa',
+    version : alsa_req,
+    required : get_option('alsa')
+)
+if alsa_dep.found()
     psy_deps += alsa_dep
 endif
 
+portaudio_dep = dependency (
+    'portaudio-2.0',
+    version : portaudio_req,
+    required : get_option('portaudio')
+)
+if portaudio_dep.found()
+    psy_deps += portaudio_dep
+endif
+
+
+# jack2 support isn't finished by a long stretch
+# and should perhaps be left behind
 if get_option('jack2')
     message('Using jack')
     jack2_dep = dependency (
@@ -115,15 +126,6 @@ if get_option('jack2')
     psy_deps += jack2_dep
 endif
 
-if get_option('portaudio')
-    message('Using portaudio')
-    portaudio_dep = dependency (
-        'portaudio-2.0',
-        version : portaudio_req,
-        required : true
-    )
-    psy_deps += portaudio_dep
-endif
 
 message('the depencies are: ')
 foreach dep : psy_deps
