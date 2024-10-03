@@ -1,7 +1,19 @@
 
 #include <stdio.h>
 
-#include <hw/psy-parallel-port.h>
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
+#include <psylib.h>
+
+void test_sleep(int ms) {
+#ifndef _WIN32
+    usleep(ms * 1000);
+#else
+    Sleep(ms);
+#endif
+}
 
 int
 main(int argc, char **argv)
@@ -23,11 +35,10 @@ main(int argc, char **argv)
         psy_parallel_port_write(pp, 0, &error);
         if (error)
             break;
-        usleep(1000);
         psy_parallel_port_write(pp, 255, &error);
         if (error)
             break;
-        usleep(1000);
+        test_sleep(1);
     }
 
     psy_parallel_port_write(pp, 0, &error);

@@ -1,6 +1,6 @@
 
 configure_file (
-    input : 'Itálica_Owl.jpg',
-    output : 'Itálica_Owl.jpg',
+    input : 'owl.jpg',
+    output : 'owl.jpg',
     copy : true
 )
