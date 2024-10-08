@@ -62,4 +62,7 @@ psy_time_point_greater_equal(PsyTimePoint *self, PsyTimePoint *other);
 G_MODULE_EXPORT gboolean
 psy_time_point_greater(PsyTimePoint *self, PsyTimePoint *other);
 
+G_MODULE_EXPORT gint
+psy_compare_time_point(gconstpointer tp1, gconstpointer tp2);
+
 G_END_DECLS

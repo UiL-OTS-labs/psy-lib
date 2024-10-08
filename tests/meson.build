@@ -32,6 +32,8 @@ picture_test = executable(
     dependencies : [psy_dep]
 )
 
+test_timer = executable('test-timer', files('test-timer.c'), dependencies:[psy_dep])
+
 #preprocessor args for the unit tests
 UNIT_PP_ARGS = [
     '-DG_LOG_DOMAIN="Psy-Unit"',
