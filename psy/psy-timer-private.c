@@ -97,7 +97,7 @@ psy_timer_thread_init(PsyTimerThread *self)
     self->pairs         = g_array_new(FALSE, TRUE, sizeof(TimePointTimerPair));
     self->thread        = g_thread_new("TimerThread", timer_thread, self);
     self->clock         = psy_clock_new();
-    self->busy_loop_dur = psy_duration_new_ms(2);
+    self->busy_loop_dur = psy_duration_new_ms(1);
 }
 
 static void

@@ -17,8 +17,8 @@ fire_one(PsyTimer *timer, PsyTimePoint *tp_fire, gpointer data)
     PsyTimePoint *tp_now = psy_clock_now(tdata->clk);
     PsyDuration  *dur    = psy_time_point_subtract(tp_now, tp_fire);
 
-    g_print("Diff between firetime and measured = %lf\n",
-            psy_duration_get_seconds(dur));
+    g_info("Diff between firetime and measured = %lf\n",
+           psy_duration_get_seconds(dur));
 
     psy_time_point_free(tp_now);
     psy_duration_free(dur);
@@ -34,8 +34,8 @@ fire_two(PsyTimer *timer, PsyTimePoint *tp_fire, gpointer data)
     PsyTimePoint *tp_now = psy_clock_now(tdata->clk);
     PsyDuration  *dur    = psy_time_point_subtract(tp_now, tp_fire);
 
-    g_print("Diff between firetime and measured = %lf\n",
-            psy_duration_get_seconds(dur));
+    g_info("Diff between firetime and measured = %lf\n",
+           psy_duration_get_seconds(dur));
 
     psy_time_point_free(tp_now);
     psy_duration_free(dur);
@@ -51,7 +51,7 @@ on_fire(PsyTimer *timer, PsyTimePoint *fire_time, gpointer data)
     PsyTimePoint *tp_now = psy_clock_now(clk);
 
     PsyDuration *dur = psy_time_point_subtract(tp_now, fire_time);
-    g_print("Diff between firetime and measured = %lf\n",
+    g_debug("Diff between firetime and measured = %lf\n",
             psy_duration_get_seconds(dur));
 
     psy_duration_free(dur);
@@ -66,7 +66,7 @@ main(void)
     TestData     tdata = {0x0, FALSE, 0x0};
     PsyTimer    *t1, *t2;
     PsyDuration *one_sec = psy_duration_new_ms(1000);
-    PsyDuration *one     = psy_duration_new_ms(3);
+    PsyDuration *one     = psy_duration_new_ms(5);
 
     tdata.clk = psy_clock_new();
 
