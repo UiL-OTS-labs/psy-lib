@@ -3,6 +3,12 @@
 #include "psy-timer-private.h"
 #include "psy-clock.h"
 
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#include <timeapi.h>
+#endif
+
 /* *********** globals *************** */
 
 static GMutex g_thread_mutex;
@@ -97,7 +103,15 @@ psy_timer_thread_init(PsyTimerThread *self)
     self->pairs         = g_array_new(FALSE, TRUE, sizeof(TimePointTimerPair));
     self->thread        = g_thread_new("TimerThread", timer_thread, self);
     self->clock         = psy_clock_new();
-    self->busy_loop_dur = psy_duration_new_ms(1);
+    self->busy_loop_dur = psy_duration_new_ms(2);
+#ifdef _WIN32
+    int ret = timeBeginPeriod(1);
+    g_assert(ret == TIMERR_NOERROR);
+    if (ret == TIMERR_NOCANDO) {
+        g_critical("Unable to set timeBeginPeriod(1): "
+                   "timers might have a low resolution.");
+    }
+#endif
 }
 
 static void
@@ -122,6 +136,9 @@ psy_timer_thread_finalize(GObject *self)
     g_array_free(tt_self->pairs, TRUE);
 
     psy_duration_free(tt_self->busy_loop_dur);
+#ifdef _WIN32
+    timeEndPeriod(1);
+#endif
 
     G_OBJECT_CLASS(psy_timer_thread_parent_class)->finalize(self);
 }
