@@ -1,8 +1,8 @@
 
 #include <psylib.h>
 #if __WIN32
-#include <windows.h>
-#include <timeapi.h> 
+    #include <timeapi.h>
+    #include <windows.h>
 #endif
 
 gint time_resolution = 0;
@@ -76,10 +76,10 @@ on_fire(PsyTimer *timer, PsyTimePoint *fire_time, gpointer data)
 }
 
 int
-main(int argc, char** argv)
+main(int argc, char **argv)
 {
-    GError* error = NULL;
-    GOptionContext* opts = g_option_context_new("timer options");
+    GError         *error = NULL;
+    GOptionContext *opts  = g_option_context_new("timer options");
     g_option_context_add_main_entries(opts, options, NULL);
 
     if (!g_option_context_parse(opts, &argc, &argv, &error)) {
@@ -90,7 +90,7 @@ main(int argc, char** argv)
     g_option_context_free(opts);
 
 #if _WIN32
-    if(time_resolution > 0 && time_resolution <= 20) {
+    if (time_resolution > 0 && time_resolution <= 20) {
         g_info("Running with a resolution of: %dms", time_resolution);
         timeBeginPeriod(time_resolution);
     }
@@ -156,8 +156,8 @@ main(int argc, char** argv)
     g_clear_object(&t2);
 
 #if _WIN32
-    if (time_resolution >0 && time_resolution <= 20)
-        timeEndPeriod(time_resolution); 
+    if (time_resolution > 0 && time_resolution <= 20)
+        timeEndPeriod(time_resolution);
 #endif
     return 0;
 }
