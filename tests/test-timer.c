@@ -1,7 +1,6 @@
 
 #include <psylib.h>
 #if __WIN32
-    #include <timeapi.h>
     #include <windows.h>
 #endif
 
