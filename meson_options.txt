@@ -34,6 +34,19 @@ option (
 )
 
 option (
+    'winmm',
+    type : 'feature',
+    value : 'auto',
+    description : 'Library for windows timing stuff'
+)
+option (
+    'kernel32',
+    type : 'feature',
+    value : 'auto',
+    description : 'Library for windows purposes'
+)
+
+option (
     'jack2',
     type : 'boolean',
     value : false,
@@ -51,3 +64,12 @@ option (
     description: 'build the C/C++ examples'
 )
 
+# the toy programs are small programs that test some e.g. platform specific
+# issue.
+
+option(
+    'build-toys',
+    type:'boolean',
+    value: false,
+    description: 'Build the toy programs'
+)

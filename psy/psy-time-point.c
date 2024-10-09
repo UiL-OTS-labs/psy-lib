@@ -284,3 +284,28 @@ psy_time_point_greater(PsyTimePoint *self, PsyTimePoint *other)
     return !psy_time_point_equal(self, other)
            && !psy_time_point_less(self, other);
 }
+
+/**
+ * psy_compare_time_point:
+ * @tp1: and instance of [struct@TimePoint]
+ * @tp2: and instance of [struct@TimePoint]
+ *
+ * Returns: a value less then 0 when tp1 < tp2, a value larger then 0 when tp1
+ * > tp2 and 0 when thet are equal.
+ */
+gint
+psy_compare_time_point(gconstpointer tp1, gconstpointer tp2)
+{
+    const PsyTimePoint *p1 = tp1;
+    const PsyTimePoint *p2 = tp2;
+    g_return_val_if_fail(p1 != NULL, 0);
+    g_return_val_if_fail(p2 != NULL, 0);
+
+    gint64 result = p1->ticks_since_start - p2->ticks_since_start;
+    if (result < 0)
+        return -1;
+    else if (result > 0)
+        return 1;
+    else
+        return 0;
+}

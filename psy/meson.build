@@ -148,6 +148,7 @@ libpsy_headers = files(
     'psy-text.h',
     'psy-text-artist.h',
     'psy-texture.h',
+    'psy-timer.h',
     'psy-time-point.h',
     'psy-trial.h',
     'psy-utils.h',
@@ -162,7 +163,8 @@ libpsy_headers = files(
 
 libpsy_header_private = files(
     'psy-safe-int-private.h',
-    'psy-vector3-private.h'
+    'psy-timer-private.h',
+    'psy-vector3-private.h',
 )
 
 libpsyfiles = files (
@@ -204,6 +206,8 @@ libpsyfiles = files (
     'psy-text-artist.c',
     'psy-texture.c',
     'psy-time-point.c',
+    'psy-timer-private.c',
+    'psy-timer.c',
     'psy-trial.c',
     'psy-utils.c',
     'psy-vbuffer.c',
