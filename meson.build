@@ -26,6 +26,8 @@ cc = meson.get_compiler('c')
 cxx = meson.get_compiler('cpp')
 
 m_dep = cc.find_library('m', required : false)
+winmm_dep = cc.find_library('winmm', required: false)
+kernel32_dep = cc.find_library('kernel32', required: false)
 
 glib_dep = dependency(
     'glib-2.0',
@@ -126,13 +128,32 @@ if get_option('jack2')
     psy_deps += jack2_dep
 endif
 
+# winmm_dep = dependency (
+#     'winmm',
+#     required : get_option('winmm')
+# )
+# if winmm_dep.found()
+#     psy_deps += winmm_dep
+# endif
+# 
+# kernel32_dep = dependency (
+#     'kernel32',
+#     required : get_option('kernel32')
+# )
+# if kernel32_dep.found()
+#     psy_deps += kernel32_dep
+# endif
 
 message('the depencies are: ')
 foreach dep : psy_deps
     message(' - ', dep.name())
 endforeach
 
+
+
 psy_deps += m_dep
+psy_deps += winmm_dep
+psy_deps += kernel32_dep
 
 gnome = import('gnome')
 
@@ -151,6 +172,10 @@ subdir('programs')
 
 if get_option('build-examples')
     subdir('examples')
+endif
+
+if (get_option('build-toys'))
+    subdir('toys')
 endif
 
 if get_option('documentation')

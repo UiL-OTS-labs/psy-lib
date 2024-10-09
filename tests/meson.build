@@ -33,6 +33,7 @@ picture_test = executable(
 )
 
 test_timer = executable('test-timer', files('test-timer.c'), dependencies:[psy_dep])
+test('timer-test', test_timer)
 
 #preprocessor args for the unit tests
 UNIT_PP_ARGS = [

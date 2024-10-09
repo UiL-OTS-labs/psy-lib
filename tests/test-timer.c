@@ -1,5 +1,20 @@
 
 #include <psylib.h>
+#if __WIN32
+#include <windows.h>
+#include <timeapi.h> 
+#endif
+
+gint time_resolution = 0;
+
+// clang-format off
+GOptionEntry options[] = {
+#if _WIN32
+    {"begin-period", 'b', G_OPTION_FLAG_NONE, G_OPTION_ARG_INT, &time_resolution, "(windows only)Specify a value for timeBeginPeriod [0-20] 0 == off", "N"},
+#endif
+    {0}
+};
+// clang-format on
 
 typedef struct TestData {
     GMainLoop *loop;
@@ -17,7 +32,7 @@ fire_one(PsyTimer *timer, PsyTimePoint *tp_fire, gpointer data)
     PsyTimePoint *tp_now = psy_clock_now(tdata->clk);
     PsyDuration  *dur    = psy_time_point_subtract(tp_now, tp_fire);
 
-    g_info("Diff between firetime and measured = %lf\n",
+    g_info("Diff between firetime and measured = %lf",
            psy_duration_get_seconds(dur));
 
     psy_time_point_free(tp_now);
@@ -34,7 +49,7 @@ fire_two(PsyTimer *timer, PsyTimePoint *tp_fire, gpointer data)
     PsyTimePoint *tp_now = psy_clock_now(tdata->clk);
     PsyDuration  *dur    = psy_time_point_subtract(tp_now, tp_fire);
 
-    g_info("Diff between firetime and measured = %lf\n",
+    g_info("Diff between firetime and measured = %lf",
            psy_duration_get_seconds(dur));
 
     psy_time_point_free(tp_now);
@@ -51,7 +66,7 @@ on_fire(PsyTimer *timer, PsyTimePoint *fire_time, gpointer data)
     PsyTimePoint *tp_now = psy_clock_now(clk);
 
     PsyDuration *dur = psy_time_point_subtract(tp_now, fire_time);
-    g_debug("Diff between firetime and measured = %lf\n",
+    g_debug("Diff between firetime and measured = %lf",
             psy_duration_get_seconds(dur));
 
     psy_duration_free(dur);
@@ -61,8 +76,29 @@ on_fire(PsyTimer *timer, PsyTimePoint *fire_time, gpointer data)
 }
 
 int
-main(void)
+main(int argc, char** argv)
 {
+    GError* error = NULL;
+    GOptionContext* opts = g_option_context_new("timer options");
+    g_option_context_add_main_entries(opts, options, NULL);
+
+    if (!g_option_context_parse(opts, &argc, &argv, &error)) {
+        g_printerr("Oops unable to parse options: %s\n", error->message);
+        g_option_context_free(opts);
+        return EXIT_FAILURE;
+    }
+    g_option_context_free(opts);
+
+#if _WIN32
+    if(time_resolution > 0 && time_resolution <= 20) {
+        g_info("Running with a resolution of: %dms", time_resolution);
+        timeBeginPeriod(time_resolution);
+    }
+    else {
+        g_info("Running with a default resolution");
+    }
+#endif
+
     TestData     tdata = {0x0, FALSE, 0x0};
     PsyTimer    *t1, *t2;
     PsyDuration *one_sec = psy_duration_new_ms(1000);
@@ -118,4 +154,10 @@ main(void)
 
     g_clear_object(&t1);
     g_clear_object(&t2);
+
+#if _WIN32
+    if (time_resolution >0 && time_resolution <= 20)
+        timeEndPeriod(time_resolution); 
+#endif
+    return 0;
 }
