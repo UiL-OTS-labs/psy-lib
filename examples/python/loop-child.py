@@ -26,8 +26,12 @@ def on_leave_loop(loop, tp, mainloop):
 
 
 class Trial(Psy.Trial):
-    def do_enter(self, tp):
-        print(Trial.do_enter)
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    def do_on_enter(self, tp):
+        """Chain up the virtual function, further this function does nothing"""
+        Psy.Trial.do_on_enter(self, tp)
 
     def do_activate(self, tp):
         loop = self.props.parent
