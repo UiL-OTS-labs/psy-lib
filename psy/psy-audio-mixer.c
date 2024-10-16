@@ -237,24 +237,16 @@ remove_stimulus(PsyAudioMixer *self, PsyAuditoryStimulus *stim)
     PsyAudioMixerPrivate *priv = psy_audio_mixer_get_instance_private(self);
     gint64 num_frames          = psy_auditory_stimulus_get_num_frames(stim);
     gint64 num_pres = psy_auditory_stimulus_get_num_frames_presented(stim);
-    PsyAudioSampleRate rate = psy_audio_device_get_sample_rate(priv->device);
 
     if (num_pres > num_frames) {
-        g_warning("Stimulus has been presented for to many frames %" PRId64 " > %" PRId64 "",
+        g_warning("Stimulus has been presented for to many frames %" PRId64
+                  " > %" PRId64 "",
                   num_pres,
                   num_frames);
     }
 
-    PsyDuration *stim_dur = psy_num_audio_samples_to_duration(num_frames, rate);
-    PsyTimePoint *stim_end = psy_time_point_add(
-        psy_stimulus_get_start_time(PSY_STIMULUS(stim)), stim_dur);
-    psy_stimulus_set_is_finished(PSY_STIMULUS(stim), stim_end);
-
     g_info("Removing PsyAuditoryStimulus %p", (gpointer) stim);
     g_ptr_array_remove(priv->stimuli, stim);
-
-    psy_time_point_free(stim_end);
-    psy_duration_free(stim_dur);
 }
 
 static gboolean
@@ -313,7 +305,9 @@ audio_mixer_process_output_frames(PsyAudioMixer *self, gint64 num_frames)
 
     window_start = priv->num_out_frames;
     window_stop  = priv->num_out_frames + num_frames;
-    g_debug("window_start = %" PRId64 ", stop = %" PRId64 "", window_start, window_stop);
+    g_debug("window_start = %" PRId64 ", stop = %" PRId64 "",
+            window_start,
+            window_stop);
 
     for (guint i = 0; i < priv->stimuli->len; i++) {
 
@@ -327,21 +321,21 @@ audio_mixer_process_output_frames(PsyAudioMixer *self, gint64 num_frames)
         stim_presented = psy_auditory_stimulus_get_num_frames_presented(stim);
         stim_stop      = stim_start + stim_dur;
 
-        g_debug(
-            "stimulus %" PRIu32 ": start = %" PRId64 ", presented = %" PRId64
-	    "dur = %" PRId64 " stop = %" PRId64 "",
-            priv->stimuli->len,
-            stim_start,
-            stim_presented,
-            stim_dur,
-            stim_stop);
+        g_debug("stimulus %" PRIu32 ": start = %" PRId64
+                ", presented = %" PRId64 "dur = %" PRId64 " stop = %" PRId64 "",
+                priv->stimuli->len,
+                stim_start,
+                stim_presented,
+                stim_dur,
+                stim_stop);
 
         // Check whether we need to do some work for this stimulus
         if (!stimulus_overlaps_window(
                 window_start, window_stop, stim_start, stim_stop)) {
             if (stim_stop < window_start) {
                 g_critical("Mixer encountered stimulus that is in the past "
-                           "window_start = %" PRId64 ", stim_stop = %" PRId64 ", removing it.",
+                           "window_start = %" PRId64 ", stim_stop = %" PRId64
+                           ", removing it.",
                            window_start,
                            stim_stop);
                 g_ptr_array_add(priv->to_remove, stim);
@@ -361,7 +355,7 @@ audio_mixer_process_output_frames(PsyAudioMixer *self, gint64 num_frames)
         gint64 num_stim_frames = num_frames - stim_index_frame_start;
         num_stim_frames        = MIN(num_stim_frames, num_frames_in_stim);
 
-        g_debug("if_start %" PRId64 ", is_start %" PRId64 ", ns_frames %" PRId64 
+        g_debug("if_start %" PRId64 ", is_start %" PRId64 ", ns_frames %" PRId64
                 ", nf_left %" PRId64 "",
                 stim_index_frame_start,
                 stim_index_sample_start,
@@ -602,20 +596,19 @@ psy_audio_mixer_schedule_stimulus(PsyAudioMixer       *self,
 
     g_ptr_array_add(priv->stimuli, g_object_ref(stimulus));
 
-    g_info(
-        "Scheduled instance of %s at %p with the audiomixer %p, ref_frame = "
-        "%" PRId64 ", num_wait_frames = %" PRId64
-        ", start_frame = %" PRId64 ", wait duration = %lfs",
-        G_OBJECT_CLASS_NAME(G_OBJECT_GET_CLASS(stimulus)),
-        (gpointer) stimulus,
-        (gpointer) self,
-        nth_sample,
-        start_frame,
-        num_wait_samples,
-        psy_duration_get_seconds(onset_dur));
+    g_info("Scheduled instance of %s at %p with the audiomixer %p, ref_frame = "
+           "%" PRId64 ", num_wait_frames = %" PRId64 ", start_frame = %" PRId64
+           ", wait duration = %lfs",
+           G_OBJECT_CLASS_NAME(G_OBJECT_GET_CLASS(stimulus)),
+           (gpointer) stimulus,
+           (gpointer) self,
+           nth_sample,
+           start_frame,
+           num_wait_samples,
+           psy_duration_get_seconds(onset_dur));
     g_info("The AudioMixer has %u stimuli", priv->stimuli->len);
 
-    psy_stimulus_set_is_started(PSY_STIMULUS(stimulus), tp_start);
+    // perhaps mark the stimulus as "scheduled" here
 
 fail:
     if (onset_dur) {
