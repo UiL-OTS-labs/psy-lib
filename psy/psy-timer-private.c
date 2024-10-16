@@ -36,30 +36,25 @@ typedef struct ThreadData {
     PsyTimer          *timer; // not owned.
 } ThreadData;
 
-typedef struct TimePointTimerPair {
-    PsyTimePoint *tp;    // not owned
-    PsyTimer     *timer; // not owned
-} TimePointTimerPair;
-
 /* ************** utility functions ***************** */
 
 static gint
-compare_pairs(gconstpointer pair1, gconstpointer pair2)
+compare_timer_time_stamps_values(gconstpointer t1, gconstpointer t2)
 {
-    const TimePointTimerPair *p1 = pair1;
-    const TimePointTimerPair *p2 = pair2;
+    const PsyTimePoint *tp1 = psy_timer_get_fire_time(PSY_TIMER((gpointer) t1));
+    const PsyTimePoint *tp2 = psy_timer_get_fire_time(PSY_TIMER((gpointer) t2));
 
-    int cmp = psy_compare_time_point(p1->tp, p2->tp);
-    if (cmp != 0)
-        return cmp;
-
-    if (p1->timer < p2->timer)
-        return -1;
-    else if (p1->timer > p2->timer)
-        return 1;
-    else
-        return 0;
+    return psy_compare_time_point(tp1, tp2);
 }
+
+#if !GLIB_CHECK_VERSION(2, 76, 0)
+static gint
+compare_timer_time_stamps(gconstpointer tpp1, gconstpointer tpp2)
+{
+    return compare_timer_time_stamps_values(*(PsyTimer **) tpp1,
+                                            *(PsyTimer **) tpp2);
+}
+#endif
 
 static ThreadData *
 thread_data_new(TimerThreadMessage msg, PsyTimerThread *self, PsyTimer *timer)
@@ -83,13 +78,17 @@ thread_data_free(ThreadData *data)
 /* ************** private functions ***************** */
 
 typedef struct _PsyTimerThread {
-    GObject       parent;
+    GObject parent;
+
     GMainContext *context;
     GMainLoop    *loop;
-    GArray       *pairs;
-    GThread      *thread;
-    PsyClock     *clock;
-    PsyDuration  *busy_loop_dur;
+
+    GPtrArray   *timers;
+    GThread     *thread;
+    PsyClock    *clock;
+    PsyDuration *busy_loop_dur;
+
+    guint busy_loop_id;
 } PsyTimerThread;
 
 G_DEFINE_TYPE(PsyTimerThread, psy_timer_thread, G_TYPE_OBJECT)
@@ -98,11 +97,17 @@ static void
 psy_timer_thread_init(PsyTimerThread *self)
 {
     self->context       = g_main_context_new();
-    self->pairs         = g_array_new(FALSE, TRUE, sizeof(TimePointTimerPair));
+    self->timers        = g_ptr_array_new_full(64, g_object_unref);
     self->thread        = g_thread_new("TimerThread", timer_thread, self);
     self->clock         = psy_clock_new();
     self->busy_loop_dur = psy_duration_new_ms(2);
+
 #ifdef _WIN32
+    // On windows a Sleep(1) should sleep for 1 millisecond. In practice, this
+    // can take a bit longer due to OS scheduling, the 1 ms is a minimal amount.
+    // The scheduler might finish the current "quantum" for this process. Which
+    // can easily be +/- 15 ms. timeBeginPeriod sets the sleep precision a bit
+    // higher, at the expense of extra power use.
     int ret = timeBeginPeriod(1);
     g_assert(ret == TIMERR_NOERROR);
     if (ret == TIMERR_NOCANDO) {
@@ -131,7 +136,7 @@ static void
 psy_timer_thread_finalize(GObject *self)
 {
     PsyTimerThread *tt_self = PSY_TIMER_THREAD(self);
-    g_array_free(tt_self->pairs, TRUE);
+    g_ptr_array_free(tt_self->timers, TRUE);
 
     psy_duration_free(tt_self->busy_loop_dur);
 #ifdef _WIN32
@@ -156,14 +161,15 @@ psy_timer_thread_add_timer(ThreadData *data)
 {
     PsyTimerThread *self = data->self;
 
-    PsyTimePoint *tp = psy_timer_get_fire_time(data->timer);
+    PsyTimer *timer = data->timer;
 
-    TimePointTimerPair pair
-        = {.timer = data->timer, .tp = psy_time_point_copy(tp)};
+    g_ptr_array_add(self->timers, g_object_ref(timer));
 
-    g_array_append_val(self->pairs, pair);
-
-    g_array_sort(self->pairs, compare_pairs);
+#if GLIB_CHECK_VERSION(2, 76, 0)
+    g_ptr_array_sort_values(self->timers, compare_timer_time_stamps_values);
+#else
+    g_ptr_array_sort(self->timers, compare_timer_time_stamps);
+#endif
 
     return G_SOURCE_REMOVE;
 }
@@ -171,24 +177,13 @@ psy_timer_thread_add_timer(ThreadData *data)
 static gboolean
 psy_timer_thread_del_timer(ThreadData *data)
 {
+    g_assert(data->msg == MSG_TIMER_DEL);
+
     PsyTimerThread *self = data->self;
 
-    guint    index = -1;
-    gboolean found = FALSE;
+    PsyTimer *t_remove = data->timer;
 
-    for (guint i = 0; i < self->pairs->len; i++) {
-        TimePointTimerPair *pairs = (TimePointTimerPair *) self->pairs->data;
-        if (pairs[i].timer == data->timer) {
-            found = TRUE;
-            index = i;
-            psy_time_point_free(pairs[i].tp);
-            break;
-        }
-    }
-
-    if (found) {
-        g_array_remove_index(self->pairs, index);
-    }
+    g_ptr_array_remove(self->timers, t_remove);
 
     return G_SOURCE_REMOVE;
 }
@@ -202,44 +197,103 @@ psy_timer_thread_class_init(PsyTimerThreadClass *klass)
     obj_class->finalize = psy_timer_thread_finalize;
 }
 
-static void
-psy_timer_thread_run_busy_loop(PsyTimerThread *self, TimePointTimerPair pair)
+/**
+ * psy_timer_thread_fire_timers:
+ * @data a pointer to self.
+ *
+ * A callback function that checks whether one or multiple timers
+ * are ready to fire. If so, the timers are fired.
+ *
+ * If there are no timers with a fire time  before now + self->busy_loop_dur
+ * the callback is removed.
+ *
+ * stability:private
+ */
+static gboolean
+psy_timer_thread_fire_timers(gpointer data)
 {
-    PsyTimePoint *now = NULL;
-    while (1) {
-        now = psy_clock_now(self->clock);
-        if (psy_time_point_greater_equal(now, pair.tp)) {
-            psy_timer_fire(pair.timer, pair.tp);
-            psy_timer_cancel(pair.timer);
-            psy_time_point_free(now);
-            break;
+    gboolean ret = G_SOURCE_CONTINUE;
+
+    PsyTimerThread *self = data;
+    PsyTimePoint   *now  = psy_clock_now(self->clock);
+
+    while (self->timers->len > 0) {
+        PsyTimer *first = self->timers->pdata[0];
+        g_assert(PSY_IS_TIMER(first));
+        PsyTimePoint *tp = psy_timer_get_fire_time(first);
+
+        if (psy_time_point_greater_equal(now, tp)) {
+            psy_timer_fire(first, psy_timer_get_fire_time(first));
+            g_ptr_array_remove_index(self->timers, 0);
         }
-        psy_time_point_free(now);
-        g_thread_yield();
+        else { // There are currently no timers ready;
+            psy_time_point_free(now);
+            return ret;
+        }
     }
+
+    if (self->timers->len > 0) {
+        PsyTimer     *first   = self->timers->pdata[0];
+        PsyTimePoint *tp_fire = psy_timer_get_fire_time(first);
+
+        PsyDuration *dur = psy_time_point_subtract(tp_fire, now);
+        if (psy_duration_greater_equal(dur, self->busy_loop_dur)) {
+            self->busy_loop_id = 0;
+            ret                = G_SOURCE_REMOVE;
+        }
+
+        psy_duration_free(dur);
+    }
+    else {
+        self->busy_loop_id = 0;
+        ret                = G_SOURCE_REMOVE;
+    }
+
+    psy_time_point_free(now);
+
+    return ret;
 }
 
+static void
+psy_timer_thread_start_busy_loop(PsyTimerThread *self)
+{
+    g_debug("starting busy loop");
+    GSource *busy_source = g_idle_source_new();
+    g_source_set_callback(
+        busy_source, psy_timer_thread_fire_timers, self, NULL);
+    g_source_set_priority(busy_source, G_PRIORITY_DEFAULT_IDLE);
+    self->busy_loop_id = g_source_attach(busy_source, self->context);
+    g_source_unref(busy_source);
+}
+
+/**
+ * psy_timer_thread_check_timers:
+ *
+ * This function is called every +/- 1ms, if there are any timers
+ * that are to be fired within now and self->busy_dur, it will add an idle
+ * function that will be polled continuously to see if a timer should fire.
+ *
+ * stability:private
+ */
 static gboolean
 psy_timer_thread_check_timers(gpointer data)
 {
     PsyTimerThread *self = data;
     PsyTimePoint   *now  = psy_clock_now(self->clock);
 
-    while (self->pairs->len > 0) {
+    if (self->timers->len > 0) {
 
-        TimePointTimerPair *pair
-            = &g_array_index(self->pairs, TimePointTimerPair, 0);
+        PsyTimer     *first = self->timers->pdata[0];
+        PsyTimePoint *tp    = psy_timer_get_fire_time(first);
 
-        PsyDuration *dur = psy_time_point_subtract(pair->tp, now);
+        PsyDuration *dur = psy_time_point_subtract(tp, now);
 
         if (psy_duration_less_equal(dur, self->busy_loop_dur)) {
-            psy_timer_thread_run_busy_loop(self, *pair);
-            psy_duration_free(dur);
+            if (self->busy_loop_id == 0) {
+                psy_timer_thread_start_busy_loop(self);
+            }
         }
-        else {
-            psy_duration_free(dur);
-            break;
-        }
+        psy_duration_free(dur);
     }
     psy_time_point_free(now);
 

@@ -18,6 +18,9 @@ G_MODULE_EXPORT PsyTimer *
 psy_timer_new(void);
 
 G_MODULE_EXPORT void
+psy_timer_free(PsyTimer *self);
+
+G_MODULE_EXPORT void
 psy_timer_set_fire_time(PsyTimer *self, PsyTimePoint *tp);
 
 G_MODULE_EXPORT PsyTimePoint *

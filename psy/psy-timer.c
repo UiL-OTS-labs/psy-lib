@@ -23,6 +23,7 @@ typedef struct _PsyTimer {
     GObject       parent;
     GMainContext *context;
     PsyTimePoint *fire_time;
+    guint         fire_callback_id;
 } PsyTimer;
 
 typedef enum {
@@ -51,7 +52,17 @@ psy_timer_init(PsyTimer *self)
 static void
 timer_finalize(GObject *self)
 {
-    psy_timer_cancel(PSY_TIMER(self));
+    PsyTimer *timer_self = PSY_TIMER(self);
+
+    g_clear_pointer(&timer_self->fire_time, psy_time_point_free);
+
+    if (timer_self->fire_callback_id) {
+        GSource *source = g_main_context_find_source_by_id(
+            PSY_TIMER(self)->context, timer_self->fire_callback_id);
+        if (source) {
+            g_source_destroy(source);
+        }
+    }
 
     // closes timer thread if we are the last timer standing
     timer_private_stop_timer_thread();
@@ -103,6 +114,8 @@ psy_timer_emit_fire(PsyTimer *self, PsyTimePoint *tp)
     g_return_if_fail(PSY_IS_TIMER(self));
 
     g_signal_emit(self, timer_signals[SIG_FIRED], 0, tp);
+
+    g_clear_pointer(&self->fire_time, psy_time_point_free);
 }
 
 static gboolean
@@ -110,7 +123,9 @@ thread_default_fire(FireData *data)
 {
     psy_timer_emit_fire(data->timer, data->fire_time);
     psy_time_point_free(data->fire_time);
-    g_free(data);
+
+    g_assert(data->timer->fire_callback_id != 0);
+    data->timer->fire_callback_id = 0;
 
     return G_SOURCE_REMOVE;
 }
@@ -123,8 +138,11 @@ psy_timer_fire(PsyTimer *self, PsyTimePoint *tp)
     data->fire_time = psy_time_point_copy(tp);
     data->timer     = self;
 
-    g_main_context_invoke(
-        self->context, G_SOURCE_FUNC(thread_default_fire), data);
+    GSource *source = g_idle_source_new();
+    g_source_set_callback(
+        source, G_SOURCE_FUNC(thread_default_fire), data, g_free);
+    self->fire_callback_id = g_source_attach(source, self->context);
+    g_source_unref(source);
 }
 
 static void
@@ -200,13 +218,26 @@ psy_timer_new(void)
 }
 
 /**
+ * psy_timer_free:
+ *
+ * Frees a previously timer created with psy_timer_new
+ */
+void
+psy_timer_free(PsyTimer *self)
+{
+    g_return_if_fail(PSY_IS_TIMER(self));
+
+    g_object_unref(self);
+}
+
+/**
  * psy_timer_set_fire_time:
  * @self: an instance of [class@Timer], the timer to arm
- * @tp:(transfer none)(nullable): an instance of [struct@TimePoint], the time
- *      point at which this timer should fire.
+ * @tp:(transfer none)(nullable): an instance of [struct@TimePoint], the
+ * time point at which this timer should fire.
  *
- * This function sets a new time at which timer should be fired. if @tp == NULL
- * means that you want to disable the timer.
+ * This function sets a new time at which timer should be fired. if @tp ==
+ * NULL means that you want to disable the timer.
  */
 void
 psy_timer_set_fire_time(PsyTimer *self, PsyTimePoint *tp)
@@ -229,12 +260,13 @@ psy_timer_set_fire_time(PsyTimer *self, PsyTimePoint *tp)
  *
  * Gets the timepoint when this timer is set
  *
- * Returns:(nullable)(transfer none):The time for when this timer is/was set.
+ * Returns:(nullable)(transfer none):The time for when this timer is/was
+ * set.
  */
 PsyTimePoint *
 psy_timer_get_fire_time(PsyTimer *self)
 {
-    g_return_val_if_fail(PSY_IS_TIMER(self), NULL);
+    g_return_val_if_fail(PSY_IS_TIMER((PsyTimer *) self), NULL);
 
     return self->fire_time;
 }
