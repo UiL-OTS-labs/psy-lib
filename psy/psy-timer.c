@@ -113,9 +113,9 @@ psy_timer_emit_fire(PsyTimer *self, PsyTimePoint *tp)
 {
     g_return_if_fail(PSY_IS_TIMER(self));
 
-    g_signal_emit(self, timer_signals[SIG_FIRED], 0, tp);
-
     g_clear_pointer(&self->fire_time, psy_time_point_free);
+
+    g_signal_emit(self, timer_signals[SIG_FIRED], 0, tp);
 }
 
 static gboolean

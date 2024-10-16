@@ -279,12 +279,13 @@ static gboolean
 psy_timer_thread_check_timers(gpointer data)
 {
     PsyTimerThread *self = data;
-    PsyTimePoint   *now  = psy_clock_now(self->clock);
 
     if (self->timers->len > 0) {
+        PsyTimePoint *now = psy_clock_now(self->clock);
 
         PsyTimer     *first = self->timers->pdata[0];
         PsyTimePoint *tp    = psy_timer_get_fire_time(first);
+        g_assert(tp != NULL);
 
         PsyDuration *dur = psy_time_point_subtract(tp, now);
 
@@ -294,8 +295,8 @@ psy_timer_thread_check_timers(gpointer data)
             }
         }
         psy_duration_free(dur);
+        psy_time_point_free(now);
     }
-    psy_time_point_free(now);
 
     return G_SOURCE_CONTINUE;
 }
