@@ -19,6 +19,14 @@ typedef struct FireData {
     PsyTimePoint *fire_time;
 } FireData;
 
+void
+fire_data_free(FireData *data)
+{
+    g_object_unref(data->fire_time);
+    psy_time_point_free(data->fire_time);
+    g_free(data);
+}
+
 typedef struct _PsyTimer {
     GObject       parent;
     GMainContext *context;
@@ -136,11 +144,13 @@ psy_timer_fire(PsyTimer *self, PsyTimePoint *tp)
     FireData *data = g_new(FireData, 1);
 
     data->fire_time = psy_time_point_copy(tp);
-    data->timer     = self;
+    data->timer     = g_object_ref(self);
 
     GSource *source = g_idle_source_new();
-    g_source_set_callback(
-        source, G_SOURCE_FUNC(thread_default_fire), data, g_free);
+    g_source_set_callback(source,
+                          G_SOURCE_FUNC(thread_default_fire),
+                          data,
+                          (GDestroyNotify) fire_data_free);
     self->fire_callback_id = g_source_attach(source, self->context);
     g_source_unref(source);
 }
