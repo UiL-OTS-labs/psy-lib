@@ -6,6 +6,8 @@
 
 G_BEGIN_DECLS
 
+#define PSY_TYPE_INITIALIZER psy_initializer_get_type()
+
 G_MODULE_EXPORT
 G_DECLARE_FINAL_TYPE(PsyInitializer, psy_initializer, PSY, INITIALIZER, GObject)
 

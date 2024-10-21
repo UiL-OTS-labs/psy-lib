@@ -32,3 +32,4 @@
 #mesondefine HAVE_JACK2
 #mesondefine HAVE_ALSA
 #mesondefine HAVE_PORTAUDIO
+#mesondefine HAVE_GSTREAMER

@@ -205,7 +205,7 @@ G_MODULE_EXPORT guint
 psy_audio_device_get_num_samples_buffer(PsyAudioDevice *self);
 
 void
-psy_audio_device_set_started(PsyAudioDevice *self, PsyTimePoint *tp_start);
+psy_audio_device_set_started(PsyAudioDevice *self, PsyTimePoint *tp);
 
 void
 psy_audio_device_schedule_stimulus(PsyAudioDevice      *self,
