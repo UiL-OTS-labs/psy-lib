@@ -18,13 +18,10 @@ void
 timer_private_stop_timer_thread(void);
 
 void
-timer_private_set_timer(PsyTimer *timer);
+timer_private_add_timer(PsyTimer *timer);
 
 void
 timer_private_cancel_timer(PsyTimer *timer);
-
-void
-psy_timer_fire(PsyTimer *self, PsyTimePoint *tp);
 
 G_END_DECLS
 

@@ -29,6 +29,14 @@ psy_timer_get_fire_time(PsyTimer *self);
 G_MODULE_EXPORT void
 psy_timer_cancel(PsyTimer *self);
 
+/*The next functions are internal*/
+
+void
+psy_timer_fire(PsyTimer *self, PsyTimePoint *tp);
+
+GAsyncQueue *
+psy_timer_get_queue(PsyTimer *self);
+
 G_END_DECLS
 
 #endif
