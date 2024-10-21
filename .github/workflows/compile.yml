@@ -54,7 +54,8 @@ jobs:
         run: xvfb-run meson compile -C build/
       - name: C Unit tests
         run: |
-          meson test -C build/
+          meson devenv -C build
+          meson test
       - uses: actions/upload-artifact@v4
         if: '!cancelled()'
         with:

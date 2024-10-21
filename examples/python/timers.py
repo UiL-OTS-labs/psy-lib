@@ -1,5 +1,6 @@
 import gi
 import os
+import argparse as ap
 import time as t
 
 gi.require_version("Psy", "0.1")
@@ -9,8 +10,15 @@ gi.require_version("GLib", "2.0")
 from gi.repository import Psy, GLib
 import psy_operators
 
-wait_dur = Psy.Duration.new_ms(100)
-clock = Psy.Clock()
+psy_init = Psy.Initializer()
+
+cmd_parser = ap.ArgumentParser(
+    "timers", description="An example using Psy.Timers with python"
+)
+cmd_parser.add_argument("-n", "--num-repetitions", type=int, default=10)
+cmd_parser.add_argument("-m", "--ms", type=int, default=100)
+
+args = cmd_parser.parse_args()
 
 
 class MyTimer(Psy.Timer):
@@ -24,8 +32,8 @@ class MyTimer(Psy.Timer):
 
     def on_fired(self, _self, tp):
         """Callback registered in init"""
-        assert self is _self
         now = t.time()
+        assert self is _self
         print(f"{self.n}: dur = {now - self.old_now} seconds")
         self.old_now = now
         self.props.fire_time = tp + wait_dur
@@ -34,10 +42,13 @@ class MyTimer(Psy.Timer):
             self.loop.quit()
 
 
+wait_dur = Psy.Duration.new_ms(args.ms)
+clock = Psy.Clock()
+
 event_loop = GLib.MainLoop()
 
 now = clock.now()
-mt = MyTimer(event_loop, 10)
+mt = MyTimer(event_loop, args.num_repetitions)
 mt.props.fire_time = now + wait_dur
 
 event_loop.run()

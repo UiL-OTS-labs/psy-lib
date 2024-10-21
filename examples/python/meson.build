@@ -11,10 +11,10 @@ test(
    timeout : 5,
    suite : ['examples', 'python-examples'],
    args : [meson.current_source_dir() + '/stepping.py'],
-   env : {
-       'GI_TYPELIB_PATH' : gi_typelib_path,
-       'LD_LIBRARY_PATH' : ld_library_path
-   }
+#   env : {
+#       'GI_TYPELIB_PATH' : gi_typelib_path,
+#       'LD_LIBRARY_PATH' : ld_library_path
+#   }
 )
 
 test(
@@ -23,10 +23,10 @@ test(
    timeout : 5,
    suite : ['examples', 'python-examples'],
    args : [meson.current_source_dir() + '/stepping-inheritance.py'],
-   env : {
-       'GI_TYPELIB_PATH' : gi_typelib_path,
-       'LD_LIBRARY_PATH' : ld_library_path
-   }
+#   env : {
+#       'GI_TYPELIB_PATH' : gi_typelib_path,
+#       'LD_LIBRARY_PATH' : ld_library_path
+#   }
 )
 
 test(
@@ -35,10 +35,10 @@ test(
    timeout : 5,
    suite : ['examples', 'python-examples'],
    args : [meson.current_source_dir() + '/loop.py'],
-   env : {
-       'GI_TYPELIB_PATH' : gi_typelib_path,
-       'LD_LIBRARY_PATH' : ld_library_path
-   }
+#   env : {
+#       'GI_TYPELIB_PATH' : gi_typelib_path,
+#       'LD_LIBRARY_PATH' : ld_library_path
+#   }
 )
 
 test(
@@ -47,10 +47,10 @@ test(
    timeout : 5,
    suite : ['examples', 'python-examples'],
    args : [meson.current_source_dir() + '/loop-child.py'],
-   env : {
-       'GI_TYPELIB_PATH' : gi_typelib_path,
-       'LD_LIBRARY_PATH' : ld_library_path
-   }
+#   env : {
+#       'GI_TYPELIB_PATH' : gi_typelib_path,
+#       'LD_LIBRARY_PATH' : ld_library_path
+#   }
 )
 
 test(
@@ -59,8 +59,8 @@ test(
    timeout : 5,
    suite : ['examples', 'python-examples'],
    args : [meson.current_source_dir() + '/loop-indices.py'],
-   env : {
-       'GI_TYPELIB_PATH' : gi_typelib_path,
-       'LD_LIBRARY_PATH' : ld_library_path
-   }
+#   env : {
+#       'GI_TYPELIB_PATH' : gi_typelib_path,
+#       'LD_LIBRARY_PATH' : ld_library_path
+#   }
 )

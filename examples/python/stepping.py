@@ -11,6 +11,8 @@ gi.require_version("GLib", "2.0")
 from gi.repository import Psy, GLib
 import psy_operators
 
+initializer = Psy.Initializer()  # initialize psylib
+
 window: Psy.Canvas
 _NUM_ITERATIONS = 50
 _NUM_CIRCLES = 12
