@@ -14,20 +14,13 @@ initializer = Psy.Initializer()
 
 window: Psy.Canvas
 _NUM_CIRCLES = 12
-_NUM_ITERATIONS = 50
+_NUM_ITERATIONS = 10
 DUR = Psy.Duration.new(0.100)
+FRAME_DUR = Psy.Duration(seconds=1.0 / 60)
 BLACK = Psy.Color.new()
 RED = Psy.Color.new_rgb(1, 0, 0)
 BLUE = Psy.Color.new_rgb(0, 0, 1)
 WHITE = Psy.Color.new_rgb(1, 1, 1)
-
-
-def iterate_canvas(window: Psy.GlCanvas):
-    """Iterates the window, as a image canvas doesn't iterate it self"""
-    window.iterate()
-    # ToDo, iterating the canvas Doesn't seem to adjust time, hence the stimuli
-    # don't seem to be started/finished
-    return GLib.SOURCE_CONTINUE
 
 
 def on_cross_started(cross: Psy.Cross, tp: Psy.TimePoint, step: Psy.Loop):
@@ -170,10 +163,9 @@ def main():
         window = Psy.GtkWindow.new()
     else:
         window = Psy.GlCanvas.new(640, 480)
-        window.props.frame_dur = Psy.Duration.new(1.0 / 60)
-        # The gl canvas doesn't iterate out of it's own, so we do it manually
-        GLib.idle_add(iterate_canvas, window)
+        window.props.frame_dur = FRAME_DUR
         window.set_time(clock.now())
+        window.props.auto_iterate = True
 
     # Contains the main parts of this "experiment"
     steps = ExperimentSteps(args.blue_first, main_loop)
