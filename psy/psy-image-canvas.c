@@ -301,7 +301,7 @@ psy_image_canvas_get_time(PsyImageCanvas *self)
  * psy_image_canvas_set_auto_iterate:
  * @self: An instance of [class@ImageCanvas]
  * @iterate: A boolean, if set to true, the image will start to iterate, this
- *           assumes a valid frame dur has been set on the [object@Canvas].
+ *           assumes a valid frame dur has been set on the [class@Canvas].
  *
  * When this object is set, the object will start to iterate itself based on the
  * duration of the PsyCanvas. This means the [property@ImageCanvas:time] will

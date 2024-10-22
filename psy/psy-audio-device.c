@@ -1032,7 +1032,7 @@ psy_audio_device_get_started(PsyAudioDevice *self)
 
 /**
  * psy_audio_device_set_started:
- * @self:An instance of [object@AudioDevice]
+ * @self:An instance of [class@AudioDevice]
  * @tp:(transfer none): An instance of [struct@TimePoint] at which the device
  *                      was opened.
  *
