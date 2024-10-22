@@ -93,6 +93,10 @@ if portaudio_dep.found()
     cdata.set('HAVE_PORTAUDIO', true)
 endif
 
+if gstreamer_dep.found()
+    cdata.set('HAVE_GSTREAMER', true)
+endif
+
 configure_file (
     input         : 'psy-config.h.in',
     output        : 'psy-config.h',
