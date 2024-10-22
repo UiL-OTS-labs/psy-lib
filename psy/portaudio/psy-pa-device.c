@@ -36,6 +36,7 @@ typedef struct _PsyPADevice {
     gboolean             pa_initialized;
     PsyAudioDeviceInfo **dev_infos;
     guint                num_infos;
+    gboolean             set_started; // Set once the audiocallback is running
 } PsyPADevice;
 
 G_DEFINE_FINAL_TYPE(PsyPADevice, psy_pa_device, PSY_TYPE_AUDIO_DEVICE)
@@ -99,6 +100,13 @@ pa_audio_callback(const void                     *input,
     PsyPADevice   *self = audio_device;
     guint          num_out_channels;
     PsyAudioMixer *mixer;
+
+    if (G_UNLIKELY(self->set_started == FALSE)) {
+        self->set_started = TRUE;
+        PsyTimePoint *tp  = psy_clock_now(self->clk);
+        psy_audio_device_set_started(PSY_AUDIO_DEVICE(self), tp);
+        psy_time_point_free(tp);
+    }
 
     locked = g_mutex_trylock(&self->last_frame.lock);
     if (locked) {
@@ -651,6 +659,8 @@ pa_device_start(PsyAudioDevice *self, GError **error)
     if (*error != NULL)
         return;
 
+    pa_self->set_started = FALSE;
+
     PaError err = Pa_StartStream(pa_self->stream);
     if (err != paNoError) {
         g_set_error(error,
@@ -690,6 +700,7 @@ pa_device_stop(PsyAudioDevice *self)
         }
 
         pa_clear_last_frame_info(pa_self);
+        pa_self->set_started = FALSE;
     }
 
     PSY_AUDIO_DEVICE_CLASS(psy_pa_device_parent_class)->stop(self);

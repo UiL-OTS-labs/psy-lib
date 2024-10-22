@@ -396,17 +396,9 @@ audio_device_open(PsyAudioDevice *self, GError **error)
     (void) error; // Error's might be raised in derived classes (backends).
     PsyAudioDevicePrivate *priv = psy_audio_device_get_instance_private(self);
 
-    // Perhaps add an property to the audio device to that the mixer can use
-    // than the client has some effect on the mixing buffer duration.
-    g_print("%s:%d,AudioDev->ref_count = %u\n",
-            __FILE__,
-            __LINE__,
-            G_OBJECT(self)->ref_count);
+    // TODO: Perhaps add an property to the audio device to that the mixer can
+    // use than the client has some effect on the mixing buffer duration.
     PsyAudioMixer *mixer = psy_audio_mixer_new(self, priv->buffer_duration);
-    g_print("%s:%d,AudioDev->ref_count = %u\n",
-            __FILE__,
-            __LINE__,
-            G_OBJECT(self)->ref_count);
     psy_audio_device_set_mixer(self, mixer);
 
     priv->is_open = TRUE;
@@ -1040,6 +1032,9 @@ psy_audio_device_get_started(PsyAudioDevice *self)
 
 /**
  * psy_audio_device_set_started:
+ * @self:An instance of [class@AudioDevice]
+ * @tp:(transfer none): An instance of [struct@TimePoint] at which the device
+ *                      was opened.
  *
  * Emits the signal that the callback is started. This function should
  * not be called from the audio callback as either invoking another context

@@ -20,6 +20,7 @@
 #include "psy-font-utils.h"
 #include "psy-image-canvas.h"
 #include "psy-image.h"
+#include "psy-init.h"
 #include "psy-loop.h"
 #include "psy-matrix4.h"
 #include "psy-picture-artist.h"

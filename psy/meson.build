@@ -5,6 +5,7 @@
 cdata = configuration_data({
 })
 
+cdata.set_quoted('PSY_PROJECT_NAME', meson.project_name())
 cdata.set_quoted('PSY_VERSION', meson.project_version())
 cdata.set_quoted('PSY_SOURCE_ROOT', meson.project_source_root())
 cdata.set_quoted('PSY_BUILD_ROOT', meson.project_build_root())
@@ -92,6 +93,10 @@ if portaudio_dep.found()
     cdata.set('HAVE_PORTAUDIO', true)
 endif
 
+if gstreamer_dep.found()
+    cdata.set('HAVE_GSTREAMER', true)
+endif
+
 configure_file (
     input         : 'psy-config.h.in',
     output        : 'psy-config.h',
@@ -131,6 +136,7 @@ libpsy_headers = files(
     'psy-gst-stimulus.h',
     'psy-image.h',
     'psy-image-canvas.h',
+    'psy-init.h',
     'psy-loop.h',
     'psy-matrix4.h',
     'psy-picture-artist.h',
@@ -187,6 +193,7 @@ libpsyfiles = files (
     'psy-gst-stimulus.c',
     'psy-image.c',
     'psy-image-canvas.c',
+    'psy-init.c',
     'psy-loop.c',
     'psy-matrix4.cpp',
     'psy-picture.c',

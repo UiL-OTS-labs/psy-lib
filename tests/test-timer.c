@@ -4,15 +4,16 @@
     #include <windows.h>
 #endif
 
-gint time_resolution = 0;
+gint num_timers  = 10;
+gint time_out_ms = 100;
 
 // clang-format off
 GOptionEntry options[] = {
-#if _WIN32
-    {"begin-period", 'b', G_OPTION_FLAG_NONE, G_OPTION_ARG_INT, &time_resolution, "(windows only)Specify a value for timeBeginPeriod [0-20] 0 == off", "N"},
-#endif
+    {"num-timers", 'n', G_OPTION_FLAG_NONE, G_OPTION_ARG_INT, &num_timers, "The number of additional timers", "N"},
+    {"time-out", 't', G_OPTION_FLAG_NONE, G_OPTION_ARG_INT, &time_out_ms, "The number ms between the timeouts.", "N"},
     {0}
 };
+
 // clang-format on
 
 typedef struct TestData {
@@ -31,8 +32,8 @@ fire_one(PsyTimer *timer, PsyTimePoint *tp_fire, gpointer data)
     PsyTimePoint *tp_now = psy_clock_now(tdata->clk);
     PsyDuration  *dur    = psy_time_point_subtract(tp_now, tp_fire);
 
-    g_info("Diff between firetime and measured = %lf",
-           psy_duration_get_seconds(dur));
+    g_print("Diff between firetime and measured = %lf\n",
+            psy_duration_get_seconds(dur));
 
     psy_time_point_free(tp_now);
     psy_duration_free(dur);
@@ -48,8 +49,8 @@ fire_two(PsyTimer *timer, PsyTimePoint *tp_fire, gpointer data)
     PsyTimePoint *tp_now = psy_clock_now(tdata->clk);
     PsyDuration  *dur    = psy_time_point_subtract(tp_now, tp_fire);
 
-    g_info("Diff between firetime and measured = %lf",
-           psy_duration_get_seconds(dur));
+    g_print("Diff between firetime and measured = %lf\n",
+            psy_duration_get_seconds(dur));
 
     psy_time_point_free(tp_now);
     psy_duration_free(dur);
@@ -63,9 +64,11 @@ on_fire(PsyTimer *timer, PsyTimePoint *fire_time, gpointer data)
     (void) timer;
     PsyClock     *clk    = psy_clock_new();
     PsyTimePoint *tp_now = psy_clock_now(clk);
+    static int    i      = 0;
 
     PsyDuration *dur = psy_time_point_subtract(tp_now, fire_time);
-    g_debug("Diff between firetime and measured = %lf",
+    g_debug("%d - Diff between firetime and measured = %lf",
+            ++i,
             psy_duration_get_seconds(dur));
 
     psy_duration_free(dur);
@@ -88,20 +91,12 @@ main(int argc, char **argv)
     }
     g_option_context_free(opts);
 
-#if _WIN32
-    if (time_resolution > 0 && time_resolution <= 20) {
-        g_info("Running with a resolution of: %dms", time_resolution);
-        timeBeginPeriod(time_resolution);
-    }
-    else {
-        g_info("Running with a default resolution");
-    }
-#endif
+    psy_init();
 
     TestData     tdata = {0x0, FALSE, 0x0};
     PsyTimer    *t1, *t2;
-    PsyDuration *one_sec = psy_duration_new_ms(1000);
-    PsyDuration *one     = psy_duration_new_ms(5);
+    PsyDuration *time_out = psy_duration_new_ms(time_out_ms);
+    PsyDuration *five     = psy_duration_new_ms(5);
 
     tdata.clk = psy_clock_new();
 
@@ -109,23 +104,23 @@ main(int argc, char **argv)
     t2 = psy_timer_new();
 
     PsyTimePoint *tp_now = psy_clock_now(tdata.clk);
-    PsyTimePoint *tp1    = psy_time_point_add(tp_now, one_sec);
-    PsyTimePoint *tp2    = psy_time_point_add(tp1, one_sec);
+    PsyTimePoint *tp1    = psy_time_point_add(tp_now, time_out);
+    PsyTimePoint *tp2    = psy_time_point_add(tp1, time_out);
 
     psy_timer_set_fire_time(t1, tp1);
     psy_timer_set_fire_time(t2, tp2);
 
-    GPtrArray    *timers  = g_ptr_array_new_full(200, g_object_unref);
+    GPtrArray    *timers  = g_ptr_array_new_full(num_timers, g_object_unref);
     PsyTimePoint *running = NULL;
 
-    for (int i = 0; i < 200; i++) {
+    for (int i = 0; i < num_timers; i++) {
         PsyTimer *t = psy_timer_new();
         g_ptr_array_add(timers, t);
         if (running) {
-            running = psy_time_point_add(running, one);
+            running = psy_time_point_add(running, five);
         }
         else {
-            running = psy_time_point_add(tp_now, one);
+            running = psy_time_point_add(tp_now, five);
         }
         psy_timer_set_fire_time(t, running);
         g_signal_connect(t, "fired", G_CALLBACK(on_fire), running);
@@ -142,8 +137,8 @@ main(int argc, char **argv)
 
     g_ptr_array_unref(timers);
 
-    psy_duration_free(one_sec);
-    psy_duration_free(one);
+    psy_duration_free(time_out);
+    psy_duration_free(five);
 
     psy_clock_free(tdata.clk);
 
@@ -151,12 +146,10 @@ main(int argc, char **argv)
     psy_time_point_free(tp1);
     psy_time_point_free(tp2);
 
-    g_clear_object(&t1);
-    g_clear_object(&t2);
+    psy_timer_free(t1);
+    psy_timer_free(t2);
 
-#if _WIN32
-    if (time_resolution > 0 && time_resolution <= 20)
-        timeEndPeriod(time_resolution);
-#endif
+    psy_deinit();
+
     return 0;
 }

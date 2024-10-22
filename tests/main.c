@@ -163,24 +163,6 @@ add_suites_to_registry(void)
 }
 
 static void
-init_libs(void)
-{
-#if defined PSY_HAVE_PORTAUDIO
-    pa_Initialize();
-#endif
-
-    gst_init(NULL, NULL);
-}
-
-static void
-deinitialize_libs(void)
-{
-    gst_deinit();
-
-    Pa_Terminate();
-}
-
-static void
 setup_log_handler(void)
 {
     install_log_handler();
@@ -232,6 +214,7 @@ main(int argc, char **argv)
 {
     GOptionContext *context = g_option_context_new("");
     g_option_context_add_main_entries(context, options, NULL);
+    PsyInitializer *initializer = NULL;
 
     int     ret, n_test_failed = -1;
     GError *error = NULL;
@@ -258,7 +241,8 @@ main(int argc, char **argv)
         }
     }
 
-    init_libs();
+    g_object_new(
+        PSY_TYPE_INITIALIZER, "gstreamer", g_audio, "portaudio", g_audio);
 
     set_save_images(g_save_images ? TRUE : FALSE);
 
@@ -279,12 +263,13 @@ main(int argc, char **argv)
     CU_cleanup_registry();
     g_print("\nRan with a seed of %u\n", random_seed());
 
-    deinitialize_libs();
     deinitialize_random();
 
     remove_log_handler(); // clear logging stuff.
 
     g_option_context_free(context);
+
+    g_object_unref(initializer);
 
     return n_test_failed != 0;
 }

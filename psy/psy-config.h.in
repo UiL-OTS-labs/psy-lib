@@ -5,6 +5,7 @@
 #mesondefine PSY_VERSION
 #mesondefine PSY_SOURCE_ROOT
 #mesondefine PSY_BUILD_ROOT
+#mesondefine PSY_PROJECT_NAME
 
 // functions (or build in compiler additions)
 #mesondefine HAVE_BUILTIN_ADD_OVERFLOW
@@ -31,3 +32,4 @@
 #mesondefine HAVE_JACK2
 #mesondefine HAVE_ALSA
 #mesondefine HAVE_PORTAUDIO
+#mesondefine HAVE_GSTREAMER

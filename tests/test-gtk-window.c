@@ -31,7 +31,7 @@ gdouble g_frequency  = 0.5;
 gdouble g_x          = 0.0;
 gdouble g_y          = 0.0;
 gdouble g_z          = 0.0;
-gchar  *g_texture_fn = "./share/Itálica_Owl.jpg";
+gchar  *g_texture_fn = "./share/owl.jpg";
 
 char    *g_origin       = "center";
 char    *g_units        = "pixels";
@@ -230,12 +230,16 @@ main(int argc, char **argv)
     PsyTimePoint *tp, *start;
     GError       *error = NULL;
     gint          window_style;
-    const gchar  *text_content  = NULL;
-    PsyColor     *circle_color  = psy_color_new_rgb(1.0, 0, 0);
-    PsyColor     *cross_color   = psy_color_new_rgb(1.0, 1.0, 0);
-    PsyColor     *rect_color    = psy_color_new_rgb(0.0, 1.0, 0.5);
-    PsyColor     *font_color    = psy_color_new_rgb(1.0, 1.0, 1.0);
-    PsyColor     *text_bg_color = psy_color_new_rgb(0.2, 0.2, 0.2);
+    const gchar  *text_content = NULL;
+
+    PsyInitializer *initializer
+        = g_object_new(PSY_TYPE_INITIALIZER, "all", FALSE, NULL);
+
+    PsyColor *circle_color  = psy_color_new_rgb(1.0, 0, 0);
+    PsyColor *cross_color   = psy_color_new_rgb(1.0, 1.0, 0);
+    PsyColor *rect_color    = psy_color_new_rgb(0.0, 1.0, 0.5);
+    PsyColor *font_color    = psy_color_new_rgb(1.0, 1.0, 1.0);
+    PsyColor *text_bg_color = psy_color_new_rgb(0.2, 0.2, 0.2);
 
     GOptionContext *context = g_option_context_new("");
     g_option_context_add_main_entries(context, entries, NULL);
@@ -339,7 +343,8 @@ main(int argc, char **argv)
 
     g_print("circle->num_frames = %" PRId64 "\n",
             psy_visual_stimulus_get_num_frames(PSY_VISUAL_STIMULUS(circle)));
-    g_print("cavas->num_frames = %" PRId64 ", num_frames_missed  = %" PRId64 ", num_frames_tot "
+    g_print("cavas->num_frames = %" PRId64 ", num_frames_missed  = %" PRId64
+            ", num_frames_tot "
             "= %" PRId64 "\n",
             psy_canvas_get_num_frames(PSY_CANVAS(window)),
             psy_canvas_get_num_frames_missed(PSY_CANVAS(window)),
@@ -358,6 +363,8 @@ main(int argc, char **argv)
         psy_duration_free(diff);
     psy_time_point_free(start);
     psy_time_point_free(tp);
+
+    g_object_unref(initializer);
 
     return ret;
 }

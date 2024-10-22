@@ -1,12 +1,14 @@
 
 #include "psy-stimulus.h"
 #include "psy-time-point.h"
+#include "psy-timer.h"
 
 typedef struct PsyStimulusPrivate {
     PsyTimePoint *start_time;
     PsyDuration  *duration;
-    gint          is_started  : 1;
-    gint          is_finished : 1;
+    PsyTimer     *timer;
+    guint         is_started  : 1;
+    guint         is_finished : 1;
 } PsyStimulusPrivate;
 
 G_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE(PsyStimulus, psy_stimulus, G_TYPE_OBJECT)
@@ -32,7 +34,7 @@ psy_stimulus_dispose(GObject *object)
     PsyStimulusPrivate *priv
         = psy_stimulus_get_instance_private(PSY_STIMULUS(object));
 
-    (void) priv;
+    g_clear_object(&priv->timer);
 
     G_OBJECT_CLASS(psy_stimulus_parent_class)->dispose(object);
 }
@@ -45,6 +47,21 @@ psy_stimulus_finalize(GObject *self)
 
     psy_duration_free(priv->duration);
     psy_time_point_free(priv->start_time);
+}
+
+static void
+psy_stimulus_timer_fired(PsyTimer *timer, PsyTimePoint *tp, gpointer data)
+{
+    (void) timer;
+    PsyStimulus *stimulus   = PSY_STIMULUS(data);
+    gboolean     is_started = psy_stimulus_get_is_started(stimulus);
+
+    if (!is_started) {
+        psy_stimulus_set_is_started(stimulus, tp);
+    }
+    else {
+        psy_stimulus_set_is_finished(stimulus, tp);
+    }
 }
 
 static void
@@ -103,16 +120,24 @@ psy_stimulus_get_property(GObject    *object,
 static void
 psy_stimulus_init(PsyStimulus *self)
 {
-    (void) self;
+    PsyStimulusPrivate *priv = psy_stimulus_get_instance_private(self);
+    priv->timer              = psy_timer_new();
+
+    g_signal_connect(
+        priv->timer, "fired", G_CALLBACK(psy_stimulus_timer_fired), self);
 }
 
 static void
 stimulus_play(PsyStimulus *stim, PsyTimePoint *tp)
 {
     PsyStimulusPrivate *priv = psy_stimulus_get_instance_private(stim);
+
     if (priv->start_time)
         psy_time_point_free(priv->start_time);
+
     priv->start_time = psy_time_point_copy(tp);
+
+    psy_timer_set_fire_time(priv->timer, priv->start_time);
 }
 
 static void
@@ -452,6 +477,13 @@ psy_stimulus_get_is_started(PsyStimulus *self)
  * @start_time: An instance of [struct@PsyTimePoint] when the stimulus should be
  * visible.
  *
+ * Emits the [signal@Stimulus::started] signal, It sets the
+ * [property@Stimulus:is-started] and clears the
+ * [property@Stimulus:finished] property.
+ *
+ * If an end duration is specified, the timer will be set to fire at the
+ * predicted end time of the stimulus.
+ *
  * stability:private
  */
 void
@@ -459,7 +491,23 @@ psy_stimulus_set_is_started(PsyStimulus *self, PsyTimePoint *start_time)
 {
     g_return_if_fail(PSY_IS_STIMULUS(self));
 
+    PsyStimulusPrivate *priv = psy_stimulus_get_instance_private(self);
+
+    priv->is_started  = 1;
+    priv->is_finished = 0;
+
     g_signal_emit(self, stimulus_signals[SIG_STARTED], 0, start_time);
+
+    PsyTimePoint *stop_time = NULL; // owned
+
+    if (priv->duration) {
+        stop_time = psy_time_point_add(start_time, priv->duration);
+    }
+
+    if (stop_time) {
+        psy_timer_set_fire_time(priv->timer, stop_time);
+        psy_time_point_free(stop_time);
+    }
 }
 
 /**
@@ -486,6 +534,9 @@ void
 psy_stimulus_set_is_finished(PsyStimulus *self, PsyTimePoint *stop_time)
 {
     g_return_if_fail(PSY_IS_STIMULUS(self));
+
+    PsyStimulusPrivate *priv = psy_stimulus_get_instance_private(self);
+    priv->is_finished        = 1;
 
     g_signal_emit(self, stimulus_signals[SIG_STOPPED], 0, stop_time);
 }

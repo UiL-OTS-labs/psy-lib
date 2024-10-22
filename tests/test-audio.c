@@ -110,7 +110,7 @@ on_started(PsyAudioDevice *device, PsyTimePoint *tp, gpointer data)
     OnStarted *on_started = data;
     on_started->started   = true;
 
-    g_main_loop_quit(on_started->loop);
+    // g_main_loop_quit(on_started->loop);
 }
 
 static gboolean
