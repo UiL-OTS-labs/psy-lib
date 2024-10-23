@@ -68,7 +68,7 @@ unit_test = executable (
         'test-stepping.c',
         'test-text.c',
         'test-time-utilities.c',
-#        'test-timer.c',
+        'test-timer.c',
         'test-utility.c',
         'test-wave.c',
         'test-visual-stimulus.c',
