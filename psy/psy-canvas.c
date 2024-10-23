@@ -357,8 +357,7 @@ draw_stimuli(PsyCanvas *self, guint64 frame_num, PsyTimePoint *tp)
         }
         nth_frame = psy_visual_stimulus_get_nth_frame(vstim);
         if (nth_frame == 1) {
-            // perhaps mark the stimulus as scheduled here
-            // psy_stimulus_set_is_started(PSY_STIMULUS(stim), tp);
+            psy_stimulus_set_is_started(PSY_STIMULUS(stim), tp);
         }
 
         // postpone removing nodes after iterating over items
@@ -369,8 +368,7 @@ draw_stimuli(PsyCanvas *self, guint64 frame_num, PsyTimePoint *tp)
     PsyTimePoint *tend = psy_time_point_add(tp, priv->frame_dur);
     for (gsize i = 0; i < nodes_to_remove->len; i++) {
         PsyStimulus *stim = g_ptr_array_index(nodes_to_remove, i);
-        // Perhaps set the stimulus unscheduled here
-        // psy_stimulus_set_is_finished(stim, tend);
+        psy_stimulus_set_is_finished(stim, tend);
         psy_canvas_remove_stimulus(self, PSY_VISUAL_STIMULUS(stim));
     }
     psy_time_point_free(tend);
