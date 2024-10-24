@@ -328,8 +328,15 @@ loop_add_children(void)
     PsyTrial *child = NULL;
 
     psy_loop_set_step(loop, PSY_STEP(trial));
+
+    // Steps with children own them, transfer is full; the reference is now the
+    // responsibility of the loop. we don't have to g_object_unref it here.
+    CU_ASSERT_EQUAL(G_OBJECT(trial)->ref_count, 1);
+
     g_object_get(loop, "child", &child, NULL);
     CU_ASSERT_EQUAL(trial, child);
+    g_object_unref(child);
+    CU_ASSERT_EQUAL(G_OBJECT(child)->ref_count, 1);
 
     psy_loop_free(loop);
 }
@@ -500,42 +507,42 @@ steps_add_children(void)
     g_object_get(stones, "num-steps", &num_steps, NULL);
     CU_ASSERT_EQUAL(num_steps, 0);
 
-    PsyTrial *strial1 = psy_trial_new();
-    PsyTrial *strial2 = psy_trial_new();
-    PsyTrial *ltrial  = psy_trial_new();
+    PsyTrial *step_trial1 = psy_trial_new();
+    PsyTrial *step_trial2 = psy_trial_new();
+    PsyTrial *loop_trial  = psy_trial_new();
 
     gboolean ret;
 
     // Add fresh trials to a parent.
-    ret = psy_stepping_stones_add_step(stones, PSY_STEP(strial1));
+    ret = psy_stepping_stones_add_step(stones, PSY_STEP(step_trial1));
     CU_ASSERT_TRUE(ret);
 
     g_object_get(stones, "num-steps", &num_steps, NULL);
     CU_ASSERT_EQUAL(num_steps, 1);
 
     ret = psy_stepping_stones_add_step_by_name(
-        stones, "name", PSY_STEP(strial2), NULL);
+        stones, "name", PSY_STEP(step_trial2), NULL);
     CU_ASSERT_TRUE(ret);
 
     g_object_get(stones, "num-steps", &num_steps, NULL);
     CU_ASSERT_EQUAL(num_steps, 2);
 
-    ret = psy_loop_set_step(loop, PSY_STEP(ltrial));
+    ret = psy_loop_set_step(loop, PSY_STEP(loop_trial));
     CU_ASSERT_TRUE(ret);
 
     // Add trials that have a parent to as child step.
     // THESE SHOULD FAIL and should not add children.
-    ret = psy_loop_set_step(loop, PSY_STEP(strial1));
+    ret = psy_loop_set_step(loop, PSY_STEP(step_trial1));
     CU_ASSERT_FALSE(ret);
 
-    ret = psy_stepping_stones_add_step(stones, PSY_STEP(ltrial));
+    ret = psy_stepping_stones_add_step(stones, PSY_STEP(loop_trial));
     CU_ASSERT_FALSE(ret);
 
     g_object_get(stones, "num-steps", &num_steps, NULL);
     CU_ASSERT_EQUAL(num_steps, 2);
 
     ret = psy_stepping_stones_add_step_by_name(
-        stones, "name2", PSY_STEP(ltrial), NULL);
+        stones, "name2", PSY_STEP(loop_trial), NULL);
     CU_ASSERT_FALSE(ret);
 
     g_object_get(stones, "num-steps", &num_steps, NULL);

@@ -147,6 +147,8 @@ psy_unit_test_logger(GLogLevelFlags   log_level,
         write_to_output_file(G_OUTPUT_STREAM(g_log_data.main), line);
     }
 
+    g_free(line);
+
 exit:
 
     g_mutex_unlock(&log_mutex);

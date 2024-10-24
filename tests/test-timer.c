@@ -76,6 +76,8 @@ test_timer_set_fire_time(void)
 
     CU_ASSERT_PTR_NOT_NULL(psy_timer_get_fire_time(t1));
 
+    psy_timer_free(t1);
+
     psy_time_point_free(now);
     timer_test_utilities_free(utils);
 }

@@ -302,6 +302,8 @@ psy_gl_canvas_finalize(GObject *object)
 {
     PsyGlCanvas *self = PSY_GL_CANVAS(object);
 
+    g_free(self->devices);
+
     eglDestroySurface(self->display, self->surface);
     eglDestroyContext(self->display, self->egl_context);
     eglTerminate(self->display);
