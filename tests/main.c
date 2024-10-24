@@ -129,6 +129,10 @@ add_suites_to_registry(void)
     if (error)
         return error;
 
+    error = add_timer_suite();
+    if (error)
+        return error;
+
     error = add_utility_suite();
     if (error)
         return error;

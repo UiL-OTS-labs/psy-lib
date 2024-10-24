@@ -91,7 +91,10 @@ psy_time_point_free(PsyTimePoint *self)
 PsyTimePoint *
 psy_time_point_copy(PsyTimePoint *self)
 {
-    PsyTimePoint *copy      = g_new(PsyTimePoint, 1);
+    g_return_val_if_fail(self != NULL, NULL);
+
+    PsyTimePoint *copy = g_new(PsyTimePoint, 1);
+
     copy->ticks_since_start = self->ticks_since_start;
     return copy;
 }

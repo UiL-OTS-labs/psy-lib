@@ -1,155 +1,255 @@
 
+#include <math.h>
+#include <string.h>
+
+#include "unit-test-utilities.h"
+#include <CUnit/CUnit.h>
+
 #include <psylib.h>
-#if __WIN32
-    #include <windows.h>
-#endif
 
-gint num_timers  = 10;
-gint time_out_ms = 100;
+// Setup the tests
 
-// clang-format off
-GOptionEntry options[] = {
-    {"num-timers", 'n', G_OPTION_FLAG_NONE, G_OPTION_ARG_INT, &num_timers, "The number of additional timers", "N"},
-    {"time-out", 't', G_OPTION_FLAG_NONE, G_OPTION_ARG_INT, &time_out_ms, "The number ms between the timeouts.", "N"},
-    {0}
-};
+static int
+timer_setup(void)
+{
+    set_log_handler_file("test-timer.txt");
+    return 0;
+}
 
-// clang-format on
+static int
+timer_teardown(void)
+{
+    set_log_handler_file(NULL);
+    return 0;
+}
 
-typedef struct TestData {
+// Have some utilities present
+
+typedef struct {
     GMainLoop *loop;
-    gboolean   one_has_fired;
     PsyClock  *clk;
-} TestData;
+    guint      timeout_id;
+    gboolean   time_out_removed;
+} TimerTestUtilities;
 
-void
-fire_one(PsyTimer *timer, PsyTimePoint *tp_fire, gpointer data)
+static TimerTestUtilities *
+timer_test_utilities_new(void)
 {
-    (void) timer;
-    TestData *tdata      = data;
-    tdata->one_has_fired = TRUE;
+    TimerTestUtilities *ret = g_new(TimerTestUtilities, 1);
 
-    PsyTimePoint *tp_now = psy_clock_now(tdata->clk);
-    PsyDuration  *dur    = psy_time_point_subtract(tp_now, tp_fire);
+    ret->clk        = psy_clock_new();
+    ret->loop       = g_main_loop_new(NULL, FALSE);
+    ret->timeout_id = 0;
+    ret->timeout_id = FALSE;
 
-    g_print("Diff between firetime and measured = %lf\n",
-            psy_duration_get_seconds(dur));
-
-    psy_time_point_free(tp_now);
-    psy_duration_free(dur);
+    return ret;
 }
 
-void
-fire_two(PsyTimer *timer, PsyTimePoint *tp_fire, gpointer data)
+static void
+timer_test_utilities_free(TimerTestUtilities *utils)
 {
-    (void) timer;
-    TestData *tdata = data;
-    g_assert(tdata->one_has_fired);
-
-    PsyTimePoint *tp_now = psy_clock_now(tdata->clk);
-    PsyDuration  *dur    = psy_time_point_subtract(tp_now, tp_fire);
-
-    g_print("Diff between firetime and measured = %lf\n",
-            psy_duration_get_seconds(dur));
-
-    psy_time_point_free(tp_now);
-    psy_duration_free(dur);
-
-    g_main_loop_quit(tdata->loop);
+    g_clear_pointer(&utils->loop, g_main_loop_unref);
+    g_clear_object(&utils->clk);
+    g_free(utils);
 }
 
-void
-on_fire(PsyTimer *timer, PsyTimePoint *fire_time, gpointer data)
+static void
+test_timer_create(void)
 {
-    (void) timer;
-    PsyClock     *clk    = psy_clock_new();
-    PsyTimePoint *tp_now = psy_clock_now(clk);
-    static int    i      = 0;
+    PsyTimer *t1;
 
-    PsyDuration *dur = psy_time_point_subtract(tp_now, fire_time);
-    g_debug("%d - Diff between firetime and measured = %lf",
-            ++i,
-            psy_duration_get_seconds(dur));
+    t1 = psy_timer_new();
+    CU_ASSERT_PTR_NOT_NULL_FATAL(t1);
 
+    CU_ASSERT_PTR_NULL(psy_timer_get_fire_time(t1));
+    psy_timer_free(t1);
+}
+
+static void
+test_timer_set_fire_time(void)
+{
+    TimerTestUtilities *utils = timer_test_utilities_new();
+
+    PsyTimer     *t1;
+    PsyTimePoint *now = psy_clock_now(utils->clk);
+
+    t1 = psy_timer_new();
+    CU_ASSERT_PTR_NOT_NULL_FATAL(t1);
+
+    g_object_set(t1, "fire-time", now, NULL);
+
+    CU_ASSERT_PTR_NOT_NULL(psy_timer_get_fire_time(t1));
+
+    psy_timer_free(t1);
+
+    psy_time_point_free(now);
+    timer_test_utilities_free(utils);
+}
+
+typedef struct {
+    TimerTestUtilities *utils;
+
+    PsyTimePoint *time_in;
+    PsyTimer     *timer_in;
+
+    gboolean fired;
+    gboolean time_is_equal_to_set;
+    gboolean timer_is_the_same;
+} TimerFireTest;
+
+static gboolean
+on_timer_fire1(PsyTimer *t, PsyTimePoint *tp, gpointer data)
+{
+    TimerFireTest *fire_data = data;
+
+    fire_data->fired = TRUE;
+    fire_data->time_is_equal_to_set
+        = psy_time_point_equal(fire_data->time_in, tp);
+    fire_data->timer_is_the_same = fire_data->timer_in == t;
+
+    g_main_loop_quit(fire_data->utils->loop);
+
+    return G_SOURCE_REMOVE;
+}
+
+static gboolean
+quit_loop(gpointer data)
+{
+    TimerTestUtilities *utils = data;
+
+    g_main_loop_quit(utils->loop);
+    utils->time_out_removed = TRUE;
+
+    return G_SOURCE_REMOVE;
+}
+
+static void
+test_timer_fire(void)
+{
+    TimerTestUtilities *utils = timer_test_utilities_new();
+    PsyTimer           *t1    = NULL;
+    PsyTimePoint       *now   = psy_clock_now(utils->clk);
+
+    t1 = psy_timer_new();
+
+    TimerFireTest test_data = {utils, now, t1, FALSE, FALSE, FALSE};
+
+    CU_ASSERT_PTR_NOT_NULL_FATAL(t1);
+
+    g_object_set(t1, "fire-time", now, NULL);
+    g_signal_connect(t1, "fired", G_CALLBACK(on_timer_fire1), &test_data);
+
+    utils->timeout_id
+        = g_timeout_add(50, G_SOURCE_FUNC(quit_loop), utils->loop);
+
+    CU_ASSERT_PTR_NOT_NULL(psy_timer_get_fire_time(t1));
+
+    g_main_loop_run(utils->loop);
+
+    CU_ASSERT_TRUE(test_data.fired);
+    CU_ASSERT_TRUE(test_data.time_is_equal_to_set);
+    CU_ASSERT_TRUE(test_data.timer_is_the_same);
+
+    // otherwise a new context might cancel this mainloop
+    if (!utils->time_out_removed) {
+        utils->time_out_removed = g_source_remove(utils->timeout_id);
+        if (!utils->time_out_removed) {
+            g_critical("unable to remove timeout source");
+        }
+    }
+    g_assert(utils->time_out_removed);
+
+    psy_time_point_free(now);
+    psy_timer_free(t1);
+    timer_test_utilities_free(utils);
+}
+
+typedef struct {
+    TimerTestUtilities *utils;
+    PsyTimePoint       *fire_time;
+} TimerFireAccuratelyTest;
+
+static gboolean
+on_timer_fire_accurately(PsyTimer *t, PsyTimePoint *tp, gpointer data)
+{
+    (void) t;
+    (void) tp;
+    TimerFireAccuratelyTest *fire_data = data;
+
+    // Must be freed
+    fire_data->fire_time = psy_clock_now(fire_data->utils->clk);
+
+    g_main_loop_quit(fire_data->utils->loop);
+
+    return G_SOURCE_REMOVE;
+}
+
+static void
+test_timer_fire_accurately(void)
+{
+    TimerTestUtilities *utils       = timer_test_utilities_new();
+    PsyTimer           *t1          = NULL;
+    PsyTimePoint       *now         = psy_clock_now(utils->clk);
+    PsyDuration        *dur         = psy_duration_new_ms(10);
+    PsyDuration        *time_diff   = NULL;
+    PsyTimePoint       *time_future = psy_time_point_add(now, dur);
+
+    t1 = psy_timer_new();
+
+    TimerFireAccuratelyTest test_data = {utils, NULL};
+
+    CU_ASSERT_PTR_NOT_NULL_FATAL(t1);
+
+    g_object_set(t1, "fire-time", time_future, NULL);
+    g_signal_connect(
+        t1, "fired", G_CALLBACK(on_timer_fire_accurately), &test_data);
+
+    g_main_loop_run(utils->loop);
+
+    // At this point time_future has elapsed to the past...
+    time_diff = psy_time_point_subtract(test_data.fire_time, time_future);
+    psy_time_point_free(test_data.fire_time);
+
+    // We expect that a timer is not fired ahead of time.
+    CU_ASSERT_TRUE(psy_duration_get_us(time_diff) >= 0);
+    // We expect that a timer is not fired too late e.g. more than one ms
+    CU_ASSERT_TRUE(psy_duration_get_us(time_diff) < 1000);
+    g_info("The timer was fired at %" PRId64 " us",
+           psy_duration_get_us(time_diff));
+
+    psy_duration_free(time_diff);
+    psy_time_point_free(time_future);
     psy_duration_free(dur);
-    psy_time_point_free(tp_now);
-    psy_clock_free(clk);
-    psy_time_point_free(data);
+    psy_time_point_free(now);
+    psy_timer_free(t1);
+
+    timer_test_utilities_free(utils);
 }
 
 int
-main(int argc, char **argv)
+add_timer_suite(void)
 {
-    GError         *error = NULL;
-    GOptionContext *opts  = g_option_context_new("timer options");
-    g_option_context_add_main_entries(opts, options, NULL);
+    CU_Suite *suite
+        = CU_add_suite("PsyTimer suite", timer_setup, timer_teardown);
+    CU_Test *test;
+    if (!suite)
+        return 1;
 
-    if (!g_option_context_parse(opts, &argc, &argv, &error)) {
-        g_printerr("Oops unable to parse options: %s\n", error->message);
-        g_option_context_free(opts);
-        return EXIT_FAILURE;
-    }
-    g_option_context_free(opts);
+    test = CU_ADD_TEST(suite, test_timer_create);
+    if (!test)
+        return 1;
 
-    psy_init();
+    test = CU_ADD_TEST(suite, test_timer_set_fire_time);
+    if (!test)
+        return 1;
 
-    TestData     tdata = {0x0, FALSE, 0x0};
-    PsyTimer    *t1, *t2;
-    PsyDuration *time_out = psy_duration_new_ms(time_out_ms);
-    PsyDuration *five     = psy_duration_new_ms(5);
+    test = CU_ADD_TEST(suite, test_timer_fire);
+    if (!test)
+        return 1;
 
-    tdata.clk = psy_clock_new();
-
-    t1 = psy_timer_new();
-    t2 = psy_timer_new();
-
-    PsyTimePoint *tp_now = psy_clock_now(tdata.clk);
-    PsyTimePoint *tp1    = psy_time_point_add(tp_now, time_out);
-    PsyTimePoint *tp2    = psy_time_point_add(tp1, time_out);
-
-    psy_timer_set_fire_time(t1, tp1);
-    psy_timer_set_fire_time(t2, tp2);
-
-    GPtrArray    *timers  = g_ptr_array_new_full(num_timers, g_object_unref);
-    PsyTimePoint *running = NULL;
-
-    for (int i = 0; i < num_timers; i++) {
-        PsyTimer *t = psy_timer_new();
-        g_ptr_array_add(timers, t);
-        if (running) {
-            running = psy_time_point_add(running, five);
-        }
-        else {
-            running = psy_time_point_add(tp_now, five);
-        }
-        psy_timer_set_fire_time(t, running);
-        g_signal_connect(t, "fired", G_CALLBACK(on_fire), running);
-    }
-
-    tdata.loop = g_main_loop_new(NULL, false);
-
-    g_signal_connect(t1, "fired", G_CALLBACK(fire_one), &tdata);
-    g_signal_connect(t2, "fired", G_CALLBACK(fire_two), &tdata);
-
-    g_main_loop_run(tdata.loop);
-
-    g_main_loop_unref(tdata.loop);
-
-    g_ptr_array_unref(timers);
-
-    psy_duration_free(time_out);
-    psy_duration_free(five);
-
-    psy_clock_free(tdata.clk);
-
-    psy_time_point_free(tp_now);
-    psy_time_point_free(tp1);
-    psy_time_point_free(tp2);
-
-    psy_timer_free(t1);
-    psy_timer_free(t2);
-
-    psy_deinit();
+    test = CU_ADD_TEST(suite, test_timer_fire_accurately);
+    if (!test)
+        return 1;
 
     return 0;
 }

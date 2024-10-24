@@ -32,8 +32,8 @@ picture_test = executable(
     dependencies : [psy_dep]
 )
 
-test_timer = executable('test-timer', files('test-timer.c'), dependencies:[psy_dep])
-test('timer-test', test_timer)
+timer_test = executable('timer-test', files('timer-test.c'), dependencies:[psy_dep])
+test('timer-test', timer_test)
 
 #preprocessor args for the unit tests
 UNIT_PP_ARGS = [
@@ -68,6 +68,7 @@ unit_test = executable (
         'test-stepping.c',
         'test-text.c',
         'test-time-utilities.c',
+        'test-timer.c',
         'test-utility.c',
         'test-wave.c',
         'test-visual-stimulus.c',

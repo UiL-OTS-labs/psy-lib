@@ -388,7 +388,13 @@ timer_private_cancel_timer(PsyTimer *timer)
     const guint64 one_ms      = 1000; // 1000 µs
     ThreadData   *result      = g_async_queue_timeout_pop(timer_queue, one_ms);
 
+    // would be weird when we cancel an unrelated timer
+    g_assert(result->timer == timer);
+
     if (G_UNLIKELY(result == NULL || result->msg != MSG_TIMER_CANCELED)) {
         g_critical("Didn't receive an timer cancel acknowledgment.");
+    }
+    else {
+        g_free(result);
     }
 }

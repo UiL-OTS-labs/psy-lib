@@ -87,6 +87,9 @@ psy_image_canvas_init(PsyImageCanvas *self)
 
     priv->time       = psy_time_point_new();
     priv->iter_timer = psy_timer_new();
+
+    g_signal_connect_swapped(
+        priv->iter_timer, "fired", G_CALLBACK(psy_image_canvas_iterate), self);
 }
 
 static void

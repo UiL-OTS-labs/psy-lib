@@ -141,19 +141,11 @@ psy_timer_fire(PsyTimer *self, PsyTimePoint *tp)
     data->fire_time = psy_time_point_copy(tp);
     data->timer     = self;
 
-    //    GSource *source = g_idle_source_new();
-    //    g_source_set_callback(source,
-    //                          G_SOURCE_FUNC(thread_default_fire),
-    //                          data,
-    //                          (GDestroyNotify) fire_data_free);
-
     g_main_context_invoke_full(self->context,
                                G_PRIORITY_DEFAULT,
                                G_SOURCE_FUNC(thread_default_fire),
                                data,
                                (GDestroyNotify) fire_data_free);
-
-    //    g_source_unref(source);
 }
 
 static void
