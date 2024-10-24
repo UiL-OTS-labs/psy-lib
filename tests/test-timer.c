@@ -28,6 +28,8 @@ timer_teardown(void)
 typedef struct {
     GMainLoop *loop;
     PsyClock  *clk;
+    guint      timeout_id;
+    gboolean   time_out_removed;
 } TimerTestUtilities;
 
 static TimerTestUtilities *
@@ -35,8 +37,10 @@ timer_test_utilities_new(void)
 {
     TimerTestUtilities *ret = g_new(TimerTestUtilities, 1);
 
-    ret->clk  = psy_clock_new();
-    ret->loop = g_main_loop_new(NULL, FALSE);
+    ret->clk        = psy_clock_new();
+    ret->loop       = g_main_loop_new(NULL, FALSE);
+    ret->timeout_id = 0;
+    ret->timeout_id = FALSE;
 
     return ret;
 }
@@ -108,6 +112,17 @@ on_timer_fire1(PsyTimer *t, PsyTimePoint *tp, gpointer data)
     return G_SOURCE_REMOVE;
 }
 
+static gboolean
+quit_loop(gpointer data)
+{
+    TimerTestUtilities *utils = data;
+
+    g_main_loop_quit(utils->loop);
+    utils->time_out_removed = TRUE;
+
+    return G_SOURCE_REMOVE;
+}
+
 static void
 test_timer_fire(void)
 {
@@ -124,8 +139,8 @@ test_timer_fire(void)
     g_object_set(t1, "fire-time", now, NULL);
     g_signal_connect(t1, "fired", G_CALLBACK(on_timer_fire1), &test_data);
 
-    guint source_id
-        = g_timeout_add(10, G_SOURCE_FUNC(g_main_loop_quit), utils->loop);
+    utils->timeout_id
+        = g_timeout_add(50, G_SOURCE_FUNC(quit_loop), utils->loop);
 
     CU_ASSERT_PTR_NOT_NULL(psy_timer_get_fire_time(t1));
 
@@ -136,10 +151,13 @@ test_timer_fire(void)
     CU_ASSERT_TRUE(test_data.timer_is_the_same);
 
     // otherwise a new context might cancel this mainloop
-    gboolean removed = g_source_remove(source_id);
-    if (!removed)
-        g_critical("unable to remove timeout source");
-    g_assert(removed);
+    if (!utils->time_out_removed) {
+        utils->time_out_removed = g_source_remove(utils->timeout_id);
+        if (!utils->time_out_removed) {
+            g_critical("unable to remove timeout source");
+        }
+    }
+    g_assert(utils->time_out_removed);
 
     psy_time_point_free(now);
     psy_timer_free(t1);
@@ -188,7 +206,7 @@ test_timer_fire_accurately(void)
 
     g_main_loop_run(utils->loop);
 
-    // At this point time_future has ellapsed to the past...
+    // At this point time_future has elapsed to the past...
     time_diff = psy_time_point_subtract(test_data.fire_time, time_future);
     psy_time_point_free(test_data.fire_time);
 

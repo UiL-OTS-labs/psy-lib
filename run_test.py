@@ -63,7 +63,6 @@ def test_folder(folder) -> int:
     """Runs the unit tests"""
     run_result = subprocess.run(
         [MESON, "devenv", "-C", folder, MESON, "test"],
-        env=BUILD_ENV[folder],
     )
     return run_result.returncode
 
@@ -94,14 +93,25 @@ if __name__ == "__main__":
     if builds == ["all"]:
         builds = known_builds
 
+    # when people use tab completion on there terminal they might get debug/
+    # instead of debug.
+    for i, build in enumerate(builds):
+        no_trailing_sep = build.removesuffix(os.sep)
+        if build != no_trailing_sep:
+            print(f"Replacing build {build} with {no_trailing_sep}", file=sys.stderr)
+            builds[i] = no_trailing_sep
+
     for build in builds:
         ret = 0
         if build in known_builds:
             ret = configure_build_and_test(build)
             if ret != 0:
                 exit(ret)
-
-        if p.isdir(build) and p.isfile(p.join(build, "ninja.build")):
-            test_folder(build)
+        else:
+            if p.isfile(p.join(".", build, "build.ninja")):
+                test_folder(build)
+            else:
+                print(f"{p.join('.', build, 'build.ninja')} is a file", file=sys.stderr)
+                exit(f"{build} doesn't seem to be a build directory")
 
     print(f"Builds: {builds} completed")
