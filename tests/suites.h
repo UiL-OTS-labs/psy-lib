@@ -52,9 +52,6 @@ int
 add_time_utilities_suite(void);
 
 int
-add_timer_suite(void);
-
-int
 add_utility_suite(void);
 
 int

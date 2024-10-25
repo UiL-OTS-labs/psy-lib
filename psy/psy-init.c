@@ -79,12 +79,14 @@ initializer_constructed(GObject *obj)
             "Constructed an initializer when psylib seems already initialized");
     }
     g_mutex_unlock(&init_mutex);
+    G_OBJECT_CLASS(psy_initializer_parent_class)->constructed(obj);
 }
 
 static void
 initializer_finalize(GObject *obj)
 {
     PsyInitializer *self = PSY_INITIALIZER(obj);
+
     g_mutex_lock(&init_mutex);
     init_count--;
     if (init_count == 0) {
@@ -104,6 +106,8 @@ initializer_finalize(GObject *obj)
         g_warning("Deinitialized psylib more often than initialized.");
     }
     g_mutex_unlock(&init_mutex);
+
+    G_OBJECT_CLASS(psy_initializer_parent_class)->finalize(obj);
 }
 
 static void
