@@ -1,7 +1,6 @@
 
 cc = meson.get_compiler('c')
 cunit_dep = dependency('cunit')
-munit_dep = dependency('munit', fallback:['munit', 'munit_dep'])
 
 #preprocessor args for the unit tests
 UNIT_PP_ARGS = [
@@ -56,8 +55,8 @@ test('timer-test', timer_test)
 
 test_timer = executable(
     'test-timer',
-    files('test-timer2.c', 'unit-test-utilities.c'),
-    dependencies:[psy_dep, munit_dep],
+    files('test-timer2.c', 'unit-test-utilities.c', 'munit.c', 'munit.h'),
+    dependencies:[psy_dep],
     c_args : UNIT_PP_ARGS,
     cpp_args : UNIT_PP_ARGS,
 )
