@@ -5,4 +5,3 @@
 # a link to the compile_commands.json in one of the build directories
 compile_commands.json
 
-subprojects/
