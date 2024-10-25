@@ -114,4 +114,5 @@ if __name__ == "__main__":
                 print(f"{p.join('.', build, 'build.ninja')} is a file", file=sys.stderr)
                 exit(f"{build} doesn't seem to be a build directory")
 
+
     print(f"Builds: {builds} completed")
