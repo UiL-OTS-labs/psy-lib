@@ -71,9 +71,10 @@
  */
 
 typedef struct _PsySteppingStonesPrivate {
-    GPtrArray  *steps;
-    GHashTable *step_table;
-    guint       next;
+    GPtrArray  *steps; // This owns the children, as all children are in steps
+    GHashTable *step_table; // This doesn't own the children, not all children
+                            // are here, only those added by name
+    guint next;
 } PsySteppingStonesPrivate;
 
 // clang-format off
@@ -155,10 +156,15 @@ psy_stepping_stones_init(PsySteppingStones *self)
     PsySteppingStonesPrivate *priv
         = psy_stepping_stones_get_instance_private(self);
 
+    // As all children are added to priv->steps and the transfer is full, once
+    // the children are removed from the stepping stones, removing them from the
+    // steps frees them.
     priv->steps = g_ptr_array_new_full(64, g_object_unref);
 
-    priv->step_table = g_hash_table_new_full(
-        g_str_hash, g_str_equal, g_free, g_object_unref);
+    // The keys are owned by the step_table, however, the objects are not, as
+    // they are owned by priv->steps.
+    priv->step_table
+        = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, NULL);
 }
 
 static void
@@ -261,7 +267,7 @@ psy_stepping_stones_add_step(PsySteppingStones *self, PsyStep *step)
 
     PsySteppingStonesPrivate *priv
         = psy_stepping_stones_get_instance_private(self);
-    g_ptr_array_add(priv->steps, g_object_ref(step));
+    g_ptr_array_add(priv->steps, step);
     psy_step_set_parent(step, PSY_STEP(self));
     return TRUE;
 }

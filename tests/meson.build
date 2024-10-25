@@ -2,6 +2,19 @@
 cc = meson.get_compiler('c')
 cunit_dep = dependency('cunit')
 
+#preprocessor args for the unit tests
+UNIT_PP_ARGS = [
+    '-DG_LOG_DOMAIN="Psy-Unit"',
+    '-DG_LOG_USE_STRUCTURED'
+]
+
+buildtype = get_option('buildtype')
+if buildtype != 'debug' and buildtype != 'debugoptimized'
+    # flags for release builds (disable asserts)
+    UNIT_PP_ARGS += '-DG_DISABLE_ASSERTS=1'
+    UNIT_PP_ARGS += '-DNDEBUG=1'
+endif
+
 test_gtk_window = executable(
     'test_gtk_window',
     files('test-gtk-window.c'),
@@ -32,21 +45,24 @@ picture_test = executable(
     dependencies : [psy_dep]
 )
 
-test_timer = executable('test-timer', files('test-timer.c'), dependencies:[psy_dep])
-test('timer-test', test_timer)
+timer_test = executable(
+    'timer-test',
+    files('timer-test.c'),
+    dependencies:[psy_dep]
+)
+test('timer-test', timer_test)
 
-#preprocessor args for the unit tests
-UNIT_PP_ARGS = [
-    '-DG_LOG_DOMAIN="Psy-Unit"',
-    '-DG_LOG_USE_STRUCTURED'
-]
 
-buildtype = get_option('buildtype')
-if buildtype != 'debug' and buildtype != 'debugoptimized'
-    # flags for release builds (disable asserts)
-    UNIT_PP_ARGS += '-DG_DISABLE_ASSERTS=1'
-    UNIT_PP_ARGS += '-DNDEBUG=1'
-endif
+test_timer = executable(
+    'test-timer',
+    files('test-timer2.c', 'unit-test-utilities.c', 'munit.c', 'munit.h'),
+    dependencies:[psy_dep],
+    c_args : UNIT_PP_ARGS,
+    cpp_args : UNIT_PP_ARGS,
+)
+test('test-timer', test_timer)
+
+
 
 unit_test = executable (
     'unit-test',

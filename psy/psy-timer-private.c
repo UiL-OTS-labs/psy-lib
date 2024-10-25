@@ -21,10 +21,12 @@ static void
 psy_timer_thread_join(PsyTimerThread *self);
 
 typedef enum TimerThreadMessage {
-    MSG_STOP,           // Stop the thread
-    MSG_TIMER_ADD,      // Add a timer to the thread
-    MSG_TIMER_DEL,      // Deletes a timer from the thread
-    MSG_TIMER_CANCELED, // Acknowledge the deletion of the timer
+    MSG_STOP,                // Stop the thread
+    MSG_TIMER_ADD,           // Add a timer to the thread
+    MSG_TIMER_DEL,           // Deletes a timer from the thread
+    MSG_TIMER_CANCELED,      // Acknowledge the deletion of the timer
+    MSG_TIMER_NO_SUCH_TIMER, // Acknowledge the deletion of the timer could not
+                             // be completed, it wasn't found.
 } TimerThreadMessage;
 
 typedef struct ThreadData {
@@ -168,7 +170,8 @@ psy_timer_thread_del_timer(PsyTimerThread *self, PsyTimer *timer)
         g_critical("Unable to remove timer %p", (gpointer) timer);
     }
 
-    ThreadData *msg = thread_data_new(MSG_TIMER_CANCELED, self, timer);
+    ThreadData *msg = thread_data_new(
+        ret ? MSG_TIMER_CANCELED : MSG_TIMER_NO_SUCH_TIMER, self, timer);
 
     g_async_queue_push(reply_queue, msg);
 
@@ -332,6 +335,7 @@ timer_private_stop_timer_thread(void)
 {
     psy_timer_thread_join(g_timer_thread);
     g_clear_object(&g_timer_thread);
+    g_info("Stopped timer thread");
     init_warning = 0;
 }
 
@@ -388,7 +392,14 @@ timer_private_cancel_timer(PsyTimer *timer)
     const guint64 one_ms      = 1000; // 1000 µs
     ThreadData   *result      = g_async_queue_timeout_pop(timer_queue, one_ms);
 
+    // would be weird when we cancel an unrelated timer
+    g_assert(result->timer == timer);
+
     if (G_UNLIKELY(result == NULL || result->msg != MSG_TIMER_CANCELED)) {
+        if (result)
+            g_assert(result->msg == MSG_TIMER_NO_SUCH_TIMER);
         g_critical("Didn't receive an timer cancel acknowledgment.");
     }
+    if (G_LIKELY(result != NULL))
+        g_free(result);
 }

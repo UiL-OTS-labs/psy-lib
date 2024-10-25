@@ -47,20 +47,27 @@ psy_stimulus_finalize(GObject *self)
 
     psy_duration_free(priv->duration);
     psy_time_point_free(priv->start_time);
+
+    G_OBJECT_CLASS(psy_stimulus_parent_class)->finalize(self);
 }
 
 static void
 psy_stimulus_timer_fired(PsyTimer *timer, PsyTimePoint *tp, gpointer data)
 {
     (void) timer;
-    PsyStimulus *stimulus   = PSY_STIMULUS(data);
-    gboolean     is_started = psy_stimulus_get_is_started(stimulus);
+    PsyStimulus *stimulus    = PSY_STIMULUS(data);
+    gboolean     is_started  = psy_stimulus_get_is_started(stimulus);
+    gboolean     is_finished = psy_stimulus_get_is_finished(stimulus);
 
-    if (!is_started) {
-        psy_stimulus_set_is_started(stimulus, tp);
+    if (is_started && !is_finished) {
+        g_signal_emit(stimulus, stimulus_signals[SIG_STARTED], 0, tp);
+    }
+    else if (is_started && is_finished) {
+        g_signal_emit(stimulus, stimulus_signals[SIG_STOPPED], 0, tp);
     }
     else {
-        psy_stimulus_set_is_finished(stimulus, tp);
+        g_info("Timer was shot, but the stimulus has already started and "
+               "finished.");
     }
 }
 
@@ -128,16 +135,19 @@ psy_stimulus_init(PsyStimulus *self)
 }
 
 static void
-stimulus_play(PsyStimulus *stim, PsyTimePoint *tp)
+stimulus_play(PsyStimulus *self, PsyTimePoint *tp)
 {
-    PsyStimulusPrivate *priv = psy_stimulus_get_instance_private(stim);
+    PsyStimulusPrivate *priv = psy_stimulus_get_instance_private(self);
+
+    priv->is_started  = FALSE;
+    priv->is_finished = FALSE;
 
     if (priv->start_time)
         psy_time_point_free(priv->start_time);
 
+    // This is an incorrect start time, as the scheduled time is not yet
+    // known...
     priv->start_time = psy_time_point_copy(tp);
-
-    psy_timer_set_fire_time(priv->timer, priv->start_time);
 }
 
 static void
@@ -493,21 +503,9 @@ psy_stimulus_set_is_started(PsyStimulus *self, PsyTimePoint *start_time)
 
     PsyStimulusPrivate *priv = psy_stimulus_get_instance_private(self);
 
-    priv->is_started  = 1;
-    priv->is_finished = 0;
+    priv->is_started = 1;
 
-    g_signal_emit(self, stimulus_signals[SIG_STARTED], 0, start_time);
-
-    PsyTimePoint *stop_time = NULL; // owned
-
-    if (priv->duration) {
-        stop_time = psy_time_point_add(start_time, priv->duration);
-    }
-
-    if (stop_time) {
-        psy_timer_set_fire_time(priv->timer, stop_time);
-        psy_time_point_free(stop_time);
-    }
+    psy_timer_set_fire_time(priv->timer, start_time);
 }
 
 /**
@@ -538,5 +536,5 @@ psy_stimulus_set_is_finished(PsyStimulus *self, PsyTimePoint *stop_time)
     PsyStimulusPrivate *priv = psy_stimulus_get_instance_private(self);
     priv->is_finished        = 1;
 
-    g_signal_emit(self, stimulus_signals[SIG_STOPPED], 0, stop_time);
+    psy_timer_set_fire_time(priv->timer, stop_time);
 }
