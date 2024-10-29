@@ -31,7 +31,7 @@ jobs:
             libgstreamer1.0-dev
             libgstreamer-plugins-good1.0-dev
             libgstreamer1.0-plugins-base1.0-dev
-          version: 1.0.2
+          version: 1.0.3
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v2
         with:
@@ -78,7 +78,7 @@ jobs:
     runs-on: windows-latest
     defaults:
       run:
-        shell: msys {0}
+        shell: msys2 {0}
     steps:
       - uses: actions/checkout@v3
       - uses: msys2/setup-msys2@v2
