@@ -20,7 +20,17 @@ jobs:
     steps:
       - uses: awalsh128/cache-apt-pkgs-action@latest
         with:
-          packages: libglib2.0-dev libgtk-4-dev libcunit1-dev libasound-dev portaudio19-dev libboost-dev libunwind-dev libgstreamer1.0-dev gstreamer1.0-plugins-good 
+          packages: >
+            libglib2.0-dev
+            libgtk-4-dev
+            libcunit1-dev
+            libasound-dev
+            portaudio19-dev
+            libboost-dev
+            libunwind-dev
+            libgstreamer1.0-dev
+            gstreamer1.0-plugins-good
+            gstreamer1.0-plugins-base
           version: 1.0.1
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v2
