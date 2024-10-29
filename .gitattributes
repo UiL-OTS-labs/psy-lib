@@ -1,0 +1,7 @@
+# set the default behavior in case people don't have core.autocrlf set
+* text=auto
+
+# Explicitly declare source code files as text
+*.c text eol=lf
+*.h text eol=lf
+*.cpp text eol=lf
