@@ -30,7 +30,7 @@ jobs:
             libunwind-dev
             libgstreamer1.0-dev
             libgstreamer-plugins-good1.0-dev
-            libgstreamer1.0-plugins-base1.0-dev
+            libgstreamer-plugins-base1.0-dev
             gstreamer1.0-plugins-good1.0-dev
             gstreamer1.0-plugins-base1.0-dev
           version: 1.0.4

@@ -60,7 +60,7 @@ pacboy -S glib2:p\
           portaudio:p\
           boost:p\
           gobject-introspection:p\
-		  python-gobject:p
+          python-gobject:p
 
 # optional for unit tests
 pacboy -S cunit:p
