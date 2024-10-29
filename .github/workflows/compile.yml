@@ -29,8 +29,8 @@ jobs:
             libboost-dev
             libunwind-dev
             libgstreamer1.0-dev
-            gstreamer1.0-plugins-good
-            gstreamer1.0-plugins-base
+            libgstreamer-plugins-good1.0-dev
+            libgstreamer1.0-plugins-base1.0-dev
           version: 1.0.2
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v2
@@ -78,7 +78,7 @@ jobs:
     runs-on: windows-latest
     defaults:
       run:
-        shell: msys{0}
+        shell: msys {0}
     steps:
       - uses: actions/checkout@v3
       - uses: msys2/setup-msys2@v2
