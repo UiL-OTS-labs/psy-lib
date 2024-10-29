@@ -21,14 +21,14 @@ jobs:
       - name: Install apt dependencies
         run: |
           sudo apt-get update
-          # libunwind-dev is a dependency of libgstreamer1.0-dev
-          sudo apt-get install libglib2.0-dev libgtk-4-dev libcunit1-dev libunwind-dev
-          sudo apt-get install libasound-dev portaudio19-dev libboost-dev
-          sudo apt-get install libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libgstreamer-plugins-bad1.0-dev gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly gstreamer1.0-libav gstreamer1.0-tools gstreamer1.0-x gstreamer1.0-alsa gstreamer1.0-gl gstreamer1.0-gtk3 gstreamer1.0-qt5 gstreamer1.0-pulseaudio
-      #      - uses: awalsh128/cache-apt-pkgs-action@latest
-      #        with:
-      #          packages: libglib2.0-dev libgtk-4-dev libcunit1-dev libgstreamer1.0-dev
-      #          version: 1.0.1
+      #    # libunwind-dev is a dependency of libgstreamer1.0-dev
+      #    sudo apt-get install libglib2.0-dev libgtk-4-dev libcunit1-dev libunwind-dev
+      #    sudo apt-get install libasound-dev portaudio19-dev libboost-dev
+      #    sudo apt-get install libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libgstreamer-plugins-bad1.0-dev gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly gstreamer1.0-libav gstreamer1.0-tools gstreamer1.0-x gstreamer1.0-alsa gstreamer1.0-gl gstreamer1.0-gtk3 gstreamer1.0-qt5 gstreamer1.0-pulseaudio
+        - uses: awalsh128/cache-apt-pkgs-action@latest
+          with:
+            packages: libglib2.0-dev libgtk-4-dev libcunit1-dev libasound-dev portaudio19-dev libboost-dev libunwind-dev libgstreamer1.0-dev gstreamer1.0-plugins-good 
+            version: 1.0.1
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v2
         with:
@@ -82,15 +82,29 @@ jobs:
         with:
           msystem: UCRT64
           update: true
-          install: git
-      - name: Install apt dependencies
-        run: |
-          sudo apt-get update
-          # libunwind-dev is a dependency of libgstreamer1.0-dev
-          sudo apt-get install libglib2.0-dev libgtk-4-dev libcunit1-dev libunwind-dev
-          sudo apt-get install libasound-dev portaudio19-dev libboost-dev
-          sudo apt-get install libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libgstreamer-plugins-bad1.0-dev gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly gstreamer1.0-libav gstreamer1.0-tools gstreamer1.0-x gstreamer1.0-alsa gstreamer1.0-gl gstreamer1.0-gtk3 gstreamer1.0-qt5 gstreamer1.0-pulseaudio
-      #      - uses: awalsh128/cache-apt-pkgs-action@latest
-      #        with:
-      #          packages: libglib2.0-dev libgtk-4-dev libcunit1-dev libgstreamer1.0-dev
-      #          version: 1.0.1
+          install:
+            - git
+            - mingw-w64-ucrt-x86_64-python-version
+            - mingw-w64-ucrt-x86_64-python-pip
+            - mingw-w64-ucrt-x86_64-toolchain
+            - mingw-w64-ucrt-x86_64-glib2
+            - mingw-w64-ucrt-x86_64-gstreamer
+            - mingw-w64-ucrt-x86_64-gst-plugins-base
+            - mingw-w64-ucrt-x86_64-gst-plugins-good
+            - mingw-w64-ucrt-x86_64-gtk4
+            - mingw-w64-ucrt-x86_64-libepoxy
+            - mingw-w64-ucrt-x86_64-portaudio
+            - mingw-w64-ucrt-x86_64-boost
+            - mingw-w64-ucrt-x86_64-gobject-introspection
+            - mingw-w64-ucrt-x86_64-cunit
+            - mingw-w64-ucrt-x86_64-gi-docgen
+            - mingw-w64-ucrt-x86_64-cmake
+            - mingw-w64-ucrt-x86_64-meson
+            - mingw-w64-ucrt-x86_64-ninja
+            - mingw-w64-ucrt-x86_64-python-gobject
+      - name: configure
+        run: meson setup build --buildtype=${matrix.buildtype}
+      - name: build
+        run: meson compile -C build
+      - name: test
+        run: meson devenv -C build meson test
