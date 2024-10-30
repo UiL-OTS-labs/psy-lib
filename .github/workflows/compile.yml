@@ -26,19 +26,21 @@ jobs:
             libcunit1-dev
             libasound-dev
             portaudio19-dev
-            libboost-all-dev
             libunwind-dev
             libgstreamer1.0-dev
             libgstreamer-plugins-good1.0-dev
             libgstreamer-plugins-base1.0-dev
             gstreamer1.0-plugins-good1.0-dev
             gstreamer1.0-plugins-base1.0-dev
-          version: 1.0.4
+          version: 1.0.5
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v2
         with:
           python-version: '3.10'
           cache: 'pip'
+      - name: Instal apt packages # for packages that don't cache nicely
+        run: |
+          apt-get install libboost-all-dev
       - name: Install pip packages
         run: |
           python3 -m pip install --upgrade pip
