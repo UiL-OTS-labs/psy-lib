@@ -17,7 +17,7 @@ static PsyColor  *g_bg_color   = NULL;
 static PsyTimePoint *g_tp_start = NULL;
 
 static int
-visual_stimuli_setup(void)
+cross_setup(void)
 {
     set_log_handler_file("test-visual-stimuli.txt");
     g_debug("Entering %s", __func__);
@@ -48,7 +48,7 @@ visual_stimuli_setup(void)
 }
 
 static int
-visual_stimuli_teardown(void)
+cross_teardown(void)
 {
     g_debug("Entering %s", __func__);
     g_clear_object(&g_canvas);
@@ -219,10 +219,9 @@ cross_specific_values(void)
 }
 
 int
-add_visual_stimuli_suite(void)
+add_cross_suite(void)
 {
-    CU_Suite *suite = CU_add_suite(
-        "Visual stimuli suite", visual_stimuli_setup, visual_stimuli_teardown);
+    CU_Suite *suite = CU_add_suite("Cross suite", cross_setup, cross_teardown);
 
     CU_Test *test = NULL;
 
