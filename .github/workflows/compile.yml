@@ -26,7 +26,7 @@ jobs:
             libcunit1-dev
             libasound-dev
             portaudio19-dev
-            libboost-dev
+            libboost-all-dev
             libunwind-dev
             libgstreamer1.0-dev
             libgstreamer-plugins-good1.0-dev
