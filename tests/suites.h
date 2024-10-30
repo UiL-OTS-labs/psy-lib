@@ -19,6 +19,9 @@ int
 add_color_suite(void);
 
 int
+add_cross_suite(void);
+
+int
 add_image_suite(void);
 
 int
@@ -56,9 +59,6 @@ add_utility_suite(void);
 
 int
 add_visual_stimulus_suite(void);
-
-int
-add_visual_stimuli_suite(void);
 
 int
 add_vector_suite(void);

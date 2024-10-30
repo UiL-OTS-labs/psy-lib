@@ -89,6 +89,10 @@ add_suites_to_registry(void)
     if (error)
         return error;
 
+    error = add_cross_suite();
+    if (error)
+        return error;
+
     error = add_image_suite();
     if (error)
         return error;
@@ -134,10 +138,6 @@ add_suites_to_registry(void)
         return error;
 
     error = add_visual_stimulus_suite();
-    if (error)
-        return error;
-
-    error = add_visual_stimuli_suite();
     if (error)
         return error;
 
