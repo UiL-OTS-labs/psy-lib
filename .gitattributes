@@ -1,0 +1,9 @@
+# set the default behavior in case people don't have core.autocrlf set
+* text=auto
+
+# Explicitly declare source code files as text and to use line feed as line ending
+# in CI gi-scanner tripped on files that contain crlf, it appeared, that it was
+# seeing both cr and lf as lineending, hence counting both.
+*.c text eol=lf
+*.h text eol=lf
+*.cpp text eol=lf

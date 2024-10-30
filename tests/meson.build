@@ -60,7 +60,9 @@ test_timer = executable(
     c_args : UNIT_PP_ARGS,
     cpp_args : UNIT_PP_ARGS,
 )
-test('test-timer', test_timer)
+
+# We consider the timers to perform well, when the pc is not busy otherwise
+test('test-timer', test_timer, is_parallel:false)
 
 
 

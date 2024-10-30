@@ -1,33 +1,26 @@
 
 
-gi_typelib_path = library_build_dir
-ld_library_path = library_build_dir
-
 python3 = find_program('python3')
 
-test(
-   'python-step-example',
-   python3, 
-   timeout : 5,
-   suite : ['examples', 'python-examples'],
-   args : [meson.current_source_dir() + '/stepping.py'],
-#   env : {
-#       'GI_TYPELIB_PATH' : gi_typelib_path,
-#       'LD_LIBRARY_PATH' : ld_library_path
-#   }
+if build_machine.system() != 'windows' and build_machine.system() != 'cygwin'
+
+    test(
+       'python-step-example',
+       python3, 
+       timeout : 5,
+       suite : ['examples', 'python-examples'],
+       args : [meson.current_source_dir() + '/stepping.py'],
+    )
+
+    test(
+       'python-step-inheritance-example',
+       python3, 
+       timeout : 5,
+       suite : ['examples', 'python-examples'],
+       args : [meson.current_source_dir() + '/stepping-inheritance.py'],
 )
 
-test(
-   'python-step-inheritance-example',
-   python3, 
-   timeout : 5,
-   suite : ['examples', 'python-examples'],
-   args : [meson.current_source_dir() + '/stepping-inheritance.py'],
-#   env : {
-#       'GI_TYPELIB_PATH' : gi_typelib_path,
-#       'LD_LIBRARY_PATH' : ld_library_path
-#   }
-)
+endif
 
 test(
    'python-loop-example',
@@ -35,10 +28,6 @@ test(
    timeout : 5,
    suite : ['examples', 'python-examples'],
    args : [meson.current_source_dir() + '/loop.py'],
-#   env : {
-#       'GI_TYPELIB_PATH' : gi_typelib_path,
-#       'LD_LIBRARY_PATH' : ld_library_path
-#   }
 )
 
 test(
@@ -47,10 +36,6 @@ test(
    timeout : 5,
    suite : ['examples', 'python-examples'],
    args : [meson.current_source_dir() + '/loop-child.py'],
-#   env : {
-#       'GI_TYPELIB_PATH' : gi_typelib_path,
-#       'LD_LIBRARY_PATH' : ld_library_path
-#   }
 )
 
 test(
@@ -59,8 +44,4 @@ test(
    timeout : 5,
    suite : ['examples', 'python-examples'],
    args : [meson.current_source_dir() + '/loop-indices.py'],
-#   env : {
-#       'GI_TYPELIB_PATH' : gi_typelib_path,
-#       'LD_LIBRARY_PATH' : ld_library_path
-#   }
 )
