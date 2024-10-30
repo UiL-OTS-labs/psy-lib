@@ -252,7 +252,7 @@ main(int argc, char **argv)
     }
 
     g_object_new(
-        PSY_TYPE_INITIALIZER, "gstreamer", g_audio, "portaudio", g_audio);
+        PSY_TYPE_INITIALIZER, "gstreamer", g_audio, "portaudio", g_audio, NULL);
 
     set_save_images(g_save_images ? TRUE : FALSE);
 
