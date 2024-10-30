@@ -40,7 +40,7 @@ jobs:
           cache: 'pip'
       - name: Instal apt packages # for packages that don't cache nicely
         run: |
-          apt-get install libboost-all-dev
+          sudo apt-get install libboost-all-dev
       - name: Install pip packages
         run: |
           python3 -m pip install --upgrade pip
