@@ -89,9 +89,11 @@ add_suites_to_registry(void)
     if (error)
         return error;
 
+#if !defined(_WIN32)
     error = add_cross_suite();
     if (error)
         return error;
+#endif
 
     error = add_image_suite();
     if (error)
@@ -101,17 +103,21 @@ add_suites_to_registry(void)
     if (error)
         return error;
 
+#if !defined(_WIN32)
     error = add_gl_utils_suite();
     if (error)
         return error;
+#endif
 
     error = add_matrix4_suite();
     if (error)
         return error;
 
+#if !defined(_WIN32)
     error = add_parallel_suite(g_port_num);
     if (error)
         return error;
+#endif
 
     error = add_picture_suite();
     if (error)
@@ -125,9 +131,11 @@ add_suites_to_registry(void)
     if (error)
         return error;
 
+#if !defined(_WIN32)
     error = add_text_suite();
     if (error)
         return error;
+#endif
 
     error = add_time_utilities_suite();
     if (error)
@@ -137,9 +145,11 @@ add_suites_to_registry(void)
     if (error)
         return error;
 
+#if !defined(_WIN32)
     error = add_visual_stimulus_suite();
     if (error)
         return error;
+#endif
 
     error = add_vector_suite();
     if (error)
