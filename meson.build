@@ -17,7 +17,7 @@ glib_req = '>=2.66.0' # based on what gtk requires august 2022
 gtk_req = '>4.0' # based on what gtk requires august 2022
 alsa_req = '>=1.2'
 jack2_req = '>=1.9'
-gstreamer_req = '>=1.18'
+gstreamer_req = '>=1.16'
 portaudio_req = '>=19'
 
 # dependencies
