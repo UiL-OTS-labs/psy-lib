@@ -67,8 +67,8 @@ test_timer_create(const MunitParameter params[], void *user_data)
 {
     (void) user_data;
     (void) params;
-    PsyTimer *t1;
-    PsyTimePoint* tf = NULL;
+    PsyTimer     *t1;
+    PsyTimePoint *tf = NULL;
 
     t1 = psy_timer_new();
     munit_assert_not_null(t1);
@@ -152,7 +152,7 @@ test_timer_fire(const MunitParameter params[], void *user_data)
     PsyTimer     *t1  = NULL;
     PsyClock     *clk = psy_clock_new();
     PsyTimePoint *now = psy_clock_now(clk);
-    PsyTimePoint* ft = NULL;
+    PsyTimePoint *ft  = NULL;
 
     t1 = psy_timer_new();
     munit_assert_not_null(t1);
