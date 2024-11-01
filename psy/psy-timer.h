@@ -29,6 +29,20 @@ psy_timer_get_fire_time(PsyTimer *self);
 G_MODULE_EXPORT void
 psy_timer_cancel(PsyTimer *self);
 
+/**
+ * psy_timer_async_cb:
+ *
+ * This is a callback that will be called from a thread that monitors the
+ * timers. The callback should last as short as possible in order not to hinder
+ * other timers.
+ */
+typedef void (*psy_timer_async_cb)(PsyTimePoint *tp, gpointer data);
+
+G_MODULE_EXPORT gboolean
+psy_timer_set_async_fire_cb(PsyTimer          *self,
+                            psy_timer_async_cb cb,
+                            gpointer           data);
+
 /*The next functions are internal*/
 
 void

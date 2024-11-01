@@ -40,10 +40,15 @@ typedef struct ThreadData {
 static gint
 compare_timer_time_stamps_values(gconstpointer t1, gconstpointer t2)
 {
-    const PsyTimePoint *tp1 = psy_timer_get_fire_time(PSY_TIMER((gpointer) t1));
-    const PsyTimePoint *tp2 = psy_timer_get_fire_time(PSY_TIMER((gpointer) t2));
+    PsyTimePoint *tp1 = psy_timer_get_fire_time(PSY_TIMER((gpointer) t1));
+    PsyTimePoint *tp2 = psy_timer_get_fire_time(PSY_TIMER((gpointer) t2));
 
-    return psy_compare_time_point(tp1, tp2);
+    gboolean ret = psy_compare_time_point(tp1, tp2);
+
+    psy_time_point_free(tp1);
+    psy_time_point_free(tp2);
+
+    return ret;
 }
 
 #if !GLIB_CHECK_VERSION(2, 76, 0)
@@ -212,11 +217,12 @@ psy_timer_thread_fire_timers(PsyTimerThread *self)
         PsyTimePoint *tp = psy_timer_get_fire_time(first);
 
         if (psy_time_point_greater_equal(now, tp)) {
-            psy_timer_fire(first, psy_timer_get_fire_time(first));
+            psy_timer_fire(first, tp);
             g_ptr_array_remove_index(self->timers, 0);
 
             psy_time_point_free(now);
             psy_time_point_free(now_plus_busy_dur);
+            psy_time_point_free(tp);
             break;
         }
 
@@ -227,6 +233,7 @@ psy_timer_thread_fire_timers(PsyTimerThread *self)
 
         psy_time_point_free(now);
         psy_time_point_free(now_plus_busy_dur);
+        psy_time_point_free(tp);
     }
 }
 
@@ -256,6 +263,7 @@ psy_timer_thread_check_timers(PsyTimerThread *self)
             ret = TRUE;
         }
         psy_duration_free(dur);
+        psy_time_point_free(tp);
         psy_time_point_free(now);
     }
 

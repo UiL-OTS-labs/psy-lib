@@ -68,11 +68,12 @@ test_timer_create(const MunitParameter params[], void *user_data)
     (void) user_data;
     (void) params;
     PsyTimer *t1;
+    PsyTimePoint* tf = NULL;
 
     t1 = psy_timer_new();
     munit_assert_not_null(t1);
 
-    munit_assert_null(psy_timer_get_fire_time(t1));
+    munit_assert_null(tf = psy_timer_get_fire_time(t1));
     psy_timer_free(t1);
 
     return MUNIT_OK;
@@ -87,6 +88,7 @@ test_timer_set_fire_time(const MunitParameter params[], void *user_data)
     PsyTimer     *t1;
     PsyClock     *clk = psy_clock_new();
     PsyTimePoint *now = psy_clock_now(clk);
+    PsyTimePoint *ft  = NULL;
 
     t1 = psy_timer_new();
     munit_assert_not_null(t1);
@@ -95,8 +97,9 @@ test_timer_set_fire_time(const MunitParameter params[], void *user_data)
 
     g_object_set(t1, "fire-time", now, NULL);
 
-    munit_assert_not_null(psy_timer_get_fire_time(t1));
+    munit_assert_not_null(ft = psy_timer_get_fire_time(t1));
 
+    psy_time_point_free(ft);
     psy_time_point_free(now);
     psy_clock_free(clk);
     psy_timer_free(t1);
@@ -149,6 +152,7 @@ test_timer_fire(const MunitParameter params[], void *user_data)
     PsyTimer     *t1  = NULL;
     PsyClock     *clk = psy_clock_new();
     PsyTimePoint *now = psy_clock_now(clk);
+    PsyTimePoint* ft = NULL;
 
     t1 = psy_timer_new();
     munit_assert_not_null(t1);
@@ -167,7 +171,7 @@ test_timer_fire(const MunitParameter params[], void *user_data)
 
     g_timeout_add(10, G_SOURCE_FUNC(quit_loop), utils->loop);
 
-    munit_assert_not_null(psy_timer_get_fire_time(t1));
+    munit_assert_not_null(ft = psy_timer_get_fire_time(t1));
 
     g_main_loop_run(utils->loop);
 
@@ -175,6 +179,7 @@ test_timer_fire(const MunitParameter params[], void *user_data)
     munit_assert_true(test_data.time_is_equal_to_set);
     munit_assert_true(test_data.timer_is_the_same);
 
+    psy_time_point_free(ft);
     psy_time_point_free(now);
     psy_timer_free(t1);
     psy_clock_free(clk);
