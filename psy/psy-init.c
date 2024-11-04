@@ -16,7 +16,8 @@ static GMutex init_mutex;
 typedef struct _PsyInitializer {
     GObject parent;
 #ifdef HAVE_GSTREAMER
-    guint gstreamer : 1;
+    guint gstreamer              : 1;
+    guint gstreamer_force_unload : 1;
 #endif
 #ifdef HAVE_PORTAUDIO
     guint portaudio : 1;
@@ -30,6 +31,7 @@ typedef enum {
     PROP_NULL, // GObject internal use
 #ifdef HAVE_GSTREAMER
     PROP_GSTREAMER,
+    PROP_GSTREAMER_FORCE_UNLOAD,
 #endif
 #ifdef HAVE_PORTAUDIO
     PROP_PORTAUDIO,
@@ -98,7 +100,10 @@ initializer_finalize(GObject *obj)
 
         // specific libs
         if (self->gstreamer) {
-            gst_deinit();
+            // You are not allowed to deinit gstreamer twice. So only unload
+            // gstreamer when you are really sure.
+            if (self->gstreamer_force_unload)
+                gst_deinit();
         }
 
         if (self->portaudio) {
@@ -126,6 +131,9 @@ initializer_get_property(GObject    *obj,
     case PROP_GSTREAMER:
         g_value_set_boolean(value, self->gstreamer != 0);
         break;
+    case PROP_GSTREAMER_FORCE_UNLOAD:
+        g_value_set_boolean(value, self->gstreamer != 0);
+        break;
 #endif
 #ifdef HAVE_PORTAUDIO
     case PROP_PORTAUDIO:
@@ -150,6 +158,9 @@ initializer_set_property(GObject      *obj,
     case PROP_GSTREAMER:
         self->gstreamer = g_value_get_boolean(value);
         g_info("use gstreamer = %d", self->gstreamer == 1);
+        break;
+    case PROP_GSTREAMER_FORCE_UNLOAD:
+        self->gstreamer = g_value_get_boolean(value);
         break;
 #endif
 #ifdef HAVE_PORTAUDIO
@@ -184,6 +195,20 @@ psy_initializer_class_init(PsyInitializerClass *klass)
         "Initialize gstreamer along with the rest of psylib",
         TRUE,
         G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY);
+
+    /**
+     * Initializer:gstreamer-force-unload
+     *
+     * If set to true psylib will deinit gstreamer on your behalf. You'll have
+     * to notice that doing this twice WILL crash your program, so you'll
+     * probably want to keep this off, as that doesn't hurt.
+     */
+    initializer_properties[PROP_GSTREAMER_FORCE_UNLOAD]
+        = g_param_spec_boolean("gstreamer-force-unload",
+                               "GStreamerForceUnload",
+                               "deinit gstreamer when done. Keep it FALSE.",
+                               FALSE,
+                               G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY);
 #endif
 
 #ifdef HAVE_PORTAUDIO
