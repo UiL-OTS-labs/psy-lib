@@ -7,8 +7,9 @@
 
 // Setup the tests
 
-const int NUM_TIMERS  = 100;
-int       g_num_fired = 0;
+const int NUM_TIMERS       = 100;
+const int NUM_SIMULTANEOUS = 100;
+int       g_num_fired      = 0;
 
 static int
 timer_setup(void)
@@ -421,6 +422,92 @@ test_timer_fire_async(const MunitParameter params[], void *user_data)
     return MUNIT_OK;
 }
 
+static void
+on_timer_fire_simutaneously(PsyTimer *t, PsyTimePoint *tp, gpointer data)
+{
+    (void) t;
+    (void) tp;
+    TimerFireAccuratelyTest *fire_data = data;
+
+    // Must be freed
+    fire_data->fire_time = psy_clock_now(fire_data->clk);
+
+    (*fire_data->num_fired)++;
+
+    if ((*fire_data->num_fired) == NUM_SIMULTANEOUS) {
+        g_info("quiting %s", __func__);
+        g_main_loop_quit(fire_data->utils->loop);
+    }
+}
+
+static MunitResult
+test_timer_simultaneous(const MunitParameter params[], void *user_data)
+{
+    (void) params;
+    gint                num_correct, n_failed = 0;
+    TimerTestUtilities *utils      = user_data;
+    PsyClock           *clk        = psy_clock_new();
+    PsyTimePoint       *now        = psy_clock_now(clk);
+    GPtrArray          *timer_data = g_ptr_array_new_full(
+        NUM_SIMULTANEOUS, timer_fire_accuratately_test_free);
+    PsyDuration *dur = psy_duration_new_ms(100);
+
+    g_info("Timer simultaneous test");
+
+    for (int i = 0; i < NUM_SIMULTANEOUS; i++) {
+
+        PsyTimer *t1 = psy_timer_new();
+
+        // freed by the function timer_fire_accuratately_test_free
+        PsyTimePoint *time_future = psy_time_point_add(now, dur);
+
+        TimerFireAccuratelyTest *test_data
+            = timer_fire_accuratately_test_new(utils, clk, t1, time_future);
+
+        g_object_set(t1, "fire-time", time_future, NULL);
+        g_signal_connect(
+            t1, "fired", G_CALLBACK(on_timer_fire_simutaneously), test_data);
+
+        g_ptr_array_add(timer_data, test_data);
+    }
+
+    g_main_loop_run(utils->loop);
+
+    for (int i = 0; i < NUM_SIMULTANEOUS; i++) {
+        TimerFireAccuratelyTest *test_data = g_ptr_array_index(timer_data, i);
+        PsyDuration             *time_diff = NULL;
+
+        time_diff = psy_time_point_subtract(test_data->fire_time,
+                                            test_data->scheduled);
+
+        // We expect that a timer is not fired ahead of time.
+        munit_assert_int64(psy_duration_get_us(time_diff), >=, 0);
+
+        g_info("The timer was fired at %" PRId64 " us",
+               psy_duration_get_us(time_diff));
+        if (psy_duration_get_us(time_diff) >= 1000) {
+            munit_logf(MUNIT_LOG_WARNING,
+                       "Timer was late %lf\n",
+                       psy_duration_get_seconds(time_diff));
+            n_failed++;
+        }
+
+        psy_duration_free(time_diff);
+    }
+
+    num_correct        = NUM_SIMULTANEOUS - n_failed;
+    gdouble percentage = (double) num_correct / NUM_SIMULTANEOUS * 100;
+    munit_assert_double(percentage, >=, 90.0);
+
+    psy_duration_free(dur);
+    g_ptr_array_unref(timer_data);
+
+    psy_time_point_free(now);
+    psy_clock_free(clk);
+
+    return MUNIT_OK;
+}
+
 // clang-format off
 MunitTest tests[] = {
     {"create",test_timer_create, NULL, NULL, MUNIT_TEST_OPTION_NONE, NULL},
@@ -428,6 +515,7 @@ MunitTest tests[] = {
     {"fire",test_timer_fire, fixture_new, fixture_free , MUNIT_TEST_OPTION_NONE, NULL},
     {"fire-accurately",test_timer_fire_accurately, fixture_new, fixture_free , MUNIT_TEST_OPTION_NONE, NULL},
     {"fire-asynchronous",test_timer_fire_async, fixture_new, fixture_free , MUNIT_TEST_OPTION_NONE, NULL},
+    {"fire-simultaneous",test_timer_simultaneous, fixture_new, fixture_free , MUNIT_TEST_OPTION_NONE, NULL},
     {0}
 };
 // clang-format on
