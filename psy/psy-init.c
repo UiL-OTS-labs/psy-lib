@@ -149,11 +149,13 @@ initializer_set_property(GObject      *obj,
 #ifdef HAVE_GSTREAMER
     case PROP_GSTREAMER:
         self->gstreamer = g_value_get_boolean(value);
+        g_info("use gstreamer = %d", self->gstreamer == 1);
         break;
 #endif
 #ifdef HAVE_PORTAUDIO
     case PROP_PORTAUDIO:
         self->portaudio = g_value_get_boolean(value);
+        g_info("use portaudio = %d", self->portaudio == 1);
         break;
 #endif
     default:

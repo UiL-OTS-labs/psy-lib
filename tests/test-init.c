@@ -45,9 +45,12 @@ test_initializer_specific(const MunitParameter params[], void *user_data)
 {
     (void) params;
     (void) user_data;
-    gboolean        gst, portaudio;
-    PsyInitializer *initialzer = g_object_new(
-        PSY_TYPE_INITIALIZER, "gstreamer", TRUE, "portaudio", FALSE, NULL);
+    gboolean gst, portaudio;
+
+    // No need to say we do "need" gstreamer. Initialization is everything
+    // unless explictly turned off as portaudio here below.
+    PsyInitializer *initialzer
+        = g_object_new(PSY_TYPE_INITIALIZER, "portaudio", FALSE, NULL);
 
     g_object_get(initialzer, "gstreamer", &gst, "portaudio", &portaudio, NULL);
 
