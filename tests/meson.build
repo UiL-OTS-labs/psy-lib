@@ -15,6 +15,16 @@ if buildtype != 'debug' and buildtype != 'debugoptimized'
     UNIT_PP_ARGS += '-DNDEBUG=1'
 endif
 
+test_init = executable(
+    'test_init',
+    files('test-init.c', 'munit.c', 'unit-test-utilities.c'),
+    dependencies: psy_dep,
+    c_args : UNIT_PP_ARGS,
+    cpp_args : UNIT_PP_ARGS,
+)
+test('test_init', test_init)
+
+
 test_gtk_window = executable(
     'test_gtk_window',
     files('test-gtk-window.c'),
