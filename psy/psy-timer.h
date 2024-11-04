@@ -43,10 +43,13 @@ typedef void (*PsyTimerAsyncCb)(PsyTimePoint *tp, gpointer data);
 G_MODULE_EXPORT gboolean
 psy_timer_set_async_fire_cb(PsyTimer *self, PsyTimerAsyncCb cb, gpointer data);
 
-/*The next functions are internal*/
+/* **** The next functions are internal **** */
 
 void
 psy_timer_fire(PsyTimer *self, PsyTimePoint *tp);
+
+void
+psy_timer_fire_async_cb(PsyTimer *self, PsyTimePoint *tp);
 
 GAsyncQueue *
 psy_timer_get_queue(PsyTimer *self);

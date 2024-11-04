@@ -57,6 +57,8 @@ initializer_constructed(GObject *obj)
 
     init_count++;
 
+    g_info("Initializer::Initializing psylib count: %d", init_count);
+
     if (init_count == 1) {
 
         // stuff we always init
@@ -89,6 +91,9 @@ initializer_finalize(GObject *obj)
 
     g_mutex_lock(&init_mutex);
     init_count--;
+
+    g_info("Initializer::Deinitializing psylib count: %d", init_count);
+
     if (init_count == 0) {
         // stuff we always deinit
         timer_private_stop_timer_thread();

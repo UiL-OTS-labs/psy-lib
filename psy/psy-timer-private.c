@@ -7,6 +7,8 @@
     #include <windows.h>
 #endif
 
+#define TEN_MS 10000
+
 /* *********** globals *************** */
 
 static PsyTimerThread *g_timer_thread;
@@ -217,13 +219,14 @@ psy_timer_thread_fire_timers(PsyTimerThread *self)
         PsyTimePoint *tp = psy_timer_get_fire_time(first);
 
         if (psy_time_point_greater_equal(now, tp)) {
+            psy_timer_fire_async_cb(first, tp);
             psy_timer_fire(first, tp);
             g_ptr_array_remove_index(self->timers, 0);
 
             psy_time_point_free(now);
             psy_time_point_free(now_plus_busy_dur);
             psy_time_point_free(tp);
-            break;
+            continue;
         }
 
         ThreadData *msg = g_async_queue_try_pop(self->queue);
@@ -299,6 +302,10 @@ timer_thread(gpointer data)
 {
     PsyTimerThread *self = data;
 
+    g_info("TimerThread %p, with thread = %p is running",
+           (gpointer) self,
+           (gpointer) self->thread);
+
     while (self->running) {
         ThreadData *data = g_async_queue_timeout_pop(self->queue, 1000);
         if (data) {
@@ -321,11 +328,14 @@ psy_timer_thread_join(PsyTimerThread *self)
         return;
 
     // Send stop message
+    g_debug("Sending stop msg to timer thread");
     ThreadData *data = thread_data_new(MSG_STOP, self, NULL);
 
     g_async_queue_push(self->queue, data);
 
+    g_debug("joining timer thread");
     g_thread_join(self->thread);
+    g_debug("timer thread joined");
     self->thread = NULL;
 }
 

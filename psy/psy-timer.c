@@ -136,21 +136,6 @@ thread_default_fire(FireData *data)
     return G_SOURCE_REMOVE;
 }
 
-void
-psy_timer_fire(PsyTimer *self, PsyTimePoint *tp)
-{
-    FireData *data = g_new(FireData, 1);
-
-    data->fire_time = psy_time_point_copy(tp);
-    data->timer     = self;
-
-    g_main_context_invoke_full(self->context,
-                               G_PRIORITY_DEFAULT,
-                               G_SOURCE_FUNC(thread_default_fire),
-                               data,
-                               (GDestroyNotify) fire_data_free);
-}
-
 static void
 psy_timer_class_init(PsyTimerClass *klass)
 {
@@ -329,6 +314,44 @@ psy_timer_set_async_fire_cb(PsyTimer *self, PsyTimerAsyncCb cb, gpointer data)
     self->callback_data = data;
 
     return TRUE;
+}
+
+/**
+ * psy_timer_fire:
+ * @self, the timer to fire
+ * @tp: The timepoint at which the timer should be fired
+ *
+ * Fire the timer in the thread default context at the time the timer was
+ * created.
+ */
+void
+psy_timer_fire(PsyTimer *self, PsyTimePoint *tp)
+{
+    FireData *data = g_new(FireData, 1);
+
+    data->fire_time = psy_time_point_copy(tp);
+    data->timer     = self;
+
+    g_main_context_invoke_full(self->context,
+                               G_PRIORITY_DEFAULT,
+                               G_SOURCE_FUNC(thread_default_fire),
+                               data,
+                               (GDestroyNotify) fire_data_free);
+}
+
+/**
+ * psy_timer_fire_async_cb:(skip)
+ *
+ * fires the async callback
+ */
+void
+psy_timer_fire_async_cb(PsyTimer *self, PsyTimePoint *tp)
+{
+    g_return_if_fail(PSY_IS_TIMER(self));
+
+    if (self->callback) {
+        self->callback(tp, self->callback_data);
+    }
 }
 
 /**
