@@ -33,6 +33,9 @@ typedef struct _PsyTimer {
 
     GAsyncQueue *queue;
 
+    PsyTimerAsyncCb callback;
+    gpointer        callback_data;
+
 } PsyTimer;
 
 typedef enum {
@@ -131,21 +134,6 @@ thread_default_fire(FireData *data)
     psy_timer_emit_fire(data->timer, data->fire_time);
 
     return G_SOURCE_REMOVE;
-}
-
-void
-psy_timer_fire(PsyTimer *self, PsyTimePoint *tp)
-{
-    FireData *data = g_new(FireData, 1);
-
-    data->fire_time = psy_time_point_copy(tp);
-    data->timer     = self;
-
-    g_main_context_invoke_full(self->context,
-                               G_PRIORITY_DEFAULT,
-                               G_SOURCE_FUNC(thread_default_fire),
-                               data,
-                               (GDestroyNotify) fire_data_free);
 }
 
 static void
@@ -266,7 +254,7 @@ psy_timer_set_fire_time(PsyTimer *self, PsyTimePoint *tp)
  *
  * Gets the timepoint when this timer is set
  *
- * Returns:(nullable)(transfer none):The time for when this timer is/was
+ * Returns:(nullable)(transfer full):The time for when this timer is/was
  * set.
  */
 PsyTimePoint *
@@ -274,7 +262,8 @@ psy_timer_get_fire_time(PsyTimer *self)
 {
     g_return_val_if_fail(PSY_IS_TIMER((PsyTimer *) self), NULL);
 
-    return self->fire_time;
+    return self->fire_time != NULL ? psy_time_point_copy(self->fire_time)
+                                   : NULL;
 }
 
 /**
@@ -292,6 +281,77 @@ psy_timer_cancel(PsyTimer *self)
 
     timer_private_cancel_timer(self);
     g_clear_pointer(&self->fire_time, psy_time_point_free);
+}
+
+/**
+ * psy_timer_set_async_fire_cb:
+ * @cb:(nullable)(closure data)(scope forever): a callback to be called
+ * @data: the data passed to the callback
+ *
+ * You may only set this member when the fire-time is not yet set.
+ * This callback is called from the timer thread, hence, you must take care not
+ * to run in any thread related issues when operation on/with data. You should
+ * only call this function when its fire time isn't set yet, as that could
+ * complicate stuff.
+ * The thread that monitors the timers will first undertake the steps to emit
+ * the fired signal, as that is guaranteed pretty quickly. Only then it will
+ * call this callback asynchronously. It is advised that this callback is non
+ * blocking, as a blocking callback will mess with other timer scheduled .
+ *
+ * Returns: TRUE when the callback was successfully set.
+ */
+gboolean
+psy_timer_set_async_fire_cb(PsyTimer *self, PsyTimerAsyncCb cb, gpointer data)
+{
+    g_return_val_if_fail(PSY_IS_TIMER(self), FALSE);
+
+    if (self->fire_time) { // cancel ongoing operations first
+        g_warning("Unable to set callback when timer is already scheduled.");
+        return FALSE;
+    }
+
+    self->callback      = cb;
+    self->callback_data = data;
+
+    return TRUE;
+}
+
+/**
+ * psy_timer_fire:
+ * @self, the timer to fire
+ * @tp: The timepoint at which the timer should be fired
+ *
+ * Fire the timer in the thread default context at the time the timer was
+ * created.
+ */
+void
+psy_timer_fire(PsyTimer *self, PsyTimePoint *tp)
+{
+    FireData *data = g_new(FireData, 1);
+
+    data->fire_time = psy_time_point_copy(tp);
+    data->timer     = self;
+
+    g_main_context_invoke_full(self->context,
+                               G_PRIORITY_DEFAULT,
+                               G_SOURCE_FUNC(thread_default_fire),
+                               data,
+                               (GDestroyNotify) fire_data_free);
+}
+
+/**
+ * psy_timer_fire_async_cb:(skip)
+ *
+ * fires the async callback
+ */
+void
+psy_timer_fire_async_cb(PsyTimer *self, PsyTimePoint *tp)
+{
+    g_return_if_fail(PSY_IS_TIMER(self));
+
+    if (self->callback) {
+        self->callback(tp, self->callback_data);
+    }
 }
 
 /**

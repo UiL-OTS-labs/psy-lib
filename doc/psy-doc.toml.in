@@ -57,13 +57,15 @@ doc_url = "https://docs.gtk.org/pango/"
 # The generated files will be placed in the root output directory
 content_files = [
     "introduction.md",
-    "building-psylib.md",
-    "building-psylib-on-linux.md",
-    "building-psylib-on-windows.md",
     "stepping-through-experiment.md",
     "drawing-with-psylib-developer.md",
     "audio-with-psylib.md",
+    "building-psylib.md",
+    "building-psylib-on-linux.md",
+    "building-psylib-on-windows.md",
+    "testing-psylib.md",
 ]
+
 # Additional images referenced by the documentation; their path
 # is relative to the content directory specified on the command
 # line.
