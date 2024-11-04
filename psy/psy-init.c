@@ -160,7 +160,7 @@ initializer_set_property(GObject      *obj,
         g_info("use gstreamer = %d", self->gstreamer == 1);
         break;
     case PROP_GSTREAMER_FORCE_UNLOAD:
-        self->gstreamer = g_value_get_boolean(value);
+        self->gstreamer_force_unload = g_value_get_boolean(value);
         break;
 #endif
 #ifdef HAVE_PORTAUDIO
