@@ -15,7 +15,6 @@ static GMutex init_mutex;
 
 typedef struct _PsyInitializer {
     GObject parent;
-    guint   all : 1;
 #ifdef HAVE_GSTREAMER
     guint gstreamer : 1;
 #endif
@@ -29,7 +28,6 @@ G_DEFINE_TYPE(PsyInitializer, psy_initializer, G_TYPE_OBJECT)
 
 typedef enum {
     PROP_NULL, // GObject internal use
-    PROP_ALL,  // Turn everything on.
 #ifdef HAVE_GSTREAMER
     PROP_GSTREAMER,
 #endif
@@ -124,9 +122,6 @@ initializer_get_property(GObject    *obj,
     PsyInitializer *self = PSY_INITIALIZER(obj);
 
     switch (id) {
-    case PROP_ALL:
-        g_value_set_boolean(value, self->all != 0);
-        break;
     case PROP_GSTREAMER:
         g_value_set_boolean(value, self->gstreamer != 0);
         break;
@@ -147,13 +142,6 @@ initializer_set_property(GObject      *obj,
     PsyInitializer *self = PSY_INITIALIZER(obj);
 
     switch (id) {
-    case PROP_ALL:
-        self->all = g_value_get_boolean(value);
-        if (self->all) {
-            self->gstreamer = TRUE;
-            self->portaudio = TRUE;
-        }
-        break;
     case PROP_GSTREAMER:
         self->gstreamer = g_value_get_boolean(value);
         break;
@@ -174,19 +162,12 @@ psy_initializer_class_init(PsyInitializerClass *klass)
     obj_class->finalize     = initializer_finalize;
     obj_class->constructed  = initializer_constructed;
 
-    initializer_properties[PROP_ALL]
-        = g_param_spec_boolean("all",
-                               "All",
-                               "Initialize all libs psylib uses",
-                               TRUE,
-                               G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY);
-
 #ifdef HAVE_GSTREAMER
     initializer_properties[PROP_GSTREAMER] = g_param_spec_boolean(
         "gstreamer",
         "GStreamer",
         "Initialize gstreamer along with the rest of psylib",
-        FALSE,
+        TRUE,
         G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY);
 #endif
 
@@ -195,7 +176,7 @@ psy_initializer_class_init(PsyInitializerClass *klass)
         "portaudio",
         "PortAudio",
         "Initialize portaudio along with the rest of psylib",
-        FALSE,
+        TRUE,
         G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY);
 #endif
 
