@@ -421,11 +421,15 @@ timer_private_cancel_timer(PsyTimer *timer)
     // would be weird when we cancel an unrelated timer
     g_assert(result->timer == timer);
 
-    if (G_UNLIKELY(result == NULL || result->msg != MSG_TIMER_CANCELED)) {
-        if (result)
-            g_assert(result->msg == MSG_TIMER_NO_SUCH_TIMER);
+    if (G_UNLIKELY(result == NULL)) {
         g_critical("Didn't receive an timer cancel acknowledgment.");
     }
-    if (G_LIKELY(result != NULL))
+    else {
+        if (G_UNLIKELY(result->msg != MSG_TIMER_CANCELED)) {
+            g_assert(result->msg == MSG_TIMER_NO_SUCH_TIMER);
+            g_warning("No such timer: %p", (gpointer) result->timer);
+        }
+
         g_free(result);
+    }
 }

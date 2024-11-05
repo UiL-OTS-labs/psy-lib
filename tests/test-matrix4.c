@@ -85,7 +85,6 @@ int
 add_matrix4_suite(void)
 {
     CU_Suite *suite = CU_add_suite("PsyMatrix4 suite", NULL, NULL);
-    printf("Yes, it's added");
     CU_Test  *test;
     if (!suite)
         return 1;
