@@ -15,9 +15,9 @@ static GMutex init_mutex;
 
 typedef struct _PsyInitializer {
     GObject parent;
-    guint   all : 1;
 #ifdef HAVE_GSTREAMER
-    guint gstreamer : 1;
+    guint gstreamer              : 1;
+    guint gstreamer_force_unload : 1;
 #endif
 #ifdef HAVE_PORTAUDIO
     guint portaudio : 1;
@@ -29,9 +29,9 @@ G_DEFINE_TYPE(PsyInitializer, psy_initializer, G_TYPE_OBJECT)
 
 typedef enum {
     PROP_NULL, // GObject internal use
-    PROP_ALL,  // Turn everything on.
 #ifdef HAVE_GSTREAMER
     PROP_GSTREAMER,
+    PROP_GSTREAMER_FORCE_UNLOAD,
 #endif
 #ifdef HAVE_PORTAUDIO
     PROP_PORTAUDIO,
@@ -100,7 +100,10 @@ initializer_finalize(GObject *obj)
 
         // specific libs
         if (self->gstreamer) {
-            gst_deinit();
+            // You are not allowed to deinit gstreamer twice. So only unload
+            // gstreamer when you are really sure.
+            if (self->gstreamer_force_unload)
+                gst_deinit();
         }
 
         if (self->portaudio) {
@@ -124,15 +127,19 @@ initializer_get_property(GObject    *obj,
     PsyInitializer *self = PSY_INITIALIZER(obj);
 
     switch (id) {
-    case PROP_ALL:
-        g_value_set_boolean(value, self->all != 0);
-        break;
+#ifdef HAVE_GSTREAMER
     case PROP_GSTREAMER:
         g_value_set_boolean(value, self->gstreamer != 0);
         break;
+    case PROP_GSTREAMER_FORCE_UNLOAD:
+        g_value_set_boolean(value, self->gstreamer != 0);
+        break;
+#endif
+#ifdef HAVE_PORTAUDIO
     case PROP_PORTAUDIO:
         g_value_set_boolean(value, self->portaudio != 0);
         break;
+#endif
     default:
         G_OBJECT_WARN_INVALID_PROPERTY_ID(obj, id, pspec);
     }
@@ -147,19 +154,21 @@ initializer_set_property(GObject      *obj,
     PsyInitializer *self = PSY_INITIALIZER(obj);
 
     switch (id) {
-    case PROP_ALL:
-        self->all = g_value_get_boolean(value);
-        if (self->all) {
-            self->gstreamer = TRUE;
-            self->portaudio = TRUE;
-        }
-        break;
+#ifdef HAVE_GSTREAMER
     case PROP_GSTREAMER:
         self->gstreamer = g_value_get_boolean(value);
+        g_info("use gstreamer = %d", self->gstreamer == 1);
         break;
+    case PROP_GSTREAMER_FORCE_UNLOAD:
+        self->gstreamer_force_unload = g_value_get_boolean(value);
+        break;
+#endif
+#ifdef HAVE_PORTAUDIO
     case PROP_PORTAUDIO:
         self->portaudio = g_value_get_boolean(value);
+        g_info("use portaudio = %d", self->portaudio == 1);
         break;
+#endif
     default:
         G_OBJECT_WARN_INVALID_PROPERTY_ID(obj, id, pspec);
     }
@@ -174,28 +183,46 @@ psy_initializer_class_init(PsyInitializerClass *klass)
     obj_class->finalize     = initializer_finalize;
     obj_class->constructed  = initializer_constructed;
 
-    initializer_properties[PROP_ALL]
-        = g_param_spec_boolean("all",
-                               "All",
-                               "Initialize all libs psylib uses",
-                               TRUE,
-                               G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY);
-
 #ifdef HAVE_GSTREAMER
+    /**
+     * Initializer:gstreamer
+     *
+     * If set to true psylib will init gstreamer on your behalf
+     */
     initializer_properties[PROP_GSTREAMER] = g_param_spec_boolean(
         "gstreamer",
         "GStreamer",
         "Initialize gstreamer along with the rest of psylib",
-        FALSE,
+        TRUE,
         G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY);
+
+    /**
+     * Initializer:gstreamer-force-unload
+     *
+     * If set to true psylib will deinit gstreamer on your behalf. You'll have
+     * to notice that doing this twice WILL crash your program, so you'll
+     * probably want to keep this off, as that doesn't hurt.
+     */
+    initializer_properties[PROP_GSTREAMER_FORCE_UNLOAD]
+        = g_param_spec_boolean("gstreamer-force-unload",
+                               "GStreamerForceUnload",
+                               "deinit gstreamer when done. Keep it FALSE.",
+                               FALSE,
+                               G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY);
 #endif
 
 #ifdef HAVE_PORTAUDIO
+
+    /**
+     * Initializer:portaudio
+     *
+     * If set to true psylib will init portaudio on your behalf
+     */
     initializer_properties[PROP_PORTAUDIO] = g_param_spec_boolean(
         "portaudio",
         "PortAudio",
         "Initialize portaudio along with the rest of psylib",
-        FALSE,
+        TRUE,
         G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY);
 #endif
 

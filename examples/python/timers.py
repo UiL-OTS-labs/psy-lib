@@ -10,7 +10,7 @@ gi.require_version("GLib", "2.0")
 from gi.repository import Psy, GLib
 import psy_operators
 
-psy_init = Psy.Initializer()
+psy_init = Psy.Initializer(gstreamer=False, portaudio=False)
 
 cmd_parser = ap.ArgumentParser(
     "timers", description="An example using Psy.Timers with python"

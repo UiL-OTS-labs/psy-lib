@@ -520,7 +520,7 @@ MunitTest tests[] = {
 };
 // clang-format on
 
-MunitSuite suite = {"psy-timer/", tests, NULL, 1, MUNIT_SUITE_OPTION_NONE};
+MunitSuite suite = {"timer/", tests, NULL, 1, MUNIT_SUITE_OPTION_NONE};
 
 static void
 signal_handler(int sig)

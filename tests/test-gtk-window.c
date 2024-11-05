@@ -232,8 +232,8 @@ main(int argc, char **argv)
     gint          window_style;
     const gchar  *text_content = NULL;
 
-    PsyInitializer *initializer
-        = g_object_new(PSY_TYPE_INITIALIZER, "all", FALSE, NULL);
+    PsyInitializer *initializer = g_object_new(
+        PSY_TYPE_INITIALIZER, "gstreamer", FALSE, "portaudio", FALSE, NULL);
 
     PsyColor *circle_color  = psy_color_new_rgb(1.0, 0, 0);
     PsyColor *cross_color   = psy_color_new_rgb(1.0, 1.0, 0);
