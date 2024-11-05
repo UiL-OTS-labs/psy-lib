@@ -9,7 +9,10 @@ if build_machine.system() != 'windows' and build_machine.system() != 'cygwin'
        python3, 
        timeout : 5,
        suite : ['examples', 'python-examples'],
-       args : [meson.current_source_dir() + '/stepping.py'],
+       args : [
+           meson.current_source_dir() + '/stepping.py',
+           '-n', '2',
+       ],
     )
 
     test(
@@ -17,7 +20,10 @@ if build_machine.system() != 'windows' and build_machine.system() != 'cygwin'
        python3, 
        timeout : 5,
        suite : ['examples', 'python-examples'],
-       args : [meson.current_source_dir() + '/stepping-inheritance.py'],
+       args : [
+           meson.current_source_dir() + '/stepping-inheritance.py',
+           '-n', '2',
+       ],
 )
 
 endif
