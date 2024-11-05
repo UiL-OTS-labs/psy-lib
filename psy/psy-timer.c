@@ -351,18 +351,21 @@ psy_timer_fire(PsyTimer *self, PsyTimePoint *tp)
     data->fire_time = psy_time_point_copy(tp);
     data->timer     = self;
 
+    // This doesn't work as we need to be able to destroy the source id when the
+    // timer is canceled.
+    //
+    //    g_main_context_invoke_full(self->context,
+    //                               G_PRIORITY_DEFAULT,
+    //                               G_SOURCE_FUNC(thread_default_fire),
+    //                               data,
+    //                               (GDestroyNotify) fire_data_free);
+
     GSource *source = g_idle_source_new();
     g_source_set_callback(source,
                           G_SOURCE_FUNC(thread_default_fire),
                           data,
                           (GDestroyNotify) fire_data_free);
     self->source_id = g_source_attach(source, self->context);
-
-    g_main_context_invoke_full(self->context,
-                               G_PRIORITY_DEFAULT,
-                               G_SOURCE_FUNC(thread_default_fire),
-                               data,
-                               (GDestroyNotify) fire_data_free);
 
     g_source_unref(source);
 }
