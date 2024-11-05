@@ -10,11 +10,11 @@ gi.require_version("GLib", "2.0")
 from gi.repository import Psy, GLib
 import psy_operators
 
-initializer = Psy.Initializer()
+initializer = Psy.Initializer(gstreamer=False, portaudio=False)
 
 window: Psy.Canvas
 _NUM_CIRCLES = 12
-_NUM_ITERATIONS = 10
+_NUM_ITERATIONS = 24
 DUR = Psy.Duration.new(0.100)
 FRAME_DUR = Psy.Duration(seconds=1.0 / 60)
 BLACK = Psy.Color.new()
@@ -183,7 +183,7 @@ def main():
     steps.add_step_by_name("exit", exit_trial)
 
     # enter the step with a time in the future
-    steps.enter(clock.now() + Psy.Duration.new(1.0))
+    steps.enter(clock.now() + Psy.Duration.new(0.25))
 
     exit(main_loop.run())
 

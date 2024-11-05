@@ -54,6 +54,9 @@ psy_timer_fire_async_cb(PsyTimer *self, PsyTimePoint *tp);
 GAsyncQueue *
 psy_timer_get_queue(PsyTimer *self);
 
+void
+psy_timer_set_source_id(PsyTimer *self, guint source_id);
+
 G_END_DECLS
 
 #endif

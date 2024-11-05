@@ -65,7 +65,7 @@ test('timer-test', timer_test)
 
 test_timer = executable(
     'test-timer',
-    files('test-timer2.c', 'unit-test-utilities.c', 'munit.c', 'munit.h'),
+    files('test-timer.c', 'unit-test-utilities.c', 'munit.c', 'munit.h'),
     dependencies:[psy_dep],
     c_args : UNIT_PP_ARGS,
     cpp_args : UNIT_PP_ARGS,

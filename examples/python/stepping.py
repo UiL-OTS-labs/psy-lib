@@ -167,7 +167,7 @@ def main():
     steps.connect("enter", on_steps_enter, args.blue_first)
     steps.connect("leave", on_main_step_finish, main_loop)
 
-    steps.enter(clock.now() + Psy.Duration.new(1.0))
+    steps.enter(clock.now() + Psy.Duration.new(0.25))
 
     exit(main_loop.run())
 

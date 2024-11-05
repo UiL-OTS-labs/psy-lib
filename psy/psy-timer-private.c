@@ -302,6 +302,12 @@ timer_thread(gpointer data)
 {
     PsyTimerThread *self = data;
 
+    // A maincontext is created and set as thread default. Communication
+    // happens using GAsyncQueue. The context is created in order to avoid
+    // that sources are invoked in the default context
+    GMainContext *context = g_main_context_new();
+    g_main_context_push_thread_default(context);
+
     g_info("TimerThread %p, with thread = %p is running",
            (gpointer) self,
            (gpointer) self->thread);
@@ -317,6 +323,8 @@ timer_thread(gpointer data)
             psy_timer_thread_fire_timers(self);
         }
     }
+    g_main_context_pop_thread_default(context);
+    g_main_context_unref(context);
 
     return data;
 }
@@ -413,11 +421,15 @@ timer_private_cancel_timer(PsyTimer *timer)
     // would be weird when we cancel an unrelated timer
     g_assert(result->timer == timer);
 
-    if (G_UNLIKELY(result == NULL || result->msg != MSG_TIMER_CANCELED)) {
-        if (result)
-            g_assert(result->msg == MSG_TIMER_NO_SUCH_TIMER);
+    if (G_UNLIKELY(result == NULL)) {
         g_critical("Didn't receive an timer cancel acknowledgment.");
     }
-    if (G_LIKELY(result != NULL))
+    else {
+        if (G_UNLIKELY(result->msg != MSG_TIMER_CANCELED)) {
+            g_assert(result->msg == MSG_TIMER_NO_SUCH_TIMER);
+            g_warning("No such timer: %p", (gpointer) result->timer);
+        }
+
         g_free(result);
+    }
 }
