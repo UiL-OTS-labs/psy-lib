@@ -10,6 +10,7 @@ cdata.set_quoted('PSY_VERSION', meson.project_version())
 cdata.set_quoted('PSY_SOURCE_ROOT', meson.project_source_root())
 cdata.set_quoted('PSY_BUILD_ROOT', meson.project_build_root())
 
+cdata.set_quoted('PSY_CPU_FAMILY', host_machine.cpu_family())
 
 # the folder where we are building psylib, hence the .so and .gir
 # are stored here
