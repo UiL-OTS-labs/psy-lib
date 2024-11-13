@@ -13,3 +13,8 @@ if cdata.has('HAVE_LINUX_PARPORT_H') and cdata.has('HAVE_LINUX_PPDEV_H')
     libpsyfiles += files('psy-parport.c')
     libpsy_headers += files('psy-parport.h')
 endif
+
+if host_machine.system() in ['windows', 'cygwin']
+    libpsyfiles += files('psy-inpout-port.c')
+    libpsy_headers += files('psy-inpout-port.h')
+endif
