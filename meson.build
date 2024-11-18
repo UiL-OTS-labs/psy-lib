@@ -93,6 +93,9 @@ psy_deps = [
     epoxy_dep,
     gstreamer_dep,
     gstreamer_app_dep,
+    cairo_dep,
+    pango_dep,
+    pangocairo_dep
 ]
 
 # add optional dependencies
@@ -156,6 +159,7 @@ psy_deps += winmm_dep
 psy_deps += kernel32_dep
 
 gnome = import('gnome')
+fs = import ('fs')
 
 subdir('psy')
 subdir('share')

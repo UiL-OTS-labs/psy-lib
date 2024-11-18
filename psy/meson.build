@@ -10,7 +10,13 @@ cdata.set_quoted('PSY_VERSION', meson.project_version())
 cdata.set_quoted('PSY_SOURCE_ROOT', meson.project_source_root())
 cdata.set_quoted('PSY_BUILD_ROOT', meson.project_build_root())
 
-cdata.set_quoted('PSY_CPU_FAMILY', host_machine.cpu_family())
+if host_machine.cpu_family() == 'x86'
+    cdata.set('PSY_TARGET_ARCH_X86', 1)
+elif host_machine.cpu_family() == 'x86_64'
+    cdata.set('PSY_TARGET_ARCH_X86_64', 1)
+else
+    warning('Unanticipated cpu architecture')
+endif
 
 # the folder where we are building psylib, hence the .so and .gir
 # are stored here
