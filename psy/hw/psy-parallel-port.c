@@ -5,6 +5,9 @@
 #if defined(HAVE_LINUX_PARPORT_H)
     #include "psy-parport.h"
 #endif
+#if defined(_WIN32)
+    #include "psy-inpout-port.h"
+#endif
 
 // clang-format off
 G_DEFINE_QUARK(psy-parallel-port-error-quark, psy_parallel_port_error)
@@ -20,10 +23,14 @@ G_DEFINE_QUARK(psy-parallel-port-error-quark, psy_parallel_port_error)
  * class derived from this class.
  * This class does provide the full API of communicating with a parallel port
  * ParallelPorts in psylib are identified by there number, the id 0 might be
- * mapped to "/dev/parport0/" on linux but "LPT1" on windows.
+ * mapped to "/dev/parport0/" on linux but "0x378" on windows.
  *
  * TODO Most of these function work synchronous, hence, a class
  * needs to be designed that can read, write, open, close in an async fashion.
+ *
+ * PsyParallel is implemented fully by the classes PsyParport (Linux) and
+ * PsyInpoutPort (windows). Using [ctor@PsyParrallelPort.new], you'll get
+ * the device that is appropriate on your os, or NULL when not available.
  */
 
 typedef struct {
@@ -38,7 +45,7 @@ G_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE(PsyParallelPort,
                                     G_TYPE_OBJECT)
 
 typedef enum PsyParallelPortProperty {
-    PROP_NULL,
+    GPROP_NULL,
     PORT_NUM,
     PORT_NAME,
     PORT_DIRECTION,
@@ -207,7 +214,7 @@ psy_parallel_port_class_init(PsyParallelPortClass *cls)
      * PsyParallelPort:port-name:
      *
      * This is the name of the device at the os level, at linux it might be
-     * "/dev/parport0" and at windows "LPT1". It should be set when the
+     * "/dev/parport0" and at windows "0x378". It should be set when the
      * device is open and should result in an empty string otherwise.
      */
     port_properties[PORT_NAME] = g_param_spec_string(
@@ -307,9 +314,9 @@ psy_parallel_port_new(void)
 {
     PsyParallelPort *port = NULL;
 #if defined(HAVE_LINUX_PARPORT_H)
-
     port = g_object_new(PSY_TYPE_PARPORT, NULL);
-
+#elif defined(_WIN32)
+    port = g_object_new(PSY_TYPE_INPOUT_PORT, NULL);
 #else
     #pragma message "No instance for a parallel port"
 #endif
@@ -362,6 +369,11 @@ void
 psy_parallel_port_close(PsyParallelPort *self)
 {
     g_return_if_fail(PSY_IS_PARALLEL_PORT(self));
+    PsyParallelPortPrivate *priv = psy_parallel_port_get_instance_private(self);
+
+    if (priv->port_num < 0) {
+        return;
+    }
 
     PsyParallelPortClass *klass = PSY_PARALLEL_PORT_GET_CLASS(self);
     g_return_if_fail(klass->open != NULL);

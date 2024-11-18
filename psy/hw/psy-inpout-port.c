@@ -1,6 +1,7 @@
 
 #include <stdio.h>
 
+#include "../psy-utils.h"
 #include "psy-config.h"
 #include "psy-inpout-port.h"
 
@@ -11,14 +12,22 @@
 
 /* ******* loading of inpout dll for controlling SPP registers ******** */
 
-static gint      open_count = 0;
-static HINSTANCE inpout_dll = NULL;
+static gint      g_open_count = 0;
+static HINSTANCE g_inpout_dll = NULL;
 static GMutex    g_open_mutex;
 
-#if PSY_CPU_FAMILY == "x86"
+typedef void(__stdcall *lpOut32)(short, short);
+typedef short(__stdcall *lpInp32)(short);
+typedef BOOL(__stdcall *lpIsInpOutDriverOpen)(void);
+
+lpOut32              spp_write;
+lpInp32              spp_read;
+lpIsInpOutDriverOpen opened_dll;
+
+#if PSY_TARGET_ARCH_X86
 const gchar *g_dll_name = "inpout32.dll";
-#elif PSY_CPU_FAMILY == "x86_64"
-const gchar *g_dll_name = "inpout64.dll";
+#elif PSY_TARGET_ARCH_X86_64
+const gchar *g_dll_name = "inpoutx64.dll";
 #else
     #error "Unsupported platform"
 #endif
@@ -26,25 +35,35 @@ const gchar *g_dll_name = "inpout64.dll";
 static gboolean
 load_inpout(GError **error)
 {
-    gboolean ret;
     g_mutex_lock(&g_open_mutex);
 
-    open_count++;
+    g_open_count++;
 
-    if (open_count == 1) {
-        inpout_dll = LoadLibraryA(g_dll_name);
+    if (g_open_count == 1) {
+        g_inpout_dll = LoadLibraryA(g_dll_name);
 
-        if (inpout_dll == NULL) {
-            const char buff[BUFSIZ];
-            gint       error = GetLastError();
-            psy_strerr(error, buff, BUFSIZ);
+        if (g_inpout_dll == NULL) {
+            char buff[BUFSIZ];
+            gint error_code = GetLastError();
+            psy_strerr(error_code, buff, BUFSIZ);
 
             g_set_error(error,
                         PSY_PARALLEL_PORT_ERROR,
-                        "Unable to load library \"%s\":%s",
+                        PSY_PARALLEL_PORT_ERROR_OPEN,
+                        "Unable to load library \"%s\": %s",
                         g_dll_name,
                         buff);
+            goto error;
         }
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wcast-function-type"
+        spp_write  = (lpOut32) GetProcAddress(g_inpout_dll, "Out32");
+        spp_read   = (lpInp32) GetProcAddress(g_inpout_dll, "Inp32");
+        opened_dll = (lpIsInpOutDriverOpen) GetProcAddress(
+            g_inpout_dll, "IsInpOutDriverOpen");
+#pragma GCC diagnostic pop
+
+        g_assert(spp_write != NULL && spp_read != 0 && opened_dll != NULL);
     }
 
     g_mutex_unlock(&g_open_mutex);
@@ -52,9 +71,33 @@ load_inpout(GError **error)
 
 error:
 
-    open_count--;
+    g_open_count--;
 
     g_mutex_unlock(&g_open_mutex);
+    return FALSE;
+}
+
+static gboolean
+unload_inpout(void)
+{
+    g_mutex_lock(&g_open_mutex);
+
+    g_open_count--;
+    if (g_open_count < 0) {
+        g_critical("open count less than zero");
+    }
+
+    if (g_open_count == 0) {
+        FreeLibrary(g_inpout_dll);
+        g_inpout_dll = NULL;
+
+        spp_write  = NULL;
+        spp_read   = NULL;
+        opened_dll = NULL;
+    }
+
+    g_mutex_unlock(&g_open_mutex);
+    return TRUE;
 }
 
 /**
@@ -64,11 +107,38 @@ error:
  * PsyParallelPort and implements it. Typically you can instantiate instances
  * of this class with [ctor@ParallelPort.new] and that constructor
  * determines the right backend for your system.
+ *
+ * The device is opened by a number, the numbers relate to addresses.
+ * The following table applies:
+ * - *0* = 0x378
+ * - *1* = 0x278
+ * - *2* = 0x3BC
+ *
+ * If you want to know which port it is use the windows device manager
+ * to see what port maps to the address above. The ports are known as
+ * LPTx where the x is 1, 2 or 3. To keep numbering consistent, psylib uses
+ * 0, 1, 2.
+ *
+ * In order to use PsyInpoutPort, you'll need inpout.dll. PsyLib tries to
+ * ship with this dll. You'll can find it online (November 2024) at:
+ *
+ * https://www.highrez.co.uk/Downloads/InpOut32/
+ *
+ * this is a website from Phillip Gibbons. Back when I was young, one
+ * was able to write to the registers of a parallel port. This way you
+ * could bit-bang transmission between a pc and a printer.
+ * We (ab)use this in order to trigger interfaces. The dll makes this
+ * possible PsyLib does sanitize the addresses one can write to.
+ *
+ * Because, on windows were just writing to the registers, we cannot tell
+ * whether there actually is connected on that address, hence look up your
+ * device address in windows device manager. If you have multiple devices,
+ * they will appear on different addresses and you'll have to determine
+ * which address belongs to which port, before using the device.
  */
 
 typedef struct _PsyInpoutPort {
     PsyParallelPort parent;
-    int             num;
     gint16          data_register;
     gint16          status_register;
     gint16          control_register;
@@ -85,82 +155,50 @@ psy_inpout_port_init(PsyInpoutPort *self)
 static void
 inpout_port_open(PsyParallelPort *self, gint port_num, GError **error)
 {
-    int            mode;
     gchar          buffer[64];
-    PsyInpoutPort *pp       = PSY_INPOUT_PORT(self);
-    const gchar   *dev_name = NULL;
+    PsyInpoutPort *pp = PSY_INPOUT_PORT(self);
 
     PsyParallelPortClass *parallel_cls = PSY_PARALLEL_PORT_GET_CLASS(self);
 
     psy_parallel_port_close(self);
 
-    PSY_PARALLEL_PORT_CLASS(psy_inpout_port_parent_class)
-        ->open(self, port_num, error);
-
-    g_snprintf(buffer, sizeof(buffer), "/dev/parport%u", port_num);
-    parallel_cls->set_port_name(self, buffer);
-
-    dev_name = psy_parallel_port_get_port_name(self);
-
-    errno  = 0;
-    pp->fd = open(dev_name, O_RDWR);
-    if (pp->fd < 0) {
+    switch (port_num) {
+    case 0:
+        pp->data_register = 0x378;
+        break;
+    case 1:
+        pp->data_register = 0x278;
+        break;
+    case 2:
+        pp->data_register = 0x3BC;
+        break;
+    default:
         g_set_error(error,
                     PSY_PARALLEL_PORT_ERROR,
                     PSY_PARALLEL_PORT_ERROR_OPEN,
-                    "Unable to open %s: %s",
-                    dev_name,
-                    g_strerror(errno));
+                    "Unable to open port, chosen invalid number %d, choose "
+                    "from [0,1,2]",
+                    port_num);
         return;
     }
+    pp->status_register  = pp->data_register + 1;
+    pp->control_register = pp->data_register + 2;
 
-    if (ioctl(pp->fd, PPCLAIM)) { // Claim the device, before using it
-        goto error;
-    }
+    load_inpout(error);
+    if (*error != NULL)
+        return;
 
-    if (ioctl(pp->fd, PPGETMODE, &mode)) {
-        goto error;
-    }
-    if (mode != IEEE1284_MODE_COMPAT) {
-        mode = IEEE1284_MODE_COMPAT;
-        if (ioctl(pp->fd, PPSETMODE, &mode))
-            goto error;
-    }
+    PSY_PARALLEL_PORT_CLASS(psy_inpout_port_parent_class)
+        ->open(self, port_num, error);
 
-    int set_flags = PP_FASTWRITE | PP_FASTREAD;
-    if (ioctl(pp->fd, PPSETFLAGS, &set_flags))
-        goto error;
-
-    int is_output
-        = psy_parallel_port_get_direction(self) == PSY_IO_DIRECTION_OUT ? 0 : 1;
-
-    if (ioctl(pp->fd, PPDATADIR, &is_output) != 0)
-        goto error;
-
-    return;
-
-error:
-
-    psy_parallel_port_close(self);
-
-    g_set_error(error,
-                PSY_PARALLEL_PORT_ERROR,
-                PSY_PARALLEL_PORT_ERROR_OPEN,
-                "Unable to configure device %s: %s",
-                dev_name,
-                g_strerror(errno));
+    g_snprintf(buffer, sizeof(buffer), "0x%04X", pp->data_register);
+    parallel_cls->set_port_name(self, buffer);
 }
 
 static void
 inpout_port_close(PsyParallelPort *self)
 {
-    PsyInpoutPort *pp = PSY_INPOUT_PORT(self);
-
-    if (pp->fd >= 0) {
-        ioctl(pp->fd, PPRELEASE);
-        close(pp->fd);
-        pp->fd = -1;
-    }
+    unload_inpout(); // close inpout.dll on close of last input/output device
 
     PSY_PARALLEL_PORT_CLASS(psy_inpout_port_parent_class)->close(self);
 }
@@ -168,6 +206,7 @@ inpout_port_close(PsyParallelPort *self)
 static void
 inpout_port_write(PsyParallelPort *self, guint8 pins, GError **error)
 {
+    // TODO put duplicate code in psy-parallel-port.c
     PsyInpoutPort *pp      = PSY_INPOUT_PORT(self);
     gboolean       is_open = psy_parallel_port_is_open(self);
     gboolean       is_output
@@ -189,14 +228,7 @@ inpout_port_write(PsyParallelPort *self, guint8 pins, GError **error)
             "Unable to write to a port that is not configured for output.");
     }
 
-    if (ioctl(pp->fd, PPWDATA, &pins) == -1) {
-        g_set_error(error,
-                    PSY_PARALLEL_PORT_ERROR,
-                    PSY_PARALLEL_PORT_ERROR_FAILED,
-                    "Unable to write lines: %s",
-                    g_strerror(errno));
-        return;
-    }
+    spp_write(pp->data_register, pins);
 
     psy_parallel_port_set_pins(self, pins);
 }
@@ -244,14 +276,7 @@ inpout_port_read(PsyParallelPort *self, GError **error)
             "Unable to read from a port that is not configured as input.");
     }
 
-    if (ioctl(pp->fd, PPWDATA, &lines) == -1) {
-        g_set_error(error,
-                    PSY_PARALLEL_PORT_ERROR,
-                    PSY_PARALLEL_PORT_ERROR_FAILED,
-                    "Unable to read lines: %s",
-                    g_strerror(errno));
-        return 0;
-    }
+    lines = spp_read(pp->data_register);
 
     psy_parallel_port_set_pins(self, lines);
     return lines;
