@@ -81,9 +81,9 @@ typedef struct _PsyParallelPortClass {
     guint8 (*read)(PsyParallelPort *self, GError **error);
     PsyIoLevel (*read_pin)(PsyParallelPort *self, gint pin, GError **error);
 
-    void (*enumerate)(PsyParallelPort      *self,
-                      PsyParallelPortInfo **result,
-                      gint                 *num);
+    void (*enumerate)(PsyParallelPort       *self,
+                      PsyParallelPortInfo ***result,
+                      gint                  *num);
 
     gpointer padding[8];
 
@@ -141,9 +141,9 @@ G_MODULE_EXPORT guint8
 psy_parallel_port_get_pins(PsyParallelPort *self);
 
 G_MODULE_EXPORT void
-psy_parallel_port_enumerate(PsyParallelPort      *self,
-                            PsyParallelPortInfo **result,
-                            gint                 *num);
+psy_parallel_port_enumerate(PsyParallelPort       *self,
+                            PsyParallelPortInfo ***result,
+                            gint                  *num);
 
 // private
 

@@ -744,9 +744,9 @@ psy_parallel_port_set_pins(PsyParallelPort *self, guint8 pins)
 }
 
 void
-psy_parallel_port_enumerate(PsyParallelPort      *self,
-                            PsyParallelPortInfo **result,
-                            gint                 *num)
+psy_parallel_port_enumerate(PsyParallelPort       *self,
+                            PsyParallelPortInfo ***result,
+                            gint                  *num)
 {
     PsyParallelPortClass *cls;
     g_return_if_fail(PSY_IS_PARALLEL_PORT(self));
