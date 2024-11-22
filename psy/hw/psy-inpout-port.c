@@ -64,6 +64,12 @@ load_inpout(GError **error)
 #pragma GCC diagnostic pop
 
         g_assert(spp_write != NULL && spp_read != 0 && opened_dll != NULL);
+
+        if (!opened_dll())
+            g_set_error(error,
+                        PSY_PARALLEL_PORT_ERROR,
+                        PSY_PARALLEL_PORT_ERROR_OPEN,
+                        "Loaded library, but dll isn't open");
     }
 
     g_mutex_unlock(&g_open_mutex);
@@ -136,6 +142,12 @@ unload_inpout(void)
  * they will appear on different addresses and you'll have to determine
  * which address belongs to which port, before using the device.
  */
+
+struct LptAddressMap {
+    gchar *port_name;    // Name of the port e.g. LPT1
+    gint   port_number;  // for port LPTx port_number is x - 1.
+    gint   port_address; // Address of the data_register
+};
 
 typedef struct _PsyInpoutPort {
     PsyParallelPort parent;

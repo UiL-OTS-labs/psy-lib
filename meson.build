@@ -147,6 +147,12 @@ endif
 #     psy_deps += kernel32_dep
 # endif
 
+# to query WMI for hardware stuff on windows
+wbemuuid_dep = cc.find_library('wbemuuid', static:true, required: false)
+if wbemuuid_dep.found()
+    psy_deps += wbemuuid_dep
+endif
+
 message('the depencies are: ')
 foreach dep : psy_deps
     message(' - ', dep.name())
@@ -185,5 +191,3 @@ endif
 if get_option('documentation')
     subdir('doc')
 endif
-
-
