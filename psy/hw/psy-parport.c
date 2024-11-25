@@ -1,5 +1,8 @@
 
 #include "psy-parport.h"
+#include "glibconfig.h"
+#include "psy-enums.h"
+#include "psy-parallel-port.h"
 
 #include <error.h>
 #include <fcntl.h>
@@ -8,6 +11,14 @@
 #include <sys/ioctl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+
+// Cache for PsyParallelPortInfo
+
+PsyParallelPortInfo **g_infos      = NULL;
+gint                  g_num_infos  = 0;
+gint                  g_init_count = 0;
+
+GRecMutex g_mutex;
 
 /**
  * PsyParport:
@@ -28,7 +39,13 @@ G_DEFINE_TYPE(PsyParport, psy_parport, PSY_TYPE_PARALLEL_PORT)
 static void
 psy_parport_init(PsyParport *self)
 {
-    (void) self;
+    g_rec_mutex_lock(&g_mutex);
+    g_init_count++;
+    if (g_init_count == 1) {
+        psy_parallel_port_enumerate(
+            PSY_PARALLEL_PORT(self), &g_infos, &g_num_infos);
+    }
+    g_rec_mutex_unlock(&g_mutex);
 }
 
 static void
@@ -217,6 +234,117 @@ parport_read_pin(PsyParallelPort *self, gint pin, GError **error)
     return pins & (1ul << pin) ? PSY_IO_LEVEL_HIGH : PSY_IO_LEVEL_LOW;
 }
 
+static PsyParallelPortInfo *
+parport_create_enumerated_port_info(const gchar *dev_name)
+{
+    char        buffer[1024] = "";
+    const char *prefix       = "parport";
+    gint64      number;
+
+    if (strncmp(prefix, dev_name, strlen(prefix)) != 0)
+        return NULL;
+
+    const gchar *start_number = &dev_name[strlen(prefix)];
+    gchar       *end_number   = NULL;
+
+    number = g_ascii_strtoll(start_number, &end_number, 10);
+    if (end_number == NULL)
+        return NULL;
+
+    if (number < 0 || number > G_MAXINT)
+        return NULL;
+
+    g_snprintf(buffer, sizeof(buffer), "/dev/parport%ld", number);
+    return psy_parallel_port_info_new((gint) number, g_strdup(buffer));
+}
+
+static void
+parport_enumerate(PsyParallelPort       *self,
+                  PsyParallelPortInfo ***result,
+                  gint                  *num)
+{
+    (void) self;
+    GError    *error      = NULL;
+    GFile     *dev_folder = NULL;
+    GPtrArray *temp_infos = NULL;
+
+    g_rec_mutex_lock(&g_mutex);
+
+    if (g_infos != NULL) {
+        *result = g_infos;
+        *num    = g_num_infos;
+
+        g_rec_mutex_unlock(&g_mutex);
+        return;
+    }
+
+    temp_infos = g_ptr_array_new();
+
+    dev_folder = g_file_new_build_filename("/", "dev", NULL);
+
+    // put the outcome to valid values in case of error.
+    *num    = 0;
+    *result = NULL;
+
+    GFileEnumerator *enumerator
+        = g_file_enumerate_children(dev_folder,
+                                    G_FILE_ATTRIBUTE_STANDARD_NAME,
+                                    G_FILE_QUERY_INFO_NONE,
+                                    NULL,
+                                    &error);
+    if (error) {
+        g_critical("Unable to enumerate parallel port devices unable to create "
+                   "file enumerator: %s",
+                   error->message);
+        g_clear_error(&error);
+        if (enumerator)
+            g_object_unref(enumerator);
+        g_object_unref(dev_folder);
+        g_ptr_array_free(temp_infos, TRUE);
+        g_rec_mutex_unlock(&g_mutex);
+
+        *result = NULL;
+        *num    = 0;
+
+        return;
+    }
+
+    while (1) {
+        GFileInfo   *info = NULL;
+        const gchar *name;
+
+        if (!g_file_enumerator_iterate(enumerator, &info, NULL, NULL, &error))
+            break;
+        if (!info)
+            break;
+
+        name = g_file_info_get_name(info);
+
+        PsyParallelPortInfo *port_info
+            = parport_create_enumerated_port_info(name);
+        if (port_info) {
+            g_ptr_array_add(temp_infos, port_info);
+            g_num_infos++;
+        }
+        if (g_num_infos > 1024) // I would consider more than 2 unlikely.
+            break;
+    }
+
+    if (error) {
+        g_critical("Error while iterating devices: %s", error->message);
+        g_object_unref(enumerator);
+        g_rec_mutex_unlock(&g_mutex);
+        return;
+    }
+
+    g_infos = (PsyParallelPortInfo **) g_ptr_array_free(temp_infos, FALSE);
+
+    g_object_unref(enumerator);
+    g_object_unref(dev_folder);
+
+    g_rec_mutex_unlock(&g_mutex);
+}
+
 static void
 psy_parport_class_init(PsyParportClass *cls)
 {
@@ -231,4 +359,5 @@ psy_parport_class_init(PsyParportClass *cls)
     parallel_cls->write_pin = parport_write_pin;
     parallel_cls->read      = parport_read;
     parallel_cls->read_pin  = parport_read_pin;
+    parallel_cls->enumerate = parport_enumerate;
 }

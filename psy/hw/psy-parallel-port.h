@@ -22,6 +22,9 @@ psy_parallel_port_info_get_type();
 PsyParallelPortInfo *
 psy_parallel_port_info_new(gint port_number, gchar *name);
 
+void
+psy_parallel_port_info_free(PsyParallelPortInfo *self);
+
 G_MODULE_EXPORT const gchar *
 psy_parallel_port_info_name(PsyParallelPortInfo *self);
 
