@@ -2,12 +2,14 @@
 #include <stdio.h>
 
 #ifdef _WIN32
-#include <windows.h>
+    #include <windows.h>
 #endif
 
 #include <psylib.h>
 
-void test_sleep(int ms) {
+void
+test_sleep(int ms)
+{
 #ifndef _WIN32
     usleep(ms * 1000);
 #else
@@ -29,7 +31,7 @@ main(int argc, char **argv)
 {
     GError *error = NULL;
 
-    GOptionContext* opts = g_option_context_new("Open a parallelport");
+    GOptionContext *opts = g_option_context_new("Open a parallelport");
     g_option_context_add_main_entries(opts, entries, NULL);
 
     g_option_context_parse(opts, &argc, &argv, &error);
@@ -51,11 +53,11 @@ main(int argc, char **argv)
         psy_parallel_port_write(pp, 0, &error);
         if (error)
             break;
-        test_sleep(1);
+        // test_sleep(1);
         psy_parallel_port_write(pp, 255, &error);
         if (error)
             break;
-        test_sleep(1);
+        // test_sleep(1);
     }
 
     psy_parallel_port_write(pp, 0, &error);
