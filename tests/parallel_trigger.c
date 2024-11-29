@@ -1,4 +1,5 @@
 
+#include "psy-time-point.h"
 #include <hw/psy-parallel-trigger.h>
 #include <psy-clock.h>
 
@@ -44,7 +45,7 @@ finished(PsyParallelTrigger *trigger,
     }
 
     psy_duration_free(dur);
-    g_object_unref(newtp);
+    psy_time_point_free(newtp);
 }
 
 int
