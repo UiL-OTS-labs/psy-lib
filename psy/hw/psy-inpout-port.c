@@ -674,11 +674,17 @@ inpout_port_open(PsyParallelPort *self, gint port_num, GError **error)
     psy_parallel_port_close(self);
 
     init_win_parallel_port(error);
+
     if (*error != NULL)
         return;
 
     PSY_PARALLEL_PORT_CLASS(psy_inpout_port_parent_class)
         ->open(self, port_num, error);
+
+    // Make sure every dataline is low.
+    psy_parallel_port_write(PSY_PARALLEL_PORT(self), 0, error);
+    if (*error != 0)
+        return;
 
     g_snprintf(buffer, sizeof(buffer), "0x%04X", pp->data_register);
     parallel_cls->set_port_name(self, buffer);
