@@ -20,6 +20,10 @@
 static gint   init_count;
 static GMutex init_mutex;
 
+// For when initializing using psy_init() and deinit()
+static gint   func_init_count;
+static GMutex func_init_mutex;
+
 // Is used by psy_init() and -deinit()
 static PsyInitializer *g_initializer;
 
@@ -292,28 +296,28 @@ psy_initializer_free(PsyInitializer *self)
 void
 psy_init(void)
 {
-    g_mutex_lock(&init_mutex);
+    g_mutex_lock(&func_init_mutex);
 
-    init_count++;
+    func_init_count++;
 
-    if (init_count == 1) {
+    if (func_init_count == 1) {
         g_initializer = psy_initializer_new();
     }
 
-    g_mutex_unlock(&init_mutex);
+    g_mutex_unlock(&func_init_mutex);
 }
 
 void
 psy_deinit(void)
 {
-    g_mutex_lock(&init_mutex);
-    init_count--;
-    if (init_count == 0) {
+    g_mutex_lock(&func_init_mutex);
+    func_init_count--;
+    if (func_init_count == 0) {
         g_clear_object(&g_initializer);
     }
-    else if (init_count < 0) {
+    else if (func_init_count < 0) {
         g_warning("psylib: init_count = %d", init_count);
     }
 
-    g_mutex_unlock(&init_mutex);
+    g_mutex_unlock(&func_init_mutex);
 }
