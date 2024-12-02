@@ -81,22 +81,28 @@ parallel_port_open(void)
     gchar expected_name[BUFSIZ];
 #if defined(HAVE_LINUX_PARPORT_H)
     g_snprintf(expected_name, BUFSIZ, "/dev/parport%d", g_port_num);
-#else
-    g_snprintf(expected_name, BUFSIZ, "LPT%d", g_port_num + 1);
+#elif defined(WIN32)
+    const gchar *win_address;
+    if (g_port_num == 0)
+        win_address = "0x378";
+    else if (g_port_num == 1)
+        win_address = "0x278";
+    else if (g_port_num == 2)
+        win_address = "0x3BC";
+    else
+        win_address = "";
+    g_snprintf(expected_name, BUFSIZ, "%s", win_address);
 #endif
 
     psy_parallel_port_open(port, g_port_num, &error);
     gboolean open = psy_parallel_port_is_open(port);
     CU_ASSERT_TRUE(open);
+    CU_ASSERT_PTR_NULL(error);
     if (!open) {
         fprintf(stderr, "Unable to open port: %s", error->message);
-        g_error_free(error);
+        g_clear_error(&error);
         g_object_unref(port);
         return;
-    }
-    CU_ASSERT_PTR_NULL(error);
-    if (error) {
-        g_print("Error = %s\n", error->message);
     }
 
     g_object_get(port, "port-num", &port_num, "port-name", &name, NULL);
@@ -120,7 +126,8 @@ parallel_port_open(void)
 int
 add_parallel_suite(gint port_num)
 {
-#if defined(HAVE_LINUX_PARPORT_H) // Check for other port implementations here
+    // Check for other port implementations here
+#if defined(HAVE_LINUX_PARPORT_H) || defined(_WIN32)
     CU_Suite *suite = CU_add_suite("parallel port tests", NULL, NULL);
     CU_Test  *test  = NULL;
 

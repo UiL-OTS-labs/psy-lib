@@ -29,4 +29,7 @@ G_MODULE_EXPORT void
 psy_coordinate_center_to_c_i(
     gint width, gint height, gint x_in, gint y_in, gint *x_out, gint *y_out);
 
+void
+psy_strerr(int system_error_num, char *result, gsize result_size);
+
 G_END_DECLS

@@ -111,6 +111,9 @@ psy_timer_thread_init(PsyTimerThread *self)
     self->thread        = g_thread_new("TimerThread", timer_thread, self);
 
 #ifdef _WIN32
+    // TODO This is now always called when initializing psylib at windows,
+    // hence we need to check if this isn't redundant.
+    //
     // On windows a Sleep(1) should sleep for 1 millisecond. In practice, this
     // can take a bit longer due to OS scheduling, the 1 ms is a minimal amount.
     // The scheduler might finish the current "quantum" for this process. Which

@@ -5,11 +5,111 @@
 #if defined(HAVE_LINUX_PARPORT_H)
     #include "psy-parport.h"
 #endif
+#if defined(_WIN32)
+    #include "psy-inpout-port.h"
+#endif
+
+struct PsyParallelPortInfo {
+    gint   port_number;
+    gchar *port_name;
+};
+
+/**
+ * psy_parallel_port_info_new:(skip)(constructor)
+ * @port_number: the number to use to open this parallel port
+ * @name:(transfer full): the name it has on the current OS.
+ *
+ * Creates a new parallel port info.
+ *
+ * Stability: private
+ */
+PsyParallelPortInfo *
+psy_parallel_port_info_new(gint port_number, gchar *name)
+{
+    PsyParallelPortInfo *new = g_new(PsyParallelPortInfo, 1);
+
+    new->port_name   = name;
+    new->port_number = port_number;
+    return new;
+}
+
+/**
+ * psy_parallel_port_info_copy:
+ * @self: an instance of [struct@ParallelPortInfo] to copy
+ *
+ * Copies the parallel port info passed to this function.
+ *
+ * Returns:(transfer full): a copy of self.
+ */
+PsyParallelPortInfo *
+psy_parallel_port_info_copy(PsyParallelPortInfo *self)
+{
+    PsyParallelPortInfo *new = g_new(PsyParallelPortInfo, 1);
+
+    new->port_name   = g_strdup(self->port_name);
+    new->port_number = self->port_number;
+
+    return new;
+}
+
+/**
+ * psy_parallel_port_info_free:(skip)
+ * @self: the parameter to free
+ *
+ * Frees the instance of [class@ParallelPortInfo].
+ */
+void
+psy_parallel_port_info_free(PsyParallelPortInfo *self)
+{
+    g_free(self->port_name);
+    g_free(self);
+}
+
+/**
+ * psy_parallel_port_info_name:
+ * @self: an instance of [struct@ParallelPortInfo].
+ *
+ * Obtain the name of the parallel port e.g. LPT1 or windows
+ * or /dev/parport0 for the first available parallel port.
+ */
+const gchar *
+psy_parallel_port_info_name(PsyParallelPortInfo *self)
+{
+    g_return_val_if_fail(self != NULL, NULL);
+    return self->port_name;
+}
+
+/**
+ * psy_parallel_port_info_number:
+ * @self: an instance of [struct@ParallelPortInfo].
+ *
+ * Obtain the number of the parallelport. You should be able to
+ * use this number in order to open an instance of [class@ParallelPort].
+ *
+ * Notice that on windows this number is one less than the number of the
+ * parallel port so if LPT1 is available, the number here would be 0.
+ *
+ * Returns: the number to pass to [func@ParallelPort.open] in order to
+ *          open a parallel port.
+ */
+gint
+psy_parallel_port_info_port_number(PsyParallelPortInfo *self)
+{
+    g_return_val_if_fail(self != NULL, -1);
+    return self->port_number;
+}
 
 // clang-format off
 G_DEFINE_QUARK(psy-parallel-port-error-quark, psy_parallel_port_error)
-
 // clang-format on
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+G_DEFINE_BOXED_TYPE(PsyParallelPortInfo,
+                    psy_parallel_port_info,
+                    psy_parallel_port_info_copy,
+                    psy_parallel_port_info_free)
+#pragma GCC diagnostic pop
 
 /**
  * PsyParallelPort:
@@ -20,10 +120,14 @@ G_DEFINE_QUARK(psy-parallel-port-error-quark, psy_parallel_port_error)
  * class derived from this class.
  * This class does provide the full API of communicating with a parallel port
  * ParallelPorts in psylib are identified by there number, the id 0 might be
- * mapped to "/dev/parport0/" on linux but "LPT1" on windows.
+ * mapped to "/dev/parport0/" on linux but "0x378" on windows.
  *
  * TODO Most of these function work synchronous, hence, a class
  * needs to be designed that can read, write, open, close in an async fashion.
+ *
+ * PsyParallel is implemented fully by the classes PsyParport (Linux) and
+ * PsyInpoutPort (windows). Using [ctor@PsyParrallelPort.new], you'll get
+ * the device that is appropriate on your os, or NULL when not available.
  */
 
 typedef struct {
@@ -38,7 +142,7 @@ G_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE(PsyParallelPort,
                                     G_TYPE_OBJECT)
 
 typedef enum PsyParallelPortProperty {
-    PROP_NULL,
+    GPROP_NULL,
     PORT_NUM,
     PORT_NAME,
     PORT_DIRECTION,
@@ -207,7 +311,7 @@ psy_parallel_port_class_init(PsyParallelPortClass *cls)
      * PsyParallelPort:port-name:
      *
      * This is the name of the device at the os level, at linux it might be
-     * "/dev/parport0" and at windows "LPT1". It should be set when the
+     * "/dev/parport0" and at windows "0x378". It should be set when the
      * device is open and should result in an empty string otherwise.
      */
     port_properties[PORT_NAME] = g_param_spec_string(
@@ -307,9 +411,9 @@ psy_parallel_port_new(void)
 {
     PsyParallelPort *port = NULL;
 #if defined(HAVE_LINUX_PARPORT_H)
-
     port = g_object_new(PSY_TYPE_PARPORT, NULL);
-
+#elif defined(_WIN32)
+    port = g_object_new(PSY_TYPE_INPOUT_PORT, NULL);
 #else
     #pragma message "No instance for a parallel port"
 #endif
@@ -362,6 +466,11 @@ void
 psy_parallel_port_close(PsyParallelPort *self)
 {
     g_return_if_fail(PSY_IS_PARALLEL_PORT(self));
+    PsyParallelPortPrivate *priv = psy_parallel_port_get_instance_private(self);
+
+    if (priv->port_num < 0) {
+        return;
+    }
 
     PsyParallelPortClass *klass = PSY_PARALLEL_PORT_GET_CLASS(self);
     g_return_if_fail(klass->open != NULL);
@@ -632,4 +741,21 @@ psy_parallel_port_set_pins(PsyParallelPort *self, guint8 pins)
     g_return_if_fail(PSY_IS_PARALLEL_PORT(self));
 
     priv->pins = pins;
+}
+
+void
+psy_parallel_port_enumerate(PsyParallelPort       *self,
+                            PsyParallelPortInfo ***result,
+                            gint                  *num)
+{
+    PsyParallelPortClass *cls;
+    g_return_if_fail(PSY_IS_PARALLEL_PORT(self));
+    g_return_if_fail(result != NULL && *result == NULL);
+    g_return_if_fail(num != NULL);
+
+    cls = PSY_PARALLEL_PORT_GET_CLASS(self);
+
+    g_return_if_fail(cls->enumerate != NULL);
+
+    cls->enumerate(self, result, num);
 }

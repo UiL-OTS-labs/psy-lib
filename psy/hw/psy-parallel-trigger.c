@@ -453,7 +453,7 @@ write_thread(GTask        *task,
 
 end:
 
-    g_object_unref(end);
+    psy_time_point_free(end);
 }
 
 /**
@@ -528,8 +528,8 @@ trigger_finished_cb(GObject *obj, GAsyncResult *result, gpointer data)
         g_error_free(error);
     }
 
-    g_object_unref(tfinish);
-    g_object_unref(tstart);
+    psy_time_point_free(tfinish);
+    psy_time_point_free(tstart);
 }
 
 /**

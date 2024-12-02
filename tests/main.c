@@ -115,11 +115,11 @@ add_suites_to_registry(void)
     if (error)
         return error;
 
-#if !defined(_WIN32)
     error = add_parallel_suite(g_port_num);
     if (error)
         return error;
 
+#if !defined(_WIN32)
     error = add_picture_suite();
     if (error)
         return error;
@@ -253,12 +253,8 @@ main(int argc, char **argv)
         }
     }
 
-    
     g_object_new(
-        PSY_TYPE_INITIALIZER,
-        "gstreamer", g_audio,
-        "portaudio", g_audio,
-        NULL);
+        PSY_TYPE_INITIALIZER, "gstreamer", g_audio, "portaudio", g_audio, NULL);
 
     set_save_images(g_save_images ? TRUE : FALSE);
 

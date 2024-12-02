@@ -10,6 +10,13 @@ cdata.set_quoted('PSY_VERSION', meson.project_version())
 cdata.set_quoted('PSY_SOURCE_ROOT', meson.project_source_root())
 cdata.set_quoted('PSY_BUILD_ROOT', meson.project_build_root())
 
+if host_machine.cpu_family() == 'x86'
+    cdata.set('PSY_TARGET_ARCH_X86', 1)
+elif host_machine.cpu_family() == 'x86_64'
+    cdata.set('PSY_TARGET_ARCH_X86_64', 1)
+else
+    warning('Unanticipated cpu architecture')
+endif
 
 # the folder where we are building psylib, hence the .so and .gir
 # are stored here
@@ -316,4 +323,15 @@ if get_option('introspection')
     typelib_target = gir[1]
 endif
 
-
+# Copy dll for parallel port on windows to build dir
+# this isn't in hw because, then the file is copied to
+# meson.current_build_dir()/psy/hw, which isn't on the path and 
+# meson.current_build_dir()/psy is.
+if host_machine.system() in ['windows', 'cygwin']
+    cpu_family = host_machine.cpu_family()
+    if cpu_family == 'x86'
+        fs.copyfile('hw/inpout32.dll', 'inpout32.dll', install: true, install_dir: 'psy')
+    elif cpu_family == 'x86_64'
+        fs.copyfile('hw/inpoutx64.dll', 'inpoutx64.dll',install: true, install_dir : 'psy')
+    endif
+endif
