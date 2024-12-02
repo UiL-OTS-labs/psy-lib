@@ -22,8 +22,9 @@ int g_port_num = 0;
 // clang-format off
 GOptionEntry entries[] = {
     {"port-num", 'p', G_OPTION_FLAG_NONE, G_OPTION_ARG_INT, &g_port_num, "Specify a port num [0,1,2]", NULL},
-    {NULL},
+    {0},
 };
+
 // clang-format on
 
 int
