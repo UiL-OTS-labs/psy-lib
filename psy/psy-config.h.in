@@ -7,6 +7,9 @@
 #mesondefine PSY_BUILD_ROOT
 #mesondefine PSY_PROJECT_NAME
 
+#mesondefine PSY_TARGET_ARCH_X86
+#mesondefine PSY_TARGET_ARCH_X86_64
+
 // functions (or build in compiler additions)
 #mesondefine HAVE_BUILTIN_ADD_OVERFLOW
 #mesondefine HAVE_BUILTIN_SUB_OVERFLOW

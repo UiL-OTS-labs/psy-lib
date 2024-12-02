@@ -10,8 +10,22 @@
     #include <portaudio.h>
 #endif
 
+#ifdef WIN32
+    #define WIN32_LEAN_AND_MEAN
+    #include <windows.h>
+
+    #include <timeapi.h>
+#endif
+
 static gint   init_count;
 static GMutex init_mutex;
+
+// For when initializing using psy_init() and deinit()
+static gint   func_init_count;
+static GMutex func_init_mutex;
+
+// Is used by psy_init() and -deinit()
+static PsyInitializer *g_initializer;
 
 typedef struct _PsyInitializer {
     GObject parent;
@@ -60,7 +74,14 @@ initializer_constructed(GObject *obj)
     g_info("Initializer::Initializing psylib count: %d", init_count);
 
     if (init_count == 1) {
-
+#ifdef WIN32
+        // Increases accuracy of Sleep() to roughly 1ms instead of > 10ms.
+        if (timeBeginPeriod(1) != TIMERR_NOERROR) {
+            g_critical(
+                "Unable to improve the accuracy of the windows Sleep function, "
+                "timers may be inaccurate.");
+        }
+#endif
         // stuff we always init
         timer_private_start_timer_thread();
 
@@ -95,8 +116,6 @@ initializer_finalize(GObject *obj)
     g_info("Initializer::Deinitializing psylib count: %d", init_count);
 
     if (init_count == 0) {
-        // stuff we always deinit
-        timer_private_stop_timer_thread();
 
         // specific libs
         if (self->gstreamer) {
@@ -109,6 +128,12 @@ initializer_finalize(GObject *obj)
         if (self->portaudio) {
             Pa_Terminate();
         }
+        // stuff we always deinit
+        timer_private_stop_timer_thread();
+
+#if WIN32
+        timeEndPeriod(1);
+#endif
     }
     else if (init_count <= 0) {
         g_warning("Deinitialized psylib more often than initialized.");
@@ -230,28 +255,35 @@ psy_initializer_class_init(PsyInitializerClass *klass)
         obj_class, NUM_PROPS, initializer_properties);
 }
 
-static void
-initialize_psylib(void)
+/**
+ * psy_initializer_new:(constructor)
+ *
+ * Returns an object, that initializes psylib, and all of its dependencies.
+ * You can use g_object_new(), yourself, inorder to set a number of properties,
+ * using the properties you can avoid loading of some dependencies. This
+ * typically is not recommended, however, it is possible if you know what
+ * librayies you really need.
+ *
+ * Returns:(transfer full): an instance of [class@Initializer], you should
+ *     free this either with g_object_unref or [method@Psy.Initializer.free].
+ *     in many of the bindings, free will not be necessary. As the bindings
+ *     will do this on your behalf.
+ */
+PsyInitializer *
+psy_initializer_new(void)
 {
-    timer_private_start_timer_thread();
-#ifdef HAVE_GSTREAMER
-    gst_init(NULL, NULL);
-#endif
-#ifdef HAVE_PORTAUDIO
-    Pa_Initialize();
-#endif
+    return g_object_new(PSY_TYPE_INITIALIZER, NULL);
 }
 
-static void
-deinitialize_psylib(void)
+/**
+ * psy_initializer_free:(skip)
+ *
+ * Destroys, the initializer and thereby undos the initialization of psylib.
+ */
+void
+psy_initializer_free(PsyInitializer *self)
 {
-#ifdef HAVE_PORTAUDIO
-    Pa_Terminate();
-#endif
-#ifdef HAVE_GSTREAMER
-    gst_deinit();
-#endif
-    timer_private_stop_timer_thread();
+    g_object_unref(self);
 }
 
 /**
@@ -264,29 +296,28 @@ deinitialize_psylib(void)
 void
 psy_init(void)
 {
-    g_mutex_lock(&init_mutex);
+    g_mutex_lock(&func_init_mutex);
 
-    init_count++;
+    func_init_count++;
 
-    if (init_count == 1) {
-        g_info("Initializing psylib");
-        initialize_psylib();
+    if (func_init_count == 1) {
+        g_initializer = psy_initializer_new();
     }
 
-    g_mutex_unlock(&init_mutex);
+    g_mutex_unlock(&func_init_mutex);
 }
 
 void
 psy_deinit(void)
 {
-    g_mutex_lock(&init_mutex);
-    init_count--;
-    if (init_count == 0) {
-        deinitialize_psylib();
+    g_mutex_lock(&func_init_mutex);
+    func_init_count--;
+    if (func_init_count == 0) {
+        g_clear_object(&g_initializer);
     }
-    else if (init_count < 0) {
+    else if (func_init_count < 0) {
         g_warning("psylib: init_count = %d", init_count);
     }
 
-    g_mutex_unlock(&init_mutex);
+    g_mutex_unlock(&func_init_mutex);
 }

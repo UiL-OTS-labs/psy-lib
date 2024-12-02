@@ -8,6 +8,34 @@
 
 G_BEGIN_DECLS
 
+/**
+ * PsyParallelPortInfo:
+ *
+ * A structure that holds information about port that exist on the
+ * current pc it is running on.
+ */
+typedef struct PsyParallelPortInfo PsyParallelPortInfo;
+
+G_MODULE_EXPORT GType
+psy_parallel_port_info_get_type();
+
+PsyParallelPortInfo *
+psy_parallel_port_info_new(gint port_number, gchar *name);
+
+void
+psy_parallel_port_info_free(PsyParallelPortInfo *self);
+
+G_MODULE_EXPORT const gchar *
+psy_parallel_port_info_name(PsyParallelPortInfo *self);
+
+G_MODULE_EXPORT gint
+psy_parallel_port_info_port_number(PsyParallelPortInfo *self);
+
+G_MODULE_EXPORT PsyParallelPortInfo *
+psy_parallel_port_info_copy(PsyParallelPortInfo *self);
+
+#define PSY_TYPE_PARALLEL_PORT_INFO psy_parallel_port_info_get_type()
+
 #define PSY_TYPE_PARALLEL_PORT psy_parallel_port_get_type()
 
 G_MODULE_EXPORT
@@ -37,6 +65,7 @@ psy_parallel_port_error_quark(void);
  *        sure that you can obtain the mask of the pins on the ParallelPort.
  * @read_pin: This should be implemented in the deriving class. This
  *            function reads whether the signal is high or low.
+ * @enumerate: This function enumerates the devices that are available.
  */
 typedef struct _PsyParallelPortClass {
     GObjectClass parent_class;
@@ -54,6 +83,10 @@ typedef struct _PsyParallelPortClass {
 
     guint8 (*read)(PsyParallelPort *self, GError **error);
     PsyIoLevel (*read_pin)(PsyParallelPort *self, gint pin, GError **error);
+
+    void (*enumerate)(PsyParallelPort       *self,
+                      PsyParallelPortInfo ***result,
+                      gint                  *num);
 
     gpointer padding[8];
 
@@ -109,6 +142,11 @@ psy_parallel_port_read_pin(PsyParallelPort *self, gint pin, GError **error);
 
 G_MODULE_EXPORT guint8
 psy_parallel_port_get_pins(PsyParallelPort *self);
+
+G_MODULE_EXPORT void
+psy_parallel_port_enumerate(PsyParallelPort       *self,
+                            PsyParallelPortInfo ***result,
+                            gint                  *num);
 
 // private
 

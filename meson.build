@@ -93,6 +93,9 @@ psy_deps = [
     epoxy_dep,
     gstreamer_dep,
     gstreamer_app_dep,
+    cairo_dep,
+    pango_dep,
+    pangocairo_dep
 ]
 
 # add optional dependencies
@@ -144,6 +147,12 @@ endif
 #     psy_deps += kernel32_dep
 # endif
 
+# to query WMI for hardware stuff on windows
+wbemuuid_dep = cc.find_library('wbemuuid', static:true, required: false)
+if wbemuuid_dep.found()
+    psy_deps += wbemuuid_dep
+endif
+
 message('the depencies are: ')
 foreach dep : psy_deps
     message(' - ', dep.name())
@@ -156,6 +165,7 @@ psy_deps += winmm_dep
 psy_deps += kernel32_dep
 
 gnome = import('gnome')
+fs = import ('fs')
 
 subdir('psy')
 subdir('share')
@@ -181,5 +191,3 @@ endif
 if get_option('documentation')
     subdir('doc')
 endif
-
-

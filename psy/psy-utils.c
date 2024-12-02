@@ -1,6 +1,11 @@
 
 #include "psy-utils.h"
 
+#ifdef _WIN32
+    #define WIN32_LEAN_AND_MEAN
+    #include <windows.h>
+#endif
+
 /**
  * psy_coordinate_center_to_c:
  * @width: the width of the surface
@@ -209,4 +214,20 @@ psy_coordinate_c_to_center_i(
 {
     *x_out = x_in - width / 2;
     *y_out = -y_in + height / 2;
+}
+
+void
+psy_strerr(int system_error_num, char *result, gsize result_size)
+{
+#ifndef _WIN32
+    strerror_r(system_error_num, result, result_size);
+#else
+    FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+                   0,
+                   system_error_num,
+                   MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+                   result,
+                   result_size,
+                   NULL);
+#endif
 }

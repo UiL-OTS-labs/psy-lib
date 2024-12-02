@@ -1,6 +1,5 @@
 
-#include <hw/psy-parallel-trigger.h>
-#include <psy-clock.h>
+#include <psylib.h>
 
 const gchar *g_option_str = "This is a small program to test triggers with a "
                             "PsyParallelTriggerDevice";
@@ -44,13 +43,14 @@ finished(PsyParallelTrigger *trigger,
     }
 
     psy_duration_free(dur);
-    g_object_unref(newtp);
+    psy_time_point_free(newtp);
 }
 
 int
 main(int argc, char **argv)
 {
-    GError *error = NULL;
+    GError         *error = NULL;
+    PsyInitializer *init  = psy_initializer_new();
 
     GOptionContext *option_context = g_option_context_new(g_option_str);
     g_option_context_add_main_entries(option_context, entries, NULL);
@@ -121,4 +121,6 @@ exit:
 
     g_main_context_pop_thread_default(context);
     g_main_context_unref(context);
+
+    psy_initializer_free(init);
 }
