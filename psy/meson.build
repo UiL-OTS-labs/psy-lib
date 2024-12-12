@@ -234,8 +234,15 @@ libpsyfiles = files (
 )
 
 subdir('gl')
-subdir('backend_gtk')
+if gtk_dep.found()
+    subdir('backend_gtk')
+endif
+
 subdir('hw')
+
+if cdata.has('HAVE_WINDOWS_H')
+    subdir('backend_windows')
+endif
 
 if get_option('jack2')
     subdir('jack')

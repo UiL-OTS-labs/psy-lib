@@ -1,8 +1,7 @@
 
 libpsyfiles+= files(
-    'psy-gtk-window.c'
+    'psy-win-window.c'
 )
 libpsy_headers += files(
-    'psy-gtk-window.h'
+    'psy-win-window.h'
 )
-
