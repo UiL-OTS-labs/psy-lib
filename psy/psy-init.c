@@ -10,10 +10,9 @@
     #include <portaudio.h>
 #endif
 
-#ifdef WIN32
-    #define WIN32_LEAN_AND_MEAN
-    #include <windows.h>
+#include "psy-windows.h"
 
+#ifdef WIN32
     #include <timeapi.h>
 #endif
 

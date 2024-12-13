@@ -1,10 +1,6 @@
 
 #include "psy-utils.h"
-
-#ifdef _WIN32
-    #define WIN32_LEAN_AND_MEAN
-    #include <windows.h>
-#endif
+#include "psy-windows.h"
 
 /**
  * psy_coordinate_center_to_c:

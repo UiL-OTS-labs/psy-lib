@@ -6,10 +6,8 @@
 #include "psy-inpout-port.h"
 #include "psy-utils.h"
 
+#include "psy-windows.h"
 #ifdef _WIN32
-    #define WIN32_LEAN_AND_MEAN
-    #include <windows.h>
-
     #include <combaseapi.h>
     #include <wbemidl.h>
 #endif

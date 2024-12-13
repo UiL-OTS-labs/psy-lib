@@ -3,8 +3,9 @@
 #include "psy-clock.h"
 #include "psy-config.h"
 
-#ifdef _WIN32
-    #include <windows.h>
+#include "psy-windows.h"
+#if defined(WIN32)
+    #include <timeapi.h>
 #endif
 
 #define TEN_MS 10000
