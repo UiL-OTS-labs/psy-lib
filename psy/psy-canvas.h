@@ -184,4 +184,7 @@ psy_canvas_get_num_frames_total(PsyCanvas *self);
 G_MODULE_EXPORT void
 psy_canvas_reset(PsyCanvas *self);
 
+G_MODULE_EXPORT void
+psy_canvas_resize(PsyCanvas *self, gint width, gint height);
+
 G_END_DECLS

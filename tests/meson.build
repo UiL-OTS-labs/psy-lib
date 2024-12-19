@@ -31,6 +31,13 @@ test_gtk_window = executable(
     dependencies : [psy_dep]
 )
 
+test_win_window = executable(
+    'test_win_window',
+    files('test-win-window.c'),
+    dependencies: [psy_dep],
+    win_subsystem: 'windows'
+)
+
 test_image_canvas = executable(
     'test_image_canvas',
     files('test-image-canvas.c'),

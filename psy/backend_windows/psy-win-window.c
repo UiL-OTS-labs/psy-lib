@@ -1,21 +1,98 @@
 
-#include "psy-win-window.h"
-#include "psy-artist.h"
-#include "psy-circle.h"
+#include "psy-windows.h"
+
 #include "psy-clock.h"
+#include "psy-display-info.h"
 #include "psy-drawing-context.h"
 #include "psy-duration.h"
+#include "psy-utils.h"
+#include "psy-win-window.h"
 #include "psy-window.h"
 
-#include "psy-windows.h"
+#include "psy-win-window-private.h"
+
+static LRESULT
+psy_win_window_window_proc(
+    PsyWinWindow *self, HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam);
+
+static const char *g_win_class_name = "PsyWinWindow";
+static WNDCLASSEX *g_win_class      = NULL;
+static ATOM        g_win_class_atom = 0;
+HINSTANCE          g_module_handle  = NULL;
+
+static int    g_init_count = 0;
+static GMutex g_mutex;
+
+static LRESULT CALLBACK
+connect_winproc_to_self(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam)
+{
+    LONG_PTR      ptr  = GetWindowLongPtr(hwnd, GWLP_USERDATA);
+    PsyWinWindow *self = PSY_WIN_WINDOW((gpointer) ptr);
+
+    return psy_win_window_window_proc(self, hwnd, message, wparam, lparam);
+}
+
+static LRESULT CALLBACK
+startup_winproc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam)
+{
+    if (message == WM_NCCREATE) {
+        const CREATESTRUCT *cs = (const CREATESTRUCT *) lparam;
+
+        PsyWinWindow *self = PSY_WIN_WINDOW(cs->lpCreateParams);
+        // setup
+        SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR) self);
+        SetWindowLongPtr(
+            hwnd, GWLP_WNDPROC, (LONG_PTR) &connect_winproc_to_self);
+
+        return psy_win_window_window_proc(self, hwnd, message, wparam, lparam);
+    }
+
+    return DefWindowProc(hwnd, message, wparam, lparam);
+}
+
+static void
+create_window_class(void)
+{
+    g_module_handle = GetModuleHandle(NULL);
+
+    WNDCLASSEX win_class = {
+        .cbSize        = sizeof(win_class),
+        .style         = CS_OWNDC,
+        .lpfnWndProc   = startup_winproc,
+        .hCursor       = LoadCursor(NULL, IDC_ARROW),
+        .lpszClassName = g_win_class_name,
+    };
+
+    g_win_class  = g_malloc0(sizeof(WNDCLASSEX));
+    *g_win_class = win_class;
+
+    g_win_class_atom = RegisterClassEx(g_win_class);
+    if (g_win_class_atom == 0) {
+        char error_buf[1024];
+        psy_strerr(GetLastError(), error_buf, sizeof(error_buf));
+        g_critical("Unable to create WindowClass '%s': %s",
+                   g_win_class_name,
+                   error_buf);
+    }
+}
+
+static void
+destroy_window_class(void)
+{
+    UnregisterClass(g_win_class_name, NULL);
+    g_free(g_win_class);
+    g_win_class      = NULL;
+    g_win_class_atom = 0;
+}
 
 struct _PsyWinWindow {
     PsyWindow parent;
     HWND      window;
-    gchar    *name;
+    gboolean  is_running;
     gint      frames_lapsed; // number of frames lapsed since the last frame
     gboolean  enable_debug;  // enables extra debugging on the Direct3D context
 
+    PsyClock     *clock;
     PsyTimePoint *frame_time;
 };
 
@@ -36,10 +113,10 @@ static GParamSpec *win_window_props[NUM_PROPS]     = {NULL};
 static guint       win_window_signals[NUM_SIGNALS] = {0};
 
 static void
-psy_win_window_set_property(GObject      *object,
-                            guint         property_id,
-                            const GValue *value,
-                            GParamSpec   *pspec)
+win_window_set_property(GObject      *object,
+                        guint         property_id,
+                        const GValue *value,
+                        GParamSpec   *pspec)
 {
     PsyWinWindow *self = PSY_WIN_WINDOW(object);
 
@@ -55,10 +132,10 @@ psy_win_window_set_property(GObject      *object,
 }
 
 static void
-psy_win_window_get_property(GObject    *object,
-                            guint       property_id,
-                            GValue     *value,
-                            GParamSpec *pspec)
+win_window_get_property(GObject    *object,
+                        guint       property_id,
+                        GValue     *value,
+                        GParamSpec *pspec)
 {
     PsyWinWindow *self = PSY_WIN_WINDOW(object);
 
@@ -76,24 +153,109 @@ psy_win_window_get_property(GObject    *object,
 static void
 psy_win_window_init(PsyWinWindow *self)
 {
-// create_drawing_context(self);
+    self->is_running = TRUE;
 
-// or in constructed.
-#warning "Create a Direct3D context here";
+    g_mutex_lock(&g_mutex);
+    if (++g_init_count == 1) {
+        create_window_class();
+    }
+    g_assert(g_init_count > 0);
+    g_mutex_unlock(&g_mutex);
+
+    self->clock = psy_clock_new();
 }
 
 static void
-psy_win_window_dispose(GObject *gobject)
+win_window_constructed(GObject *object)
+{
+    PsyWinWindow *self = PSY_WIN_WINDOW(object);
+
+    DWORD win_style    = WS_OVERLAPPEDWINDOW | WS_SIZEBOX;
+    DWORD win_style_ex = 0;
+
+    int def_width  = 640;
+    int def_height = 480;
+    int x = 100, y = 100;
+
+    RECT r = {
+        .bottom = y + def_height,
+        .top    = y,
+        .right  = x + def_width,
+        .left   = x,
+    };
+    AdjustWindowRectEx(&r, win_style, FALSE, win_style_ex);
+
+    self->window = CreateWindowEx(0,
+                                  g_win_class_name,
+                                  "psy_window",
+                                  win_style,
+                                  CW_USEDEFAULT,
+                                  CW_USEDEFAULT,
+                                  r.right - r.left,
+                                  r.bottom - r.top,
+                                  NULL,
+                                  NULL,
+                                  g_module_handle,
+                                  self);
+    if (!self->window) {
+        char error_buff[1024];
+        psy_strerr(GetLastError(), error_buff, sizeof(error_buff));
+        g_critical("Unable to create window: %s", error_buff);
+        return;
+    }
+
+    BOOL success = ShowWindow(self->window, SW_SHOWNORMAL | SW_SHOW);
+    if (!success) {
+        char error[1024];
+        psy_strerr(GetLastError(), error, sizeof(error));
+        g_critical("Unable to show window: %s", error);
+    }
+    success = SetForegroundWindow(self->window);
+    if (!success) {
+        char error[1024];
+        psy_strerr(GetLastError(), error, sizeof(error));
+        g_critical("Unable to set window to foreground: %s", error);
+    }
+
+    success
+        = SetWindowPos(self->window,
+                       HWND_TOP,
+                       0,
+                       0,
+                       0,
+                       0,
+                       SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW | SWP_NOREDRAW);
+    if (!success) {
+        char error_buf[1024];
+        psy_strerr(GetLastError(), error_buf, sizeof(error_buf));
+        g_critical("Unable to set window pos: %s", error_buf);
+    }
+
+    // create_drawing_context(self);
+#warning "Create a Direct3D context here";
+    G_OBJECT_CLASS(psy_win_window_parent_class)->constructed(object);
+}
+
+static void
+win_window_dispose(GObject *gobject)
 {
     PsyWinWindow *self = PSY_WIN_WINDOW(gobject);
 
     g_clear_pointer(&self->window, DestroyWindow);
 
+    g_mutex_lock(&g_mutex);
+    if (--g_init_count == 0) {
+        destroy_window_class();
+    }
+    g_mutex_unlock(&g_mutex);
+
+    g_clear_object(&self->clock);
+
     G_OBJECT_CLASS(psy_win_window_parent_class)->dispose(gobject);
 }
 
 static void
-psy_win_window_finalize(GObject *gobject)
+win_window_finalize(GObject *gobject)
 {
     PsyWinWindow *self = PSY_WIN_WINDOW(gobject);
 
@@ -109,6 +271,17 @@ set_monitor(PsyWindow *self, gint nth_monitor)
 
     g_return_if_fail(PSY_IS_WIN_WINDOW(self));
     PsyWinWindow *psywindow = PSY_WIN_WINDOW(self);
+
+    GPtrArray *monitor_infos = psy_win_window_enumerate_displays();
+    if (nth_monitor < 0)
+        nth_monitor = 0;
+    else if (nth_monitor >= monitor_infos->len)
+        nth_monitor = monitor_infos->len - 1;
+
+    if (nth_monitor < 0)
+        g_critical("No monitors found");
+
+    PsyDisplayInfo *info = monitor_infos->pdata[nth_monitor];
 
     // Tell the parent canvas class about the changed parameters
     PsyDuration *frame_duration = NULL;
@@ -167,15 +340,66 @@ upload_projection_matrices(PsyCanvas *self)
 }
 
 static void
+win_window_resize(PsyCanvas *canvas, gint width, gint height)
+{
+    // Make sure the direct 3d resource buffers are resized.
+    g_print("%s: width = %d, height = %d\n", __func__, width, height);
+
+    PSY_CANVAS_CLASS(psy_win_window_parent_class)
+        ->resize(canvas, width, height);
+}
+
+static LRESULT
+psy_win_window_window_proc(
+    PsyWinWindow *self, HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam)
+{
+    LONG          msg_time_stamp = GetMessageTime();
+    gint64        time_stamp_us  = ((gint64) msg_time_stamp) * 1000;
+    PsyTimePoint *msg_time       = psy_time_point_new_monotonic(time_stamp_us);
+
+    switch (message) {
+    case WM_SIZE:
+    {
+        gint width  = LOWORD(lparam);
+        gint height = HIWORD(lparam);
+        psy_canvas_resize(PSY_CANVAS(self), width, height);
+        break;
+    };
+    case WM_CLOSE:
+        g_debug("%s", "WM_CLOSE");
+        DestroyWindow(self->window);
+        break;
+    case WM_DESTROY:
+        g_debug("%s", "WM_DESTROY");
+        PostQuitMessage(0);
+        break;
+    case WM_CREATE:
+        g_debug("%s", "WM_CREATE");
+        break;
+    case WM_SHOWWINDOW:
+    {
+        g_debug("%s", "WM_SHOW");
+        // move to the top
+        break;
+    }
+    default:
+        return DefWindowProc(hwnd, message, wparam, lparam);
+    };
+
+    psy_time_point_free(msg_time);
+    return 0;
+}
+
+static void
 psy_win_window_class_init(PsyWinWindowClass *klass)
 {
     GObjectClass *object_class = G_OBJECT_CLASS(klass);
 
-    // object_class->constructed  = psy_win_window_constructed;
-    object_class->dispose      = psy_win_window_dispose;
-    object_class->finalize     = psy_win_window_finalize;
-    object_class->get_property = psy_win_window_get_property;
-    object_class->set_property = psy_win_window_set_property;
+    object_class->constructed  = win_window_constructed;
+    object_class->dispose      = win_window_dispose;
+    object_class->finalize     = win_window_finalize;
+    object_class->get_property = win_window_get_property;
+    object_class->set_property = win_window_set_property;
 
     PsyWindowClass *psy_window_class = PSY_WINDOW_CLASS(klass);
     psy_window_class->set_monitor    = set_monitor;
@@ -185,6 +409,7 @@ psy_win_window_class_init(PsyWinWindowClass *klass)
     psy_canvas_class->draw_stimuli               = draw_stimuli;
     psy_canvas_class->update_frame_stats         = update_frame_stats;
     psy_canvas_class->upload_projection_matrices = upload_projection_matrices;
+    psy_canvas_class->resize                     = win_window_resize;
 
     /**
      * PsyWinWindow:enable-debug:
@@ -334,4 +559,26 @@ psy_win_window_free(PsyWinWindow *self)
 {
     g_return_if_fail(PSY_IS_WIN_WINDOW(self));
     g_object_unref(self);
+}
+
+void
+psy_win_window_start_message_loop(PsyWinWindow *self)
+{
+    g_return_if_fail(PSY_IS_WIN_WINDOW(self));
+
+    MSG msg = {0};
+
+    while (self->is_running) {
+
+        while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE) > 0) {
+            TranslateMessage(&msg);
+            DispatchMessage(&msg);
+            if (msg.message == WM_QUIT) {
+                self->is_running = FALSE;
+                break;
+            }
+        }
+
+        Sleep(1); // remove for drawing stuff
+    }
 }

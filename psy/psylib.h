@@ -14,6 +14,7 @@
 #include "psy-color.h"
 #include "psy-cross-artist.h"
 #include "psy-cross.h"
+#include "psy-display-info.h"
 #include "psy-drawing-context.h"
 #include "psy-duration.h"
 #include "psy-enums.h"
@@ -49,6 +50,9 @@
 #include "psy-window.h"
 
 #include "backend_gtk/psy-gtk-window.h"
+#if defined(WIN32)
+    #include "backend_windows/psy-win-window.h"
+#endif
 
 #if defined HAVE_JACK2
     #include "jack/psy-jack-audio-device.h"

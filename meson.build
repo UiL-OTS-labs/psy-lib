@@ -8,6 +8,7 @@ project('libpsy',
         'c_std=gnu11', # this makes it easier to compile sub projects
         'cpp_std=gnu++11' # use c++ 11
     ],
+    meson_version: '>=1.5.0',
     license : 'MIT'
 )
 
@@ -151,6 +152,16 @@ endif
 wbemuuid_dep = cc.find_library('wbemuuid', static:true, required: false)
 if wbemuuid_dep.found()
     psy_deps += wbemuuid_dep
+endif
+
+d3d11_dep = cc.find_library('d3d11', static:true, required: false)
+if d3d11_dep.found()
+    psy_deps += d3d11_dep
+endif
+
+dxgi_dep = cc.find_library('dxgi', static:true, required: false)
+if dxgi_dep.found()
+    psy_deps += dxgi_dep
 endif
 
 message('the depencies are: ')

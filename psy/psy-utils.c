@@ -1,6 +1,11 @@
 
 #include "psy-utils.h"
+#include "psy-config.h"
 #include "psy-windows.h"
+
+#if defined(HAVE_UNKNWN_H)
+    #include <unknwn.h>
+#endif
 
 /**
  * psy_coordinate_center_to_c:
@@ -212,6 +217,20 @@ psy_coordinate_c_to_center_i(
     *y_out = -y_in + height / 2;
 }
 
+/**
+ * psy_strerr:(skip)
+ * @system_error_num: the value of e.g. errno on Linux, or GetLastError on
+ *                    windows.
+ * @error(out)(caller-allocates)(length=result_size):
+ *                    Points to a buffer in which the error message should
+ *                    be printed.
+ * @result_size(in):  The size of the user allocated buffer in which
+ *                    the message should be printed.
+ *
+ * This function is handy to get the last error that occurred. You
+ * should call this immediately after a function that might fail. E.g.
+ * opening/ reading from a file and much more.
+ */
 void
 psy_strerr(int system_error_num, char *result, gsize result_size)
 {
@@ -227,3 +246,21 @@ psy_strerr(int system_error_num, char *result, gsize result_size)
                    NULL);
 #endif
 }
+
+#if defined(HAVE_UNKNWN_H)
+/**
+ * psy_release_com_instance:(skip)
+ * @unknown: unknow should be a valid COM object implementing the
+ *           IUnknown interface
+ *
+ * Release an IUnknown pointer. So you should be sure it not
+ * completely unknown. This releases one reference of the COM object
+ * and will clean it up once the last ref is dropped.
+ */
+void
+psy_release_com_instance(gpointer unknown)
+{
+    IUnknown *obj = unknown;
+    obj->lpVtbl->Release(obj);
+}
+#endif

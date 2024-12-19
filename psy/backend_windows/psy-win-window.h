@@ -20,6 +20,9 @@ psy_win_window_new_for_monitor(gint monitor);
 G_MODULE_EXPORT void
 psy_win_window_free(PsyWinWindow *self);
 
+G_MODULE_EXPORT void
+psy_win_window_start_message_loop(PsyWinWindow *self);
+
 G_END_DECLS
 
 #endif

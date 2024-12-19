@@ -32,4 +32,7 @@ psy_coordinate_center_to_c_i(
 void
 psy_strerr(int system_error_num, char *result, gsize result_size);
 
+void
+psy_release_com_instance(gpointer unknown);
+
 G_END_DECLS

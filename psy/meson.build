@@ -86,6 +86,11 @@ if cc.has_header('windows.h')
     cdata.set('HAVE_WINDOWS_H', true)
 endif
 
+# for IUnknown interface COM 
+if cc.has_header('unknwn.h')
+    cdata.set('HAVE_UNKNWN_H', true)
+endif
+
 # set predefines whether psylib is compile with the following backends/options
 
 if get_option('jack2') == true
@@ -136,6 +141,7 @@ libpsy_headers = files(
     'psy-color.h',
     'psy-cross-artist.h',
     'psy-cross.h',
+    'psy-display-info.h',
     'psy-drawing-context.h',
     'psy-duration.h',
     'psy-enums.h',
@@ -194,6 +200,7 @@ libpsyfiles = files (
     'psy-color.c',
     'psy-cross-artist.c',
     'psy-cross.c',
+    'psy-display-info.c',
     'psy-drawing-context.c',
     'psy-duration.c',
     'psy-font-utils.c',

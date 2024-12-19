@@ -1473,3 +1473,22 @@ psy_canvas_reset(PsyCanvas *self)
 
     cls->reset(self);
 }
+
+/**
+ * psy_canvas_resize:
+ * @self: the instance of [class@canvas] to resize.
+ * @width: the width after the resize is done.
+ * @height: the height after the resize is done.
+ *
+ * This function causes the resize signal to be emitted on self. The
+ * width and height should be larger than or equal to 0.
+ */
+void
+psy_canvas_resize(PsyCanvas *self, gint width, gint height)
+{
+    g_return_if_fail(PSY_IS_CANVAS(self));
+    g_return_if_fail(width >= 0);
+    g_return_if_fail(height >= 0);
+
+    g_signal_emit(self, canvas_signals[RESIZE], 0, width, height);
+}
