@@ -131,6 +131,11 @@ if get_option('jack2')
     psy_deps += jack2_dep
 endif
 
+sdl3_dep = dependency('sdl3', required : get_option('sdl3'))
+if sdl3_dep.found()
+    psy_deps += sdl3_dep
+endif
+
 # winmm_dep = dependency (
 #     'winmm',
 #     required : get_option('winmm')
@@ -179,6 +184,7 @@ psy_dep = declare_dependency(
 
 subdir('tests')
 subdir('programs')
+subdir('monitor_tests')
 
 if get_option('build-examples')
     subdir('examples')
@@ -191,3 +197,4 @@ endif
 if get_option('documentation')
     subdir('doc')
 endif
+

@@ -54,6 +54,13 @@ option (
                   'windows) you\'ll need the Jack2 development libraries'
 )
 
+option (
+    'sdl3',
+    type : 'feature',
+    value : 'auto',
+    description : 'Enable SDL3 as a windowing backend.'
+)
+
 
 # examples
 
