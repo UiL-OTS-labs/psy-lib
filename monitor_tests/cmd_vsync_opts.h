@@ -8,7 +8,8 @@ extern "C" {
 #endif
 
 typedef struct CmdOptions {
-    int nth_monitor;
+    int  nth_monitor;
+    bool fullscreen;
 } CmdOptions;
 
 bool

@@ -8,7 +8,10 @@ static bool g_parsed = false;
 
 // clang-format off
 GOptionEntry entries[] = {
-    {"monitor", 'm', G_OPTION_FLAG_NONE, G_OPTION_ARG_INT, &g_options.nth_monitor, "Put the display on the nth monitor", NULL},
+    {"monitor", 'm', G_OPTION_FLAG_NONE, G_OPTION_ARG_INT, &g_options.nth_monitor,
+        "Put the display on the nth monitor", NULL},
+    {"fullscreen", 'f', G_OPTION_FLAG_NONE, G_OPTION_ARG_NONE, &g_options.fullscreen,
+        "Create a fullscreen display(or not)", NULL},
     {0}
 };
 
