@@ -12,6 +12,61 @@
 #include "cmd_vsync_opts.h"
 #include "monitor_shader_paths.h"
 
+PsyDuration *g_frame_dur = NULL;
+
+typedef struct Stimulus {
+    int64_t start_frame; // The number of the frame this stimulus should start
+    int64_t num_frames;  // The number of frames this stimulus lasts
+} Stimulus;
+
+typedef struct FrameStats {
+
+    int64_t nth_frame;        // nth_frame to be presented starts a -1
+    int64_t n_missed_frames;  // the number of missed frames
+    int64_t last_known_frame; // the number of the last known frame.
+
+    PsyTimePoint *last_frame_time;
+} FrameStats;
+
+static FrameStats *
+frame_stats_new(void)
+{
+    FrameStats *stats = calloc(1, sizeof(FrameStats));
+
+    return stats;
+}
+
+static void
+frame_stats_free(FrameStats *stats)
+{
+    if (stats->last_frame_time)
+        psy_time_point_free(stats->last_frame_time);
+
+    free(stats);
+}
+
+void
+update_frame_stats(FrameStats   *self,
+                   int64_t       n,
+                   int64_t       n_missed_frames,
+                   PsyTimePoint *tp_next_frame)
+{
+    if (!self) {
+        g_critical("Self pointer is NULL");
+        return;
+    }
+
+    self->last_known_frame = self->nth_frame + 1;
+
+    self->nth_frame += (n + n_missed_frames);
+    self->n_missed_frames += n_missed_frames;
+
+    if (self->last_frame_time)
+        psy_time_point_free(self->last_frame_time);
+
+    self->last_frame_time = tp_next_frame;
+}
+
 const SDL_DisplayMode *
 get_display_mode_for_monitor(int nth_display, SDL_Rect *out)
 {
@@ -91,23 +146,57 @@ error:
 void
 render_loop(SDL_Window *win)
 {
-    int     running  = 1;
-    GError *error    = NULL;
-    float   white[4] = {1.0f, 1.0f, 1.0f, 1.0f};
-    float   sw       = 100; // square_width
+    int               vsync;
+    int               running  = 1;
+    GError           *error    = NULL;
+    float             white[4] = {1.0f, 1.0f, 1.0f, 1.0f};
+    float             sw       = 250; // square_width and height
+    PsyGlVBuffer     *vbuffer  = NULL;
+    PsyShaderProgram *program  = NULL;
+
+    FrameStats *stats = frame_stats_new();
+
+    PsyClock           *clk     = psy_clock_new();
+    PsyParallelTrigger *trigger = psy_parallel_trigger_new();
+
+    FILE *outfile = fopen("sdl_vsync.txt", "wb");
 
     SDL_GLContext context = SDL_GL_CreateContext(win);
     SDL_GL_MakeCurrent(win, context);
     int w, h;
     SDL_GetWindowSizeInPixels(win, &w, &h);
 
+    if (SDL_GetWindowSurfaceVSync(win, &vsync) == true) {
+        g_info("Default vsync = %d", vsync);
+    }
+    else {
+        if (SDL_GL_GetSwapInterval(&vsync))
+            g_info("Default vsync = %d", vsync);
+        else {
+            g_critical("Oops unable to query window vsync :%s", SDL_GetError());
+        }
+    }
+
+    psy_parallel_trigger_open(trigger, 0, &error);
+    if (error) {
+        g_critical("Unable to open trigger device: %s", error->message);
+        g_clear_error(&error);
+        g_clear_object(&trigger); // work without the trigger
+    }
+
     glViewport(0, 0, w, h);
 
     PsyMatrix4 *projection = psy_matrix4_new_ortographic(
         -w / 2.0, w / 2.0f, -h / 2.0f, h / 2.0f, 0.0f, 100.0f);
-    PsyMatrix4 *model = psy_matrix4_new_identity();
 
-    PsyShaderProgram *program = init_shaders();
+    PsyMatrix4 *model  = psy_matrix4_new_identity();
+    float       vec[3] = {-w / 2 + sw / 2, h / 2 - sw / 2, 0.f};
+    PsyVector3 *v      = psy_vector3_new_data(3, vec);
+
+    psy_matrix4_translate(model, v);
+    psy_vector3_free(v);
+
+    program = init_shaders();
     if (!program) {
         g_critical("Unable to create shader program");
         goto error;
@@ -136,7 +225,7 @@ render_loop(SDL_Window *win)
     psy_matrix4_free(projection);
     psy_matrix4_free(model);
 
-    PsyGlVBuffer *vbuffer = psy_gl_vbuffer_new();
+    vbuffer = psy_gl_vbuffer_new();
 
     // clang-format off
 
@@ -159,14 +248,10 @@ render_loop(SDL_Window *win)
     psy_vbuffer_set_from_data(
         PSY_VBUFFER(vbuffer), verts, sizeof(verts) / sizeof(verts[0]));
 
-    PsyClock *clk = psy_clock_new();
-
-    FILE *outfile = fopen("sdl_vsync.txt", "wb");
-
     uint64_t start = SDL_GetTicks();
 
     while (true) { // wait a half of a second for the vsync to stabilize.
-        glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
         SDL_GL_SwapWindow(win);
         if ((SDL_GetTicks() - start) > 500)
@@ -189,6 +274,9 @@ render_loop(SDL_Window *win)
                 g_debug("Setting viewport to 0 0 %d %d", width, height);
 
                 glViewport(0, 0, width, height);
+                // error handing on glViewPort
+                assert(glGetError() == GL_NO_ERROR);
+
                 PsyMatrix4 *p = psy_matrix4_new_ortographic(-width / 2.0f,
                                                             width / 2.0f,
                                                             -height / 2.0f,
@@ -200,15 +288,34 @@ render_loop(SDL_Window *win)
                 if (error) {
                     g_critical("Unable to set projection matrix: %s",
                                error->message);
+                    g_clear_error(&error);
                 }
                 psy_matrix4_free(p);
 
-                // error handing on glViewPort
-                assert(glGetError() == GL_NO_ERROR);
+                float vec[3]  = {-width / 2 + sw / 2, height / 2 - sw / 2, 0};
+                PsyVector3 *v = psy_vector3_new_data(3, vec);
+
+                PsyMatrix4 *m = psy_matrix4_new_identity();
+                psy_matrix4_translate(m, v);
+                psy_vector3_free(v);
+
+                psy_shader_program_set_uniform_matrix4(
+                    program, "model", m, &error);
+                if (error) {
+                    g_critical("Unable to set projection matrix: %s",
+                               error->message);
+                    g_clear_error(&error);
+                }
+                psy_matrix4_free(m);
             }
         }
 
-        glClearColor(0.0, 0.0, 0.0, 1.0);
+        if (!running)
+            break;
+
+        // Drawing one frame
+
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
         psy_vbuffer_draw_triangle_fan(PSY_VBUFFER(vbuffer), &error);
@@ -220,15 +327,48 @@ render_loop(SDL_Window *win)
         SDL_GL_SwapWindow(win);
         PsyTimePoint *temp = psy_clock_now(clk);
         PsyDuration  *dur  = psy_time_point_subtract(temp, last);
+
+        // update frame stats
+        int64_t n_frames = psy_duration_divide_rounded(dur, g_frame_dur);
+        int64_t n_missed = n_frames > 0 ? n_frames - 1 : 0;
+        g_debug("n_frames = %d, n_missed = %d", (int) n_frames, (int) n_missed);
+        g_debug("g_frame_dur = %lf, dur = %lf",
+                psy_duration_get_seconds(g_frame_dur),
+                psy_duration_get_seconds(dur));
+
+        update_frame_stats(
+            stats, n_frames, n_missed, psy_time_point_add(temp, g_frame_dur));
+
         fprintf(outfile, "%lf\n", psy_duration_get_seconds(dur));
         psy_duration_free(dur);
         psy_time_point_free(last);
         last = temp;
     }
 
+    fprintf(stdout,
+            "n_frames = %" G_GINT64_FORMAT ", n_missed = %" G_GINT64_FORMAT
+            "\n",
+            stats->nth_frame,
+            stats->n_missed_frames);
+
+    psy_time_point_free(last);
+
 error:
 
-    fclose(outfile);
+    if (outfile)
+        fclose(outfile);
+
+    if (error)
+        g_clear_error(&error);
+
+    if (stats)
+        frame_stats_free(stats);
+
+    if (vbuffer)
+        psy_gl_vbuffer_free(vbuffer);
+
+    if (program)
+        g_object_unref(program);
 
     SDL_GL_DestroyContext(context);
 
@@ -238,8 +378,8 @@ error:
 int
 main(int argc, char **argv)
 {
-    int      ret = EXIT_SUCCESS;
-    SDL_Rect monitor_rect;
+    int      ret          = EXIT_SUCCESS;
+    SDL_Rect monitor_rect = {0};
 
     cmd_parse(&argc, &argv);
     const CmdOptions *opts = cmd_get_options();
@@ -259,6 +399,8 @@ main(int argc, char **argv)
     SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
     SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 16);
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 4);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_PROFILE_CORE);
 
     win = SDL_CreateWindow("Psy test SDL_Window timing",
@@ -273,8 +415,15 @@ main(int argc, char **argv)
 
     const SDL_DisplayMode *mode
         = get_display_mode_for_monitor(opts->nth_monitor, &monitor_rect);
+    g_frame_dur = psy_duration_new(1.0f
+                                   / ((double) mode->refresh_rate_numerator
+                                      / mode->refresh_rate_denominator));
 
     g_info("Setting montitor to x=%d, y=%d", monitor_rect.x, monitor_rect.y);
+    g_info("Framedur = %d/%d or %lfs",
+           mode->refresh_rate_numerator,
+           mode->refresh_rate_denominator,
+           psy_duration_get_seconds(g_frame_dur));
 
     if (!SDL_SetWindowPosition(win, monitor_rect.x, monitor_rect.y)) {
         g_critical("Unable to set window position: %s", SDL_GetError());
@@ -289,6 +438,7 @@ main(int argc, char **argv)
     render_loop(win);
 
 error:
+    psy_duration_free(g_frame_dur);
     psy_initializer_free(psy_init);
     SDL_Quit();
 opt_error:
