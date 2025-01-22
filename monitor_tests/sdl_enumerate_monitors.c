@@ -45,7 +45,7 @@ enumerate_displays(void)
     SDL_DisplayID *ids          = SDL_GetDisplays(&num_displays);
     SDL_Rect       r;
 
-    const CmdOptions *opts = cmd_get_options();
+    const CmdEnumOptions *opts = cmd_enum_get_options();
 
     for (int i = 0; i < num_displays; i++) {
 
@@ -66,7 +66,7 @@ main(int argc, char *argv[])
 {
     int status = EXIT_SUCCESS;
 
-    if (!cmd_parse(&argc, &argv)) {
+    if (!cmd_enum_parse(&argc, &argv)) {
         status = EXIT_FAILURE;
         goto init_error;
     }

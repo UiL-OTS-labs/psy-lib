@@ -3,7 +3,7 @@
 
 #include "cmd_vsync_opts.h"
 
-CmdOptions g_options = {
+CmdVSyncOptions g_options = {
     .isi_dur   = .250,
     .stim_dur  = .250,
     .num_stims = 10,
@@ -49,7 +49,7 @@ validate_options(void)
 }
 
 bool
-cmd_parse(int *argc, char ***argv)
+cmd_vsync_parse(int *argc, char ***argv)
 {
     GError         *error   = NULL;
     bool            status  = true;
@@ -79,8 +79,8 @@ no_context:
     return status;
 }
 
-const CmdOptions *
-cmd_get_options(void)
+const CmdVSyncOptions *
+cmd_vsync_get_options(void)
 {
     if (g_parsed) {
         return &g_options;

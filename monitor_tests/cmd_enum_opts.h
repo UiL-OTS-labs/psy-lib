@@ -7,16 +7,15 @@
 extern "C" {
 #endif
 
-typedef struct CmdOptions {
+typedef struct CmdEnumOptions {
     bool show_modes;
-} CmdOptions;
-
+} CmdEnumOptions;
 
 bool
-cmd_parse(int *argc, char ***argv);
+cmd_enum_parse(int *argc, char ***argv);
 
-const CmdOptions *
-cmd_get_options(void);
+const CmdEnumOptions *
+cmd_enum_get_options(void);
 
 #ifdef __cplusplus
 }

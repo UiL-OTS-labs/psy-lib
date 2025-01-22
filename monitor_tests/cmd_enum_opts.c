@@ -3,8 +3,8 @@
 
 #include "cmd_enum_opts.h"
 
-CmdOptions  g_options;
-static bool g_parsed = false;
+CmdEnumOptions g_options;
+static bool    g_parsed = false;
 
 // clang-format off
 GOptionEntry entries[] = {
@@ -15,7 +15,7 @@ GOptionEntry entries[] = {
 // clang-format on
 
 bool
-cmd_parse(int *argc, char ***argv)
+cmd_enum_parse(int *argc, char ***argv)
 {
     GError         *error   = NULL;
     bool            status  = true;
@@ -42,8 +42,8 @@ no_context:
     return status;
 }
 
-const CmdOptions *
-cmd_get_options(void)
+const CmdEnumOptions *
+cmd_enum_get_options(void)
 {
     if (g_parsed) {
         return &g_options;

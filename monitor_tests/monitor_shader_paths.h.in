@@ -1,0 +1,4 @@
+
+#pragma once
+
+#mesondefine PSY_BUILD_PSY_DIR

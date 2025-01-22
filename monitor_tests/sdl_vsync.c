@@ -10,61 +10,22 @@
 #include <assert.h>
 
 #include "cmd_vsync_opts.h"
+#include "frame-stats.h"
 #include "monitor_shader_paths.h"
+#include "stimulus.h"
 
-PsyDuration *g_frame_dur = NULL;
+static PsyDuration *g_frame_dur = NULL;
+static PsyDuration *g_isi_dur   = NULL;
+static PsyDuration *g_stim_dur  = NULL;
 
-typedef struct Stimulus {
-    int64_t start_frame; // The number of the frame this stimulus should start
-    int64_t num_frames;  // The number of frames this stimulus lasts
-} Stimulus;
-
-typedef struct FrameStats {
-
-    int64_t nth_frame;        // nth_frame to be presented starts a -1
-    int64_t n_missed_frames;  // the number of missed frames
-    int64_t last_known_frame; // the number of the last known frame.
-
-    PsyTimePoint *last_frame_time;
-} FrameStats;
-
-static FrameStats *
-frame_stats_new(void)
+static void
+stimulus_scheduled(Stimulus *stimulus, void *data)
 {
-    FrameStats *stats = calloc(1, sizeof(FrameStats));
-
-    return stats;
 }
 
 static void
-frame_stats_free(FrameStats *stats)
+stimulus_finished(Stimulus *stimulus, void *data)
 {
-    if (stats->last_frame_time)
-        psy_time_point_free(stats->last_frame_time);
-
-    free(stats);
-}
-
-void
-update_frame_stats(FrameStats   *self,
-                   int64_t       n,
-                   int64_t       n_missed_frames,
-                   PsyTimePoint *tp_next_frame)
-{
-    if (!self) {
-        g_critical("Self pointer is NULL");
-        return;
-    }
-
-    self->last_known_frame = self->nth_frame + 1;
-
-    self->nth_frame += (n + n_missed_frames);
-    self->n_missed_frames += n_missed_frames;
-
-    if (self->last_frame_time)
-        psy_time_point_free(self->last_frame_time);
-
-    self->last_frame_time = tp_next_frame;
 }
 
 const SDL_DisplayMode *
@@ -153,6 +114,7 @@ render_loop(SDL_Window *win)
     float             sw       = 250; // square_width and height
     PsyGlVBuffer     *vbuffer  = NULL;
     PsyShaderProgram *program  = NULL;
+    Stimulus         *stim     = NULL;
 
     FrameStats *stats = frame_stats_new();
 
@@ -250,15 +212,31 @@ render_loop(SDL_Window *win)
 
     uint64_t start = SDL_GetTicks();
 
+    PsyTimePoint *last = psy_clock_now(clk);
+
     while (true) { // wait a half of a second for the vsync to stabilize.
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
         SDL_GL_SwapWindow(win);
+
+        psy_time_point_free(last);
+        last = psy_clock_now(clk);
+
         if ((SDL_GetTicks() - start) > 500)
             break;
     }
 
-    PsyTimePoint *last = psy_clock_now(clk);
+    update_frame_stats(stats, 1, 0, psy_time_point_add(last, g_frame_dur));
+
+    stim = stimulus_new(
+        g_frame_dur, stimulus_scheduled, stimulus_finished, NULL);
+
+    PsyTimePoint *tp_start
+        = psy_time_point_add(stats->last_frame_time, g_isi_dur);
+
+    stimulus_schedule(stim, stats, tp_start, g_stim_dur);
+
+    psy_time_point_free(tp_start);
 
     while (running) {
         SDL_Event e;
@@ -361,6 +339,9 @@ error:
     if (error)
         g_clear_error(&error);
 
+    if (stim)
+        stimulus_free(stim);
+
     if (stats)
         frame_stats_free(stats);
 
@@ -381,8 +362,8 @@ main(int argc, char **argv)
     int      ret          = EXIT_SUCCESS;
     SDL_Rect monitor_rect = {0};
 
-    cmd_parse(&argc, &argv);
-    const CmdOptions *opts = cmd_get_options();
+    cmd_vsync_parse(&argc, &argv);
+    const CmdVSyncOptions *opts = cmd_vsync_get_options();
     if (!opts) {
         ret = EXIT_FAILURE;
         goto opt_error;
@@ -391,6 +372,9 @@ main(int argc, char **argv)
     SDL_Init(SDL_INIT_VIDEO);
     PsyInitializer *psy_init = g_object_new(
         PSY_TYPE_INITIALIZER, "gstreamer", FALSE, "portaudio", FALSE, NULL);
+
+    g_isi_dur  = psy_duration_new(opts->isi_dur);
+    g_stim_dur = psy_duration_new(opts->stim_dur);
 
     SDL_Window *win = NULL;
 
@@ -438,6 +422,8 @@ main(int argc, char **argv)
     render_loop(win);
 
 error:
+    psy_duration_free(g_stim_dur);
+    psy_duration_free(g_isi_dur);
     psy_duration_free(g_frame_dur);
     psy_initializer_free(psy_init);
     SDL_Quit();

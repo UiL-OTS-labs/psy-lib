@@ -78,4 +78,19 @@ stimulus is 1, 2 or x frames late. Now it could be that all frames when
 presented by us are all a bit late, they are rendered to the compositor and not
 directly to the display.
 
+### Measurement strategy
+The windows try to present a window on a given moment. On the same moment, we
+try to present a pulse on a trigger interface. We can compare with a photo sensor
+the time when the square is visible to the time when pulses is emitted.
+
+## Other things to consider
+
+### power settings
+
+1. When using Ubuntu-22.04 with Wayland running a fullscreen SDL window occasionally
+   seems to drop frames. When running a windowed window (not fullscreen) this doesn't
+   seem to happen. It also doesn't seem to happen when using Ubuntu on XOrg.
+   **the fix** was to put the performance setting to **performance** instead of
+   *balanced* or *powersaver*.
+
 [1]: https://www.youtube.com/watch?v=FkUXn5bOwzk
