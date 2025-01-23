@@ -26,6 +26,7 @@ struct Stimulus {
 
     PsyDuration *frame_dur;
 
+    stim_present_func   present;
     stim_scheduled_func scheduled;
     stim_finished_func  finished;
 
@@ -35,6 +36,7 @@ struct Stimulus {
 Stimulus *
 stimulus_new(PsyDuration        *frame_dur,
              stim_scheduled_func scheduled,
+             stim_present_func   present,
              stim_finished_func  finished,
              void               *data);
 
@@ -48,7 +50,7 @@ stimulus_schedule(Stimulus         *self,
                   PsyDuration      *dur);
 
 void
-stimulus_present(Stimulus *self);
+stimulus_present(Stimulus *self, const FrameStats *stats);
 
 #ifdef __cplusplus
 }

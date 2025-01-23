@@ -60,9 +60,6 @@ parport_open(PsyParallelPort *self, gint port_num, GError **error)
 
     psy_parallel_port_close(self);
 
-    PSY_PARALLEL_PORT_CLASS(psy_parport_parent_class)
-        ->open(self, port_num, error);
-
     g_snprintf(buffer, sizeof(buffer), "/dev/parport%u", port_num);
     parallel_cls->set_port_name(self, buffer);
 
@@ -102,6 +99,9 @@ parport_open(PsyParallelPort *self, gint port_num, GError **error)
 
     if (ioctl(pp->fd, PPDATADIR, &is_output) != 0)
         goto error;
+
+    PSY_PARALLEL_PORT_CLASS(psy_parport_parent_class)
+        ->open(self, port_num, error);
 
     return;
 

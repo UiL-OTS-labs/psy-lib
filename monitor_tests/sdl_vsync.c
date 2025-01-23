@@ -18,14 +18,71 @@ static PsyDuration *g_frame_dur = NULL;
 static PsyDuration *g_isi_dur   = NULL;
 static PsyDuration *g_stim_dur  = NULL;
 
+typedef struct StimContext {
+    PsyGlVBuffer       *vertices;
+    PsyParallelTrigger *trigger;
+    FrameStats         *stats;
+    PsyDuration        *stim_dur;
+    PsyDuration        *isi_dur;
+} StimContext;
+
 static void
 stimulus_scheduled(Stimulus *stimulus, void *data)
 {
+    g_info("schedule for %" G_GINT64_FORMAT " until %" G_GINT64_FORMAT,
+           stimulus->start_frame,
+           stimulus->start_frame + stimulus->num_frames);
+    StimContext *context = data;
+    if (psy_parallel_trigger_is_open(context->trigger)) {
+        GError *error = NULL;
+        psy_parallel_trigger_write(context->trigger,
+                                   255,
+                                   stimulus->onset,
+                                   stimulus->frame_dur,
+                                   &error);
+        if (error) {
+            g_critical("Unable to trigger: %s", error->message);
+            g_clear_error(&error);
+        }
+    }
+}
+
+static void
+stim_present(void *data)
+{
+    StimContext *context = data;
+    GError      *error   = NULL;
+
+    g_info("stats->nth_frame = %" G_GINT64_FORMAT, context->stats->nth_frame);
+
+    psy_vbuffer_draw_triangle_fan(PSY_VBUFFER(context->vertices), &error);
+    if (error) {
+        g_critical("Unable to draw triangle_fan: %s", error->message);
+        g_clear_error(&error);
+    }
 }
 
 static void
 stimulus_finished(Stimulus *stimulus, void *data)
 {
+    printf("%s: %p %p\n", __func__, (void *) stimulus, data);
+    StimContext *context = data;
+
+    int64_t num_frames
+        = psy_duration_divide_rounded(context->stim_dur, stimulus->frame_dur);
+
+    PsyDuration *dur = psy_duration_multiply_scalar(g_frame_dur, num_frames);
+
+    PsyTimePoint *end
+        = psy_time_point_add(stimulus->onset, dur); // stim off time
+    psy_duration_free(dur);
+
+    PsyTimePoint *start
+        = psy_time_point_add(end, context->isi_dur); // new on time
+    psy_time_point_free(end);
+
+    stimulus_schedule(stimulus, context->stats, start, context->stim_dur);
+    psy_time_point_free(start);
 }
 
 const SDL_DisplayMode *
@@ -121,6 +178,9 @@ render_loop(SDL_Window *win)
     PsyClock           *clk     = psy_clock_new();
     PsyParallelTrigger *trigger = psy_parallel_trigger_new();
 
+    StimContext stim_context
+        = {.isi_dur = g_isi_dur, .stim_dur = g_stim_dur, .trigger = trigger};
+
     FILE *outfile = fopen("sdl_vsync.txt", "wb");
 
     SDL_GLContext context = SDL_GL_CreateContext(win);
@@ -143,7 +203,6 @@ render_loop(SDL_Window *win)
     if (error) {
         g_critical("Unable to open trigger device: %s", error->message);
         g_clear_error(&error);
-        g_clear_object(&trigger); // work without the trigger
     }
 
     glViewport(0, 0, w, h);
@@ -189,6 +248,10 @@ render_loop(SDL_Window *win)
 
     vbuffer = psy_gl_vbuffer_new();
 
+    stim_context.vertices = vbuffer;
+    stim_context.trigger  = trigger;
+    stim_context.stats    = stats;
+
     // clang-format off
 
     PsyVertex verts[] = {
@@ -228,8 +291,11 @@ render_loop(SDL_Window *win)
 
     update_frame_stats(stats, 1, 0, psy_time_point_add(last, g_frame_dur));
 
-    stim = stimulus_new(
-        g_frame_dur, stimulus_scheduled, stimulus_finished, NULL);
+    stim = stimulus_new(g_frame_dur,
+                        stimulus_scheduled,
+                        stim_present,
+                        stimulus_finished,
+                        &stim_context);
 
     PsyTimePoint *tp_start
         = psy_time_point_add(stats->last_frame_time, g_isi_dur);
@@ -296,11 +362,13 @@ render_loop(SDL_Window *win)
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        psy_vbuffer_draw_triangle_fan(PSY_VBUFFER(vbuffer), &error);
-        if (error) {
-            g_critical("Unable to draw triangle string: %s", error->message);
-            goto error;
-        }
+        stimulus_present(stim, stats);
+
+        // psy_vbuffer_draw_triangle_fan(PSY_VBUFFER(vbuffer), &error);
+        // if (error) {
+        //     g_critical("Unable to draw triangle string: %s", error->message);
+        //     goto error;
+        // }
 
         SDL_GL_SwapWindow(win);
         PsyTimePoint *temp = psy_clock_now(clk);
@@ -309,10 +377,10 @@ render_loop(SDL_Window *win)
         // update frame stats
         int64_t n_frames = psy_duration_divide_rounded(dur, g_frame_dur);
         int64_t n_missed = n_frames > 0 ? n_frames - 1 : 0;
-        g_debug("n_frames = %d, n_missed = %d", (int) n_frames, (int) n_missed);
-        g_debug("g_frame_dur = %lf, dur = %lf",
-                psy_duration_get_seconds(g_frame_dur),
-                psy_duration_get_seconds(dur));
+        //        g_debug("n_frames = %d, n_missed = %d", (int) n_frames, (int)
+        //        n_missed); g_debug("g_frame_dur = %lf, dur = %lf",
+        //                psy_duration_get_seconds(g_frame_dur),
+        //                psy_duration_get_seconds(dur));
 
         update_frame_stats(
             stats, n_frames, n_missed, psy_time_point_add(temp, g_frame_dur));
