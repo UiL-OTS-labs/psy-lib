@@ -65,7 +65,6 @@ stim_present(void *data)
 static void
 stimulus_finished(Stimulus *stimulus, void *data)
 {
-    printf("%s: %p %p\n", __func__, (void *) stimulus, data);
     StimContext *context = data;
 
     int64_t num_frames
