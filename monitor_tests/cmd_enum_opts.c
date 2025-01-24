@@ -3,11 +3,11 @@
 
 #include "cmd_enum_opts.h"
 
-CmdEnumOptions g_options;
-static bool    g_parsed = false;
+static CmdEnumOptions g_options;
+static bool           g_parsed = false;
 
 // clang-format off
-GOptionEntry entries[] = {
+static GOptionEntry entries[] = {
     {"show_modes", 'm', G_OPTION_FLAG_NONE, G_OPTION_ARG_NONE, &g_options.show_modes, "Display the modes of the monitor", NULL},
     {0}
 };

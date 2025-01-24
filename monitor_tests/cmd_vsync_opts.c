@@ -3,7 +3,7 @@
 
 #include "cmd_vsync_opts.h"
 
-CmdVSyncOptions g_options = {
+static CmdVSyncOptions g_options = {
     .isi_dur   = .250,
     .stim_dur  = .250,
     .num_stims = 10,
@@ -12,7 +12,7 @@ CmdVSyncOptions g_options = {
 static bool g_parsed = false;
 
 // clang-format off
-GOptionEntry entries[] = {
+static GOptionEntry entries[] = {
     {"monitor", 'm', G_OPTION_FLAG_NONE, G_OPTION_ARG_INT, &g_options.nth_monitor,
         "Put the display on the nth monitor", "nth"},
     {"fullscreen", 'f', G_OPTION_FLAG_NONE, G_OPTION_ARG_NONE, &g_options.fullscreen,
