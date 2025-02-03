@@ -113,6 +113,14 @@ psy_visual_stimulus_set_color(PsyVisualStimulus *self, PsyColor *color);
 G_MODULE_EXPORT PsyArtist *
 psy_visual_stimulus_create_artist(PsyVisualStimulus *self);
 
+/******  Private/friend functions  ********/
+// Reset the frame stats of the stimulus
+void
+psy_visual_stimulus_reset_frame_stats(PsyVisualStimulus *self);
+
+void
+psy_visual_stimulus_set_nth_frame(PsyVisualStimulus *self, gint64 nth_frame);
+
 /* utility functions to convert degrees to radians and vice versa */
 
 G_MODULE_EXPORT gfloat

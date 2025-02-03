@@ -272,9 +272,12 @@ schedule_stimulus(PsyCanvas *self, PsyVisualStimulus *stimulus)
 
     // Check if the stimulus is already scheduled
     if (g_hash_table_contains(priv->artists, stimulus)) {
-        g_info("PsyCanvas:%s, stimulus is already scheduled", __func__);
+        g_critical("PsyCanvas: %s, stimulus is already scheduled", __func__);
         return;
     }
+
+    psy_visual_stimulus_set_start_frame(stimulus, -1); // unschedule it
+    psy_visual_stimulus_set_nth_frame(stimulus, 0);    // mark as not done
 
     PsyArtist *artist = psy_visual_stimulus_create_artist(stimulus);
 

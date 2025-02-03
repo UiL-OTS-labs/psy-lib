@@ -32,14 +32,28 @@
 typedef struct PsyVisualStimulusPrivate {
     PsyCanvas *canvas; // The canvas on which this stimulus should be presented
 
-    gint64 nth_frame;
-    gint64 num_frames;  // Total number of frames for stimulus duration
-    gint64 start_frame; // When the stimulus should start, negative when not
-                        // started.
-    gfloat x, y, z;
-    gfloat scale_x, scale_y;
+    gint64 nth_frame; // The nth frame of the presentation, it starts at 0,
+                      // It starts incrementing when the stimulus is presented
+                      // with one for each frame.
+
+    gint64 num_frames; // Total number of frames for stimulus duration, negative
+                       // when the duration isn't known
+
+    gint64 start_frame; // The frame when the stimulus should start, negative
+                        // when not started.
+
+    gfloat x, y, z; // The x, y and z coordinates of the stimulus.
+
+    gfloat scale_x, scale_y; // The amount the stimulus must be scaled in x and
+                             // y direction. The default = 1.0, for no scaling,
+                             // 2 would make the stimulus twice as large in x or
+                             // y direction and -1.0 would flip the image around
+                             // the x or y axis.
+
     gfloat rotation; // Positive rotation follows the angle on the unit
-                     // circle, so rotation is applied counter clockwise.
+                     // circle, so the rotation is applied counter clockwise.
+                     // rotations is expressed in radians.
+
     PsyColor *color; // The default fill color of the stimulus
 } PsyVisualStimulusPrivate;
 
@@ -60,8 +74,8 @@ typedef enum {
     PROP_SCALE_X,      // scaling along the x axis
     PROP_SCALE_Y,      // scaling along the y axis
     PROP_SCALE,        // scaling along the x and y axis
-    PROP_ROTATION,     // Rotation around the z axis
-    PROP_ROTATION_DEG, // Rotation around the z axis
+    PROP_ROTATION,     // Rotation around the z axis in radians
+    PROP_ROTATION_DEG, // Rotation around the z axis in degrees
     PROP_COLOR,        // the fill color of the stimulus.
     NUM_PROPERTIES
 } VisualStimulusProperty;
@@ -606,6 +620,16 @@ psy_visual_stimulus_get_nth_frame(PsyVisualStimulus *self)
     return priv->nth_frame;
 }
 
+/**
+ * psy_visual_stimulus_is_scheduled:
+ * @self An instance of [class@VisualStimulus]
+ *
+ * Check whether the stimulus is already scheduled for presentation
+ * The stimulus is considered to be scheduled when its start frame is know. If
+ * it is unknown, it is marked as -1.
+ *
+ * Returns: TRUE if the stimulus is scheduled, false otherwise.
+ */
 gboolean
 psy_visual_stimulus_is_scheduled(PsyVisualStimulus *self)
 {
@@ -617,8 +641,8 @@ psy_visual_stimulus_is_scheduled(PsyVisualStimulus *self)
 }
 
 /**
- * psy_visual_stimulus_set_start_frame:
- * @self: an instance of `PsyVisualStimulus`
+ * psy_visual_stimulus_set_start_frame:(skip)
+ * @self: an instance of [class@VisualStimulus]
  * @frame_num: the number of the frame on which this stimulus should start
  *
  * Sets the frame number of the frame of a monitor on which this stimulus should
@@ -654,6 +678,34 @@ psy_visual_stimulus_get_start_frame(PsyVisualStimulus *self)
     g_return_val_if_fail(PSY_IS_VISUAL_STIMULUS(self), -1);
 
     return priv->start_frame;
+}
+
+/**
+ * psy_visual_stimulus_set_nth_frame:(skip)
+ * @self: an instance of [class@VisualStimulus]
+ * @nth_frame: the nth frame within a presentation of a stimulus
+ *
+ * Sets the nth frame of the visual stimulus. If a stimulus is played for
+ * 100 ms on a 60 Hz monitor the total number of frames will be 6. This value
+ * starts at 0 and continues until precisely 6 frames are presented. On each
+ * presentation frame this value increases and will reflect the progress of the
+ * stimulus.
+ *
+ * stability:private
+ */
+void
+psy_visual_stimulus_set_nth_frame(PsyVisualStimulus *self, gint64 nth_frame)
+{
+    PsyVisualStimulusPrivate *priv
+        = psy_visual_stimulus_get_instance_private(self);
+
+    g_return_if_fail(PSY_IS_VISUAL_STIMULUS(self));
+    if (nth_frame < 0) {
+        g_warn_if_fail(nth_frame < 0);
+        nth_frame = 0;
+    }
+
+    priv->nth_frame = nth_frame;
 }
 
 /**
@@ -972,6 +1024,33 @@ psy_visual_stimulus_create_artist(PsyVisualStimulus *self)
 
     return cls->create_artist(self);
 }
+
+// Privately exposed functions, for "friend" classes such as PsyCanvas
+
+/**
+ * psy_visual_stimulus_reset_frame_stats:(skip)
+ * @self: The visual stimulus that wants to restart the frame stats
+ *
+ * Reset the frame stats of this visual stimulus, this is considered to be a
+ * private function to psylib internals.
+ *
+ * Stability:private
+ */
+void
+psy_visual_stimulus_reset_frame_stats(PsyVisualStimulus *self)
+{
+    g_return_if_fail(PSY_IS_VISUAL_STIMULUS(self));
+
+    PsyVisualStimulusPrivate *priv
+        = psy_visual_stimulus_get_instance_private(self);
+
+    priv->nth_frame   = 0;
+    priv->num_frames  = -1;
+    priv->start_frame = -1;
+}
+
+void
+psy_visual_stimulus_set_num_frames(PsyVisualStimulus *self, gint64 num_frames);
 
 /* ************ utility functions for unit conversions ************** */
 
