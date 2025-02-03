@@ -387,6 +387,7 @@ static void
 set_monitor(PsyWindow *self, gint nth_monitor)
 {
     gint width_mm, height_mm;
+    gint width_pix, height_pix;
 
     g_return_if_fail(PSY_IS_GTK_WINDOW(self));
     PsyGtkWindow *psywindow = PSY_GTK_WINDOW(self);
@@ -400,8 +401,14 @@ set_monitor(PsyWindow *self, gint nth_monitor)
     GListModel *monitors = gdk_display_get_monitors(display);
     GdkMonitor *monitor  = g_list_model_get_item(monitors, (guint) nth_monitor);
 
-    width_mm         = gdk_monitor_get_width_mm(monitor);
-    height_mm        = gdk_monitor_get_height_mm(monitor);
+    GdkRectangle geometry;
+    gdk_monitor_get_geometry(monitor, &geometry);
+
+    width_mm   = gdk_monitor_get_width_mm(monitor);
+    height_mm  = gdk_monitor_get_height_mm(monitor);
+    width_pix  = geometry.width;
+    height_pix = geometry.height;
+
     gdouble      mHz = gdk_monitor_get_refresh_rate(monitor); // milli Hertz
     gdouble      Hz  = mHz / 1000;
     PsyDuration *frame_duration = psy_duration_new(1 / Hz);
@@ -409,6 +416,8 @@ set_monitor(PsyWindow *self, gint nth_monitor)
     gtk_window_fullscreen_on_monitor(GTK_WINDOW(psywindow->window), monitor);
     psy_canvas_set_width_mm(PSY_CANVAS(self), width_mm);
     psy_canvas_set_height_mm(PSY_CANVAS(self), height_mm);
+    psy_canvas_set_width(PSY_CANVAS(self), width_pix);
+    psy_canvas_set_height(PSY_CANVAS(self), height_pix);
 
     PSY_CANVAS_CLASS(psy_gtk_window_parent_class)
         ->set_frame_dur(PSY_CANVAS(self), frame_duration);
