@@ -14,6 +14,7 @@ typedef struct CmdVSyncOptions {
     double stim_dur;
     double isi_dur;
     int    num_stims;
+    int    port_num;
 } CmdVSyncOptions;
 
 bool

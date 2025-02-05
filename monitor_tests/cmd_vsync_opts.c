@@ -23,6 +23,8 @@ static GOptionEntry entries[] = {
         "The duration between two successive rectangles", "Seconds"},
     {"num-stims", 's', G_OPTION_FLAG_NONE, G_OPTION_ARG_INT, &g_options.num_stims,
         "The number of rectangles to present", "N"},
+    {"port-num", 'p', G_OPTION_FLAG_NONE, G_OPTION_ARG_INT, &g_options.port_num,
+        "The number of the port to open", "nth"},
     {0}
 };
 
@@ -45,6 +47,11 @@ validate_options(void)
         g_options.stim_dur = .250;
         g_warning("Invalid stimulus duration specified, duration is set to %lf",
                   g_options.stim_dur);
+    }
+    if (g_options.port_num < 0) {
+        g_options.port_num = 0;
+        g_warning("Invalid port_num specified, duration is set to %d",
+                  g_options.port_num);
     }
 }
 

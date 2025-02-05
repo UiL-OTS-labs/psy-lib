@@ -6,12 +6,13 @@
 #include "cmd_vsync_opts.h"
 
 typedef struct PsyGtkContext {
-    GMainLoop    *loop;
-    PsyCanvas    *win;
-    PsyRectangle *rect;
-    PsyDuration  *isi_dur;
-    PsyDuration  *stim_dur;
-    PsyClock     *clock;
+    GMainLoop       *loop;
+    PsyCanvas       *win;
+    PsyRectangle    *rect;
+    PsyDuration     *isi_dur;
+    PsyDuration     *stim_dur;
+    PsyClock        *clock;
+    PsyParallelPort *trigger;
 } PsyGtkContext;
 
 static PsyGtkContext g_context = {0};
@@ -27,10 +28,35 @@ print_dur_since_start(const gchar *msg, PsyTimePoint *tp)
 }
 
 void
+on_rect_started(PsyStimulus *rect, PsyTimePoint *tp_start, gpointer data)
+{
+    (void) rect;
+    PsyGtkContext *context = data;
+    if (psy_parallel_port_is_open(context->trigger)) {
+        psy_parallel_port_write(context->trigger, 255, NULL);
+    }
+    PsyTimePoint *tp  = psy_clock_now(context->clock);
+    PsyDuration  *dur = psy_time_point_subtract(tp_start, tp);
+
+    g_debug("%s: %lfs", __func__, psy_duration_get_seconds(dur));
+    psy_duration_free(dur);
+    psy_time_point_free(tp);
+}
+
+void
 on_rect_stopped(PsyStimulus *rect, PsyTimePoint *tp_stop, gpointer data)
 {
     PsyGtkContext *context = data;
-    PsyTimePoint  *next    = psy_time_point_add(tp_stop, context->isi_dur);
+    if (psy_parallel_port_is_open(context->trigger)) {
+        psy_parallel_port_write(context->trigger, 0, NULL);
+    }
+    PsyTimePoint *next = psy_time_point_add(tp_stop, context->isi_dur);
+
+    PsyTimePoint *tp  = psy_clock_now(context->clock);
+    PsyDuration  *dur = psy_time_point_subtract(tp_stop, tp);
+    g_debug("%s: %lfs", __func__, psy_duration_get_seconds(dur));
+    psy_duration_free(dur);
+    psy_time_point_free(tp);
 
     print_dur_since_start("stop event", tp_stop);
     print_dur_since_start("next stim start", next);
@@ -50,19 +76,26 @@ main(int argc, char **argv)
     gint        win_width, win_height;
     const float rect_width = 250, rect_height = 250;
 
+    PsyParallelPort *trigger = NULL;
+
     PsyInitializer *init = g_object_new(
         PSY_TYPE_INITIALIZER, "gstreamer", FALSE, "portaudio", FALSE, NULL);
+    GError *error = NULL;
 
     if (!cmd_vsync_parse(&argc, &argv))
         goto error;
 
     const CmdVSyncOptions *opts = cmd_vsync_get_options();
 
+    trigger = psy_parallel_port_new();
+    psy_parallel_port_open(trigger, opts->port_num, &error);
+
     g_context.loop = g_main_loop_new(NULL, false);
 
     g_context.isi_dur  = psy_duration_new(opts->isi_dur);
     g_context.stim_dur = psy_duration_new(opts->stim_dur);
     g_context.clock    = psy_clock_new();
+    g_context.trigger  = trigger;
 
     // create window
     g_context.win
