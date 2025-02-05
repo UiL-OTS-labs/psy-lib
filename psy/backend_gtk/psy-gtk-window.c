@@ -118,8 +118,6 @@ tick_callback(GtkWidget *d_area, GdkFrameClock *clock, gpointer data)
         return G_SOURCE_REMOVE;
     }
 
-    PsyCanvasClass *canvas_class = PSY_CANVAS_GET_CLASS(window);
-
     GdkFrameTimings *timings = gdk_frame_clock_get_current_timings(clock);
     gint64           predicted
         = gdk_frame_timings_get_predicted_presentation_time(timings);
@@ -127,7 +125,8 @@ tick_callback(GtkWidget *d_area, GdkFrameClock *clock, gpointer data)
 
     PsyTimePoint *tp = psy_time_point_new_monotonic(predicted);
 
-    canvas_class->draw(PSY_CANVAS(window), frame_count, tp);
+    // canvas_class->draw(PSY_CANVAS(window), frame_count, tp);
+    psy_canvas_begin_draw(PSY_CANVAS(window), frame_count, tp);
 
     psy_gtk_window_compute_frame_stats(window, tp);
     psy_gtk_window_set_last_frame_time(window, tp);

@@ -327,13 +327,22 @@ gl_canvas_draw(PsyCanvas *canvas, guint64 frame_num, PsyTimePoint *tp)
 }
 
 static void
-gl_canvas_clear(PsyCanvas *self)
+gl_canvas_clear(PsyCanvas *canvas)
 {
     // don't chain up, its not implemented in parent
+    PsyGlCanvas *self = PSY_GL_CANVAS(canvas);
 
     gfloat    r, b, g, a;
     GError   *error = NULL;
-    PsyColor *color = psy_canvas_get_background_color(self);
+    PsyColor *color = psy_canvas_get_background_color(canvas);
+
+    if (eglMakeCurrent(
+            self->display, self->surface, self->surface, self->egl_context)
+        != EGL_TRUE) {
+        EGLint error = eglGetError();
+        g_critical("Unable to make GlCanvas current: %s",
+                   psy_egl_strerr(error));
+    }
 
     // clang-format off
     g_object_get(color,
@@ -381,6 +390,20 @@ gl_canvas_get_image(PsyCanvas *canvas)
         != EGL_TRUE) {
         EGLint error = eglGetError();
         g_critical("Unable to make context current: %s", psy_egl_strerr(error));
+    }
+
+    glFlush();
+    psy_gl_check_error(&error);
+    if (error) {
+        g_critical("Unable to flush drawing commands before reading pixels");
+        return NULL;
+    }
+
+    glFinish();
+    psy_gl_check_error(&error);
+    if (error) {
+        g_critical("Unable to finish drawing before reading pixels");
+        return NULL;
     }
 
     glReadPixels(0,

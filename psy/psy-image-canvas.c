@@ -131,13 +131,13 @@ image_canvas_iterate(PsyImageCanvas *self)
     PsyDuration  *dur      = psy_canvas_get_frame_dur(PSY_CANVAS(self));
     PsyTimePoint *new_time = psy_time_point_add(priv->time, dur);
 
-    psy_image_canvas_set_time(self, new_time);
+    psy_image_canvas_set_time(self, new_time); // image now owns new_time
 
     if (priv->auto_iterate) {
         psy_timer_set_fire_time(priv->iter_timer, new_time);
     }
 
-    PSY_CANVAS_GET_CLASS(self)->draw(PSY_CANVAS(self), nf + 1, new_time);
+    psy_canvas_begin_draw(PSY_CANVAS(self), nf + 1, new_time);
 }
 
 /**
@@ -307,8 +307,10 @@ psy_image_canvas_get_time(PsyImageCanvas *self)
  *           assumes a valid frame dur has been set on the [class@Canvas].
  *
  * When this object is set, the object will start to iterate itself based on the
- * duration of the PsyCanvas. This means the [property@ImageCanvas:time] will
- * increase for each iteration.
+ * frame duration of the PsyCanvas. This means the [property@ImageCanvas:time]
+ * will increase for each iteration.
+ * When iterate is true, the current time of the image canvas will be set to
+ * the current time, so the next update should be roughly one frame away.
  */
 void
 psy_image_canvas_set_auto_iterate(PsyImageCanvas *self, gboolean iterate)
@@ -323,6 +325,10 @@ psy_image_canvas_set_auto_iterate(PsyImageCanvas *self, gboolean iterate)
     if (iterate) {
         PsyDuration *frame_dur = psy_canvas_get_frame_dur(PSY_CANVAS(self));
         g_return_if_fail(frame_dur != NULL);
+
+        PsyClock *clk = psy_clock_new();
+        psy_image_canvas_set_time(self, psy_clock_now(clk));
+        psy_clock_free(clk);
 
         PsyTimePoint *new_frame_tp = psy_time_point_add(priv->time, frame_dur);
         psy_timer_set_fire_time(priv->iter_timer, new_frame_tp);

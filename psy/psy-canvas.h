@@ -184,4 +184,10 @@ psy_canvas_get_num_frames_total(PsyCanvas *self);
 G_MODULE_EXPORT void
 psy_canvas_reset(PsyCanvas *self);
 
+/* functions private to psylib */
+void
+psy_canvas_begin_draw(PsyCanvas    *canvas,
+                      guint64       frame_num,
+                      PsyTimePoint *frame_time);
+
 G_END_DECLS

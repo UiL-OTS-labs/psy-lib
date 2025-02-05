@@ -61,8 +61,7 @@ typedef struct PsyCanvasPrivate {
 G_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE(PsyCanvas, psy_canvas, G_TYPE_OBJECT)
 
 typedef enum {
-    CLEAR,
-    DRAW_STIMULI,
+    DRAW,
     RESIZE,
     LAST_SIGNAL,
 } PsyCanvasSignal;
@@ -779,6 +778,14 @@ psy_canvas_class_init(PsyCanvasClass *klass)
 
     g_object_class_install_properties(object_class, N_PROPS, obj_properties);
 
+    /**
+     * PsyCanvas::resize
+     * @self: an instance of [class@Canvas]
+     * @width: the new width of the canvas
+     * @height: the new height of the canvas
+     *
+     * This signal is called when the canvas is resized.
+     */
     canvas_signals[RESIZE]
         = g_signal_new("resize",
                        PSY_TYPE_CANVAS,
@@ -792,46 +799,33 @@ psy_canvas_class_init(PsyCanvasClass *klass)
                        G_TYPE_INT,
                        G_TYPE_INT);
 
-    //    /**
-    //     * PsyCanvas::clear
-    //     *
-    //     * This is the first action that is run when a new frame should be
-    //     * presented. The default handler calls the private/protected clear
-    //     function
-    //     * that clears the canvas.
-    //     */
-    //    canvas_signals[CLEAR] = g_signal_new(
-    //            "clear",
-    //            G_TYPE_FROM_CLASS(object_class),
-    //            G_SIGNAL_RUN_FIRST,
-    //            G_STRUCT_OFFSET(PsyCanvasClass, clear),
-    //            NULL,
-    //            NULL,
-    //            NULL,
-    //            G_TYPE_NONE,
-    //            0);
-    //
-    //    /**
-    //     * PsyCanvas::draw-stimuli
-    //     *
-    //     * This is the first action that is run when a new frame should be
-    //     * presented. The default handler calls the private/protected clear
-    //     function
-    //     * that clears the canvas.
-    //     */
-    //    canvas_signals[DRAW_STIMULI] = g_signal_new(
-    //            "draw-stimuli",
-    //            G_TYPE_FROM_CLASS(object_class),
-    //            G_SIGNAL_RUN_FIRST | G_SIGNAL_NO_RECURSE,
-    //            G_STRUCT_OFFSET(PsyCanvasClass, clear),
-    //            NULL,
-    //            NULL,
-    //            NULL,
-    //            G_TYPE_NONE,
-    //            2,
-    //            G_TYPE_UINT64,
-    //            PSY_TYPE_TIME_POINT
-    //            );
+    /**
+     * PsyCanvas::draw
+     * @self: an instance of [class@Canvas]
+     * @frame_num: the number of the frame
+     * @frame_time: the time when this frame should be visible
+     *
+     * This is the first action that is run when a new frame should be
+     * presented. The default handler calls the private/protected clear function
+     * that clears the canvas.
+     *
+     * When this signal is emitted, the frame is drawn by the default handler
+     * for this signal. So if you connect normally e.g.
+     * [func@GObject.signal_connect] you'll can get the canvas before drawing is
+     * initiated, but if you use [func@GObject.signal_connect_after], the canvas
+     * should reflect the result after drawing has completed.
+     */
+    canvas_signals[DRAW] = g_signal_new("draw",
+                                        G_TYPE_FROM_CLASS(object_class),
+                                        G_SIGNAL_RUN_LAST,
+                                        G_STRUCT_OFFSET(PsyCanvasClass, draw),
+                                        NULL,
+                                        NULL,
+                                        NULL,
+                                        G_TYPE_NONE,
+                                        2,
+                                        G_TYPE_UINT64,
+                                        PSY_TYPE_TIME_POINT);
 }
 
 /**
@@ -1475,4 +1469,27 @@ psy_canvas_reset(PsyCanvas *self)
     g_assert(cls->reset);
 
     cls->reset(self);
+}
+
+/**
+ * psy_canvas_begin_draw:(skip)
+ * @canvas: the instance of [class@Canvas] that should be drawn for a given
+ *          frame
+ * @frame_num: the nth frame that will be drawn
+ * @frame_time:(transfer none): The timepoint of the new frame
+ *
+ * This function is called internally by psylib, its purpose is to draw one
+ * specific frame. It causes the [signal@Canvas::draw] to be emitted.
+ *
+ * Stability: private
+ */
+void
+psy_canvas_begin_draw(PsyCanvas    *self,
+                      guint64       frame_num,
+                      PsyTimePoint *frame_time)
+{
+    g_return_if_fail(PSY_IS_CANVAS(self));
+    g_return_if_fail(frame_time);
+
+    g_signal_emit(self, canvas_signals[DRAW], 0, frame_num, frame_time);
 }
