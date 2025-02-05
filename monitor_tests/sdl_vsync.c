@@ -1,5 +1,5 @@
 
-#define G_LOG_DOMAIN "SdlVSync"
+#define G_LOG_DOMAIN "VSync"
 
 #include <psylib.h>
 

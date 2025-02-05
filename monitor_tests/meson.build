@@ -18,7 +18,6 @@ mon_utils_sources = files(
     'stimulus.h',
 )
 
-
 mon_utils = static_library('mon_utils', mon_utils_sources, dependencies: psy_dep)
 
 if sdl3_dep.found()
@@ -37,3 +36,11 @@ if sdl3_dep.found()
         dependencies : [psy_dep]
     )
 endif
+
+psy_gtk_vsync = executable(
+    'psy_gtk_vsync',
+    files('psy-gtk-vsync.c'),
+    link_with: mon_utils,
+    dependencies:[psy_dep]
+)
+

@@ -718,6 +718,197 @@ vstim_draworder_different_z(void)
     psy_duration_free(dur);
 }
 
+// Tests whether visual stimuli can be presented again. Previously it was
+// safer to just create a new one.
+
+typedef struct {
+    int          started_count;
+    int          stopped_count;
+    PsyDuration *stim_dur;
+    PsyDuration *isi_dur;
+    PsyImage    *first_before;
+    PsyImage    *first_after;
+    PsyImage    *second_before;
+    PsyImage    *second_after;
+    PsyStimulus *rect;
+    GMainLoop   *loop;
+} StartAgainContext;
+
+static void
+on_rect_stopped(PsyStimulus *stim, PsyTimePoint *tp_stop, gpointer data);
+static void
+on_canvas_draw_before(PsyCanvas    *canvas,
+                      gint64        frame_num,
+                      PsyTimePoint *tp_stop,
+                      gpointer      data);
+static void
+on_canvas_draw_after(PsyCanvas    *canvas,
+                     gint64        frame_num,
+                     PsyTimePoint *tp_stop,
+                     gpointer      data);
+
+void
+clear_start_again_context(StartAgainContext *c);
+
+static void
+vstim_start_again(void)
+{
+    PsyImageCanvas *img_canvas = psy_image_canvas_new(WIDTH, HEIGHT);
+    PsyCanvas      *canvas = PSY_CANVAS(img_canvas); // alias to image canvas
+    psy_canvas_reset(PSY_CANVAS(canvas));
+    PsyColor *white = psy_color_new_rgb(1, 1, 1);
+    PsyColor *black = psy_color_new_rgb(0, 0, 0);
+
+    // Setup the canvas
+    PsyDuration *frame_dur = psy_duration_new(.010);
+    psy_canvas_set_frame_dur(PSY_CANVAS(canvas), frame_dur); // frame dur of 1ms
+    psy_canvas_set_background_color(PSY_CANVAS(canvas), black);
+    psy_image_canvas_set_auto_iterate(PSY_IMAGE_CANVAS(canvas), TRUE);
+
+    psy_duration_free(frame_dur);
+
+    PsyClock *clock = psy_clock_new();
+
+    // clang-format off
+    PsyRectangle *rect = g_object_new(PSY_TYPE_RECTANGLE,
+                                      "canvas", canvas,
+                                      "x",      0.f,
+                                      "y",      0.f,
+                                      "width",  100.0f,
+                                      "height", 100.0f,
+                                      "color",  white,
+                                      NULL);
+    // clang-format on
+
+    StartAgainContext c = {.started_count = 0,
+                           .stopped_count = 0,
+                           .stim_dur      = psy_duration_new_ms(50),
+                           .isi_dur       = psy_duration_new_ms(50),
+                           .loop          = g_main_loop_new(NULL, FALSE),
+                           .rect          = PSY_STIMULUS(rect)};
+
+    PsyTimePoint *now      = psy_clock_now(clock);
+    PsyTimePoint *tp_start = psy_time_point_add(now, c.isi_dur);
+    psy_time_point_free(now);
+    psy_clock_free(clock);
+
+    psy_stimulus_play_for(PSY_STIMULUS(c.rect), tp_start, c.stim_dur);
+    psy_time_point_free(tp_start);
+
+    g_signal_connect(canvas, "draw", G_CALLBACK(on_canvas_draw_before), &c);
+    g_signal_connect_after(
+        canvas, "draw", G_CALLBACK(on_canvas_draw_after), &c);
+    g_signal_connect(c.rect, "stopped", G_CALLBACK(on_rect_stopped), &c);
+
+    g_main_loop_run(c.loop);
+
+    if (save_images()) {
+        save_image_tmp_png(c.first_before, "%s_1st_before.png", __func__);
+        save_image_tmp_png(c.first_after, "%s_1st_after.png", __func__);
+        save_image_tmp_png(c.second_before, "%s_2nd_before.png", __func__);
+        save_image_tmp_png(c.second_after, "%s_2nd_after.png", __func__);
+    }
+
+    PsyColor *col_1th_before
+        = psy_image_get_pixel(c.first_before, HEIGHT / 2, WIDTH / 2);
+    PsyColor *col_1th_after
+        = psy_image_get_pixel(c.first_after, HEIGHT / 2, WIDTH / 2);
+    PsyColor *col_2nd_before
+        = psy_image_get_pixel(c.second_before, HEIGHT / 2, WIDTH / 2);
+    PsyColor *col_2nd_after
+        = psy_image_get_pixel(c.second_after, HEIGHT / 2, WIDTH / 2);
+
+    CU_ASSERT_TRUE(psy_color_equal_eps(col_1th_before, black, 0.01));
+    CU_ASSERT_TRUE(psy_color_equal_eps(col_1th_after, white, 0.01));
+    CU_ASSERT_TRUE(psy_color_equal_eps(col_2nd_before, black, 0.01));
+    CU_ASSERT_TRUE(psy_color_equal_eps(col_2nd_after, white, 0.01));
+
+    psy_color_free(col_1th_before);
+    psy_color_free(col_1th_after);
+    psy_color_free(col_2nd_before);
+    psy_color_free(col_2nd_after);
+
+    clear_start_again_context(&c);
+    psy_color_free(white);
+    psy_color_free(black);
+}
+
+void
+clear_start_again_context(StartAgainContext *c)
+{
+    psy_duration_free(c->stim_dur);
+    psy_duration_free(c->isi_dur);
+    psy_image_free(c->first_before);
+    psy_image_free(c->first_after);
+    psy_image_free(c->second_before);
+    psy_image_free(c->second_after);
+    psy_rectangle_free(PSY_RECTANGLE(c->rect));
+    g_main_loop_unref(c->loop);
+}
+
+// this function captures the canvas before drawing has occurred
+static void
+on_canvas_draw_before(PsyCanvas    *canvas,
+                      gint64        frame_num,
+                      PsyTimePoint *tp_stop,
+                      gpointer      data)
+{
+    (void) canvas;
+    (void) tp_stop;
+    StartAgainContext *c = data;
+    if (psy_visual_stimulus_is_scheduled(PSY_VISUAL_STIMULUS(c->rect))) {
+        gint64 start_frame
+            = psy_visual_stimulus_get_start_frame(PSY_VISUAL_STIMULUS(c->rect));
+        if (start_frame == frame_num) {
+            if (!c->first_before) {
+                c->first_before = psy_canvas_get_image(canvas);
+            }
+            else if (!c->second_before) {
+                c->second_before = psy_canvas_get_image(canvas);
+            }
+        }
+    }
+}
+
+// this function captures the canvas after drawing has occurred
+static void
+on_canvas_draw_after(PsyCanvas    *canvas,
+                     gint64        frame_num,
+                     PsyTimePoint *tp_stop,
+                     gpointer      data)
+{
+    (void) canvas;
+    (void) tp_stop;
+    StartAgainContext *c = data;
+    if (psy_visual_stimulus_is_scheduled(PSY_VISUAL_STIMULUS(c->rect))) {
+        gint64 start_frame
+            = psy_visual_stimulus_get_start_frame(PSY_VISUAL_STIMULUS(c->rect));
+        if (start_frame == frame_num) {
+            if (!c->first_after) {
+                c->first_after = psy_canvas_get_image(canvas);
+            }
+            else if (!c->second_after) {
+                c->second_after = psy_canvas_get_image(canvas);
+            }
+        }
+    }
+}
+
+static void
+on_rect_stopped(PsyStimulus *stim, PsyTimePoint *tp_stop, gpointer data)
+{
+    StartAgainContext *c = data;
+    c->stopped_count += 1;
+    if (c->stopped_count == 1) {
+        PsyTimePoint *tp_start = psy_time_point_add(tp_stop, c->isi_dur);
+        psy_stimulus_play(stim, tp_start);
+        psy_time_point_free(tp_start);
+    }
+    else if (c->stopped_count == 2) {
+        g_main_loop_quit(c->loop);
+    }
+}
+
 int
 add_visual_stimulus_suite(void)
 {
@@ -751,6 +942,10 @@ add_visual_stimulus_suite(void)
         return 1;
 
     test = CU_ADD_TEST(suite, vstim_draworder_different_z);
+    if (!test)
+        return 1;
+
+    test = CU_ADD_TEST(suite, vstim_start_again);
     if (!test)
         return 1;
 
