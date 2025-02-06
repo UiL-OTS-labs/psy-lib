@@ -25,12 +25,20 @@ static const char *g_audio_backend = "portaudio";
 static void
 signal_handler(int sig)
 {
+    const char *signame = NULL;
     switch (sig) {
     case SIGINT:
+        signame = "SIGINT";
+        break;
     case SIGABRT:
+        signame = "SIGABRT";
+        break;
     case SIGSEGV:
+        signame = "SIGSEGV";
+    }
+    if (signame) {
         remove_log_handler();
-        g_print("Recieved signal %d\nquitting\n", sig);
+        g_print("Recieved signal %d: %s\nquitting\n", sig, signame);
         exit(sig);
     }
 }
