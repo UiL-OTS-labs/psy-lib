@@ -19,7 +19,7 @@ static PsyTimePoint *g_tp_start = NULL;
 static int
 cross_setup(void)
 {
-    set_log_handler_file("test-visual-stimuli.txt");
+    set_log_handler_file("test-cross.txt");
     g_debug("Entering %s", __func__);
     g_canvas     = PSY_CANVAS(psy_image_canvas_new(WIDTH, HEIGHT));
     g_stim_color = psy_color_new_rgbi(random_int_range(0, 255),
