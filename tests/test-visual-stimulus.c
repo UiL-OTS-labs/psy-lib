@@ -3,24 +3,20 @@
 #include <math.h>
 #include <psylib.h>
 
+#include "psy-image-canvas.h"
 #include "unit-test-utilities.h"
 
 static const gint WIDTH  = 640;
 static const gint HEIGHT = 480;
 
-static PsyImageCanvas *g_canvas     = NULL;
-static PsyColor       *g_stim_color = NULL;
-static PsyColor       *g_bg_color   = NULL;
-// a convenient start time  start + 16.67 ms otherwise stimuli are
-// scheduled to a frame that has already been drawn.
-static PsyTimePoint *g_tp_start     = NULL;
+static PsyColor *g_stim_color = NULL;
+static PsyColor *g_bg_color   = NULL;
 
 static int
 visual_stimulus_setup(void)
 {
     set_log_handler_file("test-visual-stimulus.txt");
     g_debug("Entering %s", __func__);
-    g_canvas     = psy_image_canvas_new(WIDTH, HEIGHT);
     g_stim_color = psy_color_new_rgbi(random_int_range(0, 255),
                                       random_int_range(0, 255),
                                       random_int_range(0, 255));
@@ -28,12 +24,7 @@ visual_stimulus_setup(void)
                                     random_int_range(0, 255),
                                     random_int_range(0, 255));
 
-    PsyTimePoint *temp = psy_image_canvas_get_time(g_canvas);
-    g_tp_start         = psy_time_point_add(
-        temp, psy_canvas_get_frame_dur(PSY_CANVAS(g_canvas)));
-    psy_time_point_free(temp);
-
-    if (!g_canvas || !g_stim_color || !g_bg_color || !g_tp_start)
+    if (!g_stim_color || !g_bg_color)
         return 1;
 
     // make random but significantly different colors
@@ -50,10 +41,8 @@ static int
 visual_stimulus_teardown(void)
 {
     g_debug("Entering %s", __func__);
-    g_clear_object(&g_canvas);
     g_clear_object(&g_stim_color);
     g_clear_object(&g_bg_color);
-    g_clear_pointer(&g_tp_start, psy_time_point_free);
 
     set_log_handler_file(NULL);
 
@@ -163,7 +152,15 @@ circle_area(gdouble radius)
 static void
 vstim_default_values(void)
 {
-    PsyCircle *circle        = psy_circle_new(PSY_CANVAS(g_canvas));
+    // Check whether there are pending messages on the default loop
+    g_assert(g_main_context_pending(NULL) == FALSE);
+
+    g_debug("entering: %s", __func__);
+
+    PsyCanvas *canvas = PSY_CANVAS(psy_image_canvas_new(WIDTH, HEIGHT));
+    psy_canvas_set_background_color(canvas, g_bg_color);
+
+    PsyCircle *circle        = psy_circle_new(PSY_CANVAS(canvas));
     PsyColor  *default_color = psy_color_new();
 
     CU_ASSERT_PTR_NOT_NULL_FATAL(circle);
@@ -197,26 +194,37 @@ vstim_default_values(void)
 
     g_object_unref(circle);
     g_object_unref(default_color);
+    g_object_unref(canvas);
 }
 
 static void
 vstim_scale(void)
 {
+    g_debug("entering: %s", __func__);
+    // Check whether there are pending messages on the default loop
+    g_assert(g_main_context_pending(NULL) == FALSE);
+
     const gfloat radius       = 50;
     const gfloat num_vertices = 100;
     const gfloat scale        = (float) random_double_range(1.5, 2.5);
-    PsyDuration *frame_dur    = psy_canvas_get_frame_dur(PSY_CANVAS(g_canvas));
-    PsyDuration *stim_dur     = psy_duration_multiply_scalar(frame_dur, 10);
-    PsyImage    *image        = NULL;
+
+    PsyCanvas    *canvas = PSY_CANVAS(psy_image_canvas_new(WIDTH, HEIGHT));
+    PsyTimePoint *temp   = psy_image_canvas_get_time(PSY_IMAGE_CANVAS(canvas));
+    PsyDuration  *dur_temp = psy_duration_new(1.0 / 60.0);
+    PsyTimePoint *tp_start = psy_time_point_add(temp, dur_temp);
+
+    g_clear_pointer(&temp, psy_time_point_free);
+    g_clear_pointer(&dur_temp, psy_duration_free);
+
+    PsyDuration *frame_dur = psy_canvas_get_frame_dur(PSY_CANVAS(canvas));
+    PsyDuration *stim_dur  = psy_duration_multiply_scalar(frame_dur, 10);
+    PsyImage    *image     = NULL;
 
     gfloat x, y;
 
-    psy_canvas_reset(PSY_CANVAS(g_canvas));
-
-    PsyCircle *circle
-        = psy_circle_new_full(PSY_CANVAS(g_canvas), 0, 0, radius, num_vertices);
+    PsyCircle *circle = psy_circle_new_full(canvas, 0, 0, radius, num_vertices);
     psy_visual_stimulus_set_color(PSY_VISUAL_STIMULUS(circle), g_stim_color);
-    psy_canvas_set_background_color(PSY_CANVAS(g_canvas), g_bg_color);
+    psy_canvas_set_background_color(canvas, g_bg_color);
 
     g_object_set(circle, "scale", scale, NULL);
     g_object_get(circle, "scale_x", &x, "scale_y", &y, NULL);
@@ -233,11 +241,11 @@ vstim_scale(void)
     CU_ASSERT_DOUBLE_EQUAL(y, scale * 2, 0);
 
     g_object_set(circle, "scale", 1.0, NULL);
-    psy_stimulus_play_for(PSY_STIMULUS(circle), g_tp_start, stim_dur);
+    psy_stimulus_play_for(PSY_STIMULUS(circle), tp_start, stim_dur);
 
-    psy_image_canvas_iterate(g_canvas);
+    psy_image_canvas_iterate(PSY_IMAGE_CANVAS(canvas));
 
-    image = psy_canvas_get_image(PSY_CANVAS(g_canvas));
+    image = psy_canvas_get_image(PSY_CANVAS(canvas));
     if (save_images())
         save_image_tmp_png(image, "%s-scale-%d.png", __func__, 1);
 
@@ -250,10 +258,10 @@ vstim_scale(void)
 
     // double scaling and check whether scaled stimulus has expected surface
     g_object_set(circle, "scale", 2.0, NULL);
-    psy_image_canvas_iterate(g_canvas);
+    psy_image_canvas_iterate(PSY_IMAGE_CANVAS(canvas));
 
     g_object_unref(image);
-    image     = psy_canvas_get_image(PSY_CANVAS(g_canvas));
+    image     = psy_canvas_get_image(canvas);
     area      = compute_surface_area_by_color(image, g_stim_color);
     comp_area = circle_area(radius * 2);
     margin    = circle_area(radius * 2) - circle_area((radius * 2) - .5);
@@ -266,11 +274,15 @@ vstim_scale(void)
     g_object_unref(image);
     g_object_unref(circle);
     psy_duration_free(stim_dur);
+    g_object_unref(canvas);
 }
 
 void
 vstim_translate(void)
 {
+    g_debug("entering: %s", __func__);
+    // Check whether there are pending messages on the default loop
+    g_assert(g_main_context_pending(NULL) == FALSE);
     gfloat radius       = random_double_range(10, 20);
     guint  num_vertices = 100;
 
@@ -278,26 +290,32 @@ vstim_translate(void)
     gfloat  obtain_y, ty = random_double_range(-100, 100);
     gdouble avg_x, avg_y;
 
-    psy_canvas_reset(PSY_CANVAS(g_canvas));
+    PsyImageCanvas *canvas   = psy_image_canvas_new(WIDTH, HEIGHT);
+    PsyTimePoint   *tp_temp  = psy_image_canvas_get_time(canvas);
+    PsyDuration    *dur_temp = psy_duration_new(1.0 / 60);
+    PsyTimePoint   *tp_start = psy_time_point_add(tp_temp, dur_temp);
 
-    PsyCircle *circle = psy_circle_new_full(
-        PSY_CANVAS(g_canvas), tx, ty, radius, num_vertices);
+    g_clear_pointer(&tp_temp, psy_time_point_free);
+    g_clear_pointer(&dur_temp, psy_duration_free);
+
+    PsyCircle *circle
+        = psy_circle_new_full(PSY_CANVAS(canvas), tx, ty, radius, num_vertices);
     PsyImage *image = NULL;
 
     psy_visual_stimulus_set_color(PSY_VISUAL_STIMULUS(circle), g_stim_color);
-    psy_canvas_set_background_color(PSY_CANVAS(g_canvas), g_bg_color);
+    psy_canvas_set_background_color(PSY_CANVAS(canvas), g_bg_color);
 
     psy_stimulus_play_for(PSY_STIMULUS(circle),
-                          g_tp_start,
-                          psy_canvas_get_frame_dur(PSY_CANVAS(g_canvas)));
+                          tp_start,
+                          psy_canvas_get_frame_dur(PSY_CANVAS(canvas)));
 
     g_object_get(circle, "x", &obtain_x, "y", &obtain_y, NULL);
 
     CU_ASSERT_DOUBLE_EQUAL(obtain_x, tx, 1e-9);
     CU_ASSERT_DOUBLE_EQUAL(obtain_y, ty, 1e-9);
 
-    psy_image_canvas_iterate(g_canvas);
-    image = psy_canvas_get_image(PSY_CANVAS(g_canvas));
+    psy_image_canvas_iterate(canvas);
+    image = psy_canvas_get_image(PSY_CANVAS(canvas));
 
     compute_surface_avg_stim_pos(image, g_stim_color, &avg_x, &avg_y);
     //  avg_x = avg_x - WIDTH / 2.0;
@@ -322,6 +340,7 @@ vstim_translate(void)
 
     g_object_unref(image);
     g_object_unref(circle);
+    g_object_unref(canvas);
 }
 
 #pragma GCC diagnostic push
@@ -330,14 +349,25 @@ vstim_translate(void)
 static void
 vstim_rotate(void)
 {
-    psy_canvas_reset(PSY_CANVAS(g_canvas));
-    psy_canvas_set_background_color(PSY_CANVAS(g_canvas), g_bg_color);
+    g_debug("entering: %s", __func__);
+    // Check whether there are pending messages on the default loop
+    g_assert(g_main_context_pending(NULL) == FALSE);
+
+    PsyImageCanvas *canvas   = psy_image_canvas_new(WIDTH, HEIGHT);
+    PsyTimePoint   *tp_temp  = psy_image_canvas_get_time(canvas);
+    PsyDuration    *dur_temp = psy_duration_new(1.0 / 60);
+    PsyTimePoint   *tp_start = psy_time_point_add(tp_temp, dur_temp);
+
+    g_clear_pointer(&tp_temp, psy_time_point_free);
+    g_clear_pointer(&dur_temp, psy_duration_free);
+
+    psy_canvas_set_background_color(PSY_CANVAS(canvas), g_bg_color);
 
     gint   angle_0 = 0, angle_45 = 45, angle_m45 = -45;
     gfloat radians, expected = 0.0;
 
     PsyRectangle *rect
-        = psy_rectangle_new_full(PSY_CANVAS(g_canvas), 0, 0, 10, 200);
+        = psy_rectangle_new_full(PSY_CANVAS(canvas), 0, 0, 10, 200);
     psy_visual_stimulus_set_color(PSY_VISUAL_STIMULUS(rect), g_stim_color);
     psy_visual_stimulus_set_rotation_deg(PSY_VISUAL_STIMULUS(rect), angle_0);
     g_object_get(rect, "rotation", &radians, NULL);
@@ -345,7 +375,7 @@ vstim_rotate(void)
 
     PsyDuration *dur = psy_duration_new_ms(50); // 3 frames
 
-    psy_stimulus_play_for(PSY_STIMULUS(rect), g_tp_start, dur);
+    psy_stimulus_play_for(PSY_STIMULUS(rect), tp_start, dur);
 
     // Run for image iteration with no rotation.
     //
@@ -362,9 +392,9 @@ vstim_rotate(void)
     //      |
     //
 
-    psy_image_canvas_iterate(g_canvas);
+    psy_image_canvas_iterate(canvas);
 
-    PsyImage *image = psy_canvas_get_image(PSY_CANVAS(g_canvas));
+    PsyImage *image = psy_canvas_get_image(PSY_CANVAS(canvas));
     if (save_images())
         save_image_tmp_png(image, "%s_%d.png", __func__, angle_0);
 
@@ -431,8 +461,8 @@ vstim_rotate(void)
     expected = 1.0 / 4 * M_PI;
     CU_ASSERT_DOUBLE_EQUAL(radians, expected, 1e-9);
 
-    psy_image_canvas_iterate(g_canvas);
-    image = psy_canvas_get_image(PSY_CANVAS(g_canvas));
+    psy_image_canvas_iterate(canvas);
+    image = psy_canvas_get_image(PSY_CANVAS(canvas));
     if (save_images())
         save_image_tmp_png(image, "%s_%d.png", __func__, angle_45);
 
@@ -485,8 +515,8 @@ vstim_rotate(void)
     expected = -1.0 / 4 * M_PI;
     CU_ASSERT_DOUBLE_EQUAL(radians, expected, 1e-9);
 
-    psy_image_canvas_iterate(g_canvas);
-    image = psy_canvas_get_image(PSY_CANVAS(g_canvas));
+    psy_image_canvas_iterate(canvas);
+    image = psy_canvas_get_image(PSY_CANVAS(canvas));
     if (save_images())
         save_image_tmp_png(image, "%s_%d.png", __func__, angle_m45);
 
@@ -525,6 +555,7 @@ vstim_rotate(void)
 
     psy_duration_free(dur);
     g_object_unref(rect);
+    g_object_unref(canvas);
 }
 
 #pragma GCC diagnostic push
@@ -532,8 +563,20 @@ vstim_rotate(void)
 static void
 vstim_draworder_same_z(void)
 {
-    psy_canvas_reset(PSY_CANVAS(g_canvas));
-    psy_canvas_set_background_color(PSY_CANVAS(g_canvas), g_bg_color);
+    g_debug("entering: %s", __func__);
+    // Check whether there are pending messages on the default loop
+    g_assert(g_main_context_pending(NULL) == FALSE);
+
+    PsyImageCanvas *canvas   = psy_image_canvas_new(WIDTH, HEIGHT);
+    PsyTimePoint   *tp_temp  = psy_image_canvas_get_time(canvas);
+    PsyDuration    *dur_temp = psy_duration_new(1.0 / 60);
+    PsyTimePoint   *tp_start = psy_time_point_add(tp_temp, dur_temp);
+
+    g_clear_pointer(&tp_temp, psy_time_point_free);
+    g_clear_pointer(&dur_temp, psy_duration_free);
+
+    psy_canvas_set_background_color(PSY_CANVAS(canvas), g_bg_color);
+
     PsyImage    *image = NULL;
     PsyDuration *dur   = psy_duration_new_ms(50);
 
@@ -548,7 +591,7 @@ vstim_draworder_same_z(void)
 
     // foreground
     PsyRectangle *rect1 = g_object_new(PSY_TYPE_RECTANGLE,
-                                       "canvas", g_canvas,
+                                       "canvas", canvas,
                                        "x", 0.f,
                                        "y", 0.f,
                                        "width", 100.0f,
@@ -557,7 +600,7 @@ vstim_draworder_same_z(void)
                                        NULL);
     // background
     PsyRectangle *rect2 = g_object_new(PSY_TYPE_RECTANGLE,
-                                       "canvas", g_canvas,
+                                       "canvas", canvas,
                                        "x", 0.f,
                                        "y", 0.f,
                                        "width", 150.0f,
@@ -577,12 +620,12 @@ vstim_draworder_same_z(void)
     // that are played last are drawn on top, just like stacking playing cards,
     // the one that is played last, is drawn on top.
 
-    psy_stimulus_play_for(PSY_STIMULUS(rect1), g_tp_start, dur);
-    psy_stimulus_play_for(PSY_STIMULUS(rect2), g_tp_start, dur);
+    psy_stimulus_play_for(PSY_STIMULUS(rect1), tp_start, dur);
+    psy_stimulus_play_for(PSY_STIMULUS(rect2), tp_start, dur);
 
-    psy_image_canvas_iterate(g_canvas);
+    psy_image_canvas_iterate(canvas);
 
-    image = psy_canvas_get_image(PSY_CANVAS(g_canvas));
+    image = psy_canvas_get_image(PSY_CANVAS(canvas));
     if (save_images())
         save_image_tmp_png(image, "%s_%d.png", __func__, 1);
 
@@ -594,16 +637,16 @@ vstim_draworder_same_z(void)
 
     // Test in reverse order.
 
-    psy_canvas_reset(PSY_CANVAS(g_canvas));
-    psy_canvas_set_background_color(PSY_CANVAS(g_canvas), g_bg_color);
+    psy_canvas_reset(PSY_CANVAS(canvas));
+    psy_canvas_set_background_color(PSY_CANVAS(canvas), g_bg_color);
     g_object_unref(test_color);
 
-    psy_stimulus_play_for(PSY_STIMULUS(rect2), g_tp_start, dur);
-    psy_stimulus_play_for(PSY_STIMULUS(rect1), g_tp_start, dur);
+    psy_stimulus_play_for(PSY_STIMULUS(rect2), tp_start, dur);
+    psy_stimulus_play_for(PSY_STIMULUS(rect1), tp_start, dur);
 
-    psy_image_canvas_iterate(g_canvas);
+    psy_image_canvas_iterate(canvas);
 
-    image = psy_canvas_get_image(PSY_CANVAS(g_canvas));
+    image = psy_canvas_get_image(PSY_CANVAS(canvas));
     if (save_images())
         save_image_tmp_png(image, "%s_%d.png", __func__, 2);
 
@@ -618,13 +661,25 @@ vstim_draworder_same_z(void)
     g_object_unref(rect2_color);
     g_object_unref(rect1_color);
     psy_duration_free(dur);
+    g_object_unref(canvas);
 }
 
 static void
 vstim_draworder_different_z(void)
 {
-    psy_canvas_reset(PSY_CANVAS(g_canvas));
-    psy_canvas_set_background_color(PSY_CANVAS(g_canvas), g_bg_color);
+    g_debug("entering: %s", __func__);
+    // Check whether there are pending messages on the default loop
+    g_assert(g_main_context_pending(NULL) == FALSE);
+
+    PsyImageCanvas *canvas   = psy_image_canvas_new(WIDTH, HEIGHT);
+    PsyTimePoint   *tp_temp  = psy_image_canvas_get_time(canvas);
+    PsyDuration    *dur_temp = psy_duration_new(1.0 / 60);
+    PsyTimePoint   *tp_start = psy_time_point_add(tp_temp, dur_temp);
+
+    g_clear_pointer(&tp_temp, psy_time_point_free);
+    g_clear_pointer(&dur_temp, psy_duration_free);
+
+    psy_canvas_set_background_color(PSY_CANVAS(canvas), g_bg_color);
     PsyImage    *image = NULL;
     PsyDuration *dur   = psy_duration_new_ms(50);
 
@@ -640,7 +695,7 @@ vstim_draworder_different_z(void)
 
     // foreground
     PsyRectangle *rect1 = g_object_new(PSY_TYPE_RECTANGLE,
-                                       "canvas", g_canvas,
+                                       "canvas", canvas,
                                        "x", 0.f,
                                        "y", 0.f,
                                        "z", z1,
@@ -650,7 +705,7 @@ vstim_draworder_different_z(void)
                                        NULL);
     // background
     PsyRectangle *rect2 = g_object_new(PSY_TYPE_RECTANGLE,
-                                       "canvas", g_canvas,
+                                       "canvas", canvas,
                                        "x", 0.f,
                                        "y", 0.f,
                                        "z", z2,
@@ -669,12 +724,12 @@ vstim_draworder_different_z(void)
     // When the z-values are different, the one with the highest value
     // is "closer" to the user, and will be displayed.
 
-    psy_stimulus_play_for(PSY_STIMULUS(rect1), g_tp_start, dur);
-    psy_stimulus_play_for(PSY_STIMULUS(rect2), g_tp_start, dur);
+    psy_stimulus_play_for(PSY_STIMULUS(rect1), tp_start, dur);
+    psy_stimulus_play_for(PSY_STIMULUS(rect2), tp_start, dur);
 
-    psy_image_canvas_iterate(g_canvas);
+    psy_image_canvas_iterate(canvas);
 
-    image = psy_canvas_get_image(PSY_CANVAS(g_canvas));
+    image = psy_canvas_get_image(PSY_CANVAS(canvas));
     if (save_images())
         save_image_tmp_png(image, "%s_%d.png", __func__, 1);
 
@@ -683,8 +738,8 @@ vstim_draworder_different_z(void)
     CU_ASSERT_TRUE(psy_color_equal_eps(test_color, rect2_color, 1.0 / 255));
     g_clear_object(&image);
 
-    psy_canvas_reset(PSY_CANVAS(g_canvas));
-    psy_canvas_set_background_color(PSY_CANVAS(g_canvas), g_bg_color);
+    psy_canvas_reset(PSY_CANVAS(canvas));
+    psy_canvas_set_background_color(PSY_CANVAS(canvas), g_bg_color);
     g_object_unref(test_color);
 
     psy_visual_stimulus_set_z(PSY_VISUAL_STIMULUS(rect1), z2);
@@ -696,12 +751,12 @@ vstim_draworder_different_z(void)
     CU_ASSERT_DOUBLE_EQUAL(z1, z2out, 0);
     CU_ASSERT_DOUBLE_EQUAL(z2, z1out, 0);
 
-    psy_stimulus_play_for(PSY_STIMULUS(rect1), g_tp_start, dur);
-    psy_stimulus_play_for(PSY_STIMULUS(rect2), g_tp_start, dur);
+    psy_stimulus_play_for(PSY_STIMULUS(rect1), tp_start, dur);
+    psy_stimulus_play_for(PSY_STIMULUS(rect2), tp_start, dur);
 
-    psy_image_canvas_iterate(g_canvas);
+    psy_image_canvas_iterate(canvas);
 
-    image = psy_canvas_get_image(PSY_CANVAS(g_canvas));
+    image = psy_canvas_get_image(PSY_CANVAS(canvas));
     if (save_images())
         save_image_tmp_png(image, "%s_%d.png", __func__, 2);
 
@@ -716,6 +771,7 @@ vstim_draworder_different_z(void)
     g_object_unref(rect2_color);
     g_object_unref(rect1_color);
     psy_duration_free(dur);
+    g_object_unref(canvas);
 }
 
 // Tests whether visual stimuli can be presented again. Previously it was
@@ -753,6 +809,8 @@ clear_start_again_context(StartAgainContext *c);
 static void
 vstim_start_again(void)
 {
+    g_debug("entering: %s", __func__);
+    g_assert(g_main_context_pending(NULL) == FALSE);
     PsyImageCanvas *img_canvas = psy_image_canvas_new(WIDTH, HEIGHT);
     PsyCanvas      *canvas = PSY_CANVAS(img_canvas); // alias to image canvas
     psy_canvas_reset(PSY_CANVAS(canvas));
