@@ -34,6 +34,7 @@ on_rect_started(PsyStimulus *rect, PsyTimePoint *tp_start, gpointer data)
     PsyGtkContext *context = data;
     if (psy_parallel_port_is_open(context->trigger)) {
         psy_parallel_port_write(context->trigger, 255, NULL);
+        g_print("Trigger %d\n", 255);
     }
     PsyTimePoint *tp  = psy_clock_now(context->clock);
     PsyDuration  *dur = psy_time_point_subtract(tp_start, tp);
@@ -49,6 +50,7 @@ on_rect_stopped(PsyStimulus *rect, PsyTimePoint *tp_stop, gpointer data)
     PsyGtkContext *context = data;
     if (psy_parallel_port_is_open(context->trigger)) {
         psy_parallel_port_write(context->trigger, 0, NULL);
+        g_print("Trigger %d\n", 0);
     }
     PsyTimePoint *next = psy_time_point_add(tp_stop, context->isi_dur);
 
@@ -126,6 +128,8 @@ main(int argc, char **argv)
     psy_stimulus_play_for(
         PSY_STIMULUS(g_context.rect), start, g_context.stim_dur);
 
+    g_signal_connect(
+        g_context.rect, "started", G_CALLBACK(on_rect_started), &g_context);
     g_signal_connect(
         g_context.rect, "stopped", G_CALLBACK(on_rect_stopped), &g_context);
 
