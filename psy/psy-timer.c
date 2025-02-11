@@ -28,13 +28,11 @@ fire_data_free(FireData *data)
 
 /* forward declarations */
 
-guint
-psy_timer_get_source_id(PsyTimer *self);
-
 typedef struct _PsyTimer {
     GObject       parent;
     GMainContext *context;
-    PsyTimePoint *fire_time;
+    PsyTimePoint *fire_time; // If the fire time is set, consider the
+                             // timer armed.
 
     GAsyncQueue *queue;
 
@@ -63,6 +61,7 @@ static guint       timer_signals[NUM_SIGNALS];
 static void
 psy_timer_init(PsyTimer *self)
 {
+    g_debug("%s:%p", __func__, (gpointer) self);
     self->context = g_main_context_get_thread_default();
     self->queue   = g_async_queue_new();
 }
@@ -71,15 +70,17 @@ static void
 timer_dispose(GObject *obj)
 {
     PsyTimer *self = PSY_TIMER(obj);
+    g_debug("%s: timer: %p", __func__, (gpointer) self);
 
     psy_timer_cancel(self);
 
-    guint source_id = psy_timer_get_source_id(self);
-    if (source_id) {
+    g_mutex_lock(&self->mutex);
+    if (self->source_id) {
         GSource *source
-            = g_main_context_find_source_by_id(self->context, source_id);
+            = g_main_context_find_source_by_id(self->context, self->source_id);
         g_source_destroy(source);
     }
+    g_mutex_unlock(&self->mutex);
 
     G_OBJECT_CLASS(psy_timer_parent_class)->dispose(obj);
 }
@@ -88,6 +89,7 @@ static void
 timer_finalize(GObject *self)
 {
     PsyTimer *timer_self = PSY_TIMER(self);
+    g_debug("%s: timer: %p", __func__, (gpointer) self);
 
     g_clear_pointer(&timer_self->fire_time, psy_time_point_free);
     g_clear_pointer(&timer_self->queue, g_async_queue_unref);
@@ -150,7 +152,13 @@ thread_default_fire(FireData *data)
 {
     psy_timer_emit_fire(data->timer, data->fire_time);
 
-    psy_timer_set_source_id(data->timer, 0);
+    PsyTimer *self = data->timer;
+    g_mutex_lock(&self->mutex);
+    g_debug(
+        "%s: %p, source_id = %u", __func__, (gpointer) self, self->source_id);
+    g_assert(self->source_id != 0);
+    self->source_id = 0; // we are about to remove the source
+    g_mutex_unlock(&self->mutex);
 
     return G_SOURCE_REMOVE;
 }
@@ -252,10 +260,12 @@ psy_timer_free(PsyTimer *self)
 void
 psy_timer_set_fire_time(PsyTimer *self, PsyTimePoint *tp)
 {
+    g_debug("%s: timer %p", __func__, (gpointer) self);
     g_return_if_fail(PSY_IS_TIMER(self));
 
     if (self->fire_time) {
         psy_timer_cancel(self);
+        g_assert(self->fire_time == NULL);
     }
 
     if (tp) {
@@ -295,10 +305,30 @@ psy_timer_cancel(PsyTimer *self)
 {
     g_return_if_fail(PSY_IS_TIMER(self));
 
+    g_debug("%s: timer %p", __func__, (gpointer) self);
+
     if (!self->fire_time)
         return;
 
     timer_private_cancel_timer(self);
+
+    g_mutex_lock(&self->mutex);
+
+    if (self->source_id) {
+        // If a source is already dispatched destroy it.
+        // It might also be nice to handle it...
+        g_debug("%s removing source:%u:%p",
+                __func__,
+                self->source_id,
+                (gpointer) self);
+        GSource *source
+            = g_main_context_find_source_by_id(self->context, self->source_id);
+        g_source_destroy(source);
+        self->source_id = 0;
+    }
+
+    g_mutex_unlock(&self->mutex);
+
     g_clear_pointer(&self->fire_time, psy_time_point_free);
 }
 
@@ -347,6 +377,7 @@ void
 psy_timer_fire(PsyTimer *self, PsyTimePoint *tp)
 {
     FireData *data = g_new(FireData, 1);
+    g_debug("%s: %p", __func__, (gpointer) self);
 
     data->fire_time = psy_time_point_copy(tp);
     data->timer     = self;
@@ -365,7 +396,22 @@ psy_timer_fire(PsyTimer *self, PsyTimePoint *tp)
                           G_SOURCE_FUNC(thread_default_fire),
                           data,
                           (GDestroyNotify) fire_data_free);
+    g_mutex_lock(&self->mutex);
+    // As timers fire once until restarted the source_id should be 0 here,
+    // as we are about to start it.
+    g_debug("%s line %d: %p source_id %u",
+            __func__,
+            __LINE__,
+            (gpointer) self,
+            self->source_id);
+    g_assert(self->source_id == 0);
     self->source_id = g_source_attach(source, self->context);
+    g_debug("%s line %d: %p source_id %u",
+            __func__,
+            __LINE__,
+            (gpointer) self,
+            self->source_id);
+    g_mutex_unlock(&self->mutex);
 
     g_source_unref(source);
 }
@@ -398,41 +444,4 @@ psy_timer_get_queue(PsyTimer *self)
     g_return_val_if_fail(PSY_IS_TIMER(self), NULL);
 
     return self->queue;
-}
-
-/**
- * psy_timer_set_source_id:(skip)
- * @self: the timer on which the source must be deleted.
- * @source_id: the id to be removed from the mainloop.
- *
- * For internal use only. If the timer thread has dispached a source to the
- * timer it must be freed when the timer is disposed.
- */
-void
-psy_timer_set_source_id(PsyTimer *self, guint source_id)
-{
-    g_return_if_fail(PSY_IS_TIMER(self));
-
-    g_mutex_lock(&self->mutex);
-    self->source_id = source_id;
-    g_mutex_unlock(&self->mutex);
-}
-
-/**
- * psy_timer_get_source_id:(skip)
- * @self: the timer on which the source must be deleted.
- * @source_id: the id to be removed from the mainloop.
- *
- * For internal use only. If the timer thread has dispatched a source to the
- * timer it must be freed when the timer is disposed.
- */
-guint
-psy_timer_get_source_id(PsyTimer *self)
-{
-    g_return_val_if_fail(PSY_IS_TIMER(self), 0);
-    guint ret;
-    g_mutex_lock(&self->mutex);
-    ret = self->source_id;
-    g_mutex_unlock(&self->mutex);
-    return ret;
 }

@@ -2,6 +2,7 @@
 #include "psy-timer-private.h"
 #include "psy-clock.h"
 #include "psy-config.h"
+#include "psy-time-point.h"
 
 #ifdef _WIN32
     #include <windows.h>
@@ -204,7 +205,17 @@ psy_timer_thread_class_init(PsyTimerThreadClass *klass)
  * A loop function that checks whether one or multiple timers
  * are ready to fire. If so, the timers are fired.
  *
- * If there are no timers with a fire time  before now + self->busy_loop_dur
+ * As this is the a busy loop, we loop as long as we have timers
+ * to fire or have timers about to fire. now + the duration to
+ * busy loop. If the first timer is schedule beyond now + busy_dur
+ * we break out of this loop and wait in the
+ *
+ * action   | fire   fire  keep-looping      break-out-of-busy-loop
+ * timer tp |  x      x       x                      x
+ *        ---------------------------------------------------------
+ * time     |        now ............ now+busy_loop_dur
+ *
+ * If there are no timers with a fire time before now + self->busy_loop_dur
  * the loop is terminated.
  *
  * stability:private
@@ -221,9 +232,19 @@ psy_timer_thread_fire_timers(PsyTimerThread *self)
         g_assert(PSY_IS_TIMER(first));
         PsyTimePoint *tp = psy_timer_get_fire_time(first);
 
+        if (psy_time_point_greater_equal(tp, now_plus_busy_dur)) {
+            // No timers to fire anytime soon stop busy loop.
+            psy_time_point_free(now);
+            psy_time_point_free(now_plus_busy_dur);
+            psy_time_point_free(tp);
+            break;
+        }
+
         if (psy_time_point_greater_equal(now, tp)) {
             psy_timer_fire_async_cb(first, tp);
             psy_timer_fire(first, tp);
+
+            // Remove timer so it isn't fired again.
             g_ptr_array_remove_index(self->timers, 0);
 
             psy_time_point_free(now);
