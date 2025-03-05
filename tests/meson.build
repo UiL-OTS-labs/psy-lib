@@ -72,7 +72,11 @@ test_timer = executable(
 )
 
 # We consider the timers to perform well, when the pc is not busy otherwise
-test('test-timer', test_timer, is_parallel:false)
+test_timer_args = []
+if get_option('running-in-ci')
+    test_timer_args = ['--param', 'accuracy', '10000']
+endif
+test('test-timer', test_timer, is_parallel:false, args: test_timer_args)
 
 
 
