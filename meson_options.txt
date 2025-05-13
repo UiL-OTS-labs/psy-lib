@@ -80,3 +80,12 @@ option(
     value: false,
     description: 'Build the toy programs'
 )
+
+# CI related
+option(
+    'running-in-ci',
+    type: 'boolean',
+    value: false,
+    description: 'Set to true in CI environments, this loosens the timing criteria'
+)
+

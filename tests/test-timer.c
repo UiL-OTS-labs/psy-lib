@@ -1,15 +1,32 @@
-
-#include "unit-test-utilities.h"
-
+#include <assert.h>
 #include <munit.h>
 #include <psylib.h>
 #include <signal.h>
+
+#include "unit-test-utilities.h"
 
 // Setup the tests
 
 const int NUM_TIMERS       = 100;
 const int NUM_SIMULTANEOUS = 25;
 int       g_num_fired      = 0;
+
+static long
+parseBase10Int(const char *str)
+{
+    char *temp;
+    errno = 0;
+
+    long ret = strtol(str, &temp, 10);
+
+    if (temp == str || *temp != '\0'
+        || ((ret == LONG_MIN || ret == LONG_MAX) && errno == ERANGE)) {
+        fprintf(stderr, "%s is not a valid base 10 int\n", str);
+        abort();
+    }
+
+    return ret;
+}
 
 static int
 timer_setup(void)
@@ -266,6 +283,8 @@ test_timer_fire_accurately(const MunitParameter params[], void *user_data)
     GPtrArray          *timer_data
         = g_ptr_array_new_full(NUM_TIMERS, timer_fire_accuratately_test_free);
     g_info("Timer accuracy test");
+    assert(strcmp(params[0].name, "accuracy") == 0);
+    gint upper_time_bound = parseBase10Int(params[0].value);
 
     for (int i = 0; i < NUM_TIMERS; i++) {
 
@@ -302,7 +321,7 @@ test_timer_fire_accurately(const MunitParameter params[], void *user_data)
 #endif
         g_info("The timer was fired at %" PRId64 " us",
                psy_duration_get_us(time_diff));
-        if (psy_duration_get_us(time_diff) >= 1000) {
+        if (psy_duration_get_us(time_diff) >= upper_time_bound) {
             munit_logf(MUNIT_LOG_WARNING,
                        "Timer was late %lf\n",
                        psy_duration_get_seconds(time_diff));
@@ -364,6 +383,9 @@ test_timer_fire_async(const MunitParameter params[], void *user_data)
     GPtrArray          *timer_data
         = g_ptr_array_new_full(NUM_TIMERS, timer_fire_accuratately_test_free);
 
+    assert(strcmp(params[0].name, "accuracy") == 0);
+    gint upper_time_bound = parseBase10Int(params[0].value);
+
     g_info("Timer async callback test");
 
     for (int i = 0; i < NUM_TIMERS; i++) {
@@ -400,7 +422,7 @@ test_timer_fire_async(const MunitParameter params[], void *user_data)
 #endif
         g_info("The timer was fired at %" PRId64 " us",
                psy_duration_get_us(time_diff));
-        if (psy_duration_get_us(time_diff) >= 1000) {
+        if (psy_duration_get_us(time_diff) >= upper_time_bound) {
             munit_logf(MUNIT_LOG_WARNING,
                        "Timer was late %lf\n",
                        psy_duration_get_seconds(time_diff));
@@ -451,6 +473,8 @@ test_timer_simultaneous(const MunitParameter params[], void *user_data)
     GPtrArray          *timer_data = g_ptr_array_new_full(
         NUM_SIMULTANEOUS, timer_fire_accuratately_test_free);
     PsyDuration *dur = psy_duration_new_ms(100);
+    assert(strcmp(params[0].name, "accuracy") == 0);
+    long us_upper_bound = parseBase10Int(params[0].value);
 
     g_info("Timer simultaneous test");
 
@@ -485,7 +509,7 @@ test_timer_simultaneous(const MunitParameter params[], void *user_data)
 
         g_info("The timer was fired at %" PRId64 " us",
                psy_duration_get_us(time_diff));
-        if (psy_duration_get_us(time_diff) >= 1000) {
+        if (psy_duration_get_us(time_diff) >= us_upper_bound) {
             munit_logf(MUNIT_LOG_WARNING,
                        "Timer was late %lf\n",
                        psy_duration_get_seconds(time_diff));
@@ -508,14 +532,21 @@ test_timer_simultaneous(const MunitParameter params[], void *user_data)
     return MUNIT_OK;
 }
 
+static char *accuracy_values[] = {"1000", "5000"};
+
+static MunitParameterEnum accuracy_params[] = {
+    {"accuracy", accuracy_values},
+    {      NULL,            NULL}
+};
+
 // clang-format off
 MunitTest tests[] = {
     {"create",test_timer_create, NULL, NULL, MUNIT_TEST_OPTION_NONE, NULL},
     {"set-fire-time",test_timer_set_fire_time, NULL, NULL, MUNIT_TEST_OPTION_NONE, NULL},
     {"fire",test_timer_fire, fixture_new, fixture_free , MUNIT_TEST_OPTION_NONE, NULL},
-    {"fire-accurately",test_timer_fire_accurately, fixture_new, fixture_free , MUNIT_TEST_OPTION_NONE, NULL},
-    {"fire-asynchronous",test_timer_fire_async, fixture_new, fixture_free , MUNIT_TEST_OPTION_NONE, NULL},
-    {"fire-simultaneous",test_timer_simultaneous, fixture_new, fixture_free , MUNIT_TEST_OPTION_NONE, NULL},
+    {"fire-accurately",test_timer_fire_accurately, fixture_new, fixture_free , MUNIT_TEST_OPTION_NONE, accuracy_params},
+    {"fire-asynchronous",test_timer_fire_async, fixture_new, fixture_free , MUNIT_TEST_OPTION_NONE, accuracy_params},
+    {"fire-simultaneous",test_timer_simultaneous, fixture_new, fixture_free , MUNIT_TEST_OPTION_NONE, accuracy_params},
     {0}
 };
 // clang-format on
@@ -525,14 +556,21 @@ MunitSuite suite = {"timer/", tests, NULL, 1, MUNIT_SUITE_OPTION_NONE};
 static void
 signal_handler(int sig)
 {
+    const char *signal_name = "unexpected";
     switch (sig) {
     case SIGINT:
+        signal_name = "SIGINT";
+        break;
     case SIGABRT:
+        signal_name = "SIGABRT";
+        break;
     case SIGSEGV:
-        remove_log_handler();
-        g_print("Received signal %d\nquitting\n", sig);
-        exit(sig);
+        signal_name = "SIGSEGV";
+        break;
     }
+    remove_log_handler();
+    g_print("Received signal %d:%s\nquitting\n", sig, signal_name);
+    exit(sig);
 }
 
 static void
