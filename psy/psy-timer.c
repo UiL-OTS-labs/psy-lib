@@ -63,6 +63,7 @@ static guint       timer_signals[NUM_SIGNALS];
 static void
 psy_timer_init(PsyTimer *self)
 {
+    g_debug("Timer %p, %s", (void *) self, __func__);
     self->context = g_main_context_get_thread_default();
     self->queue   = g_async_queue_new();
 }
@@ -71,6 +72,7 @@ static void
 timer_dispose(GObject *obj)
 {
     PsyTimer *self = PSY_TIMER(obj);
+    g_debug("Timer %p, %s", (void *) self, __func__);
 
     psy_timer_cancel(self);
 
@@ -87,6 +89,7 @@ timer_dispose(GObject *obj)
 static void
 timer_finalize(GObject *self)
 {
+    g_debug("Timer %p, %s", (void *) self, __func__);
     PsyTimer *timer_self = PSY_TIMER(self);
 
     g_clear_pointer(&timer_self->fire_time, psy_time_point_free);
@@ -138,6 +141,7 @@ timer_set_property(GObject      *object,
 void
 psy_timer_emit_fire(PsyTimer *self, PsyTimePoint *tp)
 {
+    g_debug("Timer %p: %s", (void *) self, __func__);
     g_return_if_fail(PSY_IS_TIMER(self));
 
     g_clear_pointer(&self->fire_time, psy_time_point_free);
@@ -148,6 +152,10 @@ psy_timer_emit_fire(PsyTimer *self, PsyTimePoint *tp)
 static gboolean
 thread_default_fire(FireData *data)
 {
+    g_debug("Timer %p FireData %p: %s",
+            (void *) data->timer,
+            (void *) data,
+            __func__);
     psy_timer_emit_fire(data->timer, data->fire_time);
 
     psy_timer_set_source_id(data->timer, 0);
@@ -255,14 +263,17 @@ psy_timer_set_fire_time(PsyTimer *self, PsyTimePoint *tp)
     g_return_if_fail(PSY_IS_TIMER(self));
 
     if (self->fire_time) {
+        g_debug("Timer: %p, %s: canceling self", (void *) self, __func__);
         psy_timer_cancel(self);
     }
 
     if (tp) {
         self->fire_time = psy_time_point_copy(tp);
+        g_debug("Timer: %p, %s: add timer to thread", (void *) self, __func__);
         timer_private_add_timer(self);
     }
     else {
+        g_debug("Timer: %p, %s: clearing fire_time", (void *) self, __func__);
         self->fire_time = NULL;
     }
 }
@@ -298,7 +309,13 @@ psy_timer_cancel(PsyTimer *self)
     if (!self->fire_time)
         return;
 
+    g_debug("Timer %p,%s: request thread to cancel timer, source_id = %u",
+            (void *) self,
+            __func__,
+            self->source_id);
     timer_private_cancel_timer(self);
+    // Check whether the thread has already issued a fire
+    g_clear_handle_id(&self->source_id, g_source_remove);
     g_clear_pointer(&self->fire_time, psy_time_point_free);
 }
 
@@ -336,17 +353,21 @@ psy_timer_set_async_fire_cb(PsyTimer *self, PsyTimerAsyncCb cb, gpointer data)
 }
 
 /**
- * psy_timer_fire:
+ * psy_timer_fire:(skip)
  * @self, the timer to fire
  * @tp: The timepoint at which the timer should be fired
  *
  * Fire the timer in the thread default context at the time the timer was
  * created.
+ *
+ * Stability: private
  */
 void
 psy_timer_fire(PsyTimer *self, PsyTimePoint *tp)
 {
     FireData *data = g_new(FireData, 1);
+    g_debug(
+        "Timer %p, %s, FireData %p", (void *) self, __func__, (void *) data);
 
     data->fire_time = psy_time_point_copy(tp);
     data->timer     = self;
