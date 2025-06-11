@@ -1,12 +1,14 @@
 
 libpsyfiles += files(
     'psy-parallel-port.c',
-    'psy-parallel-trigger.c'
+    'psy-parallel-trigger.c',
+    'psy-serial-port.c',
 )
 
 libpsy_headers += files(
     'psy-parallel-port.h',
-    'psy-parallel-trigger.h'
+    'psy-parallel-trigger.h',
+    'psy-serial-port.h',
 )
 
 if cdata.has('HAVE_LINUX_PARPORT_H') and cdata.has('HAVE_LINUX_PPDEV_H')
@@ -14,6 +16,9 @@ if cdata.has('HAVE_LINUX_PARPORT_H') and cdata.has('HAVE_LINUX_PPDEV_H')
     libpsy_headers += files('psy-parport.h')
 endif
 
+if cdata.has('HAVE_TERMIOS_H')
+    # Add a parallelport that uses termios.h to configure
+endif
 
 if host_machine.system() in ['windows', 'cygwin']
     libpsyfiles += files('psy-inpout-port.c')

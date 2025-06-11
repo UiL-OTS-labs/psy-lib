@@ -62,6 +62,10 @@ if cc.has_header('sys/random.h')
     cdata.set('HAVE_SYS_RANDOM_H', true)
 endif
 
+if cc.has_header('termios.h')
+    cdata.set('HAVE_TERMIOS_H', true)
+endif
+
 if cc.has_header('jack/jack.h')
     cdata.set('HAVE_JACK_H', true)
 endif
