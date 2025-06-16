@@ -25,8 +25,8 @@ G_DEFINE_QUARK(psy-serial-port-error-quark, psy_serial_port_error)
  * TODO Most of these function work synchronous, hence, a class
  * needs to be designed that can read, write, open, close in an async fashion.
  *
- * PsySerial is implemented fully by the [class@Termios] (Linux) and
- * PsyComPort(windows). Using [ctor@Serial.new], you'll get
+ * PsySerialPort is implemented fully by the [class@Termios] (Linux) and
+ * PsyComPort(windows). Using [ctor@SerialPort.new], you'll get
  * the device that is appropriate on your os, or NULL when not available.
  */
 
@@ -514,8 +514,8 @@ psy_serial_port_get_baud_rate(PsySerialPort *self)
  *
  * You can use this value to specify the maximum time before returning. This
  * method will probably always succeed, but you might want to check the value
- * you have been actually obtained. By checking [prop@SerialPort:time-out] or
- * calling [method@SerialPort.get_timeout] after the port has been opened.
+ * you have been actually obtained. By checking [property@SerialPort:timeout]
+ * or calling [method@SerialPort.get_timeout] after the port has been opened.
  */
 void
 psy_serial_port_set_timeout(PsySerialPort *self, PsyDuration *duration)
@@ -536,8 +536,8 @@ psy_serial_port_set_timeout(PsySerialPort *self, PsyDuration *duration)
  *
  * You can use this value to specify the maximum time before returning. This
  * method will probably always succeed, but you might want to check the value
- * you have been actually obtained. By checking [prop@SerialPort:time-out] or
- * calling [method@SerialPort.get_timeout] after the port has been opened.
+ * you have been actually obtained. By checking [property@SerialPort:timeout]
+ * or calling [method@SerialPort.get_timeout] after the port has been opened.
  *
  * Returns: (transfer none): The duration of the read timeout. The duration on
  * the Serial port might change after opening the serial port, as during opening

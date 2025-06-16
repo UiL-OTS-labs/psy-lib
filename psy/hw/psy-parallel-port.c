@@ -56,7 +56,7 @@ psy_parallel_port_info_copy(PsyParallelPortInfo *self)
  * psy_parallel_port_info_free:(skip)
  * @self: the parameter to free
  *
- * Frees the instance of [class@ParallelPortInfo].
+ * Frees an instance of [struct@ParallelPortInfo].
  */
 void
 psy_parallel_port_info_free(PsyParallelPortInfo *self)
@@ -126,7 +126,7 @@ G_DEFINE_BOXED_TYPE(PsyParallelPortInfo,
  * needs to be designed that can read, write, open, close in an async fashion.
  *
  * PsyParallel is implemented fully by the classes PsyParport (Linux) and
- * PsyInpoutPort (windows). Using [ctor@PsyParrallelPort.new], you'll get
+ * PsyInpoutPort (windows). Using [ctor@PsyParallelPort.new], you'll get
  * the device that is appropriate on your os, or NULL when not available.
  */
 
