@@ -459,7 +459,8 @@ psy_serial_port_read(PsySerialPort *self,
                      gsize         *num_bytes_read,
                      GError       **error)
 {
-    PsySerialPortClass *cls;
+    PsySerialPortClass   *cls;
+    PsySerialPortPrivate *priv;
     g_return_if_fail(bytes != NULL && *bytes == NULL);
     g_return_if_fail(PSY_IS_SERIAL_PORT(self));
     g_return_if_fail(error == NULL || *error == NULL);
@@ -468,7 +469,46 @@ psy_serial_port_read(PsySerialPort *self,
     cls = PSY_SERIAL_PORT_GET_CLASS(self);
     g_return_if_fail(cls->read);
 
+    priv = psy_serial_port_get_instance_private(self);
+    if (!priv->is_open) {
+        g_set_error(error,
+                    PSY_SERIAL_PORT_ERROR,
+                    PSY_SERIAL_PORT_ERROR_CLOSED,
+                    "Unable to read from closed serial device");
+        *num_bytes_read = 0;
+        return;
+    }
+
     cls->read(self, bytes, num_bytes, num_bytes_read, error);
+}
+
+/**
+ * psy_serial_port_read_raw:(skip)
+ * @bytes:(out caller-allocates):The bytes are going to be read into this
+ *      buffer, hence it should be at least num_bytes large
+ * @num_bytes: The number of bytes you'd like to read.
+ *
+ * Read num_bytes from the serial port. This function is currently not exported
+ * to the language bindings as then is hard to transfer the bytes to a bytes
+ * like object in the language from which psylib is called.
+ *
+ * Returns: the number of bytes read successfully from the serial port or a
+ * negative number on failure in which case errno should be set.
+ */
+gssize
+psy_serial_port_read_raw(PsySerialPort *self, guint8 *bytes, gsize num_bytes)
+{
+    PsySerialPortClass *cls;
+    g_return_val_if_fail(bytes != NULL, -1);
+    g_return_val_if_fail(PSY_IS_SERIAL_PORT(self), -1);
+
+    PsySerialPortPrivate *priv = psy_serial_port_get_instance_private(self);
+    g_return_val_if_fail(priv->is_open, -1);
+
+    cls = PSY_SERIAL_PORT_GET_CLASS(self);
+    g_return_val_if_fail(cls->read_raw, -1);
+
+    return cls->read_raw(self, bytes, num_bytes);
 }
 
 /**

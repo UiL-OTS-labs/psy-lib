@@ -254,15 +254,6 @@ termios_read(PsySerialPort *serial,
     // is switched to canonical.
     guint8 buffer[4096];
 
-    if (!psy_serial_port_get_is_open(serial)) {
-        g_set_error(error,
-                    PSY_TYPE_SERIAL_PORT_ERROR,
-                    PSY_SERIAL_PORT_ERROR_CLOSED,
-                    "Unable to read from a closed serial port");
-        *num_bytes_read = 0;
-        return;
-    }
-
     gint64 ret = read(self->fd, buffer, MIN(num_bytes, sizeof(buffer)));
     if (ret < 0) {
         g_set_error(error,
@@ -280,6 +271,16 @@ termios_read(PsySerialPort *serial,
     *num_bytes_read = ret >= 0 ? ret : 0;
 }
 
+static gssize
+termios_read_raw(PsySerialPort *serial, guint8 *bytes, gsize num_bytes)
+{
+    PsyTermios *self = PSY_TERMIOS(serial);
+
+    gssize ret = read(self->fd, bytes, num_bytes);
+
+    return ret;
+}
+
 static void
 psy_termios_class_init(PsyTermiosClass *cls)
 {
@@ -290,10 +291,11 @@ psy_termios_class_init(PsyTermiosClass *cls)
 
     PsySerialPortClass *serial_cls = PSY_SERIAL_PORT_CLASS(cls);
 
-    serial_cls->open  = termios_open;
-    serial_cls->close = termios_close;
-    serial_cls->write = termios_write;
-    serial_cls->read  = termios_read;
+    serial_cls->open     = termios_open;
+    serial_cls->close    = termios_close;
+    serial_cls->write    = termios_write;
+    serial_cls->read     = termios_read;
+    serial_cls->read_raw = termios_read_raw;
 
     // g_object_class_install_properties(obj_cls, NUM_PROPS, termios_props);
 }
