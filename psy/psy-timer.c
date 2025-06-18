@@ -322,7 +322,7 @@ psy_timer_cancel(PsyTimer *self)
 /**
  * psy_timer_set_async_fire_cb:
  * @cb:(nullable)(closure data)(scope forever): a callback to be called
- * @data: the data passed to the callback
+ * @data:(nullable): the data passed to the callback
  *
  * You may only set this member when the fire-time is not yet set.
  * This callback is called from the timer thread, hence, you must take care not
@@ -341,7 +341,7 @@ psy_timer_set_async_fire_cb(PsyTimer *self, PsyTimerAsyncCb cb, gpointer data)
 {
     g_return_val_if_fail(PSY_IS_TIMER(self), FALSE);
 
-    if (self->fire_time) { // cancel ongoing operations first
+    if (G_UNLIKELY(self->fire_time)) { // cancel ongoing operations first
         g_warning("Unable to set callback when timer is already scheduled.");
         return FALSE;
     }
