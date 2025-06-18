@@ -56,7 +56,7 @@ psy_parallel_port_info_copy(PsyParallelPortInfo *self)
  * psy_parallel_port_info_free:(skip)
  * @self: the parameter to free
  *
- * Frees the instance of [struct@ParallelPortInfo].
+ * Frees an instance of [struct@ParallelPortInfo].
  */
 void
 psy_parallel_port_info_free(PsyParallelPortInfo *self)

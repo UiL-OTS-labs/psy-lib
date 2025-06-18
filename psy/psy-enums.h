@@ -111,13 +111,42 @@ typedef enum {
 } PsyAudioChannelStrategy;
 
 /**
+ * PsyBaudRate:
+ * @PSY_BAUD_RATE_0 closes the connection
+ * @PSY_BAUD_RATE_50 set the baud rate to 50 Hz.
+ *
+ * Different baud rates used for serial communication
+ */
+typedef enum {
+    PSY_BAUD_RATE_0,
+    PSY_BAUD_RATE_50,
+    PSY_BAUD_RATE_75,
+    PSY_BAUD_RATE_110,
+    PSY_BAUD_RATE_134,
+    PSY_BAUD_RATE_150,
+    PSY_BAUD_RATE_200,
+    PSY_BAUD_RATE_300,
+    PSY_BAUD_RATE_600,
+    PSY_BAUD_RATE_1200,
+    PSY_BAUD_RATE_1800,
+    PSY_BAUD_RATE_2400,
+    PSY_BAUD_RATE_4800,
+    PSY_BAUD_RATE_9600,
+    PSY_BAUD_RATE_19200,
+    PSY_BAUD_RATE_38400,
+    PSY_BAUD_RATE_57600,
+    PSY_BAUD_RATE_115200,
+    PSY_BAUD_RATE_230400,
+} PsyBaudRate;
+
+/**
  * PsyDrawingContextError:
  * @PSY_DRAWING_CONTEXT_ERROR_NAME_EXISTS: A resouce with that name has
  *      already been registered.
  * @PSY_DRAWING_CONTEXT_ERROR_BUSY: Can't do this operation as it is already
  *      in progress
- * @PSY_DRAWING_CONTEXT_ERROR_NAME_FAILED: Some less specified error regarding
- *      the context occured.
+ * @PSY_DRAWING_CONTEXT_ERROR_NAME_FAILED: Some less specified error
+ * regarding the context occured.
  *
  * These errors may be the result of invalid operations on an instance
  * of `PsyDrawingContext`
@@ -272,6 +301,26 @@ typedef enum {
     PSY_PARALLEL_TRIGGER_ERROR_INVALID_PARAMETER,
     PSY_PARALLEL_TRIGGER_ERROR_FAILED,
 } PsyParallelTriggerError;
+
+/**
+ * PsySerialPortError:
+ * @PSY_SERIAL_PORT_ERROR_NO_PERMISSION: The user hasn't got permission to open
+ *                                       the device. On Linux, this might mean
+ *                                       that the user needs to be added to
+ *                                       the dialout group.
+ * @PSY_SERIAL_PORT_NO_DEVICE: The file specified doesn't seem to exist.
+ * @PSY_SERIAL_PORT_CLOSED: The port isn't yet opened, and an operation is
+ *                          conducted that would require the file to be opened
+ *                          first.
+ * @PSY_SERIAL_PORT_FAILED: Unspecified error occurred, maybe the error messages
+ *                          tells something useful.
+ */
+typedef enum {
+    PSY_SERIAL_PORT_ERROR_NO_PERMISSION,
+    PSY_SERIAL_PORT_ERROR_NO_SUCH_DEVICE,
+    PSY_SERIAL_PORT_ERROR_CLOSED,
+    PSY_SERIAL_PORT_ERROR_FAILED
+} PsySerialPortError;
 
 /**
  * PsyStepError:
