@@ -17,6 +17,7 @@ class MsgType(enum.IntFlag):
     ACK = 2
     ERROR = 3
     PIN_OUT = 4
+    CLOSE = 5
 
 
 class Msg:
@@ -88,7 +89,6 @@ class TriggerPort:
 
     def read_msg(self) -> Msg:
         header = self._read_header()
-        print(header)
         assert len(header) == Msg.HEADER_LENGTH
         num_bytes = header[0] - Msg.HEADER_LENGTH
         payload = self._port.read(num_bytes)
@@ -97,12 +97,12 @@ class TriggerPort:
 
 
 serial = TriggerPort(name=DEV)
-try:
-    serial.open()
-except Exception as e:
-    print(e)
 
 print(f"Serial = {serial}, serial.is_open: serial.props.is_open")
 serial.write_msg(Msg.create_connect_msg())
 msg = serial.read_msg()
-print("The recieved message is: ", msg)
+print("The received message is: ", msg)
+
+serial.write_msg(Msg(MsgType.CLOSE, 0, bytes()))
+msg = serial.read_msg()
+print("The received message is: ", msg)

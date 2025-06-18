@@ -210,7 +210,7 @@ termios_close(PsySerialPort *self)
     PSY_SERIAL_PORT_CLASS(psy_termios_parent_class)->close(self);
 }
 
-static gsize
+static gssize
 termios_write(PsySerialPort *serial,
               const guint8  *bytes,
               gsize          num_bytes,

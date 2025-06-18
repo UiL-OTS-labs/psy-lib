@@ -28,6 +28,11 @@ G_DEFINE_QUARK(psy-serial-port-error-quark, psy_serial_port_error)
  * PsySerialPort is implemented fully by the [class@Termios] (Linux) and
  * PsyComPort(windows). Using [ctor@SerialPort.new], you'll get
  * the device that is appropriate on your os, or NULL when not available.
+ *
+ * A serial port of psylib is setup to transmit raw bytes, it is not
+ * designed for setting up your own (controlling) terminal. In Linux termios
+ * speak, the SerialPort is setup in non-canonical mode. By default the serial
+ * device does reads with a timeout of 100ms.
  */
 
 typedef struct {
@@ -423,7 +428,7 @@ psy_serial_port_get_name(PsySerialPort *self)
  *
  * Returns: The number of bytes written.
  */
-gsize
+gssize
 psy_serial_port_write(PsySerialPort *self,
                       const guint8  *bytes,
                       gsize          num_bytes,
@@ -508,6 +513,9 @@ psy_serial_port_read_raw(PsySerialPort *self, guint8 *bytes, gsize num_bytes)
     cls = PSY_SERIAL_PORT_GET_CLASS(self);
     g_return_val_if_fail(cls->read_raw, -1);
 
+    if (num_bytes > G_MAXSSIZE)
+        num_bytes = G_MAXSSIZE;
+
     return cls->read_raw(self, bytes, num_bytes);
 }
 
@@ -533,6 +541,9 @@ psy_serial_port_set_baud_rate(PsySerialPort *self, PsyBaudRate rate)
 /**
  * psy_serial_port_get_baud_rate:
  * @self: An instance of [class@SerialPort]
+ *
+ * The baudrate on which the device operates. The actual bitrate
+ * is slightly lower, as some bits are necessary for the protocol
  *
  * Returns: the baud rate used to open the connection
  */

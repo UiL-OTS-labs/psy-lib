@@ -41,10 +41,10 @@ typedef struct _PsySerialPortClass {
 
     void (*set_port_name)(PsySerialPort *self, const gchar *name);
 
-    gsize (*write)(PsySerialPort *self,
-                   const guint8  *bytes,
-                   size_t         num_bytes,
-                   GError       **error);
+    gssize (*write)(PsySerialPort *self,
+                    const guint8  *bytes,
+                    gsize          num_bytes,
+                    GError       **error);
 
     void (*read)(PsySerialPort *self,
                  guint8       **bytes,
@@ -82,7 +82,7 @@ psy_serial_port_close(PsySerialPort *self);
 G_MODULE_EXPORT gboolean
 psy_serial_port_get_is_open(PsySerialPort *self);
 
-G_MODULE_EXPORT gsize
+G_MODULE_EXPORT gssize
 psy_serial_port_write(PsySerialPort *self,
                       const guint8  *bytes,
                       size_t         num_bytes,
@@ -96,9 +96,7 @@ psy_serial_port_read(PsySerialPort *self,
                      GError       **error);
 
 G_MODULE_EXPORT gssize
-psy_serial_port_open_read_raw(PsySerialPort *self,
-                              guint8        *bytes,
-                              gsize          num_bytes);
+psy_serial_port_read_raw(PsySerialPort *self, guint8 *bytes, gsize num_bytes);
 
 G_MODULE_EXPORT void
 psy_serial_port_set_baud_rate(PsySerialPort *self, PsyBaudRate rate);
