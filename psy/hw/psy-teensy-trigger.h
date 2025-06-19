@@ -18,7 +18,7 @@ G_DECLARE_FINAL_TYPE(
 G_MODULE_EXPORT PsyTeensyTrigger *
 psy_teensy_trigger_new(const gchar *name);
 
-G_MODULE_EXPORT void
+G_MODULE_EXPORT gboolean
 psy_teensy_trigger_open(PsyTeensyTrigger *self, GError **error);
 
 G_MODULE_EXPORT void

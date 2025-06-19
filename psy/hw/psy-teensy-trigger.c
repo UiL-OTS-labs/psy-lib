@@ -220,21 +220,31 @@ teensy_trigger_get_property(GObject    *object,
     }
 }
 
-static void
+static gboolean
 teensy_trigger_open(PsyTeensyTrigger *self, GError **error)
 {
-    psy_serial_port_open(self->port, error);
-    TeensyMsg msg = teensy_msg_create_connect();
+    gboolean ret = psy_serial_port_open(self->port, error);
+    if (ret) {
+        TeensyMsg msg = teensy_msg_create_connect();
 
-    serial_port_write_msg(self->port, &msg, error);
+        serial_port_write_msg(self->port, &msg, error);
 
-    msg = serial_port_read_msg(self->port);
-    if (msg.buffer[0] != 2 || msg.buffer[1] != ACK) {
-        // It's not a teensy trigger
-        g_critical("Not communicating to a device that is a teensy trigger, "
-                   "did you set the proper device_name");
-        psy_serial_port_close(self->port);
+        msg = serial_port_read_msg(self->port);
+        if (msg.buffer[0] != 2 || msg.buffer[1] != ACK) {
+            // It's not a teensy trigger
+            g_critical(
+                "Not communicating to a device that is a teensy trigger, "
+                "did you set the proper device_name");
+            g_set_error(
+                error,
+                PSY_SERIAL_PORT_ERROR,
+                PSY_SERIAL_PORT_ERROR_FAILED,
+                "Connected device doesn't respond like a TeensyTrigger");
+            psy_serial_port_close(self->port);
+        }
+        ret = FALSE;
     }
+    return ret;
 }
 
 static void
@@ -355,19 +365,19 @@ psy_teensy_trigger_new(const gchar *name)
  * device. This should be called before trying to trigger. This or the
  * _async version should be called and completed before trying to write
  * triggers.
+ *
+ * Returns: TRUE when the device is successfully opened, FALSE otherwise.
  */
-void
+gboolean
 psy_teensy_trigger_open(PsyTeensyTrigger *self, GError **error)
 {
-    g_return_if_fail(PSY_IS_TEENSY_TRIGGER(self));
-    g_return_if_fail(error || *error != NULL);
+    g_return_val_if_fail(PSY_IS_TEENSY_TRIGGER(self), FALSE);
+    g_return_val_if_fail(error || *error != NULL, FALSE);
 
     if (psy_serial_port_get_is_open(self->port))
-        return;
+        return TRUE;
 
-    teensy_trigger_open(self, error);
-
-    return;
+    return teensy_trigger_open(self, error);
 }
 
 /**
