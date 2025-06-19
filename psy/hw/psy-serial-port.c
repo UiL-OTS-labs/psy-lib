@@ -145,12 +145,13 @@ serial_port_finalize(GObject *obj)
     psy_duration_free(priv->timeout);
 }
 
-static void
+static gboolean
 serial_port_open(PsySerialPort *self, GError **error)
 {
     (void) error;
     PsySerialPortPrivate *priv = psy_serial_port_get_instance_private(self);
     priv->is_open              = 1;
+    return TRUE;
 }
 
 static void
@@ -320,17 +321,19 @@ psy_serial_port_free(PsySerialPort *self)
  *
  * Opens the device with the, make sure you have set the port name, the
  * device file is backed by the actual device.
+ *
+ * Returns: TRUE if the serial port is opened, false otherwise
  */
-void
+gboolean
 psy_serial_port_open(PsySerialPort *self, GError **error)
 {
-    g_return_if_fail(PSY_IS_SERIAL_PORT(self));
-    g_return_if_fail(error == NULL || *error == NULL);
+    g_return_val_if_fail(PSY_IS_SERIAL_PORT(self), FALSE);
+    g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
 
     PsySerialPortClass *klass = PSY_SERIAL_PORT_GET_CLASS(self);
-    g_return_if_fail(klass->open != NULL);
+    g_return_val_if_fail(klass->open != NULL, FALSE);
 
-    klass->open(self, error);
+    return klass->open(self, error);
 }
 
 /**
