@@ -24,6 +24,12 @@ if cdata.has('HAVE_TERMIOS_H')
 endif
 
 if host_machine.system() in ['windows', 'cygwin']
-    libpsyfiles += files('psy-inpout-port.c')
-    libpsy_headers += files('psy-inpout-port.h')
+    libpsyfiles += files(
+        'psy-inpout-port.c', 
+        'psy-com-port.c'
+    )
+    libpsy_headers += files(
+        'psy-inpout-port.h',
+        'psy-com-port.h'
+    )
 endif
