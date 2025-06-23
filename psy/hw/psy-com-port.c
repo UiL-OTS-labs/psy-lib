@@ -3,6 +3,7 @@
 #include <math.h>
 
 #include "enum-types.h"
+#include "psy-clock.h"
 #include "psy-com-port.h"
 #include "psy-config.h"
 #include "psy-utils.h"
@@ -121,9 +122,22 @@ com_port_open(PsySerialPort *serial, GError **error)
 
         psy_strerr(errsave, error_buf, sizeof(error_buf));
 
+        PsySerialPortError serial_error;
+        switch (errsave) {
+        case ERROR_FILE_NOT_FOUND:
+        case ERROR_PATH_NOT_FOUND:
+            serial_error = PSY_SERIAL_PORT_ERROR_NO_SUCH_DEVICE;
+            break;
+        case ERROR_ACCESS_DENIED:
+            serial_error = PSY_SERIAL_PORT_ERROR_NO_PERMISSION;
+            break;
+        default:
+            serial_error = PSY_SERIAL_PORT_ERROR_FAILED;
+        }
+
         g_set_error(error,
                     PSY_SERIAL_PORT_ERROR,
-                    PSY_SERIAL_PORT_ERROR_FAILED,
+                    serial_error,
                     "Unable to open %s: %s",
                     psy_serial_port_get_name(serial),
                     error_buf);
@@ -163,11 +177,12 @@ com_port_open(PsySerialPort *serial, GError **error)
                     errstr);
         goto failure;
     }
-    COMMTIMEOUTS timeout = {0};
-    timeout.ReadIntervalTimeout
-        = psy_duration_get_ms(psy_serial_port_get_timeout(serial));
-    timeout.ReadTotalTimeoutMultiplier = 1;
-    timeout.ReadTotalTimeoutConstant   = 0;
+
+    PsyDuration *timeout_dur           = psy_serial_port_get_timeout(serial);
+    COMMTIMEOUTS timeout               = {0};
+    timeout.ReadIntervalTimeout        = psy_duration_get_ms(timeout_dur);
+    timeout.ReadTotalTimeoutMultiplier = 0;
+    timeout.ReadTotalTimeoutConstant   = psy_duration_get_ms(timeout_dur);
 
     SetCommTimeouts(self->h_file, &timeout);
 
@@ -282,9 +297,8 @@ com_port_read(PsySerialPort *serial,
 static gssize
 com_port_read_raw(PsySerialPort *serial, guint8 *bytes, gsize num_bytes)
 {
-    PsyComPort *self = PSY_COM_PORT(serial);
-
-    DWORD nread = 0;
+    PsyComPort *self  = PSY_COM_PORT(serial);
+    DWORD       nread = 0;
 
     BOOL ret = ReadFile(self->h_file, bytes, num_bytes, &nread, NULL);
 
@@ -307,7 +321,8 @@ psy_com_port_class_init(PsyComPortClass *cls)
     serial_cls->read     = com_port_read;
     serial_cls->read_raw = com_port_read_raw;
 
-    // g_object_class_install_properties(obj_cls, NUM_PROPS, com_port_props);
+    // g_object_class_install_properties(obj_cls, NUM_PROPS,
+    // com_port_props);
 }
 
 /**

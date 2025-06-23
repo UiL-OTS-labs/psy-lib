@@ -241,7 +241,7 @@ typedef enum PsyIoLevel {
  *                            `PsyLoop:index` < `PsyLoop:stop`
  * @PSY_LOOP_CONDITION_LESS_EQUAL: The loop continues while
  *                                 `PsyLoop:index` <= `PsyLoop:stop`
- * @PSY_LOOP_CONDITION_EQUAL: The loop conintues while
+ * @PSY_LOOP_CONDITION_EQUAL: The loop continues while
  *                            `PsyLoop:index` == `PsyLoop:stop`
  * @PSY_LOOP_CONDITION_GREATER_EQUAL: The loop continues while:
  *                                    `PsyLoop:index` >= `PsyLoop:stop`
@@ -349,6 +349,27 @@ typedef enum {
     PSY_STEPPING_STONES_ERROR_INVALID_INDEX,
     PSY_STEPPING_STONES_ERROR_NO_SUCH_KEY
 } PsySteppingStoneError;
+
+/**
+ * PsyTeensyTriggerError:
+ * @PSY_TEENSY_TRIGGER_TIMEOUT: The serial port didn't return a message on time
+ * this typically means your connected to the wrong
+ * device or no Teensy is connected to that port.
+ * @PSY_TEENSY_TRIGGER_ERROR_NOT_A_TEENSY_TRIGGER: The attached device doesn't
+ * talk like expected from a teensy trigger device.
+ * @PSY_TEENSY_TRIGGER_FAILED: Another error occurred.
+ *
+ * Whilst using a psy teensy trigger, some errors can come directly from the
+ * serial device. However, when opening it can be the case that the serial port
+ * doesn't set an error. When this timeouts, this typically you are using the
+ * wrong comport serial device or have no teensy whith the appropriate firware
+ * attached.
+ */
+typedef enum {
+    PSY_TEENSY_TRIGGER_ERROR_TIMEOUT,
+    PSY_TEENSY_TRIGGER_ERROR_NOT_A_TEENSY_TRIGGER,
+    PSY_TEENSY_TRIGGER_ERROR_FAILED,
+} PsyTeensyTriggerError;
 
 /**
  * PsyTextureError:
