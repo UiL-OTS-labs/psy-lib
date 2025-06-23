@@ -1,7 +1,9 @@
 #!/usr/bin/env/python
 
+import argparse as ap
 import gi
 import os
+import sys
 
 gi.require_versions({"Psy": "0.1", "GLib": "2.0"})
 from gi.repository import Psy, GLib  # noqa: E402
@@ -16,7 +18,11 @@ def quit_loop(loop: GLib.MainLoop, t1: Psy.TimePoint):
 
 
 def main():
-    trigger = Psy.TeensyTrigger(name=DEV, trig_dur=Psy.Duration.new_ms(1))
+    parser = ap.ArgumentParser(sys.argv[0], description="trigger a teensy device")
+    parser.add_argument("-s", "--serial_name", type=str, default=DEV)
+    args = parser.parse_args()
+
+    trigger = Psy.TeensyTrigger(name=args.serial_name, trig_dur=Psy.Duration.new_ms(1))
 
     trigger.open()
 

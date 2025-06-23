@@ -4,8 +4,10 @@
 #include "psy-config.h"
 #if defined(HAVE_TERMIOS_H)
     #include "psy-termios.h"
+#elif _WIN32
+    #include "psy-com-port.h"
 #else
-    #warning "import PsyComPort for windows"
+    #error "Oops no suitable SerialPort implementations defined"
 #endif
 
 // clang-format off
@@ -272,8 +274,10 @@ psy_serial_port_new(void)
 
 #if defined(HAVE_TERMIOS_H)
     ret = PSY_SERIAL_PORT(psy_termios_new());
+#elif _WIN32
+    ret = PSY_SERIAL_PORT(psy_com_port_new());
 #else
-    #warning "No Serial port available for this platform"
+    g_warning("No Serial port available for this platform");
 #endif
     return ret;
 }
@@ -292,12 +296,14 @@ PsySerialPort *
 psy_serial_port_new_with_name(const gchar *device_name)
 {
     g_return_val_if_fail(device_name, NULL);
-    PsySerialPort *ret;
+    PsySerialPort *ret = NULL;
 
 #if defined(HAVE_TERMIOS_H)
     ret = PSY_SERIAL_PORT(psy_termios_new_with_name(device_name));
+#elif _WIN32
+    ret = PSY_SERIAL_PORT(psy_com_port_new_with_name(device_name));
 #else
-    #warning "No Serial port available for this platform"
+    #warning "No SerialPort available for this platform"
 #endif
     return ret;
 }

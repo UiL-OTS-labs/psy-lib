@@ -1,7 +1,9 @@
 #!/usr/bin/env/python
 
+import argparse as ap
 import os
 import gi
+import sys
 
 gi.require_versions({"Psy": "0.1", "GLib": "2.0"})
 
@@ -32,9 +34,13 @@ def on_timer_fire(
 
 
 def main() -> None:
-    init = Psy.Initializer(portaudio=False, gstreamer=False)
+    
+    parser = ap.ArgumentParser(sys.argv[0], description="trigger a teensy device")
+    parser.add_argument("-s", "--serial_name", type=str, default=SERIAL_DEV)
+    args = parser.parse_args()
+
     loop = GLib.MainLoop()
-    teensy = Psy.TeensyTrigger.new(SERIAL_DEV)
+    teensy = Psy.TeensyTrigger.new(args.serial_name)
     parallel = Psy.ParallelTrigger()
 
     now = clk.now()
@@ -50,8 +56,8 @@ def main() -> None:
     GLib.timeout_add(10000, stop, loop)
 
     loop.run()
-    timer.cancel()
 
 
 if __name__ == "__main__":
+    init = Psy.Initializer(portaudio=False, gstreamer=False)
     main()
