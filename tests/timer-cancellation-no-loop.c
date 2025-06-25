@@ -24,6 +24,8 @@ main()
     g_signal_connect(timer, "fired", G_CALLBACK(dont_fire), NULL);
     g_object_set(timer, "fire-time", tp_now, NULL);
 
+    g_usleep(10000); // 10ms
+
     psy_time_point_free(tp_now);
     psy_timer_free(timer);
     psy_clock_free(clk);
