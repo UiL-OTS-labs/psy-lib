@@ -58,9 +58,11 @@ teensy_msg_create_pin(guint8 pin_mask)
 }
 
 static TeensyMsg
-serial_port_read_msg(PsySerialPort *port)
+serial_port_read_msg(PsySerialPort *port, GError **error)
 {
-    TeensyMsg ret;
+    TeensyMsg ret = {
+        .buffer = {0, NOT_INIT}
+    };
     g_assert(PSY_IS_SERIAL_PORT(port));
 
     gssize num_read_tot = 0;
@@ -79,6 +81,15 @@ serial_port_read_msg(PsySerialPort *port)
                 return ret;
             }
         }
+        else if (num_read == 0) { // Timeout occurred
+            g_set_error(error,
+                        PSY_TEENSY_TRIGGER_ERROR,
+                        PSY_TEENSY_TRIGGER_ERROR_TIMEOUT,
+                        "There was no response from the other end, use a "
+                        "different port name or connect a valid device");
+            return ret;
+        }
+
         num_read_tot += num_read;
     }
 
@@ -95,6 +106,14 @@ serial_port_read_msg(PsySerialPort *port)
                 g_critical("Unable to receive msg: %s", g_strerror(errno));
                 return ret;
             }
+        }
+        else if (num_read == 0) {
+            g_set_error(error,
+                        PSY_TEENSY_TRIGGER_ERROR,
+                        PSY_TEENSY_TRIGGER_ERROR_TIMEOUT,
+                        "There was no response from the other end, use a "
+                        "different port name or connect a valid device");
+            return ret;
         }
         num_read_tot += num_read;
     }
@@ -120,6 +139,10 @@ serial_port_write_msg(PsySerialPort *port, const TeensyMsg *msg, GError **error)
         num_written += n;
     }
 }
+
+// clang-format off
+G_DEFINE_QUARK(psy-teensy-trigger-error-quark, psy_teensy_trigger_error)
+// clang-format on
 
 /**
  * TeensyTrigger:
@@ -229,16 +252,14 @@ teensy_trigger_open(PsyTeensyTrigger *self, GError **error)
 
         serial_port_write_msg(self->port, &msg, error);
 
-        msg = serial_port_read_msg(self->port);
+        msg = serial_port_read_msg(self->port, error);
+        if (*error)
+            return FALSE;
         if (msg.buffer[0] != 2 || msg.buffer[1] != ACK) {
-            // It's not a teensy trigger
-            g_critical(
-                "Not communicating to a device that is a teensy trigger, "
-                "did you set the proper device_name");
             g_set_error(
                 error,
-                PSY_SERIAL_PORT_ERROR,
-                PSY_SERIAL_PORT_ERROR_FAILED,
+                PSY_TEENSY_TRIGGER_ERROR,
+                PSY_TEENSY_TRIGGER_ERROR_NOT_A_TEENSY_TRIGGER,
                 "Connected device doesn't respond like a TeensyTrigger");
             psy_serial_port_close(self->port);
         }
@@ -255,7 +276,7 @@ teensy_trigger_close(PsyTeensyTrigger *self)
     TeensyMsg msg = teensy_msg_create_close();
 
     serial_port_write_msg(self->port, &msg, NULL);
-    msg = serial_port_read_msg(self->port);
+    msg = serial_port_read_msg(self->port, NULL);
     if (msg.buffer[TEENSY_MSG_SIZE_IDX] != TEENSY_MSG_HEADER_SIZE
         || msg.buffer[TEENSY_MSG_TYPE_IDX] != ACK) {
         g_critical("Something failed while closing the device");
