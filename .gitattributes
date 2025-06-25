@@ -9,5 +9,5 @@
 *.cpp text eol=lf
 *.py text eol=lf
 
-# gitattributes should al
+# gitattributes should be considered source
 .gitattributes text eol=lf

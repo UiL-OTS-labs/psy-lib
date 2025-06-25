@@ -20,7 +20,7 @@ class RangedInt:
 
     def __init__(self, min, max):
         if min >= max:
-            raise ValueError("min should be smaller then max")
+            raise ValueError("min should be smaller than max")
         self.min = min
         self.max = max
     
@@ -69,13 +69,14 @@ def main() -> None:
 
     now = clk.now()
 
-    timer = Psy.Timer()
-    timer.set_fire_time(now.add(timer_dur))
-    timer.connect("fired", on_timer_fire, teensy, parallel)
-
     teensy.open()
     teensy.set_trig_dur(trigger_dur)
     parallel.open(0)
+
+    timer = Psy.Timer()
+    print(timer)
+    timer.set_fire_time(now.add(timer_dur))
+    timer.connect("fired", on_timer_fire, teensy, parallel)
 
     GLib.timeout_add(10000, stop, loop)
 

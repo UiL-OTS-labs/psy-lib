@@ -3,7 +3,6 @@
 #include <math.h>
 
 #include "enum-types.h"
-#include "psy-clock.h"
 #include "psy-com-port.h"
 #include "psy-config.h"
 #include "psy-utils.h"
