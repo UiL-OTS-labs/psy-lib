@@ -79,6 +79,19 @@ endif
 test('test-timer', test_timer, is_parallel:false, args: test_timer_args)
 
 
+timer_cancellation_no_loop = executable(
+    'timer-cancellation-no-loop',
+    'timer-cancellation-no-loop.c',
+    dependencies: [psy_dep],
+    c_args: UNIT_PP_ARGS,
+    cpp_args: UNIT_PP_ARGS,
+)
+env = environment({'G_DEBUG':'fatal-warnings'})
+test(
+    'timer-cancellation-no-loop',
+    timer_cancellation_no_loop,
+    env:env
+)
 
 unit_test = executable (
     'unit-test',
