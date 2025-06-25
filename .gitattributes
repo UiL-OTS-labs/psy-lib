@@ -7,3 +7,7 @@
 *.c text eol=lf
 *.h text eol=lf
 *.cpp text eol=lf
+*.py text eol=lf
+
+# gitattributes should be considered source
+.gitattributes text eol=lf
