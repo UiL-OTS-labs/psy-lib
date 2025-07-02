@@ -175,10 +175,9 @@ psy_timer_thread_del_timer(PsyTimerThread *self, PsyTimer *timer)
 {
     GAsyncQueue *reply_queue = psy_timer_get_queue(timer);
 
+    // When this function is called after the timer has already
+    // fired. It's not an error.
     gboolean ret = g_ptr_array_remove(self->timers, timer);
-    if (!ret) {
-        g_critical("Unable to remove timer %p", (gpointer) timer);
-    }
 
     ThreadData *msg = thread_data_new(
         ret ? MSG_TIMER_CANCELED : MSG_TIMER_NO_SUCH_TIMER, self, timer);
@@ -429,8 +428,8 @@ timer_private_cancel_timer(PsyTimer *timer)
     }
     else {
         if (G_UNLIKELY(result->msg != MSG_TIMER_CANCELED)) {
+            // Apparently the timer has already fired
             g_assert(result->msg == MSG_TIMER_NO_SUCH_TIMER);
-            g_warning("No such timer: %p", (gpointer) result->timer);
         }
 
         g_free(result);

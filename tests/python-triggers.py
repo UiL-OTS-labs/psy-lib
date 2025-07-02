@@ -16,22 +16,24 @@ timer_dur = Psy.Duration.new_ms(100)
 isi = Psy.Duration.new_ms(50)  # onset of trigger after timer has fired
 trigger_dur = Psy.Duration.new_ms(1)
 
-class RangedInt:
 
+class RangedInt:
     def __init__(self, min, max):
         if min >= max:
             raise ValueError("min should be smaller than max")
         self.min = min
         self.max = max
-    
+
     def __call__(self, value):
         ival = int(value)
 
         if self.min <= ival < self.max:
             return ival
         else:
-            raise ap.ArgumentTypeError(f"{value} is not an int in the range [{self.min}, {self.max})")
-    
+            raise ap.ArgumentTypeError(
+                f"{value} is not an int in the range [{self.min}, {self.max})"
+            )
+
     def __repr__(self):
         return f"RangedInt({self.min}, {self.max})"
 
@@ -47,7 +49,8 @@ def on_timer_fire(
     parallel: Psy.ParallelTrigger,
 ):
     teensy.write(0xFF, tp.add(isi))
-    parallel.write(0xFF, tp.add(isi), trigger_dur)
+    if parallel.props.is_open:
+        parallel.write(0xFF, tp.add(isi), trigger_dur)
 
     timer.set_fire_time(tp.add(timer_dur))
 
@@ -58,6 +61,7 @@ def main() -> None:
     parser = ap.ArgumentParser(sys.argv[0], description="trigger a teensy device")
     parser.add_argument("-s", "--serial_name", type=str, default=SERIAL_DEV)
     parser.add_argument("-t", "--trigdur", type=RangedInt(1, 50), default=1)
+    parser.add_argument("--no-parallel", action="store_true")
 
     args = parser.parse_args()
     if args.trigdur:
@@ -71,7 +75,9 @@ def main() -> None:
 
     teensy.open()
     teensy.set_trig_dur(trigger_dur)
-    parallel.open(0)
+
+    if not args.no_parallel:
+        parallel.open(0)
 
     timer = Psy.Timer()
     print(timer)
