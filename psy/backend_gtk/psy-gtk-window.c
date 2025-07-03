@@ -55,7 +55,7 @@ typedef enum GtkWindowProperty {
 typedef enum GtkWindowSignals {
     SIG_DEBUG_MESSAGE,
     NUM_SIGNALS
-} GtkWindowSingals;
+} GtkWindowSignals;
 
 static GParamSpec *gtk_window_props[NUM_PROPS]     = {NULL};
 static guint       gtk_window_signals[NUM_SIGNALS] = {0};
