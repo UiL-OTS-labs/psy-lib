@@ -36,7 +36,7 @@ G_DECLARE_DERIVABLE_TYPE(
 typedef struct _PsySerialPortClass {
     GObjectClass parent_class;
 
-    void (*open)(PsySerialPort *self, GError **error);
+    gboolean (*open)(PsySerialPort *self, GError **error);
     void (*close)(PsySerialPort *self);
 
     void (*set_port_name)(PsySerialPort *self, const gchar *name);
@@ -73,7 +73,7 @@ psy_serial_port_set_name(PsySerialPort *self, const gchar *name);
 G_MODULE_EXPORT const char *
 psy_serial_port_get_name(PsySerialPort *self);
 
-G_MODULE_EXPORT void
+G_MODULE_EXPORT gboolean
 psy_serial_port_open(PsySerialPort *self, GError **error);
 
 G_MODULE_EXPORT void

@@ -9,6 +9,10 @@
 
 G_BEGIN_DECLS
 
+#define PSY_TEENSY_TRIGGER_ERROR psy_teensy_trigger_error_quark()
+G_MODULE_EXPORT GQuark
+psy_teensy_trigger_error_quark(void);
+
 #define PSY_TYPE_TEENSY_TRIGGER psy_teensy_trigger_get_type()
 
 G_MODULE_EXPORT
@@ -18,7 +22,7 @@ G_DECLARE_FINAL_TYPE(
 G_MODULE_EXPORT PsyTeensyTrigger *
 psy_teensy_trigger_new(const gchar *name);
 
-G_MODULE_EXPORT void
+G_MODULE_EXPORT gboolean
 psy_teensy_trigger_open(PsyTeensyTrigger *self, GError **error);
 
 G_MODULE_EXPORT void

@@ -4,8 +4,10 @@
 #include "psy-config.h"
 #if defined(HAVE_TERMIOS_H)
     #include "psy-termios.h"
+#elif _WIN32
+    #include "psy-com-port.h"
 #else
-    #warning "import PsyComPort for windows"
+    #error "Oops no suitable SerialPort implementations defined"
 #endif
 
 // clang-format off
@@ -145,12 +147,13 @@ serial_port_finalize(GObject *obj)
     psy_duration_free(priv->timeout);
 }
 
-static void
+static gboolean
 serial_port_open(PsySerialPort *self, GError **error)
 {
     (void) error;
     PsySerialPortPrivate *priv = psy_serial_port_get_instance_private(self);
     priv->is_open              = 1;
+    return TRUE;
 }
 
 static void
@@ -271,8 +274,10 @@ psy_serial_port_new(void)
 
 #if defined(HAVE_TERMIOS_H)
     ret = PSY_SERIAL_PORT(psy_termios_new());
+#elif _WIN32
+    ret = PSY_SERIAL_PORT(psy_com_port_new());
 #else
-    #warning "No Serial port available for this platform"
+    g_warning("No Serial port available for this platform");
 #endif
     return ret;
 }
@@ -291,12 +296,14 @@ PsySerialPort *
 psy_serial_port_new_with_name(const gchar *device_name)
 {
     g_return_val_if_fail(device_name, NULL);
-    PsySerialPort *ret;
+    PsySerialPort *ret = NULL;
 
 #if defined(HAVE_TERMIOS_H)
     ret = PSY_SERIAL_PORT(psy_termios_new_with_name(device_name));
+#elif _WIN32
+    ret = PSY_SERIAL_PORT(psy_com_port_new_with_name(device_name));
 #else
-    #warning "No Serial port available for this platform"
+    #warning "No SerialPort available for this platform"
 #endif
     return ret;
 }
@@ -320,17 +327,19 @@ psy_serial_port_free(PsySerialPort *self)
  *
  * Opens the device with the, make sure you have set the port name, the
  * device file is backed by the actual device.
+ *
+ * Returns: TRUE if the serial port is opened, false otherwise
  */
-void
+gboolean
 psy_serial_port_open(PsySerialPort *self, GError **error)
 {
-    g_return_if_fail(PSY_IS_SERIAL_PORT(self));
-    g_return_if_fail(error == NULL || *error == NULL);
+    g_return_val_if_fail(PSY_IS_SERIAL_PORT(self), FALSE);
+    g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
 
     PsySerialPortClass *klass = PSY_SERIAL_PORT_GET_CLASS(self);
-    g_return_if_fail(klass->open != NULL);
+    g_return_val_if_fail(klass->open != NULL, FALSE);
 
-    klass->open(self, error);
+    return klass->open(self, error);
 }
 
 /**

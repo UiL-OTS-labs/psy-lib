@@ -99,7 +99,7 @@ psy_termios_init(PsyTermios *self)
  * hasn't touched the device. Then it sets the serial it tries to open the
  * serial port.
  */
-static void
+static gboolean
 termios_open(PsySerialPort *self, GError **error)
 {
     PsyTermios *termios_self = PSY_TERMIOS(self);
@@ -131,7 +131,7 @@ termios_open(PsySerialPort *self, GError **error)
                         "Unable to open device: %s",
                         g_strerror(errno));
         }
-        return;
+        return FALSE;
     }
 
     if (tcgetattr(termios_self->fd, &termios_self->existing_config) < 0
@@ -154,7 +154,7 @@ termios_open(PsySerialPort *self, GError **error)
                     PSY_SERIAL_PORT_ERROR_FAILED,
                     "Unable to set baudrate: %s",
                     g_strerror(errno));
-        return;
+        goto failure;
     }
 
     // Set desired timeout
@@ -175,16 +175,16 @@ termios_open(PsySerialPort *self, GError **error)
                     PSY_SERIAL_PORT_ERROR_FAILED,
                     "Unable to set the new serial port settings: %s",
                     g_strerror(errno));
+        goto failure;
     }
 
-    PSY_SERIAL_PORT_CLASS(psy_termios_parent_class)->open(self, error);
-
-    return;
+    return PSY_SERIAL_PORT_CLASS(psy_termios_parent_class)->open(self, error);
 
 failure:
 
     close(termios_self->fd);
     termios_self->fd = -1;
+    return FALSE;
 }
 
 static void

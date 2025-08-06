@@ -110,23 +110,6 @@ psy_timer_thread_init(PsyTimerThread *self)
     self->busy_loop_dur = psy_duration_new_ms(2);
     self->running       = TRUE;
     self->thread        = g_thread_new("TimerThread", timer_thread, self);
-
-#ifdef _WIN32
-    // TODO This is now always called when initializing psylib at windows,
-    // hence we need to check if this isn't redundant.
-    //
-    // On windows a Sleep(1) should sleep for 1 millisecond. In practice, this
-    // can take a bit longer due to OS scheduling, the 1 ms is a minimal amount.
-    // The scheduler might finish the current "quantum" for this process. Which
-    // can easily be +/- 15 ms. timeBeginPeriod sets the sleep precision a bit
-    // higher, at the expense of extra power use.
-    int ret = timeBeginPeriod(1);
-    g_assert(ret == TIMERR_NOERROR);
-    if (ret == TIMERR_NOCANDO) {
-        g_critical("Unable to set timeBeginPeriod(1): "
-                   "timers might have a low resolution.");
-    }
-#endif
 }
 
 static void
@@ -150,9 +133,6 @@ psy_timer_thread_finalize(GObject *self)
     g_ptr_array_free(tt_self->timers, TRUE);
 
     psy_duration_free(tt_self->busy_loop_dur);
-#ifdef _WIN32
-    timeEndPeriod(1);
-#endif
 
     G_OBJECT_CLASS(psy_timer_thread_parent_class)->finalize(self);
 }
@@ -176,10 +156,9 @@ psy_timer_thread_del_timer(PsyTimerThread *self, PsyTimer *timer)
 {
     GAsyncQueue *reply_queue = psy_timer_get_queue(timer);
 
+    // When this function is called after the timer has already
+    // fired. It's not an error.
     gboolean ret = g_ptr_array_remove(self->timers, timer);
-    if (!ret) {
-        g_critical("Unable to remove timer %p", (gpointer) timer);
-    }
 
     ThreadData *msg = thread_data_new(
         ret ? MSG_TIMER_CANCELED : MSG_TIMER_NO_SUCH_TIMER, self, timer);
@@ -450,8 +429,8 @@ timer_private_cancel_timer(PsyTimer *timer)
     }
     else {
         if (G_UNLIKELY(result->msg != MSG_TIMER_CANCELED)) {
+            // Apparently the timer has already fired
             g_assert(result->msg == MSG_TIMER_NO_SUCH_TIMER);
-            g_warning("No such timer: %p", (gpointer) result->timer);
         }
 
         g_free(result);
