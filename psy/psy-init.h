@@ -23,4 +23,7 @@ psy_init(void);
 G_MODULE_EXPORT void
 psy_deinit(void);
 
+G_MODULE_EXPORT gboolean
+psy_is_initialized(void);
+
 G_END_DECLS
