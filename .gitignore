@@ -5,3 +5,10 @@
 # a link to the compile_commands.json in one of the build directories
 compile_commands.json
 
+/subprojects/Criterion/
+subprojects/debugbreak/
+subprojects/doc/
+subprojects/glib-2.76.1/
+subprojects/klib/
+subprojects/nanopb/
+
