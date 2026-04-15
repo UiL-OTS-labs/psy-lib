@@ -16,6 +16,7 @@ project('libpsy',
 #
 glib_req = '>=2.66.0' # based on what gtk requires august 2022
 gtk_req = '>4.0' # based on what gtk requires august 2022
+criterion_req = '>=2.4'
 alsa_req = '>=1.2'
 jack2_req = '>=1.9'
 gstreamer_req = '>=1.16'
@@ -65,7 +66,7 @@ gstreamer_dep = dependency(
 gstreamer_app_dep = dependency(
     'gstreamer-app-1.0',
     version : gstreamer_req
-  )
+)
 
 gtk_dep = dependency(
     'gtk4',
@@ -79,6 +80,14 @@ gtk_dep = dependency(
         'build-tests=false'
     ]
 )
+
+criterion_dep = dependency(
+    'criterion',
+    version: criterion_req,
+    fallback:['criterion', 'criterion'],
+    required: true,
+)
+
 
 # OpenGL function loader helper
 epoxy_dep = dependency('epoxy', version : '>1.0')
