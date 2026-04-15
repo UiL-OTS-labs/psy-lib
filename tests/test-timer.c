@@ -532,7 +532,8 @@ test_timer_simultaneous(const MunitParameter params[], void *user_data)
     return MUNIT_OK;
 }
 
-static char *accuracy_values[] = {"1000", "5000"};
+// Make sure to terminate with a NULL
+static char *accuracy_values[] = {"1000", "5000", NULL};
 
 static MunitParameterEnum accuracy_params[] = {
     {"accuracy", accuracy_values},
