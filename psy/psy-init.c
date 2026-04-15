@@ -307,6 +307,11 @@ psy_init(void)
     g_mutex_unlock(&func_init_mutex);
 }
 
+/**
+ * psy_deinit:
+ *
+ * This function will deinitialize psylib
+ */
 void
 psy_deinit(void)
 {
@@ -320,4 +325,23 @@ psy_deinit(void)
     }
 
     g_mutex_unlock(&func_init_mutex);
+}
+
+/**
+ * psy_is_initialized:
+ *
+ * This function may be used to check whether you've initialized psylib.
+ *
+ * Returns: true when it is initialized, false otherwise
+ */
+gboolean
+psy_is_initialized(void)
+{
+    gboolean ret;
+
+    g_mutex_lock(&init_mutex);
+    ret = init_count > 0;
+    g_mutex_unlock(&init_mutex);
+
+    return ret;
 }
