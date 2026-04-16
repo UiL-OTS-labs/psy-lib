@@ -15,15 +15,6 @@ if buildtype != 'debug' and buildtype != 'debugoptimized'
     UNIT_PP_ARGS += '-DNDEBUG=1'
 endif
 
-test_init = executable(
-    'test_init',
-    files('test-init.c', 'unit-test-utilities.c'),
-    dependencies: [psy_dep, criterion_dep],
-    c_args : UNIT_PP_ARGS,
-    cpp_args : UNIT_PP_ARGS,
-)
-test('test_init', test_init)
-
 
 test_gtk_window = executable(
     'test_gtk_window',
@@ -62,20 +53,6 @@ timer_test = executable(
 )
 test('timer-test', timer_test)
 
-test_timer = executable(
-    'test-timer',
-    files('test-timer.c', 'unit-test-utilities.c'),
-    dependencies:[psy_dep, criterion_dep],
-    c_args : UNIT_PP_ARGS,
-    cpp_args : UNIT_PP_ARGS,
-)
-
-# # We consider the timers to perform well, when the pc is not busy otherwise
-# test_timer_args = []
-# if get_option('running-in-ci')
-#     test_timer_args = ['--param', 'accuracy', '10000']
-# endif
-test('test-timer', test_timer)
 
 
 timer_cancellation_no_loop = executable(
@@ -91,6 +68,20 @@ test(
     timer_cancellation_no_loop,
     env:env
 )
+
+criterion_tests = executable(
+    'criterion_tests',
+    files(
+      'unit-test-utilities.c',
+      'test-init.c',
+      'test-timer.c'
+    ),
+    dependencies: [psy_dep, criterion_dep],
+    c_args : UNIT_PP_ARGS,
+    cpp_args : UNIT_PP_ARGS,
+)
+
+test('criterion-tests', criterion_tests)
 
 unit_test = executable (
     'unit-test',
