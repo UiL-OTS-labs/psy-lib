@@ -231,7 +231,6 @@ on_timer_fire_accurately(PsyTimer *t, PsyTimePoint *tp, gpointer data)
     fire_data->fire_time = psy_clock_now(fire_data->clk);
 
     fire_data->utils->num_fired++;
-    cr_log_info("fire_data %d:\n", fire_data->utils->num_fired++);
 
     if (fire_data->utils->num_fired == NUM_TIMERS) {
         g_main_loop_quit(fire_data->utils->loop);
@@ -299,7 +298,7 @@ Test(timer, fire_accurately, .timeout = 2.0)
 
     num_correct        = NUM_TIMERS - n_failed;
     gdouble percentage = (double) num_correct / NUM_TIMERS * 100;
-    cr_expect(gt(percentage, 90.0),
+    cr_expect(gt(dbl, percentage, 90.0),
               "90%% of timers are expected to finish on time");
 
     g_ptr_array_unref(timer_data);
