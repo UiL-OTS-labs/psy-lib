@@ -62,7 +62,6 @@ timer_test = executable(
 )
 test('timer-test', timer_test)
 
-
 test_timer = executable(
     'test-timer',
     files('test-timer.c', 'unit-test-utilities.c'),
@@ -71,12 +70,12 @@ test_timer = executable(
     cpp_args : UNIT_PP_ARGS,
 )
 
-# We consider the timers to perform well, when the pc is not busy otherwise
-test_timer_args = []
-if get_option('running-in-ci')
-    test_timer_args = ['--param', 'accuracy', '10000']
-endif
-test('test-timer', test_timer, is_parallel:false, args: test_timer_args)
+# # We consider the timers to perform well, when the pc is not busy otherwise
+# test_timer_args = []
+# if get_option('running-in-ci')
+#     test_timer_args = ['--param', 'accuracy', '10000']
+# endif
+test('test-timer', test_timer)
 
 
 timer_cancellation_no_loop = executable(

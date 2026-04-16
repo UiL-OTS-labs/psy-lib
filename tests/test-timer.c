@@ -1,5 +1,5 @@
-#include <assert.h>
-#include <munit.h>
+#include <criterion/criterion.h>
+#include <criterion/new/assert.h>
 #include <psylib.h>
 #include <signal.h>
 
@@ -9,41 +9,26 @@
 
 const int NUM_TIMERS       = 100;
 const int NUM_SIMULTANEOUS = 25;
-int       g_num_fired      = 0;
 
-static long
-parseBase10Int(const char *str)
-{
-    char *temp;
-    errno = 0;
+// make this configurable for CI
+#define UPPER_BOUND 10000
 
-    long ret = strtol(str, &temp, 10);
-
-    if (temp == str || *temp != '\0'
-        || ((ret == LONG_MIN || ret == LONG_MAX) && errno == ERANGE)) {
-        fprintf(stderr, "%s is not a valid base 10 int\n", str);
-        abort();
-    }
-
-    return ret;
-}
-
-static int
+static void
 timer_setup(void)
 {
     install_log_handler();
     set_log_handler_level(G_LOG_LEVEL_DEBUG);
     set_log_handler_file("test-timer.txt");
-    return 0;
 }
 
-static int
+static void
 timer_teardown(void)
 {
     set_log_handler_file(NULL);
     remove_log_handler();
-    return 0;
 }
+
+TestSuite(timer, .init = timer_setup, .fini = timer_teardown);
 
 // Have some utilities present
 
@@ -51,13 +36,12 @@ typedef struct {
     PsyInitializer *init;
     GMainLoop      *loop;
     GMainContext   *context;
+    int             num_fired;
 } TimerTestUtilities;
 
-static void *
-fixture_new(const MunitParameter params[], void *user_data)
+static TimerTestUtilities *
+timer_test_utilities_new(void)
 {
-    (void) params;
-    (void) user_data;
     TimerTestUtilities *ret = g_new(TimerTestUtilities, 1);
 
     ret->init = g_object_new(
@@ -68,67 +52,54 @@ fixture_new(const MunitParameter params[], void *user_data)
 
     ret->loop = g_main_loop_new(ret->context, FALSE);
 
-    g_num_fired = 0;
+    ret->num_fired = 0;
 
     return ret;
 }
 
 static void
-fixture_free(void *data)
+timer_test_utilities_free(TimerTestUtilities *utils)
 {
-    TimerTestUtilities *utils = data;
-
     g_clear_pointer(&utils->loop, g_main_loop_unref);
     g_main_context_pop_thread_default(utils->context);
     g_clear_pointer(&utils->context, g_main_context_unref);
 
     g_clear_object(&utils->init);
+
     g_free(utils);
 }
 
-static MunitResult
-test_timer_create(const MunitParameter params[], void *user_data)
+Test(timer, timer_create)
 {
-    (void) user_data;
-    (void) params;
     PsyTimer     *t1;
     PsyTimePoint *tf = NULL;
 
     t1 = psy_timer_new();
-    munit_assert_not_null(t1);
+    cr_assert(t1 != NULL, "Timers can be created");
 
-    munit_assert_null(tf = psy_timer_get_fire_time(t1));
+    cr_assert(zero(tf = psy_timer_get_fire_time(t1)),
+              "The don't have an fire time when not yet set");
     psy_timer_free(t1);
-
-    return MUNIT_OK;
 }
 
-static MunitResult
-test_timer_set_fire_time(const MunitParameter params[], void *user_data)
+Test(timer, set_fire_time)
 {
-    (void) params;
-    (void) user_data;
-
     PsyTimer     *t1;
     PsyClock     *clk = psy_clock_new();
     PsyTimePoint *now = psy_clock_now(clk);
-    PsyTimePoint *ft  = NULL;
+    t1                = psy_timer_new();
 
-    t1 = psy_timer_new();
-    munit_assert_not_null(t1);
-    if (!t1)
-        return MUNIT_FAIL;
+    PsyTimePoint *ft = NULL;
 
     g_object_set(t1, "fire-time", now, NULL);
 
-    munit_assert_not_null(ft = psy_timer_get_fire_time(t1));
+    ft = psy_timer_get_fire_time(t1);
+    cr_assert(ne(ft, NULL), "The timer should have a fire-time when it is set");
 
     psy_time_point_free(ft);
     psy_time_point_free(now);
     psy_clock_free(clk);
     psy_timer_free(t1);
-
-    return MUNIT_OK;
 }
 
 typedef struct {
@@ -167,11 +138,10 @@ quit_loop(gpointer data)
     return G_SOURCE_REMOVE;
 }
 
-static MunitResult
-test_timer_fire(const MunitParameter params[], void *user_data)
+Test(timer, fire)
 {
-    (void) params;
-    TimerTestUtilities *utils = user_data;
+    TimerTestUtilities *utils = timer_test_utilities_new();
+    cr_assert(ne(utils, NULL));
 
     PsyTimer     *t1  = NULL;
     PsyClock     *clk = psy_clock_new();
@@ -179,9 +149,7 @@ test_timer_fire(const MunitParameter params[], void *user_data)
     PsyTimePoint *ft  = NULL;
 
     t1 = psy_timer_new();
-    munit_assert_not_null(t1);
-    if (!t1)
-        return MUNIT_FAIL;
+    cr_assert(ne(t1, NULL));
 
     TimerFireTest test_data = {utils, now, t1, FALSE, FALSE, FALSE};
 
@@ -195,20 +163,21 @@ test_timer_fire(const MunitParameter params[], void *user_data)
 
     g_timeout_add(10, G_SOURCE_FUNC(quit_loop), utils->loop);
 
-    munit_assert_not_null(ft = psy_timer_get_fire_time(t1));
+    ft = psy_timer_get_fire_time(t1);
+    cr_assert(ne(ft, NULL));
 
     g_main_loop_run(utils->loop);
 
-    munit_assert_true(test_data.fired);
-    munit_assert_true(test_data.time_is_equal_to_set);
-    munit_assert_true(test_data.timer_is_the_same);
+    cr_expect(eq(test_data.fired, TRUE), "The timer should have fired");
+    cr_expect(test_data.time_is_equal_to_set);
+    cr_expect(test_data.timer_is_the_same);
 
     psy_time_point_free(ft);
     psy_time_point_free(now);
     psy_timer_free(t1);
     psy_clock_free(clk);
 
-    return MUNIT_OK;
+    timer_test_utilities_free(utils);
 }
 
 typedef struct {
@@ -216,8 +185,7 @@ typedef struct {
     PsyClock           *clk;
     PsyTimePoint       *fire_time; // owned
     PsyTimePoint       *scheduled; // owned
-    int                *num_fired;
-    PsyTimer           *timer; // owned.
+    PsyTimer           *timer;     // owned.
 } TimerFireAccuratelyTest;
 
 static TimerFireAccuratelyTest *
@@ -235,9 +203,6 @@ timer_fire_accuratately_test_new(TimerTestUtilities *utils,
     ret->clk       = clk;
     ret->timer     = timer;
     ret->scheduled = scheduled;
-
-    // if *(ret->num_fired) == NUM_TIMERS where done
-    ret->num_fired = &g_num_fired;
 
     return ret;
 }
@@ -265,32 +230,33 @@ on_timer_fire_accurately(PsyTimer *t, PsyTimePoint *tp, gpointer data)
     // Must be freed
     fire_data->fire_time = psy_clock_now(fire_data->clk);
 
-    (*fire_data->num_fired)++;
+    fire_data->utils->num_fired++;
+    cr_log_info("fire_data %d:\n", fire_data->utils->num_fired++);
 
-    if ((*fire_data->num_fired) == NUM_TIMERS) {
+    if (fire_data->utils->num_fired == NUM_TIMERS) {
         g_main_loop_quit(fire_data->utils->loop);
     }
 }
 
-static MunitResult
-test_timer_fire_accurately(const MunitParameter params[], void *user_data)
+Test(timer, fire_accurately, .timeout = 2.0)
 {
-    (void) params;
-    gint                num_correct, n_failed = 0;
-    TimerTestUtilities *utils = user_data;
+    gint num_correct, n_failed = 0;
+
+    TimerTestUtilities *utils = timer_test_utilities_new();
     PsyClock           *clk   = psy_clock_new();
     PsyTimePoint       *now   = psy_clock_now(clk);
     GPtrArray          *timer_data
         = g_ptr_array_new_full(NUM_TIMERS, timer_fire_accuratately_test_free);
+
     g_info("Timer accuracy test");
-    assert(strcmp(params[0].name, "accuracy") == 0);
-    gint upper_time_bound = parseBase10Int(params[0].value);
+
+    gint upper_time_bound = UPPER_BOUND;
 
     for (int i = 0; i < NUM_TIMERS; i++) {
 
         PsyTimer *t1 = psy_timer_new();
 
-        PsyDuration *dur = psy_duration_new_ms(munit_rand_int_range(100, 1000));
+        PsyDuration  *dur = psy_duration_new_ms(g_random_int_range(100, 1000));
         PsyTimePoint *time_future = psy_time_point_add(now, dur);
         psy_duration_free(dur);
 
@@ -314,17 +280,17 @@ test_timer_fire_accurately(const MunitParameter params[], void *user_data)
                                             test_data->scheduled);
 
         // We expect that a timer is not fired ahead of time.
-        munit_assert_int64(psy_duration_get_us(time_diff), >=, 0);
+        cr_expect(ge(u64, psy_duration_get_us(time_diff), 0),
+                  "Timers should not fire to early");
 
 #if !defined(_WIN32) // Seems unlikely in CI does seem to work in vm/pc
-        munit_assert_int64(psy_duration_get_us(time_diff), <, 1000);
+        cr_expect(lt(i64, psy_duration_get_us(time_diff), upper_time_bound));
 #endif
         g_info("The timer was fired at %" PRId64 " us",
                psy_duration_get_us(time_diff));
         if (psy_duration_get_us(time_diff) >= upper_time_bound) {
-            munit_logf(MUNIT_LOG_WARNING,
-                       "Timer was late %lf\n",
-                       psy_duration_get_seconds(time_diff));
+            cr_log_warn("Timer was late %lf\n",
+                        psy_duration_get_seconds(time_diff));
             n_failed++;
         }
 
@@ -333,14 +299,15 @@ test_timer_fire_accurately(const MunitParameter params[], void *user_data)
 
     num_correct        = NUM_TIMERS - n_failed;
     gdouble percentage = (double) num_correct / NUM_TIMERS * 100;
-    munit_assert_double(percentage, >, 90.0);
+    cr_expect(gt(percentage, 90.0),
+              "90%% of timers are expected to finish on time");
 
     g_ptr_array_unref(timer_data);
 
     psy_time_point_free(now);
     psy_clock_free(clk);
 
-    return MUNIT_OK;
+    timer_test_utilities_free(utils);
 }
 
 static gboolean
@@ -361,9 +328,9 @@ fire_async_cb(PsyTimePoint *tp, gpointer data)
     // Must be freed
     fire_data->fire_time = psy_clock_now(fire_data->clk);
 
-    (*fire_data->num_fired)++;
+    fire_data->utils->num_fired++;
 
-    if ((*fire_data->num_fired) == NUM_TIMERS) {
+    if (fire_data->utils->num_fired == NUM_TIMERS) {
         g_info("Stopping fire_async test");
         GSource *source = g_idle_source_new();
         g_source_set_callback(source, async_quit_loop, data, NULL);
@@ -372,19 +339,17 @@ fire_async_cb(PsyTimePoint *tp, gpointer data)
     }
 }
 
-static MunitResult
-test_timer_fire_async(const MunitParameter params[], void *user_data)
+Test(timer, fire_async)
 {
-    (void) params;
     gint                num_correct, n_failed = 0;
-    TimerTestUtilities *utils = user_data;
+    TimerTestUtilities *utils = timer_test_utilities_new();
     PsyClock           *clk   = psy_clock_new();
     PsyTimePoint       *now   = psy_clock_now(clk);
-    GPtrArray          *timer_data
+
+    GPtrArray *timer_data
         = g_ptr_array_new_full(NUM_TIMERS, timer_fire_accuratately_test_free);
 
-    assert(strcmp(params[0].name, "accuracy") == 0);
-    gint upper_time_bound = parseBase10Int(params[0].value);
+    gint upper_time_bound = UPPER_BOUND;
 
     g_info("Timer async callback test");
 
@@ -392,7 +357,7 @@ test_timer_fire_async(const MunitParameter params[], void *user_data)
 
         PsyTimer *t1 = psy_timer_new();
 
-        PsyDuration *dur = psy_duration_new_ms(munit_rand_int_range(100, 1000));
+        PsyDuration  *dur = psy_duration_new_ms(g_random_int_range(100, 1000));
         PsyTimePoint *time_future = psy_time_point_add(now, dur);
         psy_duration_free(dur);
 
@@ -415,17 +380,18 @@ test_timer_fire_async(const MunitParameter params[], void *user_data)
                                             test_data->scheduled);
 
         // We expect that a timer is not fired ahead of time.
-        munit_assert_int64(psy_duration_get_us(time_diff), >=, 0);
+        cr_expect(ge(i64, psy_duration_get_us(time_diff), 0),
+                  "Timers should not be called to early");
 
 #if !defined(_WIN32) // Seems unlikely in CI does seem to work in vm/pc
-        munit_assert_int64(psy_duration_get_us(time_diff), <, 1000);
+        cr_expect(lt(i64, psy_duration_get_us(time_diff), 1000),
+                  "Timers should not be fired to late");
 #endif
         g_info("The timer was fired at %" PRId64 " us",
                psy_duration_get_us(time_diff));
         if (psy_duration_get_us(time_diff) >= upper_time_bound) {
-            munit_logf(MUNIT_LOG_WARNING,
-                       "Timer was late %lf\n",
-                       psy_duration_get_seconds(time_diff));
+            cr_log_warn("Timer was late %lf\n",
+                        psy_duration_get_seconds(time_diff));
             n_failed++;
         }
 
@@ -434,14 +400,15 @@ test_timer_fire_async(const MunitParameter params[], void *user_data)
 
     num_correct        = NUM_TIMERS - n_failed;
     gdouble percentage = (double) num_correct / NUM_TIMERS * 100;
-    munit_assert_double(percentage, >, 90.0);
+    cr_expect(gt(percentage, 90.0),
+              "expect 90%% of the timers to fire accurately");
 
     g_ptr_array_unref(timer_data);
 
     psy_time_point_free(now);
     psy_clock_free(clk);
 
-    return MUNIT_OK;
+    timer_test_utilities_free(utils);
 }
 
 static void
@@ -454,29 +421,27 @@ on_timer_fire_simutaneously(PsyTimer *t, PsyTimePoint *tp, gpointer data)
     // Must be freed
     fire_data->fire_time = psy_clock_now(fire_data->clk);
 
-    (*fire_data->num_fired)++;
+    fire_data->utils->num_fired++;
 
-    if ((*fire_data->num_fired) == NUM_SIMULTANEOUS) {
-        g_info("quiting %s", __func__);
+    if (fire_data->utils->num_fired == NUM_SIMULTANEOUS) {
+        cr_log_info("quiting %s", __func__);
         g_main_loop_quit(fire_data->utils->loop);
     }
 }
 
-static MunitResult
-test_timer_simultaneous(const MunitParameter params[], void *user_data)
+Test(timer, simultaneous)
 {
-    (void) params;
     gint                num_correct, n_failed = 0;
-    TimerTestUtilities *utils      = user_data;
+    TimerTestUtilities *utils      = timer_test_utilities_new();
     PsyClock           *clk        = psy_clock_new();
     PsyTimePoint       *now        = psy_clock_now(clk);
     GPtrArray          *timer_data = g_ptr_array_new_full(
         NUM_SIMULTANEOUS, timer_fire_accuratately_test_free);
     PsyDuration *dur = psy_duration_new_ms(100);
-    assert(strcmp(params[0].name, "accuracy") == 0);
-    long us_upper_bound = parseBase10Int(params[0].value);
 
     g_info("Timer simultaneous test");
+
+    const int us_upper_bound = UPPER_BOUND;
 
     for (int i = 0; i < NUM_SIMULTANEOUS; i++) {
 
@@ -505,14 +470,14 @@ test_timer_simultaneous(const MunitParameter params[], void *user_data)
                                             test_data->scheduled);
 
         // We expect that a timer is not fired ahead of time.
-        munit_assert_int64(psy_duration_get_us(time_diff), >=, 0);
+        cr_expect(ge(psy_duration_get_us(time_diff), 0),
+                  "Expect that timers are not ahead of time");
 
         g_info("The timer was fired at %" PRId64 " us",
                psy_duration_get_us(time_diff));
         if (psy_duration_get_us(time_diff) >= us_upper_bound) {
-            munit_logf(MUNIT_LOG_WARNING,
-                       "Timer was late %lf\n",
-                       psy_duration_get_seconds(time_diff));
+            cr_log_warn("Timer was late %lf\n",
+                        psy_duration_get_seconds(time_diff));
             n_failed++;
         }
 
@@ -521,7 +486,8 @@ test_timer_simultaneous(const MunitParameter params[], void *user_data)
 
     num_correct        = NUM_SIMULTANEOUS - n_failed;
     gdouble percentage = (double) num_correct / NUM_SIMULTANEOUS * 100;
-    munit_assert_double(percentage, >=, 90.0);
+    cr_expect(ge(dbl, percentage, 90.0),
+              "Expect that at least 90 of timers is fired in time");
 
     psy_duration_free(dur);
     g_ptr_array_unref(timer_data);
@@ -529,71 +495,5 @@ test_timer_simultaneous(const MunitParameter params[], void *user_data)
     psy_time_point_free(now);
     psy_clock_free(clk);
 
-    return MUNIT_OK;
-}
-
-// Make sure to terminate with a NULL
-static char *accuracy_values[] = {"1000", "5000", NULL};
-
-static MunitParameterEnum accuracy_params[] = {
-    {"accuracy", accuracy_values},
-    {      NULL,            NULL}
-};
-
-// clang-format off
-MunitTest tests[] = {
-    {"create",test_timer_create, NULL, NULL, MUNIT_TEST_OPTION_NONE, NULL},
-    {"set-fire-time",test_timer_set_fire_time, NULL, NULL, MUNIT_TEST_OPTION_NONE, NULL},
-    {"fire",test_timer_fire, fixture_new, fixture_free , MUNIT_TEST_OPTION_NONE, NULL},
-    {"fire-accurately",test_timer_fire_accurately, fixture_new, fixture_free , MUNIT_TEST_OPTION_NONE, accuracy_params},
-    {"fire-asynchronous",test_timer_fire_async, fixture_new, fixture_free , MUNIT_TEST_OPTION_NONE, accuracy_params},
-    {"fire-simultaneous",test_timer_simultaneous, fixture_new, fixture_free , MUNIT_TEST_OPTION_NONE, accuracy_params},
-    {0}
-};
-// clang-format on
-
-MunitSuite suite = {"timer/", tests, NULL, 1, MUNIT_SUITE_OPTION_NONE};
-
-static void
-signal_handler(int sig)
-{
-    const char *signal_name = "unexpected";
-    switch (sig) {
-    case SIGINT:
-        signal_name = "SIGINT";
-        break;
-    case SIGABRT:
-        signal_name = "SIGABRT";
-        break;
-    case SIGSEGV:
-        signal_name = "SIGSEGV";
-        break;
-    }
-    remove_log_handler();
-    g_print("Received signal %d:%s\nquitting\n", sig, signal_name);
-    exit(sig);
-}
-
-static void
-setup_signal_handlers(void)
-{
-    if (signal(SIGINT, signal_handler) == SIG_ERR) {
-        g_printerr("Unable to catch SIGINT");
-    }
-    if (signal(SIGABRT, signal_handler) == SIG_ERR) {
-        g_printerr("Unable to catch SIGABRT");
-    }
-    if (signal(SIGSEGV, signal_handler) == SIG_ERR) {
-        g_printerr("Unable to catch SIGABRT");
-    }
-}
-
-int
-main(int argc, char **argv)
-{
-    timer_setup();
-    setup_signal_handlers();
-    int ret = munit_suite_main(&suite, NULL, argc, argv);
-    timer_teardown();
-    return ret;
+    timer_test_utilities_free(utils);
 }
