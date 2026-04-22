@@ -84,6 +84,26 @@ test('test-audio',
     args: ['-j1'], # So also the criterion test should not run in parallel
 )
 
+test_audio_channel_mapping = executable(
+    'test-audio-channel-mapping',
+    files('test-audio-channel-mapping.c'),
+    dependencies: [psy_dep, criterion_dep],
+    c_args : UNIT_PP_ARGS,
+    cpp_args : UNIT_PP_ARGS,
+)
+
+test('test-audio-channel-mapping', test_audio_channel_mapping,)
+
+test_audio_utils = executable(
+    'test-audio-utils',
+    files('test-audio-utils.c', 'unit-test-utilities.c'),
+    dependencies: [psy_dep, criterion_dep],
+    c_args : UNIT_PP_ARGS,
+    cpp_args : UNIT_PP_ARGS,
+)
+test('test-audio-utils', test_audio_utils,)
+
+
 criterion_tests = executable(
     'criterion_tests',
     files(
@@ -103,8 +123,6 @@ unit_test = executable (
     'unit-test',
     files (
         'main.c',
-        'test-audio-channel-mapping.c',
-        'test-audio-utils.c',
         'test-canvas.c',
         'test-color.c',
         'test-cross.c',
