@@ -1,7 +1,5 @@
-
-
-#include <CUnit/CUnit.h>
-#include <CUnit/TestDB.h>
+#include <criterion/criterion.h>
+#include <criterion/new/assert.h>
 
 #include "unit-test-utilities.h"
 #include <gl/psy-gl-canvas.h>
@@ -10,7 +8,20 @@ const gint WIDTH  = 640;
 const gint HEIGHT = 480;
 
 static void
-canvas_initialization(void)
+canvas_suite_init(void)
+{
+    init_random();
+}
+
+static void
+canvas_suite_fini(void)
+{
+    deinitialize_random();
+}
+
+TestSuite(canvas, .init = canvas_suite_init, .fini = canvas_suite_fini);
+
+Test(canvas, initialization)
 {
     // Use PsyGlCanvas as PsyCanvas is abstract
     PsyGlCanvas *canvas = psy_gl_canvas_new(WIDTH, HEIGHT);
@@ -18,7 +29,7 @@ canvas_initialization(void)
     gint         gl_major, gl_minor;
     gboolean     debug, use_es;
 
-    CU_ASSERT_PTR_NOT_NULL_FATAL(canvas);
+    cr_assert(ne(canvas, NULL));
 
     // clang-format off
     g_object_get(
@@ -31,18 +42,17 @@ canvas_initialization(void)
         "gl-minor", &gl_minor,
         NULL);
     // clang-format on
-    CU_ASSERT_EQUAL(width, WIDTH);
-    CU_ASSERT_EQUAL(gl_major, 3);
-    CU_ASSERT_EQUAL(gl_minor, 3);
-    CU_ASSERT_EQUAL(height, HEIGHT);
-    CU_ASSERT_FALSE(debug);
-    CU_ASSERT_FALSE(use_es);
+    cr_expect(eq(width, WIDTH));
+    cr_expect(eq(gl_major, 3));
+    cr_expect(eq(gl_minor, 3));
+    cr_expect(eq(height, HEIGHT));
+    cr_expect(none(debug));
+    cr_expect(none(use_es));
 
     psy_gl_canvas_free(canvas);
 }
 
-static void
-canvas_background_color(void)
+Test(canvas, background_color)
 {
     PsyGlCanvas *canvas     = psy_gl_canvas_new(WIDTH, HEIGHT);
     PsyColor    *default_bg = NULL;
@@ -50,15 +60,15 @@ canvas_background_color(void)
         PSY_TYPE_COLOR, "r", 0.0f, "g", 0.0f, "b", 0.0f, "a", 0.0f, NULL);
     gfloat r, g, b;
 
-    CU_ASSERT_PTR_NOT_NULL_FATAL(canvas);
+    cr_assert(ne(canvas, NULL));
 
     g_object_get(canvas, "background-color", &default_bg, NULL);
-    CU_ASSERT_PTR_NOT_NULL_FATAL(default_bg);
+    cr_assert(ne(default_bg, NULL));
     g_object_get(default_bg, "r", &r, "g", &g, "b", &b, NULL);
 
-    CU_ASSERT_EQUAL(r, 0.5);
-    CU_ASSERT_EQUAL(g, 0.5);
-    CU_ASSERT_EQUAL(b, 0.5);
+    cr_expect(eq(r, 0.5));
+    cr_expect(eq(g, 0.5));
+    cr_expect(eq(b, 0.5));
 
     // Draw to test whether the color is applied
     psy_image_canvas_iterate(PSY_IMAGE_CANVAS(canvas));
@@ -68,7 +78,7 @@ canvas_background_color(void)
         image,
         random_int_range(0, (gint) psy_image_get_height(image)) - 1,
         random_int_range(0, (gint) psy_image_get_width(image)) - 1);
-    CU_ASSERT_TRUE(psy_color_equal_eps(default_bg, probe, 1.0 / 255));
+    cr_assert(psy_color_equal_eps(default_bg, probe, 1.0 / 255));
 
     g_clear_object(&image);
     g_clear_object(&probe);
@@ -83,7 +93,7 @@ canvas_background_color(void)
         image,
         random_int_range(0, (gint) psy_image_get_height(image)) - 1,
         random_int_range(0, (gint) psy_image_get_width(image)) - 1);
-    CU_ASSERT_TRUE(psy_color_equal_eps(new_color, probe, 1.0 / 255));
+    cr_assert(psy_color_equal_eps(new_color, probe, 1.0 / 255));
 
     g_clear_object(&image);
     g_clear_object(&probe);
@@ -93,8 +103,7 @@ canvas_background_color(void)
     g_object_unref(canvas);
 }
 
-static void
-canvas_size_vd(void)
+Test(canvas, size_vd)
 {
     gfloat width_vd, height_vd;
 
@@ -118,36 +127,12 @@ canvas_size_vd(void)
             NULL);
     // clang-format on
 
-    CU_ASSERT_EQUAL(
-        width_vd,
-        2 * psy_radians_to_degrees(atan(width_mm / 2.0 / distance_mm)));
-    CU_ASSERT_EQUAL(
-        height_vd,
-        2 * psy_radians_to_degrees(atan(height_mm / 2.0 / distance_mm)));
+    cr_assert(
+        eq(width_vd,
+           2 * psy_radians_to_degrees(atan(width_mm / 2.0 / distance_mm))));
+    cr_assert(
+        eq(height_vd,
+           2 * psy_radians_to_degrees(atan(height_mm / 2.0 / distance_mm))));
 
     g_object_unref(canvas);
-}
-
-int
-add_canvas_suite(void)
-{
-    CU_Suite *suite = CU_add_suite("canvas tests", NULL, NULL);
-    CU_Test  *test  = NULL;
-
-    if (!suite)
-        return 1;
-
-    test = CU_ADD_TEST(suite, canvas_initialization);
-    if (!test)
-        return 1;
-
-    test = CU_ADD_TEST(suite, canvas_background_color);
-    if (!test)
-        return 1;
-
-    test = CU_ADD_TEST(suite, canvas_size_vd);
-    if (!test)
-        return 1;
-
-    return 0;
 }

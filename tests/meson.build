@@ -103,6 +103,16 @@ test_audio_utils = executable(
 )
 test('test-audio-utils', test_audio_utils,)
 
+# perhaps skip this on windows for now
+test_canvas = executable(
+    'test-canvas',
+    files('test-canvas.c', 'unit-test-utilities.c'),
+    dependencies: [psy_dep, criterion_dep],
+    c_args : UNIT_PP_ARGS,
+    cpp_args : UNIT_PP_ARGS,
+)
+test('test-canvas', test_canvas,)
+
 
 criterion_tests = executable(
     'criterion_tests',
@@ -123,7 +133,6 @@ unit_test = executable (
     'unit-test',
     files (
         'main.c',
-        'test-canvas.c',
         'test-color.c',
         'test-cross.c',
         'test-image.c',

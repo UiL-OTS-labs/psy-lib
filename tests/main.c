@@ -67,12 +67,6 @@ add_suites_to_registry(void)
     if (error)
         return error;
 
-#if !defined(_WIN32)
-    error = add_canvas_suite();
-    if (error)
-        return error;
-#endif
-
     error = add_color_suite();
     if (error)
         return error;
