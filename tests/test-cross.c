@@ -1,5 +1,7 @@
 
-#include <CUnit/CUnit.h>
+#include <criterion/criterion.h>
+#include <criterion/internal/test.h>
+#include <criterion/new/assert.h>
 #include <math.h>
 #include <psylib.h>
 
@@ -16,9 +18,11 @@ static PsyColor  *g_bg_color   = NULL;
 // scheduled to a frame that has already been drawn.
 static PsyTimePoint *g_tp_start = NULL;
 
-static int
+static void
 cross_setup(void)
 {
+    // Consider initializing psylib here.
+    init_random();
     set_log_handler_file("test-visual-stimuli.txt");
     g_debug("Entering %s", __func__);
     g_canvas     = PSY_CANVAS(psy_image_canvas_new(WIDTH, HEIGHT));
@@ -35,7 +39,7 @@ cross_setup(void)
     psy_time_point_free(temp);
 
     if (!g_canvas || !g_stim_color || !g_bg_color || !g_tp_start)
-        return 1;
+        cr_fatal("Unable to init significant object");
 
     // make random but significantly different colors
     while (psy_color_equal_eps(g_stim_color, g_bg_color, 0.25f)) {
@@ -43,11 +47,9 @@ cross_setup(void)
         psy_color_set_greeni(g_stim_color, random_int_range(0, 255));
         psy_color_set_bluei(g_stim_color, random_int_range(0, 255));
     }
-
-    return 0;
 }
 
-static int
+static void
 cross_teardown(void)
 {
     g_debug("Entering %s", __func__);
@@ -57,12 +59,12 @@ cross_teardown(void)
     g_clear_pointer(&g_tp_start, psy_time_point_free);
 
     set_log_handler_file(NULL);
-
-    return 0;
+    deinitialize_random();
 }
 
-static void
-cross_default_values(void)
+TestSuite(cross, .init = cross_setup, .fini = cross_teardown);
+
+Test(cross, default_values)
 {
     PsyCross *cross = psy_cross_new(g_canvas);
 
@@ -78,10 +80,10 @@ cross_default_values(void)
             NULL);
     // clang-format on
 
-    CU_ASSERT_EQUAL(line_length_x, line_length_y);
-    CU_ASSERT_EQUAL(line_length_x, 10);
-    CU_ASSERT_EQUAL(line_width_x, line_width_y);
-    CU_ASSERT_EQUAL(line_width_x, 3);
+    cr_assert(eq(line_length_x, line_length_y));
+    cr_assert(eq(line_length_x, 10));
+    cr_assert(eq(line_width_x, line_width_y));
+    cr_assert(eq(line_width_x, 3));
 
     // clang-format off
     g_object_set(cross,
@@ -99,10 +101,10 @@ cross_default_values(void)
             NULL);
     // clang-format on
 
-    CU_ASSERT_EQUAL(line_length_x, 10.0f);
-    CU_ASSERT_EQUAL(line_length_y, 20.0f);
-    CU_ASSERT_EQUAL(line_width_x, 1.0f);
-    CU_ASSERT_EQUAL(line_width_y, 5.0f);
+    cr_assert(eq(line_length_x, 10.0f));
+    cr_assert(eq(line_length_y, 20.0f));
+    cr_assert(eq(line_width_x, 1.0f));
+    cr_assert(eq(line_width_y, 5.0f));
 
     psy_cross_free(cross);
 }
@@ -178,8 +180,7 @@ test_cross_image(PsyImage    *image,
     return TRUE;
 }
 
-static void
-cross_specific_values(void)
+Test(cross, specific_values)
 {
     const float length = 50, width = 10;
     PsyCross   *cross = psy_cross_new_full(g_canvas, 0, 0, length, width);
@@ -200,10 +201,10 @@ cross_specific_values(void)
             NULL);
     // clang-format on
 
-    CU_ASSERT_EQUAL(line_length_x, line_length_y);
-    CU_ASSERT_EQUAL(line_length_x, length);
-    CU_ASSERT_EQUAL(line_width_x, line_width_y);
-    CU_ASSERT_EQUAL(line_width_x, width);
+    cr_assert(eq(line_length_x, line_length_y));
+    cr_assert(eq(line_length_x, length));
+    cr_assert(eq(line_width_x, line_width_y));
+    cr_assert(eq(line_width_x, width));
 
     // Tests with pixels whether drawing is correctly
     psy_image_canvas_iterate(PSY_IMAGE_CANVAS(g_canvas));
@@ -212,29 +213,8 @@ cross_specific_values(void)
     if (save_images())
         save_image_tmp_png(image, "%s.png", __func__);
 
-    CU_ASSERT_TRUE(test_cross_image(image, length, width));
+    cr_assert(test_cross_image(image, length, width));
 
     psy_cross_free(cross);
     psy_image_free(image);
-}
-
-int
-add_cross_suite(void)
-{
-    CU_Suite *suite = CU_add_suite("Cross suite", cross_setup, cross_teardown);
-
-    CU_Test *test = NULL;
-
-    if (!suite)
-        return 1;
-
-    test = CU_ADD_TEST(suite, cross_default_values);
-    if (!test)
-        return 1;
-
-    test = CU_ADD_TEST(suite, cross_specific_values);
-    if (!test)
-        return 1;
-
-    return 0;
 }

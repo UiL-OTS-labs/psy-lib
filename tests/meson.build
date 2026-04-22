@@ -113,6 +113,25 @@ test_canvas = executable(
 )
 test('test-canvas', test_canvas,)
 
+test_color = executable(
+    'test-color',
+    files('test-color.c'),
+    dependencies: [psy_dep, criterion_dep],
+    c_args : UNIT_PP_ARGS,
+    cpp_args : UNIT_PP_ARGS,
+)
+test('test-color', test_color,)
+
+#may skip on win32
+test_cross = executable(
+    'test-cross',
+    files('test-cross.c', 'unit-test-utilities.c'),
+    dependencies: [psy_dep, criterion_dep],
+    c_args : UNIT_PP_ARGS,
+    cpp_args : UNIT_PP_ARGS,
+)
+test('test-cross', test_cross,)
+
 
 criterion_tests = executable(
     'criterion_tests',
@@ -133,8 +152,6 @@ unit_test = executable (
     'unit-test',
     files (
         'main.c',
-        'test-color.c',
-        'test-cross.c',
         'test-image.c',
         'test-gl-canvas.c',
         'test-gl-utils.c',

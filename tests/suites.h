@@ -4,12 +4,6 @@
 #include <glib.h>
 
 int
-add_color_suite(void);
-
-int
-add_cross_suite(void);
-
-int
 add_image_suite(void);
 
 int
