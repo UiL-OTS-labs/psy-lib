@@ -69,25 +69,40 @@ test(
     env:env
 )
 
+test_audio = executable(
+    'test-audio',
+    files ('unit-test-utilities.c', 'test-audio.c'),
+    dependencies: [psy_dep, criterion_dep],
+    c_args : UNIT_PP_ARGS,
+    cpp_args : UNIT_PP_ARGS,
+)
+
+# One can only open an audio device once
+test('test-audio',
+    test_audio,
+    is_parallel : false,
+    args: ['-j1'], # So also the criterion test should not run in parallel
+)
+
 criterion_tests = executable(
     'criterion_tests',
     files(
-      'unit-test-utilities.c',
-      'test-init.c',
-      'test-timer.c'
+        'unit-test-utilities.c',
+        'test-init.c',
+        'test-timer.c',
+        'test-audio.c',
     ),
     dependencies: [psy_dep, criterion_dep],
     c_args : UNIT_PP_ARGS,
     cpp_args : UNIT_PP_ARGS,
 )
 
-test('criterion-tests', criterion_tests)
+test('criterion-tests', criterion_tests, args : ['-j1'])
 
 unit_test = executable (
     'unit-test',
     files (
         'main.c',
-        'test-audio.c',
         'test-audio-channel-mapping.c',
         'test-audio-utils.c',
         'test-canvas.c',
