@@ -132,6 +132,14 @@ test_cross = executable(
 )
 test('test-cross', test_cross,)
 
+test_image = executable(
+    'test-image',
+    files('test-image.c', 'unit-test-utilities.c'),
+    dependencies: [psy_dep, criterion_dep],
+    c_args : UNIT_PP_ARGS,
+    cpp_args : UNIT_PP_ARGS,
+)
+test('test-image', test_image,)
 
 criterion_tests = executable(
     'criterion_tests',
@@ -152,7 +160,6 @@ unit_test = executable (
     'unit-test',
     files (
         'main.c',
-        'test-image.c',
         'test-gl-canvas.c',
         'test-gl-utils.c',
         'test-matrix4.c',

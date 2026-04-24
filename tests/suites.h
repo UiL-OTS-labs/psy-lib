@@ -4,9 +4,6 @@
 #include <glib.h>
 
 int
-add_image_suite(void);
-
-int
 add_gl_canvas_suite(void);
 
 int

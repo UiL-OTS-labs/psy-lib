@@ -67,10 +67,6 @@ add_suites_to_registry(void)
     if (error)
         return error;
 
-    error = add_image_suite();
-    if (error)
-        return error;
-
 #if !defined(_WIN32)
     error = add_gl_canvas_suite();
     if (error)
