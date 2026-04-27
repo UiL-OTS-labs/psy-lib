@@ -67,30 +67,6 @@ add_suites_to_registry(void)
     if (error)
         return error;
 
-#if !defined(_WIN32)
-    error = add_gl_canvas_suite();
-    if (error)
-        return error;
-
-    error = add_gl_utils_suite();
-    if (error)
-        return error;
-#endif
-
-    error = add_matrix4_suite();
-    if (error)
-        return error;
-
-    error = add_parallel_suite(g_port_num);
-    if (error)
-        return error;
-
-#if !defined(_WIN32)
-    error = add_picture_suite();
-    if (error)
-        return error;
-#endif
-
     error = add_queue_suite();
     if (error)
         return error;

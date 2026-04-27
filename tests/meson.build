@@ -141,30 +141,56 @@ test_image = executable(
 )
 test('test-image', test_image,)
 
-criterion_tests = executable(
-    'criterion_tests',
-    files(
-        'unit-test-utilities.c',
-        'test-init.c',
-        'test-timer.c',
-        'test-audio.c',
-    ),
+test_gl_canvas = executable(
+    'test-gl-canvas',
+    files('test-gl-canvas.c'),
     dependencies: [psy_dep, criterion_dep],
     c_args : UNIT_PP_ARGS,
     cpp_args : UNIT_PP_ARGS,
 )
+test('test-gl-canvas', test_gl_canvas,)
+        
+test_gl_utils = executable(
+    'test-gl-utils',
+    files('test-gl-utils.c'),
+    dependencies: [psy_dep, criterion_dep],
+    c_args : UNIT_PP_ARGS,
+    cpp_args : UNIT_PP_ARGS,
+)
+test('test-gl-utils', test_gl_utils,)
 
-test('criterion-tests', criterion_tests, args : ['-j1'])
+test_matrix4 = executable (
+    'test-matrix4',
+    files('test-matrix4.c',),
+    dependencies: [psy_dep, criterion_dep],
+    c_args : UNIT_PP_ARGS,
+    cpp_args : UNIT_PP_ARGS,
+)
+test('test-matrix4', test_matrix4,)
+
+test_parallel = executable(
+    'test-parallel',
+    files('test-parallel.c',),
+    dependencies: [psy_dep, criterion_dep],
+    c_args : UNIT_PP_ARGS,
+    cpp_args : UNIT_PP_ARGS,
+)
+test('test-parallel', test_parallel,)
+
+test_picture = executable (
+    'test-picture',
+    files('test-picture.c', 'unit-test-utilities.c'),
+    dependencies: [psy_dep, criterion_dep],
+    c_args : UNIT_PP_ARGS,
+    cpp_args : UNIT_PP_ARGS,
+)
+test('test-picture', test_picture, args : ['-j1'])
+
 
 unit_test = executable (
     'unit-test',
     files (
         'main.c',
-        'test-gl-canvas.c',
-        'test-gl-utils.c',
-        'test-matrix4.c',
-        'test-parallel.c',
-        'test-picture.c',
         'test-queue.c',
         'test-ref-count.c',
         'test-stepping.c',
@@ -186,3 +212,18 @@ unit_test = executable (
 # This runs the unit test verbosely and saves the pictures
 # So we get them as artifact in the CI
 test('unit-test', unit_test, args: ['-v', '-S', '-l', 'debug'])
+
+criterion_tests = executable(
+    'criterion_tests',
+    files(
+        'unit-test-utilities.c',
+        'test-init.c',
+        'test-timer.c',
+        'test-audio.c',
+    ),
+    dependencies: [psy_dep, criterion_dep],
+    c_args : UNIT_PP_ARGS,
+    cpp_args : UNIT_PP_ARGS,
+)
+test('criterion-tests', criterion_tests, args : ['-j1'])
+

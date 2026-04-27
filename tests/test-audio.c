@@ -275,12 +275,11 @@ ParameterizedTest(int *param, audio, device_open)
     g_main_loop_run(loop);
     cr_expect(is_open, "The device should now be open");
     cr_expect(cb_data.started, "The device should now be started");
-    g_print("name = %s, and default = %s",
-            name,
-            psy_audio_device_get_default_name(device));
-    cr_expect(
-        eq(int, strcmp(name, psy_audio_device_get_default_name(device)), 0),
-        "The device should have opened the default device");
+
+    cr_expect(eq(str,
+                 (char *) name,
+                 (char *) psy_audio_device_get_default_name(device)),
+              "The device should have opened the default device");
 
     g_free(name);
     g_clear_error(&error);

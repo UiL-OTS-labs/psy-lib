@@ -4,18 +4,6 @@
 #include <glib.h>
 
 int
-add_gl_canvas_suite(void);
-
-int
-add_gl_utils_suite(void);
-
-int
-add_matrix4_suite(void);
-
-int
-add_parallel_suite(gint port_num);
-
-int
 add_picture_suite(void);
 
 int

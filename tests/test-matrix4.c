@@ -2,12 +2,12 @@
 #include <math.h>
 #include <string.h>
 
-#include <CUnit/CUnit.h>
+#include <criterion/criterion.h>
+#include <criterion/new/assert.h>
 
 #include <psylib.h>
 
-static void
-matrix4_create(void)
+Test(matrix4, create)
 {
     PsyMatrix4 *mat = psy_matrix4_new();
 
@@ -21,14 +21,13 @@ matrix4_create(void)
             NULL);
     // clang-format on
 
-    CU_ASSERT_TRUE(is_null);
-    CU_ASSERT_FALSE(is_identity);
+    cr_assert(is_null);
+    cr_assert(ne(is_identity, TRUE));
 
     psy_matrix4_free(mat);
 }
 
-static void
-matrix4_create_identity(void)
+Test(matrix4, create_identity)
 {
     PsyMatrix4 *mat = psy_matrix4_new_identity();
 
@@ -42,14 +41,13 @@ matrix4_create_identity(void)
             NULL);
     // clang-format on
 
-    CU_ASSERT_FALSE(is_null);
-    CU_ASSERT_TRUE(is_identity);
+    cr_expect(zero(is_null));
+    cr_expect(eq(is_identity, TRUE));
 
     psy_matrix4_free(mat);
 }
 
-static void
-matrix4_setable_props(void)
+Test(matrix4, setable_props)
 {
     PsyMatrix4 *mat = psy_matrix4_new();
 
@@ -64,8 +62,8 @@ matrix4_setable_props(void)
             NULL);
     // clang-format on
 
-    CU_ASSERT_TRUE(is_identity);
-    CU_ASSERT_FALSE(is_null);
+    cr_expect(eq(is_identity, TRUE));
+    cr_expect(eq(is_null, FALSE));
 
     g_object_set(mat, "is-null", TRUE, NULL);
     // clang-format off
@@ -75,31 +73,8 @@ matrix4_setable_props(void)
             NULL);
     // clang-format off
     
-    CU_ASSERT_FALSE(is_identity);
-    CU_ASSERT_TRUE(is_null);
+    cr_expect(eq(is_identity, FALSE));
+    cr_expect(eq(is_null, TRUE));
 
     psy_matrix4_free(mat);
-}
-
-int
-add_matrix4_suite(void)
-{
-    CU_Suite *suite = CU_add_suite("PsyMatrix4 suite", NULL, NULL);
-    CU_Test  *test;
-    if (!suite)
-        return 1;
-
-    test = CU_ADD_TEST(suite, matrix4_create);
-    if (!test)
-        return 1;
-
-    test = CU_ADD_TEST(suite, matrix4_create_identity);
-    if (!test)
-        return 1;
-    
-    test = CU_ADD_TEST(suite, matrix4_setable_props);
-    if (!test)
-        return 1;
-
-    return 0;
 }

@@ -2,30 +2,31 @@
 #include <math.h>
 #include <string.h>
 
-#include <CUnit/CUnit.h>
+#include <criterion/criterion.h>
+#include <criterion/new/assert.h>
 
 #include <psylib.h>
 
 static PsyColor *g_background_color;
 static PsyColor *g_stim_color;
 
-static int
-setup_gl_cavans_suite(void)
+static void
+setup_gl_canvas_suite(void)
 {
     g_background_color = psy_color_new_rgb(.25, .25, .25);
     g_stim_color       = psy_color_new_rgb(1.0, 0, 0);
-
-    return 0;
 }
 
-static int
+static void
 tear_down_gl_canvas_suite(void)
 {
     g_object_unref(g_background_color);
     g_object_unref(g_stim_color);
-
-    return 0;
 }
+
+TestSuite(gl_canvas,
+          .init = setup_gl_canvas_suite,
+          .fini = tear_down_gl_canvas_suite);
 
 static void
 gl_canvas_debug_message(PsyGlCanvas *self,
@@ -54,30 +55,28 @@ gl_canvas_debug_message(PsyGlCanvas *self,
         severity_str);
 }
 
-static void
-test_gl_canvas_create(void)
+Test(gl_canvas, create)
 {
-    const guint WIDTH = 1920, HEIGHT = 1080;
+    const gint WIDTH = 1920, HEIGHT = 1080;
 
     gint width, height;
 
     PsyGlCanvas *canvas = psy_gl_canvas_new(WIDTH, HEIGHT);
 
-    CU_ASSERT_PTR_NOT_NULL_FATAL(canvas);
+    cr_assert(ne(canvas, NULL));
 
     width  = psy_canvas_get_width(PSY_CANVAS(canvas));
     height = psy_canvas_get_height(PSY_CANVAS(canvas));
 
-    CU_ASSERT_EQUAL(width, WIDTH);
-    CU_ASSERT_EQUAL(height, HEIGHT);
+    cr_expect(eq(width, WIDTH));
+    cr_expect(eq(height, HEIGHT));
 
     g_object_unref(canvas);
 }
 
-static void
-test_gl_canvas_iterate(void)
+Test(gl_canvas, iterate)
 {
-    const guint WIDTH = 640, HEIGHT = 480;
+    const gint WIDTH = 640, HEIGHT = 480;
 
     PsyGlCanvas *canvas
         = psy_gl_canvas_new_full(WIDTH, HEIGHT, FALSE, TRUE, 4, 3);
@@ -90,21 +89,21 @@ test_gl_canvas_iterate(void)
     PsyTimePoint *tp0 = psy_image_canvas_get_time(PSY_IMAGE_CANVAS(canvas));
     PsyDuration  *dur = NULL;
 
-    CU_ASSERT_PTR_NOT_NULL_FATAL(canvas);
+    cr_assert(ne(canvas, NULL));
 
     psy_image_canvas_iterate(PSY_IMAGE_CANVAS(canvas));
     tp1 = psy_image_canvas_get_time(PSY_IMAGE_CANVAS(canvas));
     dur = psy_time_point_subtract(tp1, tp0);
 
-    CU_ASSERT_TRUE(
+    cr_assert(
         psy_duration_equal(dur, psy_canvas_get_frame_dur(PSY_CANVAS(canvas))));
 
     PsyImage *image = psy_canvas_get_image(PSY_CANVAS(canvas));
-    CU_ASSERT_PTR_NOT_NULL_FATAL(image);
+    cr_assert(ne(image, NULL));
 
     PsyColor *pixel = psy_image_get_pixel(image, 0, 0);
 
-    CU_ASSERT_TRUE(psy_color_equal_eps(pixel, g_background_color, 1.0 / 255));
+    cr_assert(psy_color_equal_eps(pixel, g_background_color, 1.0 / 255));
 
     g_object_unref(pixel);
     g_object_unref(image);
@@ -112,24 +111,4 @@ test_gl_canvas_iterate(void)
     psy_time_point_free(tp1);
     psy_duration_free(dur);
     g_object_unref(canvas);
-}
-
-int
-add_gl_canvas_suite(void)
-{
-    CU_Suite *suite = CU_add_suite(
-        "PsyGlCanvas suite", setup_gl_cavans_suite, tear_down_gl_canvas_suite);
-    CU_Test *test;
-    if (!suite)
-        return 1;
-
-    test = CU_ADD_TEST(suite, test_gl_canvas_create);
-    if (!test)
-        return 1;
-
-    test = CU_ADD_TEST(suite, test_gl_canvas_iterate);
-    if (!test)
-        return 1;
-
-    return 0;
 }
