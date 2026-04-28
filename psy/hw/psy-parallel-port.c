@@ -56,6 +56,8 @@ psy_parallel_port_info_copy(PsyParallelPortInfo *self)
  * psy_parallel_port_info_free:(skip)
  * @self: the parameter to free
  *
+ * This should typically be done by the parallel_port themselves.
+ *
  * Frees an instance of [struct@ParallelPortInfo].
  */
 void
@@ -743,6 +745,17 @@ psy_parallel_port_set_pins(PsyParallelPort *self, guint8 pins)
     priv->pins = pins;
 }
 
+/**
+ * psy_parallel_port_enumerate:
+ * @self: an instance of [class@ParallelPort]
+ * @result:(out)(transfer none)(array length=num): The information about the
+ * ports
+ * @num:(out): the number of available ports
+ *
+ * The first time the ports are enumerated a cache of
+ * [struct@ParallelPortInfo] is created, the second time it returns the
+ * cache
+ */
 void
 psy_parallel_port_enumerate(PsyParallelPort       *self,
                             PsyParallelPortInfo ***result,
