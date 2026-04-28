@@ -186,12 +186,20 @@ test_picture = executable (
 )
 test('test-picture', test_picture, args : ['-j1'])
 
+test_queue = executable(
+    'test-queue',
+    files('test-queue.c',),
+    dependencies: [psy_dep, criterion_dep],
+    c_args : UNIT_PP_ARGS,
+    cpp_args : UNIT_PP_ARGS,
+)
+test('test-queue', test_queue,)
+
 
 unit_test = executable (
     'unit-test',
     files (
         'main.c',
-        'test-queue.c',
         'test-ref-count.c',
         'test-stepping.c',
         'test-text.c',

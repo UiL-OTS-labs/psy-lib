@@ -1,69 +1,66 @@
 
-#include <CUnit/CUnit.h>
-#include <glib.h>
+#include <criterion/criterion.h>
+#include <criterion/new/assert.h>
 #include <psy-queue.h>
 
-static void
-queue_create(void)
+Test(queue, create)
 {
     PsyAudioQueue *queue = psy_audio_queue_new(1234);
 
     gfloat some_float;
 
-    CU_ASSERT_PTR_NOT_NULL_FATAL(queue);
-    CU_ASSERT_EQUAL(psy_audio_queue_size(queue), 0);
-    CU_ASSERT_EQUAL(psy_audio_queue_pop_samples(queue, 1, &some_float), 0);
-    CU_ASSERT_EQUAL(psy_audio_queue_capacity(queue), 1234);
+    cr_assert(ne(queue, NULL));
+    cr_expect(eq(psy_audio_queue_size(queue), 0u));
+    cr_expect(eq(psy_audio_queue_pop_samples(queue, 1, &some_float), 0u));
+    cr_expect(eq(psy_audio_queue_capacity(queue), 1234u));
 
     psy_audio_queue_free(queue);
 }
 
-static void
-queue_push_pop(void)
+Test(queue, push_pop)
 {
     float          input[2048];
     float          output[2048];
     PsyAudioQueue *queue = psy_audio_queue_new(1234);
-    CU_ASSERT_PTR_NOT_NULL_FATAL(queue);
+    cr_assert(ne(queue, NULL));
 
     for (int i = 0; i < 2048; i++) {
         input[i] = 2048.0 * 1.0 / 2048;
     }
 
     gsize status = psy_audio_queue_push_samples(queue, 1234, input);
-    CU_ASSERT_EQUAL(status, 1234);
+    cr_assert(eq(status, 1234u));
 
     status = psy_audio_queue_push_samples(queue, 1, &input[0]);
-    CU_ASSERT_EQUAL(status, 0);
+    cr_expect(eq(status, 0u));
 
     status = psy_audio_queue_pop_samples(queue, 1234, output);
-    CU_ASSERT_EQUAL(status, 1234);
+    cr_assert(eq(status, 1234u));
 
     status = psy_audio_queue_pop_samples(queue, 1, &output[0]);
-    CU_ASSERT_EQUAL(status, 0);
+    cr_assert(eq(status, 0u));
 
     psy_audio_queue_free(queue);
 }
 
-static void
-queue_clear(void)
+Test(queue, clear)
 {
     float          sample = .5;
     PsyAudioQueue *queue  = psy_audio_queue_new(16);
 
     psy_audio_queue_push_samples(queue, 1, &sample);
 
-    CU_ASSERT_EQUAL(psy_audio_queue_size(queue), 1);
+    cr_expect(eq(psy_audio_queue_size(queue), 1u));
 
     psy_audio_queue_push_samples(queue, 1, &sample);
     psy_audio_queue_push_samples(queue, 1, &sample);
     psy_audio_queue_push_samples(queue, 1, &sample);
 
-    CU_ASSERT_EQUAL(psy_audio_queue_size(queue), 4);
+    cr_expect(eq(psy_audio_queue_size(queue), 4u));
 
     psy_audio_queue_clear(queue);
 
-    CU_ASSERT_EQUAL(psy_audio_queue_size(queue), 0);
+    cr_expect(eq(psy_audio_queue_size(queue), 0u));
 
     psy_audio_queue_free(queue);
 }
@@ -123,8 +120,7 @@ pull_samples(gpointer data)
     return NULL;
 }
 
-static void
-queue_simultaneous_push_pull(void)
+Test(queue, simultaneous_push_pull)
 {
     GThread *push_thread = NULL;
     GThread *pull_thread = NULL;
@@ -138,7 +134,7 @@ queue_simultaneous_push_pull(void)
     context.data_out = malloc(context.num_samples * sizeof(float));
 
     for (size_t i = 0; i < context.num_samples; i++)
-        context.data_in[i] = i;
+        context.data_in[i] = (float) i;
 
     memset(context.data_out, 0, context.num_samples * sizeof(float));
 
@@ -154,40 +150,12 @@ queue_simultaneous_push_pull(void)
 
     g_info("Threads are joined.");
 
-    CU_ASSERT_TRUE(memcmp(context.data_in,
-                          context.data_out,
-                          context.num_samples * sizeof(float))
-                   == 0);
+    cr_assert(eq(memcmp(context.data_in,
+                        context.data_out,
+                        context.num_samples * sizeof(float)),
+                 0));
 
     psy_audio_queue_free(context.queue);
     free(context.data_in);
     free(context.data_out);
-}
-
-int
-add_queue_suite(void)
-{
-    CU_Suite *suite = CU_add_suite("queue tests", NULL, NULL);
-    CU_Test  *test  = NULL;
-
-    if (!suite)
-        return 1;
-
-    test = CU_ADD_TEST(suite, queue_create);
-    if (!test)
-        return 1;
-
-    test = CU_ADD_TEST(suite, queue_push_pop);
-    if (!test)
-        return 1;
-
-    test = CU_ADD_TEST(suite, queue_clear);
-    if (!test)
-        return 1;
-
-    test = CU_ADD_TEST(suite, queue_simultaneous_push_pull);
-    if (!test)
-        return 1;
-
-    return 0;
 }
