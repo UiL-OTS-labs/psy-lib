@@ -4,9 +4,6 @@
 #include <glib.h>
 
 int
-add_utility_suite(void);
-
-int
 add_visual_stimulus_suite(void);
 
 int
