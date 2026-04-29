@@ -212,12 +212,20 @@ test_stepping = executable(
 )
 test('test-stepping', test_stepping,)
 
+test_text = executable(
+    'test-text',
+    files('test-text.c', 'unit-test-utilities.c',),
+    dependencies: [psy_dep, criterion_dep],
+    c_args : UNIT_PP_ARGS,
+    cpp_args : UNIT_PP_ARGS,
+)
+test('test-text', test_text,)
+
 
 unit_test = executable (
     'unit-test',
     files (
         'main.c',
-        'test-text.c',
         'test-time-utilities.c',
         'test-utility.c',
         'test-wave.c',
