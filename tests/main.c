@@ -63,12 +63,6 @@ add_suites_to_registry(void)
 {
     int error = 0;
 
-#if !defined(_WIN32)
-    error = add_visual_stimulus_suite();
-    if (error)
-        return error;
-#endif
-
     error = add_vector_suite();
     if (error)
         return error;

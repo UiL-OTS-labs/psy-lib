@@ -239,6 +239,16 @@ test_utilities = executable(
 )
 test('test-utilities', test_utilities,)
 
+test_visual_stimulus = executable(
+    'test-visual-stimulus',
+    files('test-visual-stimulus.c', 'unit-test-utilities.c'),
+    dependencies: [psy_dep, criterion_dep],
+    c_args : UNIT_PP_ARGS,
+    cpp_args : UNIT_PP_ARGS,
+)
+test('test-visual-stimulus', test_visual_stimulus,)
+
+
 test_wave = executable(
     'test-wave',
     files('test-wave.c', 'unit-test-utilities.c'),
@@ -252,7 +262,6 @@ unit_test = executable (
     'unit-test',
     files (
         'main.c',
-        'test-visual-stimulus.c',
         'unit-test-utilities.c',
         'vector-test.c',
         'vector3-test.c',
