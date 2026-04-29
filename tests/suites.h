@@ -14,6 +14,3 @@ add_vector3_suite(void);
 
 int
 add_vector4_suite(void);
-
-int
-add_wave_suite(void);

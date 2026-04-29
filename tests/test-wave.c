@@ -1,7 +1,9 @@
 
 
+#include "psy-init.h"
 #include "unit-test-utilities.h"
-#include <CUnit/CUnit.h>
+#include <criterion/criterion.h>
+#include <criterion/new/assert.h>
 #include <psylib.h>
 
 PsyAudioDevice *g_device = NULL;
@@ -12,9 +14,12 @@ typedef struct {
     gboolean   stopped;
 } WaveStatus;
 
-static int
+static PsyInitializer *g_init = NULL;
+
+static void
 wave_setup(void)
 {
+    g_init = psy_initializer_new();
     set_log_handler_file("test-wave.txt");
 
     g_device         = psy_audio_device_new();
@@ -27,10 +32,12 @@ wave_setup(void)
             "sample-rate", PSY_AUDIO_SAMPLE_RATE_44100,
             NULL);
     // clang-format on
+
     psy_audio_device_open(g_device, &error);
     if (error) {
         g_critical("Unable to open audio device: %s", error->message);
-        return 1;
+        cr_log_warn("Unable to open a audio device: %s", error->message);
+        return;
     }
 
     g_object_get(g_device, "name", &dev_name, NULL);
@@ -39,13 +46,14 @@ wave_setup(void)
 
     // The tests that are playing audio should start the device itself
     psy_audio_device_stop(g_device);
-    return 0;
 }
 
-static int
+static void
 wave_teardown(void)
 {
-    psy_audio_device_close(g_device);
+    if (g_device)
+        psy_audio_device_close(g_device);
+
     g_message("%s: g_device refcount = %u",
               __func__,
               ((GObject *) g_device)->ref_count);
@@ -56,9 +64,10 @@ wave_teardown(void)
     g_device = NULL;
 
     set_log_handler_file(NULL);
-
-    return 0;
+    psy_initializer_free(g_init);
 }
+
+TestSuite(wave, .init = wave_setup, .fini = wave_teardown);
 
 static gboolean
 quit_loop(gpointer data)
@@ -106,13 +115,16 @@ wave_stopped(PsyStimulus *self, PsyTimePoint *tp, gpointer data)
     g_main_loop_quit(status->loop);
 }
 
-static void
-test_wave_create(void)
+Test(wave, create)
 {
+    if (!g_device) {
+        cr_log_warn("No audio device: skipping: %s", __func__);
+        return;
+    }
     PsyWave *tone = psy_wave_new(g_device);
     g_object_set(tone, "num-channels", 2, NULL);
 
-    CU_ASSERT_PTR_NOT_NULL_FATAL(tone);
+    cr_assert(ne(tone, NULL), "It must be possible to create wave's");
 
     gdouble     default_volume, default_freq;
     PsyWaveForm wave;
@@ -128,14 +140,18 @@ test_wave_create(void)
 
     g_object_unref(tone);
 
-    CU_ASSERT_EQUAL(wave, PSY_WAVE_FORM_SINE);
-    CU_ASSERT_EQUAL(default_freq, 440.0);
-    CU_ASSERT_EQUAL(default_volume, 0.5);
+    cr_expect(eq(int, wave, PSY_WAVE_FORM_SINE),
+              "The default wave form is sine");
+    cr_expect(eq(default_freq, 440.0), "The default frequency is 440");
+    cr_expect(eq(default_volume, 0.5), "The default volume is .5");
 }
 
-static void
-test_wave_set_running(void)
+Test(wave, set_running)
 {
+    if (!g_device) {
+        cr_log_warn("No audio device: skipping: %s", __func__);
+        return;
+    }
     PsyWave *tone = psy_wave_new(g_device);
     psy_auditory_stimulus_set_num_channels(PSY_AUDITORY_STIMULUS(tone), 1);
     PsyDuration *dur = psy_duration_new(.5);
@@ -143,26 +159,34 @@ test_wave_set_running(void)
 
     gboolean running;
 
-    CU_ASSERT_PTR_NOT_NULL_FATAL(tone);
+    cr_assert(tone != NULL);
 
     g_object_get(tone, "running", &running, NULL);
-    CU_ASSERT_EQUAL(running, FALSE); // should be initially !running
+    cr_assert(
+        eq(running, FALSE),
+        "The tone is not running by default"); // should be initially !running
 
     g_object_set(tone, "running", TRUE, NULL);
     g_object_get(tone, "running", &running, NULL);
-    CU_ASSERT_EQUAL(running, TRUE); // should now be running
+    cr_assert(eq(running, TRUE),
+              "The tone should now be running"); // should now be running
 
     g_object_set(tone, "running", FALSE, NULL);
     g_object_get(tone, "running", &running, NULL);
-    CU_ASSERT_EQUAL(running, FALSE); // until we turn it of
+
+    cr_assert(eq(running, FALSE),
+              "Until we turn it off"); // until we turn it of
 
     g_object_unref(tone);
     psy_duration_free(dur);
 }
 
-static void
-test_wave_play(void)
+Test(wave, play)
 {
+    if (!g_device) {
+        cr_log_warn("No audio device: skipping: %s", __func__);
+        return;
+    }
     PsyWave      *tone     = psy_wave_new(g_device);
     GMainLoop    *loop     = g_main_loop_new(NULL, FALSE);
     PsyClock     *clk      = psy_clock_new();
@@ -176,7 +200,7 @@ test_wave_play(void)
     g_object_set(tone, "duration", dur, NULL);
     g_object_set(tone, "running", TRUE, NULL);
 
-    CU_ASSERT_PTR_NOT_NULL_FATAL(tone);
+    cr_assert(ne(tone, NULL));
 
     WaveStatus status = {.loop = loop};
 
@@ -186,7 +210,8 @@ test_wave_play(void)
     g_signal_connect(tone, "stopped", G_CALLBACK(wave_stopped), &status);
 
     psy_audio_device_start(g_device, &error);
-    CU_ASSERT_PTR_NULL(error);
+    cr_expect(eq(error, NULL),
+              "No should be no errors opening the audio device");
     if (error) {
         g_error("Unable to start the audio device: %s\n", error->message);
         g_clear_error(&error);
@@ -209,13 +234,16 @@ test_wave_play(void)
     g_message("tone refcount = %u", ((GObject *) tone)->ref_count);
     g_object_unref(tone);
 
-    CU_ASSERT_TRUE(status.started);
-    CU_ASSERT_TRUE(status.stopped);
+    cr_expect(eq(status.started, TRUE), "We expect the tone has started");
+    cr_expect(eq(status.stopped, TRUE), "We expect the tone has stopped");
 }
 
-static void
-test_wave_play_noise(void)
+Test(wave, play_noise)
 {
+    if (!g_device) {
+        cr_log_warn("No audio device: skipping: %s", __func__);
+        return;
+    }
     PsyWave      *tone     = psy_wave_new(g_device);
     GMainLoop    *loop     = g_main_loop_new(NULL, FALSE);
     PsyClock     *clk      = psy_clock_new();
@@ -223,7 +251,7 @@ test_wave_play_noise(void)
     PsyDuration  *dur      = psy_duration_new(.250);
     PsyTimePoint *tp_start = psy_time_point_add(now, dur);
 
-    CU_ASSERT_PTR_NOT_NULL_FATAL(tone);
+    cr_assert(ne(tone, NULL));
 
     PsyWaveForm wave = PSY_WAVE_FORM_WHITE_UNIFORM_NOISE;
 
@@ -247,7 +275,7 @@ test_wave_play_noise(void)
     g_signal_connect(tone, "stopped", G_CALLBACK(wave_stopped), &status);
 
     psy_audio_device_start(g_device, &error);
-    CU_ASSERT_PTR_NULL(error);
+    cr_expect(zero(error));
     if (error) {
         g_error("Unable to start the audio device: %s\n", error->message);
         g_clear_error(&error);
@@ -270,34 +298,6 @@ test_wave_play_noise(void)
 
     g_object_unref(tone);
 
-    CU_ASSERT_TRUE(status.started);
-    CU_ASSERT_TRUE(status.stopped);
-}
-
-int
-add_wave_suite(void)
-{
-    CU_Suite *suite = CU_add_suite("audio tests", wave_setup, wave_teardown);
-    CU_Test  *test  = NULL;
-
-    if (!suite)
-        return 1;
-
-    test = CU_ADD_TEST(suite, test_wave_create);
-    if (!test)
-        return 1;
-
-    test = CU_ADD_TEST(suite, test_wave_set_running);
-    if (!test)
-        return 1;
-
-    test = CU_ADD_TEST(suite, test_wave_play);
-    if (!test)
-        return 1;
-
-    test = CU_ADD_TEST(suite, test_wave_play_noise);
-    if (!test)
-        return 1;
-
-    return 0;
+    cr_expect(status.started, "The tone should have started.");
+    cr_expect(status.stopped, "The tone should have stopped.");
 }

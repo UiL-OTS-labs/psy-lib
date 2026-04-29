@@ -81,12 +81,6 @@ add_suites_to_registry(void)
     if (error)
         return error;
 
-    if (g_audio) {
-        error = add_wave_suite();
-        if (error)
-            return error;
-    }
-
     return error;
 }
 
