@@ -195,13 +195,28 @@ test_queue = executable(
 )
 test('test-queue', test_queue,)
 
+test_ref_count = executable('test-refcount',
+    files('test-ref-count.c',),
+    dependencies: [psy_dep, criterion_dep],
+    c_args : UNIT_PP_ARGS,
+    cpp_args : UNIT_PP_ARGS,
+)
+test('test-ref-count', test_ref_count,)
+
+test_stepping = executable(
+    'test-stepping',
+    files('test-stepping.c',),
+    dependencies: [psy_dep, criterion_dep],
+    c_args : UNIT_PP_ARGS,
+    cpp_args : UNIT_PP_ARGS,
+)
+test('test-stepping', test_stepping,)
+
 
 unit_test = executable (
     'unit-test',
     files (
         'main.c',
-        'test-ref-count.c',
-        'test-stepping.c',
         'test-text.c',
         'test-time-utilities.c',
         'test-utility.c',

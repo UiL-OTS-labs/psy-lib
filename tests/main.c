@@ -63,14 +63,6 @@ add_suites_to_registry(void)
 {
     int error = 0;
 
-    error = add_ref_count_suite();
-    if (error)
-        return error;
-
-    error = add_stepping_suite();
-    if (error)
-        return error;
-
 #if !defined(_WIN32)
     error = add_text_suite();
     if (error)

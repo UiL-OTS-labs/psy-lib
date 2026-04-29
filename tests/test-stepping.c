@@ -1,7 +1,8 @@
 
 #include <assert.h>
 
-#include <CUnit/CUnit.h>
+#include <criterion/criterion.h>
+#include <criterion/new/assert.h>
 
 #include <psylib.h>
 
@@ -81,8 +82,7 @@ on_basic_step_activate(GApplication *app, gpointer data)
     psy_time_point_free(now);
 }
 
-static void
-test_basic_step(void)
+Test(basic, step)
 {
     int           status;
     GApplication *app = g_application_new(NULL, g_default_flags);
@@ -93,12 +93,12 @@ test_basic_step(void)
         app, "activate", G_CALLBACK(on_basic_step_activate), &data);
 
     status = g_application_run(G_APPLICATION(app), 0, NULL);
-    CU_ASSERT_TRUE_FATAL(status == 0);
+    cr_assert(eq(status, 0));
     g_object_unref(app);
 
-    CU_ASSERT_TRUE(data.activated);
-    CU_ASSERT_TRUE(data.entered);
-    CU_ASSERT_TRUE(data.left);
+    cr_expect(eq(data.activated, TRUE));
+    cr_expect(eq(data.entered, TRUE));
+    cr_expect(eq(data.left, TRUE));
 }
 
 typedef struct LoopStats {
@@ -159,8 +159,7 @@ on_basic_loop_activate(GApplication *app, gpointer data)
     psy_time_point_free(timestamp);
 }
 
-static void
-test_basic_loop(void)
+Test(basic, loop)
 {
     int status;
 
@@ -179,11 +178,13 @@ test_basic_loop(void)
                  NULL);
     // clang-format on
 
-    CU_ASSERT_EQUAL(index, 0);
-    CU_ASSERT_EQUAL(stop, 0);
-    CU_ASSERT_EQUAL(increment, 1);
-    CU_ASSERT_EQUAL(condition, PSY_LOOP_CONDITION_LESS);
-    CU_ASSERT_FALSE(psy_loop_test(loop));
+    cr_expect(eq(index, 0), "the default index starts at 0");
+    cr_expect(eq(stop, 0), "the default stop is 0");
+    cr_expect(eq(increment, 1), "The default increment is 1");
+    cr_expect(eq(int, condition, PSY_LOOP_CONDITION_LESS),
+              "The default continue criterion is whether the index is less "
+              "than stop");
+    cr_expect(eq(psy_loop_test(loop), FALSE));
 
     psy_loop_free(loop);
 
@@ -207,9 +208,9 @@ test_basic_loop(void)
         regular.index_at_end = i;
     }
 
-    CU_ASSERT_EQUAL(lparams.stats.count, regular.count);
-    CU_ASSERT_EQUAL(lparams.stats.sum, regular.sum);
-    CU_ASSERT_EQUAL(lparams.stats.index_at_end, regular.index_at_end);
+    cr_expect(eq(lparams.stats.count, regular.count));
+    cr_expect(eq(lparams.stats.sum, regular.sum));
+    cr_expect(eq(lparams.stats.index_at_end, regular.index_at_end));
 
     // test PSY_LOOP_GREATER_EQUAL
     index = 10, increment = -2, stop = -10;
@@ -234,9 +235,9 @@ test_basic_loop(void)
         regular.index_at_end = i;
     }
 
-    CU_ASSERT_EQUAL(lparams.stats.count, regular.count);
-    CU_ASSERT_EQUAL(lparams.stats.sum, regular.sum);
-    CU_ASSERT_EQUAL(lparams.stats.index_at_end, regular.index_at_end);
+    cr_expect(eq(lparams.stats.count, regular.count));
+    cr_expect(eq(lparams.stats.sum, regular.sum));
+    cr_expect(eq(lparams.stats.index_at_end, regular.index_at_end));
 
     // PSY_LOOP_LESS_EQUAL
     index = 0, increment = 2, stop = 19;
@@ -261,9 +262,9 @@ test_basic_loop(void)
         regular.index_at_end = i;
     }
 
-    CU_ASSERT_EQUAL(lparams.stats.count, regular.count);
-    CU_ASSERT_EQUAL(lparams.stats.sum, regular.sum);
-    CU_ASSERT_EQUAL(lparams.stats.index_at_end, regular.index_at_end);
+    cr_expect(eq(lparams.stats.count, regular.count));
+    cr_expect(eq(lparams.stats.sum, regular.sum));
+    cr_expect(eq(lparams.stats.index_at_end, regular.index_at_end));
 
     // PSY_LOOP_GREATER
     index = 0, increment = 2, stop = 19;
@@ -288,9 +289,9 @@ test_basic_loop(void)
         regular.index_at_end = i;
     }
 
-    CU_ASSERT_EQUAL(lparams.stats.count, regular.count);
-    CU_ASSERT_EQUAL(lparams.stats.sum, regular.sum);
-    CU_ASSERT_EQUAL(lparams.stats.index_at_end, regular.index_at_end);
+    cr_expect(eq(lparams.stats.count, regular.count));
+    cr_expect(eq(lparams.stats.sum, regular.sum));
+    cr_expect(eq(lparams.stats.index_at_end, regular.index_at_end));
 
     // PSY_LOOP_EQUAL
     index = 50, increment = 2, stop = 50;
@@ -315,13 +316,12 @@ test_basic_loop(void)
         regular.index_at_end = i;
     }
 
-    CU_ASSERT_EQUAL(lparams.stats.count, regular.count);
-    CU_ASSERT_EQUAL(lparams.stats.sum, regular.sum);
-    CU_ASSERT_EQUAL(lparams.stats.index_at_end, regular.index_at_end);
+    cr_expect(eq(lparams.stats.count, regular.count));
+    cr_expect(eq(lparams.stats.sum, regular.sum));
+    cr_expect(eq(lparams.stats.index_at_end, regular.index_at_end));
 }
 
-static void
-loop_add_children(void)
+Test(loop, add_children)
 {
     PsyLoop  *loop  = psy_loop_new();
     PsyTrial *trial = psy_trial_new();
@@ -331,12 +331,14 @@ loop_add_children(void)
 
     // Steps with children own them, transfer is full; the reference is now the
     // responsibility of the loop. we don't have to g_object_unref it here.
-    CU_ASSERT_EQUAL(G_OBJECT(trial)->ref_count, 1);
+    GObject *gtrial = G_OBJECT(trial);
+    cr_expect(eq(gtrial->ref_count, 1u));
 
     g_object_get(loop, "child", &child, NULL);
-    CU_ASSERT_EQUAL(trial, child);
+    cr_expect(eq(trial, child));
     g_object_unref(child);
-    CU_ASSERT_EQUAL(G_OBJECT(child)->ref_count, 1);
+    GObject *gchild = G_OBJECT(child);
+    cr_expect(eq(gchild->ref_count, 1u));
 
     psy_loop_free(loop);
 }
@@ -451,8 +453,7 @@ on_basic_stepping_stones_activate(GApplication *app, gpointer data)
     g_object_unref(clk);
 }
 
-static void
-test_stepping_stones(void)
+Test(stepping_stones, default)
 {
     int           status;
     GApplication *app = g_application_new(NULL, g_default_flags);
@@ -467,37 +468,35 @@ test_stepping_stones(void)
     g_assert(status == 0);
     g_object_unref(app);
 
-    CU_ASSERT_EQUAL(params.stones_activated, 3);
-    CU_ASSERT_EQUAL(params.trial_activated, 2);
-    CU_ASSERT_EQUAL(params.loop_iterations, 10);
+    cr_expect(eq(params.stones_activated, 3));
+    cr_expect(eq(params.trial_activated, 2));
+    cr_expect(eq(params.loop_iterations, 10));
 }
 
-static void
-stepping_stones_errors(void)
+Test(stepping, stones_errors)
 {
     GError            *error  = NULL;
     PsySteppingStones *stones = psy_stepping_stones_new();
 
     psy_stepping_stones_activate_next_by_name(stones, "blablah", &error);
 
-    CU_ASSERT_PTR_NOT_NULL(error);
-    CU_ASSERT_TRUE(g_error_matches(error,
-                                   PSY_STEPPING_STONES_ERROR,
-                                   PSY_STEPPING_STONES_ERROR_NO_SUCH_KEY));
+    cr_expect(ne(error, NULL));
+    cr_expect(g_error_matches(error,
+                              PSY_STEPPING_STONES_ERROR,
+                              PSY_STEPPING_STONES_ERROR_NO_SUCH_KEY));
     g_clear_error(&error);
 
     psy_stepping_stones_activate_next_by_index(stones, 0, &error);
-    CU_ASSERT_TRUE(g_error_matches(error,
-                                   PSY_STEPPING_STONES_ERROR,
-                                   PSY_STEPPING_STONES_ERROR_INVALID_INDEX));
+    cr_expect(g_error_matches(error,
+                              PSY_STEPPING_STONES_ERROR,
+                              PSY_STEPPING_STONES_ERROR_INVALID_INDEX));
 
     g_clear_error(&error);
 
     psy_stepping_stones_free(stones);
 }
 
-static void
-steps_add_children(void)
+Test(steps, add_children)
 {
     PsySteppingStones *stones = psy_stepping_stones_new();
     PsyLoop           *loop   = psy_loop_new();
@@ -505,7 +504,7 @@ steps_add_children(void)
     guint num_steps = -1;
 
     g_object_get(stones, "num-steps", &num_steps, NULL);
-    CU_ASSERT_EQUAL(num_steps, 0);
+    cr_expect(eq(num_steps, 0u));
 
     PsyTrial *step_trial1 = psy_trial_new();
     PsyTrial *step_trial2 = psy_trial_new();
@@ -515,48 +514,47 @@ steps_add_children(void)
 
     // Add fresh trials to a parent.
     ret = psy_stepping_stones_add_step(stones, PSY_STEP(step_trial1));
-    CU_ASSERT_TRUE(ret);
+    cr_expect(eq(ret, TRUE));
 
     g_object_get(stones, "num-steps", &num_steps, NULL);
-    CU_ASSERT_EQUAL(num_steps, 1);
+    cr_expect(eq(num_steps, 1u));
 
     ret = psy_stepping_stones_add_step_by_name(
         stones, "name", PSY_STEP(step_trial2), NULL);
-    CU_ASSERT_TRUE(ret);
+    cr_expect(ret);
 
     g_object_get(stones, "num-steps", &num_steps, NULL);
-    CU_ASSERT_EQUAL(num_steps, 2);
+    cr_expect(eq(num_steps, 2u));
 
     ret = psy_loop_set_step(loop, PSY_STEP(loop_trial));
-    CU_ASSERT_TRUE(ret);
+    cr_expect(ret);
 
     // Add trials that have a parent to as child step.
     // THESE SHOULD FAIL and should not add children.
     ret = psy_loop_set_step(loop, PSY_STEP(step_trial1));
-    CU_ASSERT_FALSE(ret);
+    cr_expect(eq(ret, FALSE));
 
     ret = psy_stepping_stones_add_step(stones, PSY_STEP(loop_trial));
-    CU_ASSERT_FALSE(ret);
+    cr_expect(eq(ret, FALSE));
 
     g_object_get(stones, "num-steps", &num_steps, NULL);
-    CU_ASSERT_EQUAL(num_steps, 2);
+    cr_expect(eq(num_steps, 2u));
 
     ret = psy_stepping_stones_add_step_by_name(
         stones, "name2", PSY_STEP(loop_trial), NULL);
-    CU_ASSERT_FALSE(ret);
+    cr_expect(not(ret));
 
     g_object_get(stones, "num-steps", &num_steps, NULL);
-    CU_ASSERT_EQUAL(num_steps, 2);
+    cr_expect(eq(num_steps, 2u));
 
     psy_stepping_stones_free(stones);
     psy_loop_free(loop);
 }
 
-static void
-side_step_construct(void)
+Test(side_step, construct)
 {
     PsySideStep *step = psy_side_step_new();
-    CU_ASSERT_PTR_NOT_NULL(step);
+    cr_assert(ne(step, NULL));
     psy_side_step_free(step);
 }
 
@@ -596,8 +594,7 @@ side_step_activate(PsySideStep *step, PsyTimePoint *tp, gpointer data)
     }
 }
 
-static void
-steps_side_stepping(void)
+Test(steps, side_stepping)
 {
     GMainLoop    *loop = g_main_loop_new(NULL, FALSE);
     PsyTimePoint *now  = NULL;
@@ -627,53 +624,10 @@ steps_side_stepping(void)
 
     g_main_loop_run(loop);
 
-    CU_ASSERT_EQUAL(data.step_1_activated, 1);
-    CU_ASSERT_EQUAL(data.step_2_activated, 2);
-    CU_ASSERT_TRUE(data.step_2_first);
+    cr_expect(eq(data.step_1_activated, 1));
+    cr_expect(eq(data.step_2_activated, 2));
+    cr_expect(data.step_2_first);
 
     psy_time_point_free(now);
     psy_stepping_stones_free(data.stones);
-}
-
-int
-add_stepping_suite(void)
-{
-    CU_Suite *suite = CU_add_suite("Stepping tests.", NULL, NULL);
-    CU_Test  *test  = NULL;
-
-    if (!suite)
-        return 1;
-
-    test = CU_add_test(suite, "Test base class PsyStep", test_basic_step);
-    if (!test)
-        return 1;
-
-    test = CU_add_test(suite, "Test PsyLoop", test_basic_loop);
-    if (!test)
-        return 1;
-
-    test = CU_ADD_TEST(suite, loop_add_children);
-    if (!test)
-        return 1;
-
-    test = CU_add_test(suite, "Test PsySteppingStones", test_stepping_stones);
-    if (!test)
-        return 1;
-
-    test = CU_ADD_TEST(suite, stepping_stones_errors);
-    if (!test)
-        return 1;
-
-    test = CU_ADD_TEST(suite, steps_add_children);
-    if (!test)
-        return 1;
-
-    test = CU_ADD_TEST(suite, side_step_construct);
-    if (!test)
-        return 1;
-    test = CU_ADD_TEST(suite, steps_side_stepping);
-    if (!test)
-        return 1;
-
-    return 0;
 }

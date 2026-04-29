@@ -1,23 +1,20 @@
 
-#include <assert.h>
+#include <criterion/criterion.h>
+#include <criterion/new/assert.h>
 
-#include <CUnit/CUError.h>
-#include <CUnit/CUnit.h>
 #include <psylib.h>
 
-static void
-ref_starts_with_one(void)
+Test(ref, starts_with_one)
 {
     PsyColor *color      = g_object_new(PSY_TYPE_COLOR, NULL);
     GObject  *color_gobj = G_OBJECT(color);
 
-    CU_ASSERT_EQUAL(color_gobj->ref_count, 1);
+    cr_assert(eq(color_gobj->ref_count, 1u));
 
     g_object_unref(color);
 }
 
-static void
-transfer_none_method(void)
+Test(ref, transfer_none_method)
 {
     // clang-format off
     PsyImage *image = g_object_new(PSY_TYPE_IMAGE,
@@ -27,7 +24,7 @@ transfer_none_method(void)
                                    NULL);
     // clang-format on
 
-    CU_ASSERT_PTR_NOT_NULL_FATAL(image);
+    cr_assert(ne(image, NULL));
     PsyColor *color = g_object_new(PSY_TYPE_COLOR, NULL);
 
     // Cast to conveniently obtain the reference count
@@ -39,16 +36,17 @@ transfer_none_method(void)
      */
     psy_visual_stimulus_set_color(PSY_VISUAL_STIMULUS(image), color);
 
-    CU_ASSERT_EQUAL(image_gobj->ref_count, 1);
-    CU_ASSERT_EQUAL(color_gobj->ref_count, 1);
+    cr_expect(eq(image_gobj->ref_count, 1u),
+              "Image should have a ref count of 1");
+    cr_expect(eq(color_gobj->ref_count, 1u),
+              "Since, nothing is transferred, ref count should remain 1");
 
     g_object_unref(image);
-    CU_ASSERT_EQUAL(color_gobj->ref_count, 1);
+    cr_expect(eq(color_gobj->ref_count, 1u));
     g_object_unref(color);
 }
 
-static void
-set_property_transfer_full(void)
+Test(ref, set_property_transfer_full)
 {
     PsyTrial *trial = psy_trial_new();
     PsyLoop  *loop  = psy_loop_new();
@@ -57,36 +55,12 @@ set_property_transfer_full(void)
     GObject *trial_gobj = G_OBJECT(trial);
     GObject *loop_gobj  = G_OBJECT(loop);
 
-    CU_ASSERT_EQUAL(trial_gobj->ref_count, 1);
-    CU_ASSERT_EQUAL(loop_gobj->ref_count, 1);
+    cr_assert(eq(trial_gobj->ref_count, 1u));
+    cr_assert(eq(loop_gobj->ref_count, 1u));
 
     g_object_set(loop, "child", trial, NULL); // transfer full
 
-    CU_ASSERT_EQUAL(trial_gobj->ref_count, 1); // hence still one.
+    cr_expect(eq(trial_gobj->ref_count, 1u)); // hence still one.
 
     g_object_unref(loop);
-}
-
-int
-add_ref_count_suite(void)
-{
-    CU_Suite *suite = CU_add_suite("test reference count", NULL, NULL);
-    CU_Test  *test  = NULL;
-
-    if (!suite)
-        return 1;
-
-    test = CU_ADD_TEST(suite, ref_starts_with_one);
-    if (!test)
-        return 1;
-
-    test = CU_ADD_TEST(suite, transfer_none_method);
-    if (!test)
-        return 1;
-
-    test = CU_ADD_TEST(suite, set_property_transfer_full);
-    if (!test)
-        return 1;
-
-    return 0;
 }

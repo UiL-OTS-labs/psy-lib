@@ -4,12 +4,6 @@
 #include <glib.h>
 
 int
-add_ref_count_suite(void);
-
-int
-add_stepping_suite(void);
-
-int
 add_text_suite(void);
 
 int
