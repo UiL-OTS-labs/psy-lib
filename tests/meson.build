@@ -221,12 +221,20 @@ test_text = executable(
 )
 test('test-text', test_text,)
 
+test_time_utilities = executable(
+    'test-time-utilities',
+    files('test-time-utilities.c',),
+    dependencies: [psy_dep, criterion_dep],
+    c_args : UNIT_PP_ARGS,
+    cpp_args : UNIT_PP_ARGS,
+)
+test('test-time-utilities', test_time_utilities,)
+
 
 unit_test = executable (
     'unit-test',
     files (
         'main.c',
-        'test-time-utilities.c',
         'test-utility.c',
         'test-wave.c',
         'test-visual-stimulus.c',
