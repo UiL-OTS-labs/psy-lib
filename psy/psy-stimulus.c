@@ -1,5 +1,6 @@
 
 #include "psy-stimulus.h"
+#include "psy-duration.h"
 #include "psy-time-point.h"
 #include "psy-timer.h"
 
@@ -45,8 +46,8 @@ psy_stimulus_finalize(GObject *self)
     PsyStimulusPrivate *priv
         = psy_stimulus_get_instance_private(PSY_STIMULUS(self));
 
-    psy_duration_free(priv->duration);
-    psy_time_point_free(priv->start_time);
+    g_clear_pointer(&priv->duration, psy_duration_free);
+    g_clear_pointer(&priv->start_time, psy_time_point_free);
 
     G_OBJECT_CLASS(psy_stimulus_parent_class)->finalize(self);
 }
