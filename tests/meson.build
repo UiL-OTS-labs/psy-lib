@@ -1,6 +1,5 @@
 
 cc = meson.get_compiler('c')
-cunit_dep = dependency('cunit')
 
 #preprocessor args for the unit tests
 UNIT_PP_ARGS = [
@@ -141,6 +140,15 @@ test_image = executable(
 )
 test('test-image', test_image,)
 
+test_init = executable(
+    'test-init',
+    files('test-init.c', 'unit-test-utilities.c'),
+    dependencies: [psy_dep, criterion_dep],
+    c_args : UNIT_PP_ARGS,
+    cpp_args : UNIT_PP_ARGS,
+)
+test('test-init', test_init,)
+
 test_gl_canvas = executable(
     'test-gl-canvas',
     files('test-gl-canvas.c'),
@@ -230,6 +238,15 @@ test_time_utilities = executable(
 )
 test('test-time-utilities', test_time_utilities,)
 
+test_timer = executable(
+    'test-timer',
+    files('test-timer.c', 'unit-test-utilities.c', ),
+    dependencies: [psy_dep, criterion_dep],
+    c_args : UNIT_PP_ARGS,
+    cpp_args : UNIT_PP_ARGS,
+)
+test('test-timer.c', test_timer, is_parallel: false, args: ['-j1'])
+
 test_utilities = executable(
     'test-utilities',
     files('test-utility.c',),
@@ -256,7 +273,7 @@ test_wave = executable(
     c_args : UNIT_PP_ARGS,
     cpp_args : UNIT_PP_ARGS,
 )
-test('test-wave', test_wave,)
+test('test-wave', test_wave, is_parallel: false, args: ['-j1'])
 
 test_vector = executable(
     'test-vector',
@@ -284,19 +301,4 @@ test_vector4 = executable(
     cpp_args : UNIT_PP_ARGS,
 )
 test('test-vector4', test_vector4)
-
-
-criterion_tests = executable(
-    'criterion_tests',
-    files(
-        'unit-test-utilities.c',
-        'test-init.c',
-        'test-timer.c',
-        'test-audio.c',
-    ),
-    dependencies: [psy_dep, criterion_dep],
-    c_args : UNIT_PP_ARGS,
-    cpp_args : UNIT_PP_ARGS,
-)
-test('criterion-tests', criterion_tests, args : ['-j1'])
 

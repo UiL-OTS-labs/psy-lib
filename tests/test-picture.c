@@ -1,12 +1,9 @@
 
 #include <criterion/criterion.h>
-#include <criterion/internal/test.h>
 #include <criterion/new/assert.h>
-#include <psy-image-canvas.h>
-#include <psy-picture.h>
+#include <psylib.h>
 #include <stdbool.h>
 
-#include "psy-init.h"
 #include "unit-test-utilities.h"
 
 const guint g_img_width     = 300;
