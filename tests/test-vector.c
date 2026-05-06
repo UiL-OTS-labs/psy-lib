@@ -1,45 +1,45 @@
 
-#include <CUnit/CUnit.h>
+#include <criterion/criterion.h>
+#include <criterion/new/assert.h>
 #include <math.h>
 
 #include "../psy/psy-vector.h"
 
-static void
-test_create(void)
+Test(vector, create)
 {
     PsyVector *vec = psy_vector_new();
     g_assert(vec != NULL);
     gfloat x, y, z;
 
     psy_vector_free(vec);
-    vec = psy_vector_new_x(1.0);
-    CU_ASSERT_PTR_NOT_NULL_FATAL(vec);
+    vec = psy_vector_new_x(1.0f);
+    cr_assert(ne(vec, NULL), "Vectors can be created");
+
     g_object_get(vec, "x", &x, "y", &y, "z", &z, NULL);
-    CU_ASSERT_DOUBLE_EQUAL(x, 1, 0.0);
-    CU_ASSERT_DOUBLE_EQUAL(y, 0, 0.0);
-    CU_ASSERT_DOUBLE_EQUAL(z, 0, 0.0);
+    cr_expect(eq(x, 1.0f));
+    cr_expect(eq(y, 0.0f));
+    cr_expect(eq(z, 0.0f));
     psy_vector_free(vec);
 
     vec = psy_vector_new_xy(10, 10);
-    CU_ASSERT_PTR_NOT_NULL_FATAL(vec);
+    cr_assert(vec != NULL);
     g_object_get(vec, "x", &x, "y", &y, "z", &z, NULL);
-    CU_ASSERT_DOUBLE_EQUAL(x, 10, 0);
-    CU_ASSERT_DOUBLE_EQUAL(y, 10, 0);
-    CU_ASSERT_DOUBLE_EQUAL(z, 0, 0);
+    cr_assert(eq(x, 10));
+    cr_assert(eq(y, 10));
+    cr_assert(eq(z, 0));
     psy_vector_free(vec);
 
     vec = psy_vector_new_xyz(100, 100, 100);
-    CU_ASSERT_PTR_NOT_NULL_FATAL(vec);
+    cr_assert(ne(vec, NULL));
     g_object_get(vec, "x", &x, "y", &y, "z", &z, NULL);
-    CU_ASSERT_DOUBLE_EQUAL(x, 100, 0.0);
-    CU_ASSERT_DOUBLE_EQUAL(y, 100, 0.0);
-    CU_ASSERT_DOUBLE_EQUAL(z, 100, 0.0);
+    cr_expect(eq(x, 100));
+    cr_expect(eq(y, 100));
+    cr_expect(eq(z, 100));
 
     psy_vector_free(vec);
 }
 
-static void
-test_magnitude(void)
+Test(vector, magnitude)
 {
     gfloat     x = 10, y = 20, z = 40;
     PsyVector *vec = psy_vector_new_xyz(x, y, z);
@@ -47,36 +47,36 @@ test_magnitude(void)
     gfloat     expected = sqrtf(x * x + y * y + z * z);
     magnitude           = psy_vector_magnitude(vec);
     g_object_get(vec, "length", &length, NULL);
-    gfloat epsilon = 1e-6;
+    gfloat epsilon = 1e-6f;
 
-    CU_ASSERT_DOUBLE_EQUAL(magnitude, expected, epsilon);
-    CU_ASSERT_DOUBLE_EQUAL(length, magnitude, 0.0);
+    cr_expect(epsilon_eq(magnitude, expected, epsilon));
+    cr_expect(epsilon_eq(length, magnitude, 0.0));
 
     g_object_unref(vec);
 }
 
-static void
-test_unit(void)
+Test(vector, unit)
 {
     gfloat     x = 10, y = 20, z = 40;
     gfloat     length;
-    gfloat     epsilon = 1e-9;
+    gfloat     epsilon = 1e-9f;
     PsyVector *vec     = psy_vector_new_xyz(x, y, z);
     PsyVector *unit    = psy_vector_unit(vec);
 
     length = psy_vector_magnitude(unit);
-    CU_ASSERT_DOUBLE_EQUAL(length, 1.0f, epsilon);
+    cr_expect(epsilon_eq(length, 1.0f, epsilon),
+              "A unit vector has a length of 1.0");
     psy_vector_free(vec);
     psy_vector_free(unit);
 
     vec  = psy_vector_new();
     unit = psy_vector_unit(vec);
-    CU_ASSERT_PTR_NULL(unit);
+    cr_expect(eq(unit, NULL),
+              "null vectors don't have a direction, so no unit exists");
     psy_vector_free(vec);
 }
 
-static void
-test_negate(void)
+Test(vector, negate)
 {
     gfloat     x = 10, y = 20, z = 40;
     gfloat     mx, my, mz;
@@ -86,19 +86,18 @@ test_negate(void)
     g_object_get(negated, "x", &mx, "y", &my, "z", &mz, NULL);
 
     psy_vector_magnitude(vec);
-    g_assert(mx == -x && my == -y && mz == -z);
-    CU_ASSERT_DOUBLE_EQUAL(mx, -x, 0);
-    CU_ASSERT_DOUBLE_EQUAL(my, -y, 0);
-    CU_ASSERT_DOUBLE_EQUAL(mz, -z, 0);
+    cr_expect(eq(mx, -10));
+    cr_expect(eq(my, -20));
+    cr_expect(eq(mz, -40));
 
-    CU_ASSERT_EQUAL(psy_vector_magnitude(vec), psy_vector_magnitude(negated));
+    cr_expect(eq(psy_vector_magnitude(vec), psy_vector_magnitude(negated)),
+              "The negated vector should have the same magnitude");
 
     psy_vector_free(vec);
     psy_vector_free(negated);
 }
 
-static void
-test_add_scalar(void)
+Test(vector, add_scalar)
 {
     gfloat     x = 10, y = 20, z = 40;
     gfloat     scalar = 2;
@@ -107,16 +106,15 @@ test_add_scalar(void)
     PsyVector *result = psy_vector_add_s(vec, scalar);
     g_object_get(result, "x", &rx, "y", &ry, "z", &rz, NULL);
 
-    CU_ASSERT_EQUAL(rx, x + scalar);
-    CU_ASSERT_EQUAL(ry, y + scalar);
-    CU_ASSERT_EQUAL(rz, z + scalar);
+    cr_expect(eq(rx, 12));
+    cr_expect(eq(ry, 22));
+    cr_expect(eq(rz, 42));
 
     psy_vector_free(vec);
     psy_vector_free(result);
 }
 
-static void
-test_add_vector(void)
+Test(vector, add_vector)
 {
     gfloat     x = 10, y = 20, z = 40;
     PsyVector *v1     = psy_vector_new_xyz(x, y, z);
@@ -124,7 +122,7 @@ test_add_vector(void)
     PsyVector *result = psy_vector_add(v1, v2);
     PsyVector *v3     = psy_vector_mul_s(v1, 2.0f);
 
-    CU_ASSERT_TRUE(psy_vector_equals(result, v3));
+    cr_expect(all(psy_vector_equals(result, v3)));
 
     psy_vector_free(v1);
     psy_vector_free(v2);
@@ -132,8 +130,7 @@ test_add_vector(void)
     psy_vector_free(result);
 }
 
-static void
-test_sub_scalar(void)
+Test(vector, subtract_scalar)
 {
     gfloat     x = 10, y = 20, z = 40;
     gfloat     scalar = 2;
@@ -141,16 +138,15 @@ test_sub_scalar(void)
     PsyVector *vec    = psy_vector_new_xyz(x, y, z);
     PsyVector *result = psy_vector_sub_s(vec, scalar);
     g_object_get(result, "x", &rx, "y", &ry, "z", &rz, NULL);
-    CU_ASSERT_EQUAL(rx, x - scalar);
-    CU_ASSERT_EQUAL(ry, y - scalar);
-    CU_ASSERT_EQUAL(rz, z - scalar);
+    cr_expect(eq(rx, x - scalar));
+    cr_expect(eq(ry, y - scalar));
+    cr_expect(eq(rz, z - scalar));
 
     psy_vector_free(vec);
     psy_vector_free(result);
 }
 
-static void
-test_sub_vector(void)
+Test(vector, subtract_vector)
 {
     gfloat     x = 10, y = 20, z = 40;
     PsyVector *v1       = psy_vector_new_xyz(x, y, z);
@@ -158,7 +154,7 @@ test_sub_vector(void)
     PsyVector *result   = psy_vector_sub(v1, v2);
     PsyVector *expected = psy_vector_new();
 
-    CU_ASSERT_TRUE(psy_vector_equals(result, expected));
+    cr_expect(all(psy_vector_equals(result, expected)));
 
     psy_vector_free(v1);
     psy_vector_free(v2);
@@ -166,38 +162,35 @@ test_sub_vector(void)
     psy_vector_free(result);
 }
 
-static void
-test_mul_scalar(void)
+Test(vector, mul_scalar)
 {
     gfloat     x = 10, y = 20, z = 40;
-    gfloat     scalar = 2.0;
+    gfloat     scalar = 2.0f;
     PsyVector *v1     = psy_vector_new_xyz(x, y, z);
     PsyVector *result = psy_vector_mul_s(v1, scalar);
     PsyVector *expected
         = psy_vector_new_xyz(x * scalar, y * scalar, z * scalar);
-    CU_ASSERT_TRUE(psy_vector_equals(expected, result));
+    cr_expect(all(psy_vector_equals(expected, result)));
     psy_vector_free(v1);
     psy_vector_free(result);
     psy_vector_free(expected);
 }
 
-static void
-test_vector_dot(void)
+Test(vector, dot)
 {
     PsyVector *v1, *v2;
     v1         = psy_vector_new_xyz(1, 0, 0);
     v2         = psy_vector_new_xyz(0, 1, 0);
     gfloat cos = psy_vector_dot(v1, v2);
-    CU_ASSERT_DOUBLE_EQUAL(cos, 0.0f, 0.0);
+    cr_expect(epsilon_eq(cos, 0.0f, 0.0));
 
     cos = psy_vector_dot(v2, v1);
-    g_assert(cos == 0);
+    cr_expect(eq(cos, 0.0f));
     psy_vector_free(v1);
     psy_vector_free(v2);
 }
 
-static void
-test_vector_cross(void)
+Test(vector, cross_product)
 {
     PsyVector *v1, *v2, *v3, *result, *result_reversed, *v3min;
     v1    = psy_vector_new_xyz(1, 0, 0);
@@ -206,10 +199,10 @@ test_vector_cross(void)
     v3min = psy_vector_negate(v3);
 
     result = psy_vector_cross(v1, v2);
-    CU_ASSERT_TRUE(psy_vector_equals(v3, result));
+    cr_expect(all(psy_vector_equals(v3, result)));
 
     result_reversed = psy_vector_cross(v2, v1);
-    CU_ASSERT_TRUE(psy_vector_equals(v3min, result_reversed));
+    cr_expect(all(psy_vector_equals(v3min, result_reversed)));
 
     psy_vector_free(v1);
     psy_vector_free(v2);
@@ -217,72 +210,4 @@ test_vector_cross(void)
     psy_vector_free(v3min);
     psy_vector_free(result);
     psy_vector_free(result_reversed);
-}
-
-int
-add_vector_suite(void)
-{
-
-    CU_Suite *suite = CU_add_suite("test reference count", NULL, NULL);
-    CU_Test  *test  = NULL;
-
-    if (!suite)
-        return 1;
-
-    test = CU_add_test(
-        suite, "Vectors are created with sensible values", test_create);
-    if (!test)
-        return 1;
-
-    test = CU_add_test(
-        suite, "Vectors have a correct magnitude", test_magnitude);
-    if (!test)
-        return 1;
-
-    test = CU_add_test(
-        suite, "Vectors can create their own unit vector", test_unit);
-    if (!test)
-        return 1;
-
-    test = CU_add_test(suite, "Vectors can be negated", test_negate);
-    if (!test)
-        return 1;
-
-    test = CU_add_test(
-        suite, "Test whether vector scalar addition works", test_add_scalar);
-    if (!test)
-        return 1;
-
-    test = CU_add_test(
-        suite, "Test whether vector addition works", test_add_vector);
-    if (!test)
-        return 1;
-
-    test = CU_add_test(
-        suite, "Test whether vector scalar subtraction works", test_sub_scalar);
-    if (!test)
-        return 1;
-
-    test = CU_add_test(
-        suite, "Test whether vector subtractions works", test_sub_vector);
-    if (!test)
-        return 1;
-
-    test = CU_add_test(suite,
-                       "Test whether vector scalar multiplication works",
-                       test_mul_scalar);
-    if (!test)
-        return 1;
-
-    test = CU_add_test(
-        suite, "Test whether vector dot product works", test_vector_dot);
-    if (!test)
-        return 1;
-
-    test = CU_add_test(
-        suite, "Test whether vector cross product works", test_vector_cross);
-    if (!test)
-        return 1;
-
-    return EXIT_SUCCESS;
 }

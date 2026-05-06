@@ -258,23 +258,33 @@ test_wave = executable(
 )
 test('test-wave', test_wave,)
 
-unit_test = executable (
-    'unit-test',
-    files (
-        'main.c',
-        'unit-test-utilities.c',
-        'vector-test.c',
-        'vector3-test.c',
-        'vector4-test.c',
-    ),
-    dependencies : [psy_dep, cunit_dep],
+test_vector = executable(
+    'test-vector',
+    files('test-vector.c'),
+    dependencies: [psy_dep, criterion_dep],
     c_args : UNIT_PP_ARGS,
     cpp_args : UNIT_PP_ARGS,
 )
+test('test-vector', test_vector)
 
-# This runs the unit test verbosely and saves the pictures
-# So we get them as artifact in the CI
-test('unit-test', unit_test, args: ['-v', '-S', '-l', 'debug'])
+test_vector3 = executable(
+    'test-vector3',
+    files('test-vector3.c'),
+    dependencies: [psy_dep, criterion_dep],
+    c_args : UNIT_PP_ARGS,
+    cpp_args : UNIT_PP_ARGS,
+)
+test('test-vector3', test_vector3)
+
+test_vector4 = executable(
+    'test-vector4',
+    files('test-vector4.c'),
+    dependencies: [psy_dep, criterion_dep],
+    c_args : UNIT_PP_ARGS,
+    cpp_args : UNIT_PP_ARGS,
+)
+test('test-vector4', test_vector4)
+
 
 criterion_tests = executable(
     'criterion_tests',
