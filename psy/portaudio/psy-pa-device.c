@@ -554,7 +554,13 @@ psy_pa_device_init(PsyPADevice *self)
 static void
 psy_pa_device_dispose(GObject *object)
 {
+    PsyPADevice *device = PSY_PA_DEVICE(object);
+
+    // Will stop and close the stream
     G_OBJECT_CLASS(psy_pa_device_parent_class)->dispose(object);
+
+    // clear after closing the stream.
+    g_clear_object(&device->clk);
 }
 
 static void
@@ -564,6 +570,7 @@ psy_pa_device_finalize(GObject *object)
 
     if (self->pa_initialized) {
         Pa_Terminate();
+        self->pa_initialized = FALSE;
     }
 
     if (self->dev_infos) {

@@ -346,8 +346,8 @@ psy_gst_stimulus_set_pipeline(PsyGstStimulus *self, GstPipeline *pipeline)
     g_return_if_fail(PSY_IS_GST_STIMULUS(self));
     g_return_if_fail(GST_IS_PIPELINE(pipeline));
 
-    if (priv->pipeline)
-        g_object_unref(priv->pipeline);
+    g_clear_pointer(&priv->pipeline, gst_object_unref);
+    g_warn_if_fail(!g_object_is_floating(pipeline));
     priv->pipeline = pipeline;
 }
 

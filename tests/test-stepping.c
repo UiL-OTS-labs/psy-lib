@@ -630,4 +630,6 @@ Test(steps, side_stepping)
 
     psy_time_point_free(now);
     psy_stepping_stones_free(data.stones);
+    psy_clock_free(clk);
+    g_main_loop_unref(loop);
 }

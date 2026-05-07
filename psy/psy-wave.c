@@ -5,6 +5,7 @@
 #include <gst/gst.h>
 
 #include "enum-types.h"
+#include "gst/gstobject.h"
 #include "psy-audio-device.h"
 #include "psy-wave.h"
 
@@ -175,6 +176,7 @@ wave_create_gst_pipeline(PsyGstStimulus *self)
     // clang-format on
 
     GstElement *pipeline = gst_pipeline_new("wave-pipeline");
+    gst_object_ref_sink(pipeline); // We are owning the pipeline
 
     GstElement *source = gst_element_factory_make("audiotestsrc", "source");
     GstElement *sink   = gst_element_factory_make("appsink", "sink");
@@ -182,21 +184,23 @@ wave_create_gst_pipeline(PsyGstStimulus *self)
     wave_set_source_properties(wave_self, source);
 
 #ifndef NDEBUG
+    g_assert(!g_object_is_floating(pipeline));
+    g_assert(g_object_is_floating(source));
     g_assert(g_object_is_floating(sink));
 #endif
 
     if (!pipeline || !source || !sink) { // Oops unable to create all elements
         g_critical("Unable to create gst elements for a PsyWave");
-        g_clear_object(&pipeline);
-        g_clear_object(&source);
-        g_clear_object(&sink);
+        g_clear_pointer(&pipeline, gst_object_unref);
+        g_clear_pointer(&source, gst_object_unref);
+        g_clear_pointer(&sink, gst_object_unref);
         return;
     }
 
     GstAppSink *appsink = GST_APP_SINK(sink); // just a cast.
     gst_app_sink_set_caps(appsink, caps);
 
-    // This should sink the reference.
+    // This should sink the reference of sink and source.
     gst_bin_add_many(GST_BIN(pipeline), sink, source, NULL);
 
     if (gst_element_link(source, sink) != TRUE) {
@@ -207,11 +211,12 @@ wave_create_gst_pipeline(PsyGstStimulus *self)
 
 #ifndef NDEBUG
     GObject *gpipeline = G_OBJECT(pipeline);
-    GObject *gappsink  = G_OBJECT(pipeline);
+    GObject *gappsink  = G_OBJECT(sink);
+    GObject *gsource   = G_OBJECT(source);
 
     g_assert(gpipeline->ref_count == 1);
     g_assert(gappsink->ref_count == 1);
-#else
+    g_assert(gsource->ref_count == 1);
 #endif
 
     gint64 num_frames

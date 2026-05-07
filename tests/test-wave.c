@@ -58,9 +58,6 @@ wave_teardown(void)
               __func__,
               ((GObject *) g_device)->ref_count);
     g_object_unref(g_device);
-    g_message("%s: g_device refcount = %u",
-              __func__,
-              ((GObject *) g_device)->ref_count);
     g_device = NULL;
 
     set_log_handler_file(NULL);

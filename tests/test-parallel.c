@@ -2,6 +2,7 @@
 #include <criterion/new/assert.h>
 #include <stdio.h>
 
+#include "hw/psy-parallel-port.h"
 #include "psy-config.h"
 #include <psylib.h>
 
@@ -21,6 +22,8 @@ setup_parallel_port_suite(void)
         cr_assert(infos != NULL);
         g_port_num = psy_parallel_port_info_port_number(infos[0]);
     }
+
+    psy_parallel_port_free(port);
 }
 
 TestSuite(parallel_port, .init = setup_parallel_port_suite);
