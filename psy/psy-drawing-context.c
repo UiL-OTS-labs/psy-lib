@@ -93,7 +93,9 @@ psy_drawing_context_finalize(GObject *object)
     PsyDrawingContext        *self = PSY_DRAWING_CONTEXT(object);
     PsyDrawingContextPrivate *priv
         = psy_drawing_context_get_instance_private(self);
-    (void) priv;
+
+    g_hash_table_destroy(priv->shader_programs);
+    g_hash_table_destroy(priv->textures);
 
     G_OBJECT_CLASS(psy_drawing_context_parent_class)->finalize(object);
 }
@@ -126,13 +128,15 @@ psy_drawing_context_free_resources(PsyDrawingContext *self)
     PsyDrawingContextPrivate *priv
         = psy_drawing_context_get_instance_private(self);
 
+    // Release gobjects contained in the tables
+
     if (priv->shader_programs) {
-        g_hash_table_destroy(priv->shader_programs);
-        priv->shader_programs = NULL;
+        // g_hash_table_destroy(priv->shader_programs);
+        g_hash_table_remove_all(priv->shader_programs);
     }
     if (priv->textures) {
-        g_hash_table_destroy(priv->textures);
-        priv->textures = NULL;
+        // g_hash_table_destroy(priv->textures);
+        g_hash_table_remove_all(priv->textures);
     }
 }
 
@@ -213,7 +217,6 @@ psy_drawing_context_register_texture(PsyDrawingContext *self,
         return;
     }
     g_hash_table_insert(priv->textures, g_strdup(texture_name), texture);
-    g_object_ref(texture);
 }
 
 /**
@@ -274,7 +277,6 @@ psy_drawing_context_load_files_as_texture(PsyDrawingContext *self,
         }
 
         psy_drawing_context_register_texture(self, path, texture, error);
-        g_object_unref(texture);
     }
     g_hash_table_destroy(uniques);
 }

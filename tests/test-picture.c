@@ -129,8 +129,16 @@ picture_setup(void)
     }
 
     psy_image_save_path(g_image, g_path, "png", &error);
+    if (error) {
+        g_critical("Unable to save image: %s", error->message);
+        g_clear_error(&error);
+    }
 
     psy_drawing_context_load_files_as_texture(context, &g_path, 1, &error);
+    if (error) {
+        g_critical("Unable upload file as texture: %s", error->message);
+        g_clear_error(&error);
+    }
 }
 
 static void
@@ -147,6 +155,7 @@ picture_teardown(void)
     g_file_delete(file, NULL, &error);
     if (error) {
         g_warning("Unable to delete %s:%s\n", g_path, error->message);
+        g_clear_error(&error);
     }
     g_object_unref(file);
     g_free(g_path);

@@ -153,6 +153,8 @@ psy_texture_finalize(GObject *object)
         g_free(priv->path);
 
     g_mutex_clear(&priv->lock);
+
+    G_OBJECT_CLASS(psy_texture_parent_class)->finalize(object);
 }
 
 static void
