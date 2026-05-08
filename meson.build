@@ -16,7 +16,6 @@ project('libpsy',
 #
 glib_req = '>=2.66.0' # based on what gtk requires august 2022
 gtk_req = '>4.0' # based on what gtk requires august 2022
-criterion_req = '>=2.4'
 alsa_req = '>=1.2'
 jack2_req = '>=1.9'
 gstreamer_req = '>=1.16'
@@ -80,14 +79,6 @@ gtk_dep = dependency(
         'build-tests=false'
     ]
 )
-
-criterion_dep = dependency(
-    'criterion',
-    version: criterion_req,
-    fallback:['criterion', 'criterion'],
-    required: true,
-)
-
 
 # OpenGL function loader helper
 epoxy_dep = dependency('epoxy', version : '>1.0')
@@ -163,16 +154,15 @@ if wbemuuid_dep.found()
     psy_deps += wbemuuid_dep
 endif
 
+psy_deps += m_dep
+psy_deps += winmm_dep
+psy_deps += kernel32_dep
+
 message('the depencies are: ')
 foreach dep : psy_deps
     message(' - ', dep.name())
 endforeach
 
-
-
-psy_deps += m_dep
-psy_deps += winmm_dep
-psy_deps += kernel32_dep
 
 gnome = import('gnome')
 fs = import ('fs')
