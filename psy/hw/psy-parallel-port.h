@@ -17,7 +17,7 @@ G_BEGIN_DECLS
 typedef struct PsyParallelPortInfo PsyParallelPortInfo;
 
 G_MODULE_EXPORT GType
-psy_parallel_port_info_get_type();
+psy_parallel_port_info_get_type(void);
 
 PsyParallelPortInfo *
 psy_parallel_port_info_new(gint port_number, gchar *name);
