@@ -1,72 +1,68 @@
 
-#include <criterion/criterion.h>
-#include <criterion/internal/test.h>
-#include <criterion/new/assert.h>
 #include <math.h>
 #include <psylib.h>
 
+#include "psy-init.h"
 #include "unit-test-utilities.h"
+
+typedef struct CrossFixture {
+    PsyCanvas    *canvas; // PsyImageCanvas
+    PsyColor     *stim_color;
+    PsyColor     *bg_color;
+    PsyTimePoint *tp_start;
+} CrossFixture;
 
 static const gint WIDTH  = 640;
 static const gint HEIGHT = 480;
 
-static PsyCanvas *g_canvas     = NULL; // PsyImageCanvas
-static PsyColor  *g_stim_color = NULL;
-static PsyColor  *g_bg_color   = NULL;
-
-// a convenient start time  start + 16.67 ms otherwise stimuli are
-// scheduled to a frame that has already been drawn.
-static PsyTimePoint *g_tp_start = NULL;
-
 static void
-cross_setup(void)
+cross_setup(CrossFixture *fix, gconstpointer unused)
 {
-    // Consider initializing psylib here.
-    init_random();
-    set_log_handler_file("test-visual-stimuli.txt");
+    (void) unused;
     g_debug("Entering %s", __func__);
-    g_canvas     = PSY_CANVAS(psy_image_canvas_new(WIDTH, HEIGHT));
-    g_stim_color = psy_color_new_rgbi(random_int_range(0, 255),
-                                      random_int_range(0, 255),
-                                      random_int_range(0, 255));
-    g_bg_color   = psy_color_new_rgbi(random_int_range(0, 255),
-                                    random_int_range(0, 255),
-                                    random_int_range(0, 255));
+    fix->canvas     = PSY_CANVAS(psy_image_canvas_new(WIDTH, HEIGHT));
+    fix->stim_color = psy_color_new_rgbi(g_test_rand_int_range(0, 255),
+                                         g_test_rand_int_range(0, 255),
+                                         g_test_rand_int_range(0, 255));
+    fix->bg_color   = psy_color_new_rgbi(g_test_rand_int_range(0, 255),
+                                       g_test_rand_int_range(0, 255),
+                                       g_test_rand_int_range(0, 255));
 
-    PsyTimePoint *temp = psy_image_canvas_get_time(PSY_IMAGE_CANVAS(g_canvas));
-    g_tp_start         = psy_time_point_add(
-        temp, psy_canvas_get_frame_dur(PSY_CANVAS(g_canvas)));
+    PsyTimePoint *temp
+        = psy_image_canvas_get_time(PSY_IMAGE_CANVAS(fix->canvas));
+    fix->tp_start = psy_time_point_add(
+        temp, psy_canvas_get_frame_dur(PSY_CANVAS(fix->canvas)));
     psy_time_point_free(temp);
 
-    if (!g_canvas || !g_stim_color || !g_bg_color || !g_tp_start)
-        cr_fatal("Unable to init significant object");
+    if (!fix->canvas || !fix->stim_color || !fix->bg_color || !fix->tp_start)
+        g_error("Unable to setup a cross test");
 
     // make random but significantly different colors
-    while (psy_color_equal_eps(g_stim_color, g_bg_color, 0.25f)) {
-        psy_color_set_redi(g_stim_color, random_int_range(0, 255));
-        psy_color_set_greeni(g_stim_color, random_int_range(0, 255));
-        psy_color_set_bluei(g_stim_color, random_int_range(0, 255));
+    while (psy_color_equal_eps(fix->stim_color, fix->bg_color, 0.25f)) {
+        psy_color_set_redi(fix->stim_color, g_test_rand_int_range(0, 255));
+        psy_color_set_greeni(fix->stim_color, g_test_rand_int_range(0, 255));
+        psy_color_set_bluei(fix->stim_color, g_test_rand_int_range(0, 255));
     }
 }
 
 static void
-cross_teardown(void)
+cross_teardown(CrossFixture *fix, gconstpointer unused)
 {
+    (void) unused;
     g_debug("Entering %s", __func__);
-    g_clear_object(&g_canvas);
-    g_clear_object(&g_stim_color);
-    g_clear_object(&g_bg_color);
-    g_clear_pointer(&g_tp_start, psy_time_point_free);
+    g_clear_object(&fix->canvas);
+    g_clear_object(&fix->stim_color);
+    g_clear_object(&fix->bg_color);
+    g_clear_pointer(&fix->tp_start, psy_time_point_free);
 
     set_log_handler_file(NULL);
-    deinitialize_random();
 }
 
-TestSuite(cross, .init = cross_setup, .fini = cross_teardown);
-
-Test(cross, default_values)
+static void
+test_cross_default_values(CrossFixture *fix, gconstpointer unused)
 {
-    PsyCross *cross = psy_cross_new(g_canvas);
+    (void) unused;
+    PsyCross *cross = psy_cross_new(fix->canvas);
 
     gfloat line_length_x, line_length_y;
     gfloat line_width_x, line_width_y;
@@ -80,10 +76,10 @@ Test(cross, default_values)
             NULL);
     // clang-format on
 
-    cr_assert(eq(line_length_x, line_length_y));
-    cr_assert(eq(line_length_x, 10));
-    cr_assert(eq(line_width_x, line_width_y));
-    cr_assert(eq(line_width_x, 3));
+    g_assert_cmpfloat(line_length_x, ==, line_length_y);
+    g_assert_cmpfloat(line_length_x, ==, 10);
+    g_assert_cmpfloat(line_width_x, ==, line_width_y);
+    g_assert_cmpfloat(line_width_x, ==, 3);
 
     // clang-format off
     g_object_set(cross,
@@ -101,18 +97,19 @@ Test(cross, default_values)
             NULL);
     // clang-format on
 
-    cr_assert(eq(line_length_x, 10.0f));
-    cr_assert(eq(line_length_y, 20.0f));
-    cr_assert(eq(line_width_x, 1.0f));
-    cr_assert(eq(line_width_y, 5.0f));
+    g_assert_cmpfloat(line_length_x, ==, 10.0f);
+    g_assert_cmpfloat(line_length_y, ==, 20.0f);
+    g_assert_cmpfloat(line_width_x, ==, 1.0f);
+    g_assert_cmpfloat(line_width_y, ==, 5.0f);
 
     psy_cross_free(cross);
 }
 
 static gboolean
-test_cross_image(PsyImage    *image,
-                 const gfloat line_length,
-                 const gfloat line_width)
+test_cross_image(PsyImage           *image,
+                 const CrossFixture *fix,
+                 const gfloat        line_length,
+                 const gfloat        line_width)
 {
     const guint img_width  = psy_image_get_width(image);
     const guint img_height = psy_image_get_height(image);
@@ -131,9 +128,9 @@ test_cross_image(PsyImage    *image,
         PsyColor *col_length = psy_image_get_pixel(image, height_length, col);
         PsyColor *col_width  = psy_image_get_pixel(image, height_width, col);
 
-        if (psy_color_equal_eps(g_stim_color, col_length, 1.0f / 255))
+        if (psy_color_equal_eps(fix->stim_color, col_length, 1.0f / 255))
             count_x_length++;
-        if (psy_color_equal_eps(g_stim_color, col_width, 1.0f / 255))
+        if (psy_color_equal_eps(fix->stim_color, col_width, 1.0f / 255))
             count_x_width++;
 
         psy_color_free(col_length);
@@ -144,9 +141,9 @@ test_cross_image(PsyImage    *image,
         PsyColor *col_length = psy_image_get_pixel(image, row, width_length);
         PsyColor *col_width  = psy_image_get_pixel(image, row, width_width);
 
-        if (psy_color_equal_eps(g_stim_color, col_length, 1.0f / 255))
+        if (psy_color_equal_eps(fix->stim_color, col_length, 1.0f / 255))
             count_y_length++;
-        if (psy_color_equal_eps(g_stim_color, col_width, 1.0f / 255))
+        if (psy_color_equal_eps(fix->stim_color, col_width, 1.0f / 255))
             count_y_width++;
 
         psy_color_free(col_length);
@@ -154,25 +151,25 @@ test_cross_image(PsyImage    *image,
     }
 
     if (abs(count_x_length - (int) line_length) >= 2) {
-        g_warning("found length of %d along the x axis, expected: %f",
+        g_message("found length of %d along the x axis, expected: %f",
                   count_x_length,
                   line_length);
         return FALSE;
     }
     if (abs(count_y_length - (int) line_length) >= 2) {
-        g_warning("found length of %d along the y axis, expected: %f",
+        g_message("found length of %d along the y axis, expected: %f",
                   count_y_length,
                   line_length);
         return FALSE;
     }
     if (abs(count_x_width - (int) line_width) >= 2) {
-        g_warning("found width of %d along the x axis, expected: %f",
+        g_message("found width of %d along the x axis, expected: %f",
                   count_x_width,
                   line_width);
         return FALSE;
     }
     if (abs(count_y_width - (int) line_width) >= 2) {
-        g_warning("found width of %d along the y axis, expected: %f",
+        g_message("found width of %d along the y axis, expected: %f",
                   count_y_width,
                   line_width);
         return FALSE;
@@ -180,14 +177,16 @@ test_cross_image(PsyImage    *image,
     return TRUE;
 }
 
-Test(cross, specific_values)
+static void
+test_cross_specific_values(CrossFixture *fix, gconstpointer unused)
 {
+    (void) unused;
     const float length = 50, width = 10;
-    PsyCross   *cross = psy_cross_new_full(g_canvas, 0, 0, length, width);
-    psy_visual_stimulus_set_color(PSY_VISUAL_STIMULUS(cross), g_stim_color);
-    psy_canvas_reset(g_canvas);
-    psy_canvas_set_background_color(g_canvas, g_bg_color);
-    psy_stimulus_play(PSY_STIMULUS(cross), g_tp_start);
+    PsyCross   *cross = psy_cross_new_full(fix->canvas, 0, 0, length, width);
+    psy_visual_stimulus_set_color(PSY_VISUAL_STIMULUS(cross), fix->stim_color);
+    psy_canvas_reset(fix->canvas);
+    psy_canvas_set_background_color(fix->canvas, fix->bg_color);
+    psy_stimulus_play(PSY_STIMULUS(cross), fix->tp_start);
 
     gfloat line_length_x, line_length_y;
     gfloat line_width_x, line_width_y;
@@ -201,20 +200,56 @@ Test(cross, specific_values)
             NULL);
     // clang-format on
 
-    cr_assert(eq(line_length_x, line_length_y));
-    cr_assert(eq(line_length_x, length));
-    cr_assert(eq(line_width_x, line_width_y));
-    cr_assert(eq(line_width_x, width));
+    g_assert_cmpfloat(line_length_x, ==, line_length_y);
+    g_assert_cmpfloat(line_length_x, ==, length);
+    g_assert_cmpfloat(line_width_x, ==, line_width_y);
+    g_assert_cmpfloat(line_width_x, ==, width);
 
     // Tests with pixels whether drawing is correctly
-    psy_image_canvas_iterate(PSY_IMAGE_CANVAS(g_canvas));
-    PsyImage *image = psy_canvas_get_image(g_canvas);
+    psy_image_canvas_iterate(PSY_IMAGE_CANVAS(fix->canvas));
+    PsyImage *image = psy_canvas_get_image(fix->canvas);
 
     if (save_images())
         save_image_tmp_png(image, "%s.png", __func__);
 
-    cr_assert(test_cross_image(image, length, width));
+    g_assert_true(test_cross_image(image, fix, length, width));
 
     psy_cross_free(cross);
     psy_image_free(image);
+}
+
+int
+main(int argc, char **argv)
+{
+    g_test_init(&argc, &argv, NULL);
+
+    // perhaps call set_save_images() here
+
+    PsyInitializer *init = g_object_new(
+        PSY_TYPE_INITIALIZER, "portaudio", FALSE, "gstreamer", FALSE, NULL);
+
+    set_log_handler_file("test-visual-stimuli.txt");
+
+    g_test_add("/cross/default_values",
+               CrossFixture,
+               NULL,
+               cross_setup,
+               test_cross_default_values,
+               cross_teardown);
+
+    g_test_add("/cross/test_specific_values",
+               CrossFixture,
+               NULL,
+               cross_setup,
+               test_cross_specific_values,
+               cross_teardown);
+
+    int save = g_test_run();
+
+    set_log_handler_file(NULL);
+
+    g_object_unref(init);
+    init = NULL;
+
+    return save;
 }

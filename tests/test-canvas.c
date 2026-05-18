@@ -1,27 +1,12 @@
-#include <criterion/criterion.h>
-#include <criterion/new/assert.h>
 
-#include "unit-test-utilities.h"
-#include <gl/psy-gl-canvas.h>
+#include <math.h>
+#include <psylib.h>
 
 const gint WIDTH  = 640;
 const gint HEIGHT = 480;
 
 static void
-canvas_suite_init(void)
-{
-    init_random();
-}
-
-static void
-canvas_suite_fini(void)
-{
-    deinitialize_random();
-}
-
-TestSuite(canvas, .init = canvas_suite_init, .fini = canvas_suite_fini);
-
-Test(canvas, initialization)
+test_canvas_initialization(void)
 {
     // Use PsyGlCanvas as PsyCanvas is abstract
     PsyGlCanvas *canvas = psy_gl_canvas_new(WIDTH, HEIGHT);
@@ -29,7 +14,7 @@ Test(canvas, initialization)
     gint         gl_major, gl_minor;
     gboolean     debug, use_es;
 
-    cr_assert(ne(canvas, NULL));
+    g_assert_nonnull(canvas);
 
     // clang-format off
     g_object_get(
@@ -42,17 +27,18 @@ Test(canvas, initialization)
         "gl-minor", &gl_minor,
         NULL);
     // clang-format on
-    cr_expect(eq(width, WIDTH));
-    cr_expect(eq(gl_major, 3));
-    cr_expect(eq(gl_minor, 3));
-    cr_expect(eq(height, HEIGHT));
-    cr_expect(none(debug));
-    cr_expect(none(use_es));
+    g_assert_cmpint(width, ==, WIDTH);
+    g_assert_cmpint(gl_major, ==, 3);
+    g_assert_cmpint(gl_minor, ==, 3);
+    g_assert_cmpint(height, ==, HEIGHT);
+    g_assert_false(debug);
+    g_assert_false(use_es);
 
     psy_gl_canvas_free(canvas);
 }
 
-Test(canvas, background_color)
+static void
+test_canvas_background_color(void)
 {
     PsyGlCanvas *canvas     = psy_gl_canvas_new(WIDTH, HEIGHT);
     PsyColor    *default_bg = NULL;
@@ -60,15 +46,15 @@ Test(canvas, background_color)
         PSY_TYPE_COLOR, "r", 0.0f, "g", 0.0f, "b", 0.0f, "a", 0.0f, NULL);
     gfloat r, g, b;
 
-    cr_assert(ne(canvas, NULL));
+    g_assert_nonnull(canvas);
 
     g_object_get(canvas, "background-color", &default_bg, NULL);
-    cr_assert(ne(default_bg, NULL));
+    g_assert_nonnull(default_bg);
     g_object_get(default_bg, "r", &r, "g", &g, "b", &b, NULL);
 
-    cr_expect(eq(r, 0.5));
-    cr_expect(eq(g, 0.5));
-    cr_expect(eq(b, 0.5));
+    g_assert_cmpfloat(r, ==, 0.5);
+    g_assert_cmpfloat(g, ==, 0.5);
+    g_assert_cmpfloat(b, ==, 0.5);
 
     // Draw to test whether the color is applied
     psy_image_canvas_iterate(PSY_IMAGE_CANVAS(canvas));
@@ -76,9 +62,9 @@ Test(canvas, background_color)
     PsyImage *image = psy_canvas_get_image(PSY_CANVAS(canvas));
     PsyColor *probe = psy_image_get_pixel(
         image,
-        random_int_range(0, (gint) psy_image_get_height(image)) - 1,
-        random_int_range(0, (gint) psy_image_get_width(image)) - 1);
-    cr_assert(psy_color_equal_eps(default_bg, probe, 1.0 / 255));
+        g_test_rand_int_range(0, (gint) psy_image_get_height(image)) - 1,
+        g_test_rand_int_range(0, (gint) psy_image_get_width(image)) - 1);
+    g_assert_true(psy_color_equal_eps(default_bg, probe, 1.0 / 255));
 
     g_clear_object(&image);
     g_clear_object(&probe);
@@ -91,9 +77,9 @@ Test(canvas, background_color)
     image = psy_canvas_get_image(PSY_CANVAS(canvas));
     probe = psy_image_get_pixel(
         image,
-        random_int_range(0, (gint) psy_image_get_height(image)) - 1,
-        random_int_range(0, (gint) psy_image_get_width(image)) - 1);
-    cr_assert(psy_color_equal_eps(new_color, probe, 1.0 / 255));
+        g_test_rand_int_range(0, (gint) psy_image_get_height(image)) - 1,
+        g_test_rand_int_range(0, (gint) psy_image_get_width(image)) - 1);
+    g_assert_true(psy_color_equal_eps(new_color, probe, 1.0 / 255));
 
     g_clear_object(&image);
     g_clear_object(&probe);
@@ -103,7 +89,8 @@ Test(canvas, background_color)
     g_object_unref(canvas);
 }
 
-Test(canvas, size_vd)
+static void
+test_canvas_size_vd(void)
 {
     gfloat width_vd, height_vd;
 
@@ -127,12 +114,26 @@ Test(canvas, size_vd)
             NULL);
     // clang-format on
 
-    cr_assert(
-        eq(width_vd,
-           2 * psy_radians_to_degrees(atan(width_mm / 2.0 / distance_mm))));
-    cr_assert(
-        eq(height_vd,
-           2 * psy_radians_to_degrees(atan(height_mm / 2.0 / distance_mm))));
+    g_assert_cmpfloat(
+        width_vd,
+        ==,
+        2 * psy_radians_to_degrees(atan(width_mm / 2.0 / distance_mm)));
+    g_assert_cmpfloat(
+        height_vd,
+        ==,
+        2 * psy_radians_to_degrees(atan(height_mm / 2.0 / distance_mm)));
 
     g_object_unref(canvas);
+}
+
+int
+main(int argc, char **argv)
+{
+    g_test_init(&argc, &argv, NULL);
+
+    g_test_add_func("/canvas/initialization", test_canvas_initialization);
+    g_test_add_func("/canvas/background_color", test_canvas_background_color);
+    g_test_add_func("/canvas/size_vd", test_canvas_size_vd);
+
+    return g_test_run();
 }

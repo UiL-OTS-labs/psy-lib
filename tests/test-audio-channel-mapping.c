@@ -1,31 +1,5 @@
 #include <psylib.h>
 
-#include "unit-test-utilities.h"
-
-static gboolean
-test_fatal_hander(const gchar   *domain,
-                  GLogLevelFlags level,
-                  const char    *message,
-                  gpointer       data)
-{
-    (void) domain;
-    (void) level;
-    (void) message;
-    (void) data;
-    if (g_strcmp0("Psy", domain) == 0) {
-        if (g_strrstr(message, "psy_audio_channel_map_get_mapping") != NULL)
-            return FALSE;
-        if (g_strrstr(message, "psy_audio_channel_map_add") != NULL)
-            return FALSE;
-        if (g_strrstr(message, "psy_audio_channel_map_set") != NULL)
-            return FALSE;
-        if (g_strrstr(message, "psy_audio_channel_mapping_new") != NULL)
-            return FALSE;
-    }
-    g_print("message = %s", message);
-    return TRUE;
-}
-
 static void
 audio_channel_mapping(void)
 {
@@ -126,7 +100,8 @@ audio_channel_map_strategy_default21(void)
 static void
 audio_channel_map_strategy_default12(void)
 {
-    g_test_log_set_fatal_handler(test_fatal_hander, NULL);
+    // Avoid crashes by the default handler of the glibs testing frame work
+
     const guint num_sinks   = 1;
     const guint num_sources = 2;
 
@@ -218,7 +193,6 @@ audio_channel_map_strategy_duplicate_inputs21(void)
 static void
 audio_channel_map_strategy_duplicate_inputs12(void)
 {
-    g_test_log_set_fatal_handler(test_fatal_hander, NULL);
     const guint num_sinks   = 1;
     const guint num_sources = 2;
 
@@ -283,8 +257,6 @@ audio_channel_map_strategy_mix_trailing21(void)
     const guint num_sinks   = 2;
     const guint num_sources = 1;
 
-    g_test_log_set_fatal_handler(test_fatal_hander, NULL);
-
     const PsyAudioChannelStrategy strategy
         = PSY_AUDIO_CHANNEL_STRATEGY_MIX_TRAILING_INPUTS;
 
@@ -344,8 +316,7 @@ static void
 audio_channel_map_add_mapping(void)
 {
     gboolean result;
-
-    g_test_log_set_fatal_handler(test_fatal_hander, NULL);
+    GError  *error = NULL;
 
     PsyAudioChannelMap *map = psy_audio_channel_map_new(2, 2);
 
@@ -361,16 +332,26 @@ audio_channel_map_add_mapping(void)
     PsyAudioChannelMapping *rm1 = NULL;
     PsyAudioChannelMapping *rm2 = NULL;
 
-    result = psy_audio_channel_map_add(map, m1);
+    result = psy_audio_channel_map_add(map, m1, &error);
     g_assert_true(result);
-    result = psy_audio_channel_map_add(map, m2);
+    g_assert_no_error(error);
+    result = psy_audio_channel_map_add(map, m2, &error);
     g_assert_true(result);
+    g_assert_no_error(error);
     g_assert_cmpuint(psy_audio_channel_map_get_size(map), ==, 2u);
 
-    result = psy_audio_channel_map_add(map, i1);
+    result = psy_audio_channel_map_add(map, i1, &error);
     g_assert_false(result);
-    result = psy_audio_channel_map_add(map, i2);
+    g_assert_error(error,
+                   PSY_AUDIO_CHANNEL_MAP_ERROR,
+                   PSY_AUDIO_CHANNEL_MAP_ERROR_INVALID_VALUE);
+    g_clear_error(&error);
+    result = psy_audio_channel_map_add(map, i2, &error);
     g_assert_false(result);
+    g_assert_error(error,
+                   PSY_AUDIO_CHANNEL_MAP_ERROR,
+                   PSY_AUDIO_CHANNEL_MAP_ERROR_INVALID_VALUE);
+    g_clear_error(&error);
     g_assert_cmpuint(psy_audio_channel_map_get_size(map), ==, 2u);
 
     rm1 = psy_audio_channel_map_get_mapping(map, 0);
@@ -397,8 +378,7 @@ static void
 audio_channel_map_set_mapping(void)
 {
     gboolean result;
-
-    g_test_log_set_fatal_handler(test_fatal_hander, NULL);
+    GError  *error = NULL;
 
     PsyAudioChannelMap *map = psy_audio_channel_map_new(2, 2);
 
@@ -409,17 +389,28 @@ audio_channel_map_set_mapping(void)
     PsyAudioChannelMapping *r1 = NULL;
     PsyAudioChannelMapping *r2 = NULL;
 
-    result = psy_audio_channel_map_set(map, 0, m1);
+    result = psy_audio_channel_map_set(map, 0, m1, &error);
     g_assert_false(result);
-    result = psy_audio_channel_map_set(map, 1, m2);
+    g_assert_error(error,
+                   PSY_AUDIO_CHANNEL_MAP_ERROR,
+                   PSY_AUDIO_CHANNEL_MAP_ERROR_INVALID_INDEX);
+    g_clear_error(&error);
+
+    result = psy_audio_channel_map_set(map, 1, m2, &error);
     g_assert_false(result);
+    g_assert_error(error,
+                   PSY_AUDIO_CHANNEL_MAP_ERROR,
+                   PSY_AUDIO_CHANNEL_MAP_ERROR_INVALID_INDEX);
+    g_clear_error(&error);
 
     psy_audio_channel_map_set_size(map, 2);
 
-    result = psy_audio_channel_map_set(map, 0, m1);
+    result = psy_audio_channel_map_set(map, 0, m1, &error);
     g_assert_true(result);
-    result = psy_audio_channel_map_set(map, 1, m2);
+    g_assert_no_error(error);
+    result = psy_audio_channel_map_set(map, 1, m2, &error);
     g_assert_true(result);
+    g_assert_no_error(error);
 
     r1 = psy_audio_channel_map_get_mapping(map, 0);
     r2 = psy_audio_channel_map_get_mapping(map, 1);
@@ -436,14 +427,33 @@ audio_channel_map_set_mapping(void)
     PsyAudioChannelMapping *i4 = psy_audio_channel_mapping_new(0, -1);
 
     // It should not be possible to add mapping with negative of to tall values
-    result = psy_audio_channel_map_set(map, 0, i1);
+    result = psy_audio_channel_map_set(map, 0, i1, &error);
     g_assert_false(result);
-    result = psy_audio_channel_map_set(map, 0, i2);
+    g_assert_error(error,
+                   PSY_AUDIO_CHANNEL_MAP_ERROR,
+                   PSY_AUDIO_CHANNEL_MAP_ERROR_INVALID_VALUE);
+    g_clear_error(&error);
+
+    result = psy_audio_channel_map_set(map, 0, i2, &error);
     g_assert_false(result);
-    result = psy_audio_channel_map_set(map, 0, i3);
+    g_assert_error(error,
+                   PSY_AUDIO_CHANNEL_MAP_ERROR,
+                   PSY_AUDIO_CHANNEL_MAP_ERROR_INVALID_VALUE);
+    g_clear_error(&error);
+
+    result = psy_audio_channel_map_set(map, 0, i3, &error);
     g_assert_false(result);
-    result = psy_audio_channel_map_set(map, 0, i4);
+    g_assert_error(error,
+                   PSY_AUDIO_CHANNEL_MAP_ERROR,
+                   PSY_AUDIO_CHANNEL_MAP_ERROR_INVALID_VALUE);
+    g_clear_error(&error);
+
+    result = psy_audio_channel_map_set(map, 0, i4, &error);
     g_assert_false(result);
+    g_assert_error(error,
+                   PSY_AUDIO_CHANNEL_MAP_ERROR,
+                   PSY_AUDIO_CHANNEL_MAP_ERROR_INVALID_VALUE);
+    g_clear_error(&error);
 
     g_clear_pointer(&i1, psy_audio_channel_mapping_free);
     g_clear_pointer(&i2, psy_audio_channel_mapping_free);

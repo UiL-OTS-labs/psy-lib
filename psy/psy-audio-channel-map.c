@@ -1,5 +1,6 @@
 
 #include "psy-audio-channel-map.h"
+#include "psy-enums.h"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpedantic"
@@ -16,6 +17,11 @@ G_DEFINE_BOXED_TYPE(PsyAudioChannelMap,
 
 #pragma GCC diagnostic pop
 
+// clang-format off
+G_DEFINE_QUARK(psy-audio-channel-map-error-quark, psy_audio_channel_map_error)
+
+// clang-format on
+
 /**
  * psy_audio_channel_mapping_new:
  * sink_channel: the channel of the sink is valid for the range[0, G_MAXINT]
@@ -30,10 +36,8 @@ G_DEFINE_BOXED_TYPE(PsyAudioChannelMap,
  * num_source_channels, num_sink_channels.
  */
 PsyAudioChannelMapping *
-psy_audio_channel_mapping_new(gint sink_channel, gint source_channel)
+psy_audio_channel_mapping_new(guint sink_channel, guint source_channel)
 {
-    g_return_val_if_fail(sink_channel >= 0, NULL);
-    g_return_val_if_fail(source_channel >= 0, NULL);
     PsyAudioChannelMapping *new = g_malloc(sizeof(PsyAudioChannelMapping));
     new->sink_channel           = sink_channel;
     new->mapped_source          = source_channel;
@@ -327,7 +331,16 @@ PsyAudioChannelMapping *
 psy_audio_channel_map_get_mapping(PsyAudioChannelMap *self, guint index)
 {
     g_return_val_if_fail(self != NULL, NULL);
-    g_return_val_if_fail(index < self->mapping->len, NULL);
+
+    if (index >= self->mapping->len) {
+        g_log_structured(G_LOG_DOMAIN,
+                         G_LOG_LEVEL_MESSAGE,
+                         "MESSAGE",
+                         "oops index = %u >= self->mapping->len = %u",
+                         index,
+                         self->mapping->len);
+        return NULL;
+    }
 
     PsyAudioChannelMapping *original = self->mapping->pdata[index];
 
@@ -338,22 +351,41 @@ psy_audio_channel_map_get_mapping(PsyAudioChannelMap *self, guint index)
  * psy_audio_channel_map_add:
  * @self: an instance of [struct@PsyAudioChannelMap
  * @mapping:(transfer none): An instance of [struct@PsyAudioChannelMapping]
+ * @error:(out): An error may be returned here when the mapping is invalid for
+ *               this map.
  *
  * Add a new mapping to the map.
+ *
+ * Returns: TRUE when successful, FALSE otherwise
  */
 gboolean
 psy_audio_channel_map_add(PsyAudioChannelMap     *self,
-                          PsyAudioChannelMapping *mapping)
+                          PsyAudioChannelMapping *mapping,
+                          GError                **error)
 {
     g_return_val_if_fail(self != NULL, FALSE);
     g_return_val_if_fail(mapping != NULL, FALSE);
 
-    g_return_val_if_fail(
-        mapping->sink_channel >= 0 && mapping->mapped_source >= 0, FALSE);
-    g_return_val_if_fail(mapping->sink_channel < (gint) self->num_sink_channels,
-                         FALSE);
-    g_return_val_if_fail(
-        mapping->mapped_source < (gint) self->num_source_channels, FALSE);
+    if (mapping->mapped_source >= self->num_source_channels
+        || mapping->sink_channel >= self->num_sink_channels) {
+
+        g_log_structured(
+            G_LOG_DOMAIN,
+            G_LOG_LEVEL_MESSAGE,
+            "MESSAGE",
+            "mapping tries to map an non existent source or sink channel.");
+        g_set_error(error,
+                    psy_audio_channel_map_error_quark(),
+                    PSY_AUDIO_CHANNEL_MAP_ERROR_INVALID_VALUE,
+                    "Invalid mapping: ChannelMap.num_source_channels = %u, "
+                    ".num_sink_channels = %u, mapping.mapped_source = %u, "
+                    "mapping.sink_channel = %u",
+                    self->num_source_channels,
+                    self->num_sink_channels,
+                    mapping->mapped_source,
+                    mapping->sink_channel);
+        return FALSE;
+    }
 
     g_ptr_array_add(self->mapping, psy_audio_channel_mapping_copy(mapping));
 
@@ -369,6 +401,7 @@ psy_audio_channel_map_add(PsyAudioChannelMap     *self,
  * @mapping:(transfer none): a mapping that is valid for @self
  *     eg mapping->mapped_source < self->num_source_channels and
  *     mapping->sink_channel < self->num_source_channels.
+ * @error: If an error occurs it will be returned here.
  *
  * Clears an existing mapping from @self and adds @mapping to the map.
  *
@@ -378,17 +411,37 @@ psy_audio_channel_map_add(PsyAudioChannelMap     *self,
 gboolean
 psy_audio_channel_map_set(PsyAudioChannelMap     *self,
                           guint                   index,
-                          PsyAudioChannelMapping *mapping)
+                          PsyAudioChannelMapping *mapping,
+                          GError                **error)
 {
     g_return_val_if_fail(self != NULL, FALSE);
     g_return_val_if_fail(mapping != NULL, FALSE);
-    g_return_val_if_fail(index < self->mapping->len, FALSE);
-    g_return_val_if_fail(index < G_MAXINT, FALSE);
 
-    g_return_val_if_fail(
-        mapping->mapped_source < (gint) self->num_source_channels, FALSE);
-    g_return_val_if_fail(mapping->sink_channel < (gint) self->num_sink_channels,
-                         FALSE);
+    if (index >= self->mapping->len) {
+        g_set_error(error,
+                    PSY_AUDIO_CHANNEL_MAP_ERROR,
+                    PSY_AUDIO_CHANNEL_MAP_ERROR_INVALID_INDEX,
+                    "the map contains space for %u mappings, but mapping with "
+                    "index %u was tried",
+                    self->mapping->len,
+                    index);
+        return FALSE;
+    }
+
+    if (mapping->mapped_source >= self->num_source_channels
+        || mapping->sink_channel >= self->num_sink_channels) {
+        g_set_error(error,
+                    PSY_AUDIO_CHANNEL_MAP_ERROR,
+                    PSY_AUDIO_CHANNEL_MAP_ERROR_INVALID_VALUE,
+                    "Invalid mapping: ChannelMap.num_source_channels = %u, "
+                    ".num_sink_channels = %u, mapping.mapped_source = %u, "
+                    "mapping.sink_channel = %u",
+                    self->num_source_channels,
+                    self->num_sink_channels,
+                    mapping->mapped_source,
+                    mapping->sink_channel);
+        return FALSE;
+    }
 
     psy_audio_channel_mapping_free(self->mapping->pdata[index]);
     self->mapping->pdata[index] = psy_audio_channel_mapping_copy(mapping);

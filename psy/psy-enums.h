@@ -111,6 +111,26 @@ typedef enum {
 } PsyAudioChannelStrategy;
 
 /**
+ * PsyAudioChannelMapError:
+ * @PSY_AUDIO_CHANNEL_MAP_ERROR_INVALID_VALUE: This error may be raised,
+ *      when some one sets/adds a [struct@Psy.AudioChannelMapping] with an
+ *      invalid value contained. e.g. negative channel, or would map to a
+ *      channel larger than or equal to the
+ *      [struct@AudioChannelMap].num_source_channels or
+ *      .num_sink_channels
+ * @PSY_AUDIO_CHANNEL_MAP_INVALID_INDEX e.g setting a map on a position where
+ *      there is no space for.
+ * @PSY_AUDIO_CHANNEL_MAP_ERROR_FAILED unspecific error
+ *
+ * Errors related to mapping input to output channels.
+ */
+typedef enum {
+    PSY_AUDIO_CHANNEL_MAP_ERROR_INVALID_VALUE,
+    PSY_AUDIO_CHANNEL_MAP_ERROR_INVALID_INDEX,
+    PSY_AUDIO_CHANNEL_MAP_ERROR_FAILED,
+} PsyAudioChannelMapError;
+
+/**
  * PsyBaudRate:
  * @PSY_BAUD_RATE_0 closes the connection
  * @PSY_BAUD_RATE_50 set the baud rate to 50 Hz.

@@ -1,8 +1,7 @@
-#include <criterion/criterion.h>
-#include <criterion/new/assert.h>
-#include <psy-color.h>
+#include <psylib.h>
 
-Test(color, default_values)
+static void
+test_color_default_values(void)
 {
     PsyColor *color = psy_color_new();
     gfloat    rf, gf, bf, af;
@@ -24,22 +23,23 @@ Test(color, default_values)
 
     // Default floating point values should be 0, except alpha channel which
     // should be 1.0.
-    cr_expect(eq(rf, 0.0));
-    cr_expect(eq(gf, 0.0));
-    cr_expect(eq(bf, 0.0));
-    cr_expect(eq(af, 1.0));
+    g_assert_cmpfloat(rf, ==, 0.0);
+    g_assert_cmpfloat(gf, ==, 0.0);
+    g_assert_cmpfloat(bf, ==, 0.0);
+    g_assert_cmpfloat(af, ==, 1.0);
 
     // Default integer values should be 0, except alpha channel which
     // should be 255.
-    cr_expect(eq(ri, 0));
-    cr_expect(eq(gi, 0));
-    cr_expect(eq(bi, 0));
-    cr_expect(eq(ai, 255));
+    g_assert_cmpint(ri, ==, 0);
+    g_assert_cmpint(gi, ==, 0);
+    g_assert_cmpint(bi, ==, 0);
+    g_assert_cmpint(ai, ==, 255);
 
     g_object_unref(color);
 }
 
-Test(color, specific_rgb_values)
+static void
+test_color_specific_rgb_values(void)
 {
     gfloat       rf, gf, bf, af;
     gint         ri, gi, bi, ai;
@@ -62,20 +62,21 @@ Test(color, specific_rgb_values)
             );
     // clang-format on
 
-    cr_expect(eq(rf, 1.0));
-    cr_expect(eq(gf, 0.5));
-    cr_expect(eq(bf, 0.25));
-    cr_expect(eq(af, 0.5));
+    g_assert_cmpfloat(rf, ==, 1.0);
+    g_assert_cmpfloat(gf, ==, 0.5);
+    g_assert_cmpfloat(bf, ==, 0.25);
+    g_assert_cmpfloat(af, ==, 0.5);
 
-    cr_expect(eq(ri, (int) (red * max_color)));
-    cr_expect(eq(gi, (int) (green * max_color)));
-    cr_expect(eq(bi, (int) (blue * max_color)));
-    cr_expect(eq(ai, (int) (alpha * max_color)));
+    g_assert_cmpint(ri, ==, (int) (red * max_color));
+    g_assert_cmpint(gi, ==, (int) (green * max_color));
+    g_assert_cmpint(bi, ==, (int) (blue * max_color));
+    g_assert_cmpint(ai, ==, (int) (alpha * max_color));
 
     g_object_unref(color);
 }
 
-Test(color, specific_rgbi_values)
+static void
+test_color_specific_rgbi_values(void)
 {
     gfloat     rf, gf, bf, af;
     gint       ri, gi, bi, ai;
@@ -100,15 +101,29 @@ Test(color, specific_rgbi_values)
 
     gfloat epsilon = 1e-6f;
 
-    cr_expect(epsilon_eq(rf, red / max_color, epsilon));
-    cr_expect(epsilon_eq(gf, green / max_color, epsilon));
-    cr_expect(epsilon_eq(bf, blue / max_color, epsilon));
-    cr_expect(epsilon_eq(af, alpha / max_color, epsilon));
+    g_assert_cmpfloat_with_epsilon(rf, red / max_color, epsilon);
+    g_assert_cmpfloat_with_epsilon(gf, green / max_color, epsilon);
+    g_assert_cmpfloat_with_epsilon(bf, blue / max_color, epsilon);
+    g_assert_cmpfloat_with_epsilon(af, alpha / max_color, epsilon);
 
-    cr_expect(eq(ri, red));
-    cr_expect(eq(gi, green));
-    cr_expect(eq(bi, blue));
-    cr_expect(eq(ai, alpha));
+    g_assert_cmpint(ri, ==, red);
+    g_assert_cmpint(gi, ==, green);
+    g_assert_cmpint(bi, ==, blue);
+    g_assert_cmpint(ai, ==, alpha);
 
     g_object_unref(color);
+}
+
+int
+main(int argc, char **argv)
+{
+    g_test_init(&argc, &argv, NULL);
+
+    g_test_add_func("/color/test_default_values", test_color_default_values);
+    g_test_add_func("/color/specific_rgb_values",
+                    test_color_specific_rgb_values);
+    g_test_add_func("/color/specific_rgbi_values",
+                    test_color_specific_rgbi_values);
+
+    return g_test_run();
 }

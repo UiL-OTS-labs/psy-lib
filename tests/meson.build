@@ -80,6 +80,7 @@ test('test-audio',
     test_audio,
     is_parallel : false,
     args: ['-j1'], # So also the criterion test should not run in parallel
+    protocol: 'tap'
 )
 
 test_audio_channel_mapping = executable(
@@ -90,7 +91,7 @@ test_audio_channel_mapping = executable(
     cpp_args : UNIT_PP_ARGS,
 )
 
-test('test-audio-channel-mapping', test_audio_channel_mapping,)
+test('test-audio-channel-mapping', test_audio_channel_mapping, protocol: 'tap')
 
 test_audio_utils = executable(
     'test-audio-utils',
@@ -99,36 +100,37 @@ test_audio_utils = executable(
     c_args : UNIT_PP_ARGS,
     cpp_args : UNIT_PP_ARGS,
 )
-test('test-audio-utils', test_audio_utils,)
+test('test-audio-utils', test_audio_utils, protocol: 'tap')
 
-# # perhaps skip this on windows for now
-# test_canvas = executable(
-#     'test-canvas',
-#     files('test-canvas.c', 'unit-test-utilities.c'),
-#     dependencies: [psy_dep, criterion_dep],
-#     c_args : UNIT_PP_ARGS,
-#     cpp_args : UNIT_PP_ARGS,
-# )
-# test('test-canvas', test_canvas,)
-# 
-# test_color = executable(
-#     'test-color',
-#     files('test-color.c'),
-#     dependencies: [psy_dep, criterion_dep],
-#     c_args : UNIT_PP_ARGS,
-#     cpp_args : UNIT_PP_ARGS,
-# )
-# test('test-color', test_color,)
-# 
-# #may skip on win32
-# test_cross = executable(
-#     'test-cross',
-#     files('test-cross.c', 'unit-test-utilities.c'),
-#     dependencies: [psy_dep, criterion_dep],
-#     c_args : UNIT_PP_ARGS,
-#     cpp_args : UNIT_PP_ARGS,
-# )
-# test('test-cross', test_cross,)
+# perhaps skip this on windows for now
+test_canvas = executable(
+    'test-canvas',
+    files('test-canvas.c'),
+    dependencies: [psy_dep],
+    c_args : UNIT_PP_ARGS,
+    cpp_args : UNIT_PP_ARGS,
+)
+test('test-canvas', test_canvas, protocol: 'tap')
+
+test_color = executable(
+    'test-color',
+    files('test-color.c'),
+    dependencies: [psy_dep],
+    c_args : UNIT_PP_ARGS,
+    cpp_args : UNIT_PP_ARGS,
+)
+test('test-color', test_color, protocol: 'tap')
+
+
+#may skip on win32
+test_cross = executable(
+    'test-cross',
+    files('test-cross.c', 'unit-test-utilities.c'),
+    dependencies: [psy_dep],
+    c_args : UNIT_PP_ARGS,
+    cpp_args : UNIT_PP_ARGS,
+)
+test('test-cross', test_cross, protocol: 'tap')
 # 
 # test_image = executable(
 #     'test-image',

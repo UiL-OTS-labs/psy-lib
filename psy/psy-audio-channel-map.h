@@ -22,15 +22,15 @@ G_BEGIN_DECLS
  * sink(output) channel.
  */
 typedef struct {
-    gint sink_channel;
-    gint mapped_source;
+    guint sink_channel;
+    guint mapped_source;
 } PsyAudioChannelMapping;
 
 G_MODULE_EXPORT GType
 psy_audio_channel_mapping_get_type(void);
 
 G_MODULE_EXPORT PsyAudioChannelMapping *
-psy_audio_channel_mapping_new(gint sink_channel, gint source_channel);
+psy_audio_channel_mapping_new(guint sink_channel, guint source_channel);
 
 G_MODULE_EXPORT void
 psy_audio_channel_mapping_free(PsyAudioChannelMapping *self);
@@ -43,6 +43,10 @@ psy_audio_channel_mapping_eq(PsyAudioChannelMapping *self,
                              PsyAudioChannelMapping *other);
 
 #define PSY_TYPE_AUDIO_CHANNEL_MAP (psy_audio_channel_map_get_type())
+
+#define PSY_AUDIO_CHANNEL_MAP_ERROR (psy_audio_channel_map_error_quark())
+G_MODULE_EXPORT GQuark
+psy_audio_channel_map_error_quark(void);
 
 /**
  * PsyAudioChannelMap:
@@ -97,12 +101,14 @@ psy_audio_channel_map_set_size(PsyAudioChannelMap *self, guint size);
 
 G_MODULE_EXPORT gboolean
 psy_audio_channel_map_add(PsyAudioChannelMap     *self,
-                          PsyAudioChannelMapping *mapping);
+                          PsyAudioChannelMapping *mapping,
+                          GError                **error);
 
 G_MODULE_EXPORT gboolean
 psy_audio_channel_map_set(PsyAudioChannelMap     *self,
                           guint                   index,
-                          PsyAudioChannelMapping *mapping);
+                          PsyAudioChannelMapping *mapping,
+                          GError                **error);
 
 G_MODULE_EXPORT PsyAudioChannelMapping *
 psy_audio_channel_map_get_mapping(PsyAudioChannelMap *self, guint index);
