@@ -10,7 +10,7 @@ dont_fire(PsyTimer *timer, PsyTimePoint *tp)
 }
 
 int
-main()
+main(void)
 {
     PsyInitializer *init = g_object_new(
         PSY_TYPE_INITIALIZER, "gstreamer", FALSE, "portaudio", FALSE, NULL);
