@@ -131,24 +131,24 @@ test_cross = executable(
     cpp_args : UNIT_PP_ARGS,
 )
 test('test-cross', test_cross, protocol: 'tap')
-# 
-# test_image = executable(
-#     'test-image',
-#     files('test-image.c', 'unit-test-utilities.c'),
-#     dependencies: [psy_dep, criterion_dep],
-#     c_args : UNIT_PP_ARGS,
-#     cpp_args : UNIT_PP_ARGS,
-# )
-# test('test-image', test_image,)
-# 
-# test_init = executable(
-#     'test-init',
-#     files('test-init.c', 'unit-test-utilities.c'),
-#     dependencies: [psy_dep, criterion_dep],
-#     c_args : UNIT_PP_ARGS,
-#     cpp_args : UNIT_PP_ARGS,
-# )
-# test('test-init', test_init,)
+
+test_image = executable(
+    'test-image',
+    files('test-image.c', 'unit-test-utilities.c'),
+    dependencies: [psy_dep],
+    c_args : UNIT_PP_ARGS,
+    cpp_args : UNIT_PP_ARGS,
+)
+test('test-image', test_image, protocol:'tap')
+
+test_init = executable(
+    'test-init',
+    files('test-init.c', 'unit-test-utilities.c'),
+    dependencies: [psy_dep],
+    c_args : UNIT_PP_ARGS,
+    cpp_args : UNIT_PP_ARGS,
+)
+test('test-init', test_init, protocol:'tap')
 # 
 # test_gl_canvas = executable(
 #     'test-gl-canvas',
