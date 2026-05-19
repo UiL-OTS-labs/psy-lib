@@ -2,12 +2,10 @@
 #include <math.h>
 #include <string.h>
 
-#include <criterion/criterion.h>
-#include <criterion/new/assert.h>
-
 #include <psylib.h>
 
-Test(matrix4, create)
+static void
+test_matrix4_create(void)
 {
     PsyMatrix4 *mat = psy_matrix4_new();
 
@@ -21,13 +19,14 @@ Test(matrix4, create)
             NULL);
     // clang-format on
 
-    cr_assert(is_null);
-    cr_assert(ne(is_identity, TRUE));
+    g_assert_true(is_null);
+    g_assert_false(is_identity);
 
     psy_matrix4_free(mat);
 }
 
-Test(matrix4, create_identity)
+static void
+test_matrix4_create_identity(void)
 {
     PsyMatrix4 *mat = psy_matrix4_new_identity();
 
@@ -41,13 +40,14 @@ Test(matrix4, create_identity)
             NULL);
     // clang-format on
 
-    cr_expect(zero(is_null));
-    cr_expect(eq(is_identity, TRUE));
+    g_assert_false(is_null);
+    g_assert_true(is_identity);
 
     psy_matrix4_free(mat);
 }
 
-Test(matrix4, setable_props)
+static void
+test_matrix4_setable_props(void)
 {
     PsyMatrix4 *mat = psy_matrix4_new();
 
@@ -62,8 +62,8 @@ Test(matrix4, setable_props)
             NULL);
     // clang-format on
 
-    cr_expect(eq(is_identity, TRUE));
-    cr_expect(eq(is_null, FALSE));
+    g_assert_true(is_identity);
+    g_assert_false(is_null);
 
     g_object_set(mat, "is-null", TRUE, NULL);
     // clang-format off
@@ -73,8 +73,18 @@ Test(matrix4, setable_props)
             NULL);
     // clang-format off
     
-    cr_expect(eq(is_identity, FALSE));
-    cr_expect(eq(is_null, TRUE));
+    g_assert_false(is_identity);
+    g_assert_true(is_null);
 
     psy_matrix4_free(mat);
+}
+
+int main(int argc, char** argv) {
+    g_test_init(&argc, &argv, NULL);
+
+    g_test_add_func("/matrix4/test_matrix4", test_matrix4_create);
+    g_test_add_func("/matrix4/create_itentity", test_matrix4_create_identity);
+    g_test_add_func("/matrix4/setable_props", test_matrix4_setable_props);
+
+    return g_test_run();
 }

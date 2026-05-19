@@ -149,69 +149,69 @@ test_init = executable(
     cpp_args : UNIT_PP_ARGS,
 )
 test('test-init', test_init, protocol:'tap')
-# 
-# test_gl_canvas = executable(
-#     'test-gl-canvas',
-#     files('test-gl-canvas.c'),
-#     dependencies: [psy_dep, criterion_dep],
-#     c_args : UNIT_PP_ARGS,
-#     cpp_args : UNIT_PP_ARGS,
-# )
-# test('test-gl-canvas', test_gl_canvas,)
-#         
-# test_gl_utils = executable(
-#     'test-gl-utils',
-#     files('test-gl-utils.c'),
-#     dependencies: [psy_dep, criterion_dep],
-#     c_args : UNIT_PP_ARGS,
-#     cpp_args : UNIT_PP_ARGS,
-# )
-# test('test-gl-utils', test_gl_utils,)
-# 
-# test_matrix4 = executable (
-#     'test-matrix4',
-#     files('test-matrix4.c',),
-#     dependencies: [psy_dep, criterion_dep],
-#     c_args : UNIT_PP_ARGS,
-#     cpp_args : UNIT_PP_ARGS,
-# )
-# test('test-matrix4', test_matrix4,)
-# 
-# test_parallel = executable(
-#     'test-parallel',
-#     files('test-parallel.c',),
-#     dependencies: [psy_dep, criterion_dep],
-#     c_args : UNIT_PP_ARGS,
-#     cpp_args : UNIT_PP_ARGS,
-# )
-# test('test-parallel', test_parallel,)
-# 
-# test_picture = executable (
-#     'test-picture',
-#     files('test-picture.c', 'unit-test-utilities.c'),
-#     dependencies: [psy_dep, criterion_dep],
-#     c_args : UNIT_PP_ARGS,
-#     cpp_args : UNIT_PP_ARGS,
-# )
-# test('test-picture', test_picture, args : ['-j1'])
-# 
-# test_queue = executable(
-#     'test-queue',
-#     files('test-queue.c',),
-#     dependencies: [psy_dep, criterion_dep],
-#     c_args : UNIT_PP_ARGS,
-#     cpp_args : UNIT_PP_ARGS,
-# )
-# test('test-queue', test_queue,)
-# 
-# test_ref_count = executable('test-refcount',
-#     files('test-ref-count.c',),
-#     dependencies: [psy_dep, criterion_dep],
-#     c_args : UNIT_PP_ARGS,
-#     cpp_args : UNIT_PP_ARGS,
-# )
-# test('test-ref-count', test_ref_count,)
-# 
+
+test_gl_canvas = executable(
+    'test-gl-canvas',
+    files('test-gl-canvas.c'),
+    dependencies: [psy_dep],
+    c_args : UNIT_PP_ARGS,
+    cpp_args : UNIT_PP_ARGS,
+)
+test('test-gl-canvas', test_gl_canvas, protocol:'tap')
+         
+test_gl_utils = executable(
+    'test-gl-utils',
+    files('test-gl-utils.c'),
+    dependencies: [psy_dep],
+    c_args : UNIT_PP_ARGS,
+    cpp_args : UNIT_PP_ARGS,
+)
+test('test-gl-utils', test_gl_utils, protocol: 'tap')
+ 
+test_matrix4 = executable (
+    'test-matrix4',
+    files('test-matrix4.c',),
+    dependencies: [psy_dep],
+    c_args : UNIT_PP_ARGS,
+    cpp_args : UNIT_PP_ARGS,
+)
+test('test-matrix4', test_matrix4, protocol: 'tap')
+
+test_parallel = executable(
+    'test-parallel',
+    files('test-parallel.c',),
+    dependencies: [psy_dep],
+    c_args : UNIT_PP_ARGS,
+    cpp_args : UNIT_PP_ARGS,
+)
+test('test-parallel', test_parallel, protocol: 'tap')
+ 
+test_picture = executable (
+    'test-picture',
+    files('test-picture.c', 'unit-test-utilities.c'),
+    dependencies: [psy_dep],
+    c_args : UNIT_PP_ARGS,
+    cpp_args : UNIT_PP_ARGS,
+)
+test('test-picture', test_picture, protocol: 'tap',is_parallel: false,)
+ 
+test_queue = executable(
+    'test-queue',
+    files('test-queue.c',),
+    dependencies: [psy_dep],
+    c_args : UNIT_PP_ARGS,
+    cpp_args : UNIT_PP_ARGS,
+)
+test('test-queue', test_queue,)
+
+test_ref_count = executable('test-refcount',
+    files('test-ref-count.c',),
+    dependencies: [psy_dep],
+    c_args : UNIT_PP_ARGS,
+    cpp_args : UNIT_PP_ARGS,
+)
+test('test-ref-count', test_ref_count, protocol: 'tap')
+
 # test_stepping = executable(
 #     'test-stepping',
 #     files('test-stepping.c',),

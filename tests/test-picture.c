@@ -1,6 +1,4 @@
 
-#include <criterion/criterion.h>
-#include <criterion/new/assert.h>
 #include <psylib.h>
 #include <stdbool.h>
 
@@ -165,9 +163,8 @@ picture_teardown(void)
     g_object_unref(g_init);
 }
 
-TestSuite(picture, .init = picture_setup, .fini = picture_teardown);
-
-Test(picture, default_values)
+static void
+test_picture_default_values(void)
 {
     PsyPicture *picture = psy_picture_new(PSY_CANVAS(g_canvas));
 
@@ -182,13 +179,14 @@ Test(picture, default_values)
             NULL);
     // clang-format on
 
-    cr_expect(eq(int, strategy, PSY_PICTURE_STRATEGY_AUTOMATIC));
-    cr_expect(eq(filename, NULL));
+    g_assert_cmpint(strategy, ==, PSY_PICTURE_STRATEGY_AUTOMATIC);
+    g_assert_null(filename);
 
     g_object_unref(picture);
 }
 
-Test(picture, with_filename)
+static void
+test_picture_with_filename(void)
 {
     PsyPicture *picture
         = psy_picture_new_filename(PSY_CANVAS(g_canvas), g_path);
@@ -204,8 +202,8 @@ Test(picture, with_filename)
             NULL);
     // clang-format on
 
-    cr_expect(eq(int, strategy, PSY_PICTURE_STRATEGY_AUTOMATIC));
-    cr_expect(eq(str, filename, g_path));
+    g_assert_cmpint(strategy, ==, PSY_PICTURE_STRATEGY_AUTOMATIC);
+    g_assert_cmpstr(filename, ==, g_path);
 
     g_free(filename);
     g_object_unref(picture);
@@ -223,7 +221,8 @@ on_resize(PsyPicture *picture, gfloat width, gfloat height, gpointer data)
     *set_true = TRUE;
 }
 
-Test(picture, draw_auto_resize)
+static void
+test_picture_draw_auto_resize(void)
 {
     PsyPictureSizeStrategy strat_static;
     PsyPictureSizeStrategy strat_dynamic;
@@ -238,8 +237,8 @@ Test(picture, draw_auto_resize)
     g_object_get(pic_static, "size-strategy", &strat_static, NULL);
     g_object_get(pic_dynamic, "size-strategy", &strat_dynamic, NULL);
 
-    cr_expect(eq(int, strat_static, PSY_PICTURE_STRATEGY_MANUAL));
-    cr_expect(eq(int, strat_dynamic, PSY_PICTURE_STRATEGY_AUTOMATIC));
+    g_assert_cmpint(strat_static, ==, PSY_PICTURE_STRATEGY_MANUAL);
+    g_assert_cmpint(strat_dynamic, ==, PSY_PICTURE_STRATEGY_AUTOMATIC);
 
     g_signal_connect(
         pic_static, "auto-resize", G_CALLBACK(on_resize), &static_resized);
@@ -251,8 +250,8 @@ Test(picture, draw_auto_resize)
 
     psy_image_canvas_iterate(g_canvas);
 
-    cr_expect(eq(dynamic_resized, TRUE));
-    cr_expect(eq(static_resized, FALSE));
+    g_assert_true(dynamic_resized);
+    g_assert_false(static_resized);
 
     g_object_unref(pic_static);
     g_object_unref(pic_dynamic);
@@ -289,8 +288,8 @@ test_colors(PsyImage *image)
     guint lower_bound = g_canvas_height - (g_canvas_height - g_img_height) / 2;
 
     while (num_samples < 10) {
-        guint x = random_int_range(0, g_canvas_width - 1);
-        guint y = random_int_range(0, g_canvas_height - 1);
+        guint x = g_test_rand_int_range(0, (int) g_canvas_width - 1);
+        guint y = g_test_rand_int_range(0, (int) g_canvas_height - 1);
 
         PsyColor *probe = psy_image_get_pixel(image, y, x);
 
@@ -382,7 +381,8 @@ test_colors(PsyImage *image)
  * The main goal of this test is to see whether the image is into it's place
  * and not upside down, left side right.
  */
-Test(picture, test_drawing)
+static void
+test_picture_test_drawing(void)
 {
     PsyPicture *pic = psy_picture_new_filename(PSY_CANVAS(g_canvas), g_path);
     PsyImage   *image;
@@ -397,8 +397,28 @@ Test(picture, test_drawing)
         save_image_tmp_png(image, "%s.png", __func__);
     }
 
-    cr_assert(eq(test_colors(image), TRUE));
+    g_assert_true(test_colors(image));
 
     g_object_unref(pic);
     g_object_unref(image);
+}
+
+int
+main(int argc, char **argv)
+{
+    g_test_init(&argc, &argv, NULL);
+
+    picture_setup();
+
+    g_test_add_func("/picture/default_values", test_picture_default_values);
+    g_test_add_func("/picture/with_filename", test_picture_with_filename);
+    g_test_add_func("/picture/draw_auto_resize", test_picture_draw_auto_resize);
+    g_test_add_func("/picture/test_picture_test_drawing",
+                    test_picture_test_drawing);
+
+    int save = g_test_run();
+
+    picture_teardown();
+
+    return save;
 }

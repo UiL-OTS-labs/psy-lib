@@ -1,20 +1,20 @@
 
-#include <criterion/criterion.h>
-#include <criterion/new/assert.h>
-
+#include "psy-image.h"
 #include <psylib.h>
 
-Test(ref, starts_with_one)
+static void
+test_ref_starts_with_one(void)
 {
     PsyColor *color      = g_object_new(PSY_TYPE_COLOR, NULL);
     GObject  *color_gobj = G_OBJECT(color);
 
-    cr_assert(eq(color_gobj->ref_count, 1u));
+    g_assert_cmpuint(color_gobj->ref_count, ==, 1u);
 
     g_object_unref(color);
 }
 
-Test(ref, transfer_none_method)
+static void
+test_ref_transfer_none_method(void)
 {
     // clang-format off
     PsyImage *image = g_object_new(PSY_TYPE_IMAGE,
@@ -24,7 +24,7 @@ Test(ref, transfer_none_method)
                                    NULL);
     // clang-format on
 
-    cr_assert(ne(image, NULL));
+    g_assert_nonnull(image);
     PsyColor *color = g_object_new(PSY_TYPE_COLOR, NULL);
 
     // Cast to conveniently obtain the reference count
@@ -34,19 +34,22 @@ Test(ref, transfer_none_method)
     /*
      * This is (transfer none), so we should free it.
      */
-    psy_visual_stimulus_set_color(PSY_VISUAL_STIMULUS(image), color);
+    psy_image_clear(image, color);
 
-    cr_expect(eq(image_gobj->ref_count, 1u),
-              "Image should have a ref count of 1");
-    cr_expect(eq(color_gobj->ref_count, 1u),
-              "Since, nothing is transferred, ref count should remain 1");
+    g_assert_cmpuint(
+        image_gobj->ref_count, ==, 1u); // Image should have a ref count of 1
+    g_assert_cmpuint(
+        color_gobj->ref_count,
+        ==,
+        1u); // Since, nothing is transferred, ref count should remain 1
 
     g_object_unref(image);
-    cr_expect(eq(color_gobj->ref_count, 1u));
+    g_assert_cmpuint(color_gobj->ref_count, ==, 1u);
     g_object_unref(color);
 }
 
-Test(ref, set_property_transfer_full)
+static void
+test_ref_set_property_transfer_full(void)
 {
     PsyTrial *trial = psy_trial_new();
     PsyLoop  *loop  = psy_loop_new();
@@ -55,12 +58,25 @@ Test(ref, set_property_transfer_full)
     GObject *trial_gobj = G_OBJECT(trial);
     GObject *loop_gobj  = G_OBJECT(loop);
 
-    cr_assert(eq(trial_gobj->ref_count, 1u));
-    cr_assert(eq(loop_gobj->ref_count, 1u));
+    g_assert_cmpuint(trial_gobj->ref_count, ==, 1u);
+    g_assert_cmpuint(loop_gobj->ref_count, ==, 1u);
 
     g_object_set(loop, "child", trial, NULL); // transfer full
 
-    cr_expect(eq(trial_gobj->ref_count, 1u)); // hence still one.
+    g_assert_cmpuint(trial_gobj->ref_count, ==, 1u); // hence still one.
 
     g_object_unref(loop);
+}
+
+int
+main(int argc, char **argv)
+{
+    g_test_init(&argc, &argv, NULL);
+
+    g_test_add_func("/ref/starts_with_one", test_ref_starts_with_one);
+    g_test_add_func("/ref/transfer_none", test_ref_transfer_none_method);
+    g_test_add_func("/ref/set_property_transfer_full",
+                    test_ref_set_property_transfer_full);
+
+    return g_test_run();
 }

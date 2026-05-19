@@ -1,66 +1,71 @@
 
-#include <criterion/criterion.h>
-#include <criterion/new/assert.h>
+#include <psylib.h>
+
 #include <psy-queue.h>
 
-Test(queue, create)
+static void
+test_queue_create(void)
 {
     PsyAudioQueue *queue = psy_audio_queue_new(1234);
 
     gfloat some_float;
 
-    cr_assert(ne(queue, NULL));
-    cr_expect(eq(psy_audio_queue_size(queue), 0u));
-    cr_expect(eq(psy_audio_queue_pop_samples(queue, 1, &some_float), 0u));
-    cr_expect(eq(psy_audio_queue_capacity(queue), 1234u));
+    g_assert_nonnull(queue);
+
+    g_assert_cmpuint(psy_audio_queue_size(queue), ==, 0u);
+    g_assert_cmpuint(
+        psy_audio_queue_pop_samples(queue, 1, &some_float), ==, 0u);
+    g_assert_cmpuint(psy_audio_queue_capacity(queue), ==, 1234u);
 
     psy_audio_queue_free(queue);
 }
 
-Test(queue, push_pop)
+static void
+test_queue_push_pop(void)
 {
     float          input[2048];
     float          output[2048];
     PsyAudioQueue *queue = psy_audio_queue_new(1234);
-    cr_assert(ne(queue, NULL));
+    g_assert_nonnull(queue);
 
     for (int i = 0; i < 2048; i++) {
-        input[i] = 2048.0 * 1.0 / 2048;
+        input[i] = 2048.0f * 1.0f / 2048;
     }
 
     gsize status = psy_audio_queue_push_samples(queue, 1234, input);
-    cr_assert(eq(status, 1234u));
+    g_assert_cmpuint(status, ==, 1234u);
 
     status = psy_audio_queue_push_samples(queue, 1, &input[0]);
-    cr_expect(eq(status, 0u));
+    g_assert_cmpuint(status, ==, 0u);
 
     status = psy_audio_queue_pop_samples(queue, 1234, output);
-    cr_assert(eq(status, 1234u));
+    g_assert_cmpuint(status, ==, 1234u);
 
     status = psy_audio_queue_pop_samples(queue, 1, &output[0]);
-    cr_assert(eq(status, 0u));
+    g_assert_cmpuint(status, ==, 0u);
 
     psy_audio_queue_free(queue);
 }
 
-Test(queue, clear)
+static void
+test_queue_clear(void)
 {
-    float          sample = .5;
+    float          sample = .5f;
     PsyAudioQueue *queue  = psy_audio_queue_new(16);
 
     psy_audio_queue_push_samples(queue, 1, &sample);
 
-    cr_expect(eq(psy_audio_queue_size(queue), 1u));
+    g_assert_cmpuint(psy_audio_queue_size(queue), ==, 1u);
 
     psy_audio_queue_push_samples(queue, 1, &sample);
     psy_audio_queue_push_samples(queue, 1, &sample);
     psy_audio_queue_push_samples(queue, 1, &sample);
 
-    cr_expect(eq(psy_audio_queue_size(queue), 4u));
+    g_assert_cmpuint(psy_audio_queue_size(queue), ==, 4u);
 
     psy_audio_queue_clear(queue);
 
-    cr_expect(eq(psy_audio_queue_size(queue), 0u));
+    g_assert_cmpuint(psy_audio_queue_size(queue), ==, 0u);
 
     psy_audio_queue_free(queue);
 }
@@ -120,7 +125,8 @@ pull_samples(gpointer data)
     return NULL;
 }
 
-Test(queue, simultaneous_push_pull)
+static void
+test_queue_simultaneous_push_pull(void)
 {
     GThread *push_thread = NULL;
     GThread *pull_thread = NULL;
@@ -150,12 +156,26 @@ Test(queue, simultaneous_push_pull)
 
     g_info("Threads are joined.");
 
-    cr_assert(eq(memcmp(context.data_in,
-                        context.data_out,
-                        context.num_samples * sizeof(float)),
-                 0));
+    g_assert_cmpmem(context.data_in,
+                    context.num_samples * sizeof(float),
+                    context.data_out,
+                    context.num_samples * sizeof(float));
 
     psy_audio_queue_free(context.queue);
     free(context.data_in);
     free(context.data_out);
+}
+
+int
+main(int argc, char **argv)
+{
+    g_test_init(&argc, &argv, NULL);
+
+    g_test_add_func("/queue/create", test_queue_create);
+    g_test_add_func("/queue/push_pop", test_queue_push_pop);
+    g_test_add_func("/queue/clear", test_queue_clear);
+    g_test_add_func("/queue/simultaneous_push_pull",
+                    test_queue_simultaneous_push_pull);
+
+    return g_test_run();
 }
