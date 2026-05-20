@@ -53,34 +53,45 @@ test_utility_center_to_c(void)
     gdouble xout, yout;
 
     psy_coordinate_center_to_c(width, height, xin, yin, &xout, &yout);
-    cr_expect(eq(xout, 0));
-    cr_expect(eq(yout, 0));
+    g_assert_cmpfloat(xout, ==, 0);
+    g_assert_cmpfloat(yout, ==, 0);
 
     // right top
     xin = width / 2;
     yin = height / 2;
     psy_coordinate_center_to_c(width, height, xin, yin, &xout, &yout);
-    cr_expect(eq(xout, width));
-    cr_expect(eq(yout, 0));
+    g_assert_cmpfloat(xout, ==, width);
+    g_assert_cmpfloat(yout, ==, 0);
 
     // center
     xin = 0;
     yin = 0;
     psy_coordinate_center_to_c(width, height, xin, yin, &xout, &yout);
-    cr_expect(eq(xout, width / 2));
-    cr_expect(eq(yout, height / 2));
+    g_assert_cmpfloat(xout, ==, width / 2);
+    g_assert_cmpfloat(yout, ==, height / 2);
 
     // left bottom
     xin = -width / 2;
     yin = -height / 2;
     psy_coordinate_center_to_c(width, height, xin, yin, &xout, &yout);
-    cr_expect(eq(xout, 0));
-    cr_expect(eq(yout, height));
+    g_assert_cmpfloat(xout, ==, 0);
+    g_assert_cmpfloat(yout, ==, height);
 
     // right bottom
     xin = width / 2;
     yin = -height / 2;
     psy_coordinate_center_to_c(width, height, xin, yin, &xout, &yout);
-    cr_expect(eq(xout, width));
-    cr_expect(eq(yout, height));
+    g_assert_cmpfloat(xout, ==, width);
+    g_assert_cmpfloat(yout, ==, height);
+}
+
+int
+main(int argc, char **argv)
+{
+    g_test_init(&argc, &argv, NULL);
+
+    g_test_add_func("/utility/c_to_center", test_utility_c_to_center);
+    g_test_add_func("/utility/center_to_c", test_utility_center_to_c);
+
+    return g_test_run();
 }

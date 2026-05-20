@@ -251,11 +251,11 @@ test('test-timer.c', test_timer, is_parallel: false, protocol: 'tap')
 test_utilities = executable(
     'test-utilities',
     files('test-utility.c',),
-    dependencies: [psy_dep, criterion_dep],
+    dependencies: [psy_dep],
     c_args : UNIT_PP_ARGS,
     cpp_args : UNIT_PP_ARGS,
 )
-test('test-utilities', test_utilities,)
+test('test-utilities', test_utilities, protocol: 'tap',)
 
 # test_visual_stimulus = executable(
 #     'test-visual-stimulus',
