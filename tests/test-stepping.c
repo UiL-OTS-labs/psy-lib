@@ -1,4 +1,5 @@
 #include "psy-enums.h"
+#include "psy-stepping-stones.h"
 #include <psylib.h>
 
 #if GLIB_CHECK_VERSION(2, 74, 0)
@@ -646,6 +647,30 @@ test_steps_side_stepping(void)
     g_main_loop_unref(loop);
 }
 
+static void
+test_steps_cannot_embed_themselves(void)
+{
+    GError *error = NULL;
+
+    PsyLoop *loop = psy_loop_new();
+    psy_loop_set_step(loop, PSY_STEP(loop), &error);
+    g_assert_error(error, PSY_STEP_ERROR, PSY_STEP_ERROR_INVALID_CHILD);
+    g_clear_error(&error);
+
+    PsySteppingStones *stones = psy_stepping_stones_new();
+    psy_stepping_stones_add_step(stones, PSY_STEP(stones), &error);
+    g_assert_error(error, PSY_STEP_ERROR, PSY_STEP_ERROR_INVALID_CHILD);
+    g_clear_error(&error);
+
+    psy_stepping_stones_add_step_by_name(
+        stones, "myself", PSY_STEP(stones), &error);
+    g_assert_error(error, PSY_STEP_ERROR, PSY_STEP_ERROR_INVALID_CHILD);
+    g_clear_error(&error);
+
+    g_object_unref(loop);
+    g_object_unref(stones);
+}
+
 int
 main(int argc, char **argv)
 {
@@ -661,6 +686,8 @@ main(int argc, char **argv)
     g_test_add_func("/step/steps_add_children", test_steps_add_children);
     g_test_add_func("/step/side_step_construct", test_side_step_construct);
     g_test_add_func("/step/side_stepping", test_steps_side_stepping);
+    g_test_add_func("/step/dont_embed_themselves",
+                    test_steps_cannot_embed_themselves);
 
     return g_test_run();
 }

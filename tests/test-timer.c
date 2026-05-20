@@ -1,5 +1,3 @@
-#include <criterion/criterion.h>
-#include <criterion/new/assert.h>
 #include <psylib.h>
 #include <signal.h>
 
@@ -27,8 +25,6 @@ timer_teardown(void)
     set_log_handler_file(NULL);
     remove_log_handler();
 }
-
-TestSuite(timer, .init = timer_setup, .fini = timer_teardown);
 
 // Have some utilities present
 
@@ -69,20 +65,22 @@ timer_test_utilities_free(TimerTestUtilities *utils)
     g_free(utils);
 }
 
-Test(timer, timer_create)
+static void
+test_timer_timer_create(void)
 {
     PsyTimer     *t1;
     PsyTimePoint *tf = NULL;
 
     t1 = psy_timer_new();
-    cr_assert(t1 != NULL, "Timers can be created");
+    g_assert_nonnull(t1); // Timers can be created
 
-    cr_assert(zero(tf = psy_timer_get_fire_time(t1)),
-              "The don't have an fire time when not yet set");
+    // "The don't have an fire time when not yet set");
+    g_assert_null(tf = psy_timer_get_fire_time(t1));
     psy_timer_free(t1);
 }
 
-Test(timer, set_fire_time)
+static void
+test_timer_set_fire_time(void)
 {
     PsyTimer     *t1;
     PsyClock     *clk = psy_clock_new();
@@ -94,7 +92,7 @@ Test(timer, set_fire_time)
     g_object_set(t1, "fire-time", now, NULL);
 
     ft = psy_timer_get_fire_time(t1);
-    cr_assert(ne(ft, NULL), "The timer should have a fire-time when it is set");
+    g_assert_nonnull(ft); // The timer should have a fire-time when it is set
 
     psy_time_point_free(ft);
     psy_time_point_free(now);
@@ -138,10 +136,11 @@ quit_loop(gpointer data)
     return G_SOURCE_REMOVE;
 }
 
-Test(timer, fire)
+static void
+test_timer_fire(void)
 {
     TimerTestUtilities *utils = timer_test_utilities_new();
-    cr_assert(ne(utils, NULL));
+    g_assert_nonnull(utils);
 
     PsyTimer     *t1  = NULL;
     PsyClock     *clk = psy_clock_new();
@@ -149,7 +148,7 @@ Test(timer, fire)
     PsyTimePoint *ft  = NULL;
 
     t1 = psy_timer_new();
-    cr_assert(ne(t1, NULL));
+    g_assert_nonnull(t1);
 
     TimerFireTest test_data = {utils, now, t1, FALSE, FALSE, FALSE};
 
@@ -164,13 +163,13 @@ Test(timer, fire)
     g_timeout_add(10, G_SOURCE_FUNC(quit_loop), utils->loop);
 
     ft = psy_timer_get_fire_time(t1);
-    cr_assert(ne(ft, NULL));
+    g_assert_nonnull(ft);
 
     g_main_loop_run(utils->loop);
 
-    cr_expect(eq(test_data.fired, TRUE), "The timer should have fired");
-    cr_expect(test_data.time_is_equal_to_set);
-    cr_expect(test_data.timer_is_the_same);
+    g_assert_true(test_data.fired); // The timer should have fired
+    g_assert_true(test_data.time_is_equal_to_set);
+    g_assert_true(test_data.timer_is_the_same);
 
     psy_time_point_free(ft);
     psy_time_point_free(now);
@@ -237,7 +236,8 @@ on_timer_fire_accurately(PsyTimer *t, PsyTimePoint *tp, gpointer data)
     }
 }
 
-Test(timer, fire_accurately, .timeout = 2.0)
+static void
+test_timer_fire_accurately(void)
 {
     gint num_correct, n_failed = 0;
 
@@ -279,17 +279,16 @@ Test(timer, fire_accurately, .timeout = 2.0)
                                             test_data->scheduled);
 
         // We expect that a timer is not fired ahead of time.
-        cr_expect(ge(u64, psy_duration_get_us(time_diff), 0),
-                  "Timers should not fire to early");
+        g_assert_cmpint(psy_duration_get_us(time_diff), >=, 0);
 
 #if !defined(_WIN32) // Seems unlikely in CI does seem to work in vm/pc
-        cr_expect(lt(i64, psy_duration_get_us(time_diff), upper_time_bound));
+        g_assert_cmpint(psy_duration_get_us(time_diff), <, upper_time_bound);
 #endif
         g_info("The timer was fired at %" PRId64 " us",
                psy_duration_get_us(time_diff));
         if (psy_duration_get_us(time_diff) >= upper_time_bound) {
-            cr_log_warn("Timer was late %lf\n",
-                        psy_duration_get_seconds(time_diff));
+            g_message("Timer was late %lf\n",
+                      psy_duration_get_seconds(time_diff));
             n_failed++;
         }
 
@@ -298,8 +297,9 @@ Test(timer, fire_accurately, .timeout = 2.0)
 
     num_correct        = NUM_TIMERS - n_failed;
     gdouble percentage = (double) num_correct / NUM_TIMERS * 100;
-    cr_expect(gt(dbl, percentage, 90.0),
-              "90%% of timers are expected to finish on time");
+
+    // 90%% of timers are expected to finish on time
+    g_assert_cmpfloat(percentage, >, 90.0);
 
     g_ptr_array_unref(timer_data);
 
@@ -338,7 +338,8 @@ fire_async_cb(PsyTimePoint *tp, gpointer data)
     }
 }
 
-Test(timer, fire_async)
+static void
+test_timer_fire_async(void)
 {
     gint                num_correct, n_failed = 0;
     TimerTestUtilities *utils = timer_test_utilities_new();
@@ -379,18 +380,18 @@ Test(timer, fire_async)
                                             test_data->scheduled);
 
         // We expect that a timer is not fired ahead of time.
-        cr_expect(ge(i64, psy_duration_get_us(time_diff), 0),
-                  "Timers should not be called to early");
+        g_assert_cmpint(psy_duration_get_us(time_diff), >=, 0);
 
 #if !defined(_WIN32) // Seems unlikely in CI does seem to work in vm/pc
-        cr_expect(lt(i64, psy_duration_get_us(time_diff), 1000),
-                  "Timers should not be fired to late");
+
+        // Timers should not be fired to late
+        g_assert_cmpint(psy_duration_get_us(time_diff), <, 1000);
 #endif
         g_info("The timer was fired at %" PRId64 " us",
                psy_duration_get_us(time_diff));
         if (psy_duration_get_us(time_diff) >= upper_time_bound) {
-            cr_log_warn("Timer was late %lf\n",
-                        psy_duration_get_seconds(time_diff));
+            g_message("Timer was late %lf\n",
+                      psy_duration_get_seconds(time_diff));
             n_failed++;
         }
 
@@ -399,8 +400,9 @@ Test(timer, fire_async)
 
     num_correct        = NUM_TIMERS - n_failed;
     gdouble percentage = (double) num_correct / NUM_TIMERS * 100;
-    cr_expect(gt(percentage, 90.0),
-              "expect 90%% of the timers to fire accurately");
+
+    // "expect 90%% of the timers to fire accurately
+    g_assert_cmpfloat(percentage, >, 90.0);
 
     g_ptr_array_unref(timer_data);
 
@@ -423,12 +425,13 @@ on_timer_fire_simutaneously(PsyTimer *t, PsyTimePoint *tp, gpointer data)
     fire_data->utils->num_fired++;
 
     if (fire_data->utils->num_fired == NUM_SIMULTANEOUS) {
-        cr_log_info("quiting %s", __func__);
+        g_info("quiting %s", __func__);
         g_main_loop_quit(fire_data->utils->loop);
     }
 }
 
-Test(timer, simultaneous)
+static void
+test_timer_simultaneous(void)
 {
     gint                num_correct, n_failed = 0;
     TimerTestUtilities *utils      = timer_test_utilities_new();
@@ -469,14 +472,13 @@ Test(timer, simultaneous)
                                             test_data->scheduled);
 
         // We expect that a timer is not fired ahead of time.
-        cr_expect(ge(psy_duration_get_us(time_diff), 0),
-                  "Expect that timers are not ahead of time");
+        g_assert_cmpint(psy_duration_get_us(time_diff), >=, 0);
 
         g_info("The timer was fired at %" PRId64 " us",
                psy_duration_get_us(time_diff));
         if (psy_duration_get_us(time_diff) >= us_upper_bound) {
-            cr_log_warn("Timer was late %lf\n",
-                        psy_duration_get_seconds(time_diff));
+            g_message("Timer was late %lf\n",
+                      psy_duration_get_seconds(time_diff));
             n_failed++;
         }
 
@@ -485,8 +487,8 @@ Test(timer, simultaneous)
 
     num_correct        = NUM_SIMULTANEOUS - n_failed;
     gdouble percentage = (double) num_correct / NUM_SIMULTANEOUS * 100;
-    cr_expect(ge(dbl, percentage, 90.0),
-              "Expect that at least 90 of timers is fired in time");
+    // Expect that at least 90 of timers is fired in time
+    g_assert_cmpfloat(percentage, >, 90.0);
 
     psy_duration_free(dur);
     g_ptr_array_unref(timer_data);
@@ -495,4 +497,25 @@ Test(timer, simultaneous)
     psy_clock_free(clk);
 
     timer_test_utilities_free(utils);
+}
+
+int
+main(int argc, char **argv)
+{
+    g_test_init(&argc, &argv, NULL);
+
+    timer_setup();
+
+    g_test_add_func("/timer/create", test_timer_timer_create);
+    g_test_add_func("/timer/set_fire_time", test_timer_set_fire_time);
+    g_test_add_func("/timer/fire", test_timer_fire);
+    g_test_add_func("/timer/fire_accurately", test_timer_fire_accurately);
+    g_test_add_func("/timer/fire_async", test_timer_fire_async);
+    g_test_add_func("/timer/fire_simultaneously", test_timer_simultaneous);
+
+    int save = g_test_run();
+
+    timer_teardown();
+
+    return save;
 }

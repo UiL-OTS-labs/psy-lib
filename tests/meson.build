@@ -221,42 +221,42 @@ test_stepping = executable(
 )
 test('test-stepping', test_stepping, protocol: 'tap')
 
-# test_text = executable(
-#     'test-text',
-#     files('test-text.c', 'unit-test-utilities.c',),
-#     dependencies: [psy_dep, criterion_dep],
-#     c_args : UNIT_PP_ARGS,
-#     cpp_args : UNIT_PP_ARGS,
-# )
-# test('test-text', test_text,)
-# 
-# test_time_utilities = executable(
-#     'test-time-utilities',
-#     files('test-time-utilities.c',),
-#     dependencies: [psy_dep, criterion_dep],
-#     c_args : UNIT_PP_ARGS,
-#     cpp_args : UNIT_PP_ARGS,
-# )
-# test('test-time-utilities', test_time_utilities,)
-# 
-# test_timer = executable(
-#     'test-timer',
-#     files('test-timer.c', 'unit-test-utilities.c', ),
-#     dependencies: [psy_dep, criterion_dep],
-#     c_args : UNIT_PP_ARGS,
-#     cpp_args : UNIT_PP_ARGS,
-# )
-# test('test-timer.c', test_timer, is_parallel: false, args: ['-j1'])
-# 
-# test_utilities = executable(
-#     'test-utilities',
-#     files('test-utility.c',),
-#     dependencies: [psy_dep, criterion_dep],
-#     c_args : UNIT_PP_ARGS,
-#     cpp_args : UNIT_PP_ARGS,
-# )
-# test('test-utilities', test_utilities,)
-# 
+test_text = executable(
+    'test-text',
+    files('test-text.c', 'unit-test-utilities.c',),
+    dependencies: [psy_dep],
+    c_args : UNIT_PP_ARGS,
+    cpp_args : UNIT_PP_ARGS,
+)
+test('test-text', test_text, protocol: 'tap')
+
+test_time_utilities = executable(
+    'test-time-utilities',
+    files('test-time-utilities.c',),
+    dependencies: [psy_dep],
+    c_args : UNIT_PP_ARGS,
+    cpp_args : UNIT_PP_ARGS,
+)
+test('test-time-utilities', test_time_utilities, protocol: 'tap',)
+
+test_timer = executable(
+    'test-timer',
+    files('test-timer.c', 'unit-test-utilities.c', ),
+    dependencies: [psy_dep],
+    c_args : UNIT_PP_ARGS,
+    cpp_args : UNIT_PP_ARGS,
+)
+test('test-timer.c', test_timer, is_parallel: false, protocol: 'tap')
+
+test_utilities = executable(
+    'test-utilities',
+    files('test-utility.c',),
+    dependencies: [psy_dep, criterion_dep],
+    c_args : UNIT_PP_ARGS,
+    cpp_args : UNIT_PP_ARGS,
+)
+test('test-utilities', test_utilities,)
+
 # test_visual_stimulus = executable(
 #     'test-visual-stimulus',
 #     files('test-visual-stimulus.c', 'unit-test-utilities.c'),

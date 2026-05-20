@@ -19,15 +19,14 @@ static PsyTimePoint *g_tp_start     = NULL;
 static void
 test_text_setup(void)
 {
-    init_random();
     g_debug("Entering %s", __func__);
     g_canvas     = psy_image_canvas_new(WIDTH, HEIGHT);
-    g_stim_color = psy_color_new_rgbi(random_int_range(0, 255),
-                                      random_int_range(0, 255),
-                                      random_int_range(0, 255));
-    g_bg_color   = psy_color_new_rgbi(random_int_range(0, 255),
-                                    random_int_range(0, 255),
-                                    random_int_range(0, 255));
+    g_stim_color = psy_color_new_rgbi(g_test_rand_int_range(0, 255),
+                                      g_test_rand_int_range(0, 255),
+                                      g_test_rand_int_range(0, 255));
+    g_bg_color   = psy_color_new_rgbi(g_test_rand_int_range(0, 255),
+                                    g_test_rand_int_range(0, 255),
+                                    g_test_rand_int_range(0, 255));
 
     PsyTimePoint *temp = psy_image_canvas_get_time(g_canvas);
     g_tp_start         = psy_time_point_add(
@@ -35,15 +34,15 @@ test_text_setup(void)
     psy_time_point_free(temp);
 
     if (!g_canvas || !g_stim_color || !g_bg_color || !g_tp_start) {
-        cr_log_warn("Unable to create a critical object for test-text");
+        g_warning("Unable to create a critical object for test-text");
         return;
     }
 
     // make random but significantly different colors
-    while (psy_color_equal_eps(g_stim_color, g_bg_color, 0.25)) {
-        psy_color_set_redi(g_stim_color, random_int_range(0, 255));
-        psy_color_set_greeni(g_stim_color, random_int_range(0, 255));
-        psy_color_set_bluei(g_stim_color, random_int_range(0, 255));
+    while (psy_color_equal_eps(g_stim_color, g_bg_color, 0.25f)) {
+        psy_color_set_redi(g_stim_color, g_test_rand_int_range(0, 255));
+        psy_color_set_greeni(g_stim_color, g_test_rand_int_range(0, 255));
+        psy_color_set_bluei(g_stim_color, g_test_rand_int_range(0, 255));
     }
 }
 
@@ -55,17 +54,14 @@ test_text_teardown(void)
     g_clear_object(&g_stim_color);
     g_clear_object(&g_bg_color);
     g_clear_pointer(&g_tp_start, psy_time_point_free);
-
-    deinitialize_random();
 }
 
-TestSuite(text, .init = test_text_setup, .fini = test_text_teardown);
-
-Test(text, default_values)
+static void
+test_text_default_values(void)
 {
     PsyText *text = psy_text_new(PSY_CANVAS(g_canvas));
 
-    cr_assert(ne(text, NULL));
+    g_assert_nonnull(text);
 
     PsyColor *font_color         = NULL;
     PsyColor *background_color   = NULL;
@@ -82,10 +78,10 @@ Test(text, default_values)
              NULL);
     // clang-format on
 
-    cr_expect(eq(is_dirty, TRUE)); // if it isn't drawn, it's dirty
-    cr_expect(eq(use_markup, FALSE));
-    cr_expect(eq(psy_color_equal(default_bg_color, background_color), TRUE));
-    cr_expect(eq(psy_color_equal(default_font_color, font_color), TRUE));
+    g_assert_true(is_dirty); // if it isn't drawn, it's dirty
+    g_assert_false(use_markup);
+    g_assert_true(psy_color_equal(default_bg_color, background_color));
+    g_assert_true(psy_color_equal(default_font_color, font_color));
 
     g_object_unref(text);
     g_object_unref(font_color);
@@ -94,7 +90,8 @@ Test(text, default_values)
     g_object_unref(default_bg_color);
 }
 
-Test(text, markup_text_properties)
+static void
+test_text_markup_text_properties(void)
 {
     PsyText *text
         = psy_text_new_full(PSY_CANVAS(g_canvas), 0, 0, 640, 480, "", TRUE);
@@ -105,16 +102,32 @@ Test(text, markup_text_properties)
     g_object_set(text, "markup", markup, NULL);
     g_object_get(text, "use-markup", &use_markup, NULL);
 
-    cr_assert(
-        eq(use_markup, TRUE),
-        "When setting the markup property it is expected that markup is used");
+    // When setting the markup property it is expected that markup is used
+    g_assert_true(use_markup);
 
     g_object_set(text, "text", some_text, NULL);
     g_object_get(text, "use-markup", &use_markup, NULL);
 
-    cr_expect(not(use_markup),
-              "when setting the text property, it is expected that markup "
-              "isn't used");
+    // when setting the text property, it is expected that markup  isn't used
+    g_assert_false(use_markup);
 
     g_object_unref(text);
+}
+
+int
+main(int argc, char **argv)
+{
+    g_test_init(&argc, &argv, NULL);
+
+    test_text_setup();
+
+    g_test_add_func("/text/default_values", test_text_default_values);
+    g_test_add_func("/text/markup_properties",
+                    test_text_markup_text_properties);
+
+    int save = g_test_run();
+
+    test_text_teardown();
+
+    return save;
 }
