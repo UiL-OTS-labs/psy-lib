@@ -345,11 +345,22 @@ typedef enum {
 /**
  * PsyStepError:
  * @PSY_STEP_ERROR_NO_SUCH_LOOP: An error returned when the traversing the step
- *                               and its parents to find a loop.
+ *                               and its parents to find a loop and no loop was
+ *                               found.
+ * @PSY_STEP_ERROR_CHILD_HAS_PARENT: An error that is returned when a child is
+ *                               added to a step but it already has a parent.
+ * @PSY_STEP_ERROR_INVALID_CHILD: This error might occur when adding a step to
+ *                               itself.
  * @PSY_STEP_ERROR_FAILED: A unspecific error occurred.
+ *
+ * Step error can occur when you try an operation that would create a structure
+ * that is invalid. e.g. adding a loop to it self. Psylib also doesn't allow
+ * a structure that one child step has multiple parents.
  */
 typedef enum {
     PSY_STEP_ERROR_NO_SUCH_LOOP,
+    PSY_STEP_ERROR_CHILD_HAS_PARENT,
+    PSY_STEP_ERROR_INVALID_CHILD,
     PSY_STEP_ERROR_FAILED,
 } PsyStepError;
 

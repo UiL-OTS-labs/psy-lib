@@ -32,7 +32,9 @@ G_MODULE_EXPORT void
 psy_stepping_stones_free(PsySteppingStones *self);
 
 G_MODULE_EXPORT gboolean
-psy_stepping_stones_add_step(PsySteppingStones *self, PsyStep *step);
+psy_stepping_stones_add_step(PsySteppingStones *self,
+                             PsyStep           *step,
+                             GError           **error);
 
 G_MODULE_EXPORT gboolean
 psy_stepping_stones_add_step_by_name(PsySteppingStones *self,

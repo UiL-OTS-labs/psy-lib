@@ -212,15 +212,15 @@ test_ref_count = executable('test-refcount',
 )
 test('test-ref-count', test_ref_count, protocol: 'tap')
 
-# test_stepping = executable(
-#     'test-stepping',
-#     files('test-stepping.c',),
-#     dependencies: [psy_dep, criterion_dep],
-#     c_args : UNIT_PP_ARGS,
-#     cpp_args : UNIT_PP_ARGS,
-# )
-# test('test-stepping', test_stepping,)
-# 
+test_stepping = executable(
+    'test-stepping',
+    files('test-stepping.c',),
+    dependencies: [psy_dep],
+    c_args : UNIT_PP_ARGS,
+    cpp_args : UNIT_PP_ARGS,
+)
+test('test-stepping', test_stepping, protocol: 'tap')
+
 # test_text = executable(
 #     'test-text',
 #     files('test-text.c', 'unit-test-utilities.c',),

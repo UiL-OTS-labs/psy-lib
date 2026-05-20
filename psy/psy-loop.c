@@ -1,6 +1,8 @@
 
 #include "psy-loop.h"
 #include "enum-types.h"
+#include "psy-enums.h"
+#include "psy-step.h"
 
 // clang-format off
 /**
@@ -126,8 +128,15 @@ psy_loop_set_property(GObject      *object,
         psy_loop_set_condition(self, g_value_get_enum(value));
         break;
     case PROP_CHILD:
-        psy_loop_set_step(self, g_value_get_object(value));
+    {
+        GError *error = NULL;
+        psy_loop_set_step(self, g_value_get_object(value), &error);
+        if (error) {
+            g_warning("Unable to set PROP_CHILD: %s", error->message);
+            g_clear_error(&error);
+        }
         break;
+    }
     default:
         /* We don't have any other property... */
         G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
@@ -264,7 +273,8 @@ psy_loop_class_init(PsyLoopClass *klass)
     /**
      * PsyLoop:stop:
      *
-     * The amount that index compared with prior to each iteration of the loop.
+     * The amount that index compared with prior to each iteration of the
+     * loop.
      */
     obj_properties[PROP_STOP] = g_param_spec_int64(
         "stop",
@@ -278,8 +288,8 @@ psy_loop_class_init(PsyLoopClass *klass)
     /**
      * PsyLoop:increment:
      *
-     * The amount that index is incremented with at the end of each iteration
-     * of the loop.
+     * The amount that index is incremented with at the end of each
+     * iteration of the loop.
      */
     obj_properties[PROP_INCREMENT]
         = g_param_spec_int64("increment",
@@ -339,11 +349,11 @@ psy_loop_class_init(PsyLoopClass *klass)
      * PsyLoop::iteration
      * @loop: The loop that received the signal
      * @index:The current index for this iteration.
-     * @timestamp:The timestamp of the leave event when previous step/iteration/
-     *            event stopped.
+     * @timestamp:The timestamp of the leave event when previous
+     * step/iteration/ event stopped.
      *
-     * This signal is emitted on each iteration of the loop. The class handler
-     * will increment the index in the 3rd stage of signal emission.
+     * This signal is emitted on each iteration of the loop. The class
+     * handler will increment the index in the 3rd stage of signal emission.
      */
     loop_signals[ITERATION]
         = g_signal_new("iteration",
@@ -423,8 +433,9 @@ psy_loop_free(PsyLoop *loop)
  * @timestamp: A timestamp of an event in the past that causes an iteration
  *             of this loop.
  *
- * Calling this function will iterate the loop, if the final iteration has been
- * reached, we will step out of the loop and continue the steps of the parent.
+ * Calling this function will iterate the loop, if the final iteration has
+ * been reached, we will step out of the loop and continue the steps of the
+ * parent.
  */
 void
 psy_loop_iterate(PsyLoop *self, PsyTimePoint *timestamp)
@@ -436,9 +447,10 @@ psy_loop_iterate(PsyLoop *self, PsyTimePoint *timestamp)
     iter->timestamp = psy_time_point_copy(timestamp);
 
     /*
-     * g_main_context_invoke and friends might recurse into stackoverflow, when
-     * calling the main context, hence we create an idle source manually. If
-     * we use another GThread's GMainContext this wouldn't be the case.
+     * g_main_context_invoke and friends might recurse into stackoverflow,
+     * when calling the main context, hence we create an idle source
+     * manually. If we use another GThread's GMainContext this wouldn't be
+     * the case.
      */
     source = g_idle_source_new();
     g_source_set_priority(source, G_PRIORITY_DEFAULT);
@@ -510,8 +522,8 @@ psy_loop_get_stop(PsyLoop *self)
  * @self: a `PsyLoop` instance.
  * @increment: The new increment value
  *
- * Sets the PsyLoop:increment property; the amount that is added to the index
- * after each iteration of the loop.
+ * Sets the PsyLoop:increment property; the amount that is added to the
+ * index after each iteration of the loop.
  */
 void
 psy_loop_set_increment(PsyLoop *self, gint64 increment)
@@ -526,7 +538,8 @@ psy_loop_set_increment(PsyLoop *self, gint64 increment)
  * psy_loop_get_increment:
  * @self: A `PsyLoop` instance.
  *
- * Returns:The amount that is added to the PsyLoop:index after each iteration.
+ * Returns:The amount that is added to the PsyLoop:index after each
+ * iteration.
  */
 gint64
 psy_loop_get_increment(PsyLoop *self)
@@ -540,8 +553,8 @@ psy_loop_get_increment(PsyLoop *self)
 /**
  * psy_loop_set_condition:
  * @self:The #PsyLoop to give a new loop condition.
- * @condition:The PsyLoopCondition to use for testing if @self should continue
- *       to iterate.
+ * @condition:The PsyLoopCondition to use for testing if @self should
+ * continue to iterate.
  *
  * Set the loop condition.
  */
@@ -558,8 +571,8 @@ psy_loop_set_condition(PsyLoop *self, PsyLoopCondition condition)
  * psy_lo
  * @self: a #PsyLoop Instance
  *
- * Returns: The loop condition used to test whether the loop should continue to
- *          iterate.
+ * Returns: The loop condition used to test whether the loop should continue
+ * to iterate.
  */
 PsyLoopCondition
 psy_loop_get_condition(PsyLoop *self)
@@ -574,33 +587,50 @@ psy_loop_get_condition(PsyLoop *self)
  * psy_loop_set_step:
  * @self: The psyloop in need of a child, that can be run at every iteration
  *        of the loop.
- * @child: (nullable)(transfer full): The Step that is going to be activated on
- *         every loop. Make sure that the step is nicely reset on enter or
- *         leave, because otherwise you might inherit values inside the child
- *         step from a previous iteration. The child should not already have
- *         have a parent.
+ * @child: (nullable)(transfer full): The Step that is going to be activated
+ *      on every loop. Make sure that the step is nicely reset on enter or
+ *      leave, because otherwise you might inherit values inside the child step
+ *      from a previous iteration. The child should not already have have a
+ *      parent.
+ * @error: An error may be returned here. e.g. when trying to add a child
+ *      that already has an error, may yield PSY_STEP_ERROR_CHILD_HAS_PARENT
  *
- * Set the child step of this loop. The child is activated on every activation
- * of the loop. When passing NULL the child is cleared and no step will be
- * activated on each iteration.
+ * Set the child step of this loop. The child is activated on every
+ * activation of the loop. When passing NULL the child is cleared and no
+ * step will be activated on each iteration. Psylib doesn't support adding
+ * steps that already have a parent as a new child. So this will result in
+ * an error when trying to do so.
  *
  * Returns: TRUE when the step is added as child, FALSE otherwise.
  */
 gboolean
-psy_loop_set_step(PsyLoop *self, PsyStep *child)
+psy_loop_set_step(PsyLoop *self, PsyStep *child, GError **error)
 {
     g_return_val_if_fail(PSY_IS_LOOP(self), FALSE);
     g_return_val_if_fail(child == NULL || PSY_IS_STEP(child), FALSE);
 
-    PsyLoopPrivate *priv = psy_loop_get_instance_private(self);
+    if (PSY_STEP(self) == child) {
+        g_set_error(error,
+                    PSY_STEP_ERROR,
+                    PSY_STEP_ERROR_INVALID_CHILD,
+                    "One shall not set itself as a child step");
+        return FALSE;
+    }
+
     if (child != NULL) {
         if (psy_step_get_parent(child) != NULL) {
-            g_critical(
-                "PsyLoop: unable to set a child that already has a parent");
+            g_set_error(
+                error,
+                PSY_STEP_ERROR,
+                PSY_STEP_ERROR_CHILD_HAS_PARENT,
+                "The child at %p added to this loop already has a parent",
+                (void *) child);
             return FALSE;
         }
         psy_step_set_parent(child, PSY_STEP(self));
     }
+
+    PsyLoopPrivate *priv = psy_loop_get_instance_private(self);
 
     g_clear_object(&priv->child);
     priv->child = child;

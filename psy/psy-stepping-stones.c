@@ -1,5 +1,6 @@
 
 #include "psy-stepping-stones.h"
+#include "psy-enums.h"
 
 /**
  * PsySteppingStones:
@@ -246,6 +247,9 @@ psy_stepping_stones_free(PsySteppingStones *self)
  * @self: The `PsySteppingStones` instance to which a `PsyStep` @step
  * @step:(transfer full): The `PsyStep` to add to @self The step should not
  *                        already have a parent.
+ * @error: An error might be returned here e.g. PSY_STEP_ERROR_CHILD_HAS_PARENT
+ *         when a child already has an parent or PSY_STEP_ERROR_INVALID_CHILD
+ *         e.g. when adding it self to self.
  *
  * To an instance of [class@SteppingStones] multiple steps/stones may be added
  * when added like this, this allows to step through them in the order
@@ -257,13 +261,29 @@ psy_stepping_stones_free(PsySteppingStones *self)
  * Returns: True when successfully adding the step as child, false otherwise.
  */
 gboolean
-psy_stepping_stones_add_step(PsySteppingStones *self, PsyStep *step)
+psy_stepping_stones_add_step(PsySteppingStones *self,
+                             PsyStep           *step,
+                             GError           **error)
 {
     g_return_val_if_fail(PSY_IS_STEPPING_STONES(self), FALSE);
     g_return_val_if_fail(PSY_IS_STEP(step), FALSE);
-    g_return_val_if_fail(psy_step_get_parent(step) == NULL
-                             || psy_step_get_parent(step) == PSY_STEP(self),
-                         FALSE);
+
+    if (psy_step_get_parent(step) != NULL) {
+        g_set_error(error,
+                    PSY_STEP_ERROR,
+                    PSY_STEP_ERROR_CHILD_HAS_PARENT,
+                    "Unable to add step %p to stepping stones instance as it "
+                    "already has a parent",
+                    (void *) step);
+        return FALSE;
+    }
+    if (step == PSY_STEP(self)) {
+        g_set_error(error,
+                    PSY_STEP_ERROR,
+                    PSY_STEP_ERROR_INVALID_CHILD,
+                    "One cannot add itself to a Step");
+        return FALSE;
+    }
 
     PsySteppingStonesPrivate *priv
         = psy_stepping_stones_get_instance_private(self);
@@ -288,7 +308,8 @@ psy_stepping_stones_add_step(PsySteppingStones *self, PsyStep *step)
  * Every name, for this step must be unique, other wise an error will
  * be returned.
  *
- * Returns: TRUE when the step was successfully added as child, false otherwise.
+ * Returns: TRUE when the step was successfully added as child, false
+ * otherwise.
  */
 gboolean
 psy_stepping_stones_add_step_by_name(PsySteppingStones *self,
@@ -300,7 +321,16 @@ psy_stepping_stones_add_step_by_name(PsySteppingStones *self,
     g_return_val_if_fail(name != NULL, FALSE);
     g_return_val_if_fail(PSY_IS_STEP(step), FALSE);
     g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
-    g_return_val_if_fail(psy_step_get_parent(step) == NULL, FALSE);
+
+    if (psy_step_get_parent(step) != NULL) {
+        g_set_error(error,
+                    PSY_STEP_ERROR,
+                    PSY_STEP_ERROR_CHILD_HAS_PARENT,
+                    "Unable to add step %p to stepping stones instance as it "
+                    "already has a parent",
+                    (void *) step);
+        return FALSE;
+    }
 
     g_debug("Adding step %p under name %s", (void *) step, name);
 
@@ -317,7 +347,7 @@ psy_stepping_stones_add_step_by_name(PsySteppingStones *self,
     }
 
     g_hash_table_insert(priv->step_table, g_strdup(name), step);
-    psy_stepping_stones_add_step(self, step);
+    psy_stepping_stones_add_step(self, step, error);
     return TRUE;
 }
 

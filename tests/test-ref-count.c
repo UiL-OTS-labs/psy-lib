@@ -36,12 +36,10 @@ test_ref_transfer_none_method(void)
      */
     psy_image_clear(image, color);
 
-    g_assert_cmpuint(
-        image_gobj->ref_count, ==, 1u); // Image should have a ref count of 1
-    g_assert_cmpuint(
-        color_gobj->ref_count,
-        ==,
-        1u); // Since, nothing is transferred, ref count should remain 1
+    // Image should have a ref count of 1
+    g_assert_cmpuint(image_gobj->ref_count, ==, 1u);
+    // Since, nothing is transferred, ref count should remain 1
+    g_assert_cmpuint(color_gobj->ref_count, ==, 1u);
 
     g_object_unref(image);
     g_assert_cmpuint(color_gobj->ref_count, ==, 1u);
