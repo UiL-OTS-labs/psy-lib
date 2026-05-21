@@ -8,9 +8,6 @@
 
 // globals
 
-static GRand  *g_random_dev;
-static guint32 g_seed;
-
 static GMutex log_mutex;
 
 static struct log_data {
@@ -26,44 +23,6 @@ static const gchar *g_unit_test_tmp_dir = "psy-unit-tests/";
 gboolean g_save_images = FALSE;
 
 // Random functions
-
-gboolean
-init_random(void)
-{
-    if (g_random_dev) {
-        g_warning("Random device already initialized");
-        return TRUE;
-    }
-
-    g_seed = psy_random_uint32();
-
-    g_random_dev = g_rand_new_with_seed(g_seed);
-    if (G_LIKELY(g_random_dev))
-        return TRUE;
-    return FALSE;
-}
-
-gboolean
-init_random_with_seed(guint32 seed)
-{
-    if (g_random_dev) {
-        g_warning("Random device already initialized");
-        return TRUE;
-    }
-
-    g_seed = seed;
-
-    g_random_dev = g_rand_new_with_seed(seed);
-    if (G_LIKELY(g_random_dev))
-        return TRUE;
-    return FALSE;
-}
-
-void
-deinitialize_random(void)
-{
-    g_clear_pointer(&g_random_dev, g_rand_free);
-}
 
 static void
 write_to_output_file(GOutputStream *stream, const char *line)
@@ -254,62 +213,6 @@ open_log_file(const gchar *filename)
     g_object_unref(tmp_file);
 
     return ret;
-}
-
-guint
-random_seed(void)
-{
-    return g_seed;
-}
-
-gint
-random_int(void)
-{
-    if (G_UNLIKELY(!g_random_dev))
-        g_critical("g_random = %p, have you initialized the random library?",
-                   (gpointer) g_random_dev);
-
-    return g_rand_int(g_random_dev);
-}
-
-gint
-random_int_range(gint lower, gint upper)
-{
-    if (G_UNLIKELY(!g_random_dev))
-        g_critical("g_random = %p, have you initialized the random library?",
-                   (gpointer) g_random_dev);
-
-    return g_rand_int_range(g_random_dev, lower, upper);
-}
-
-gdouble
-random_double(void)
-{
-    if (G_UNLIKELY(!g_random_dev))
-        g_critical("g_random = %p, have you initialized the random library?",
-                   (gpointer) g_random_dev);
-
-    return g_rand_double(g_random_dev);
-}
-
-gdouble
-random_double_range(gdouble lower, gdouble upper)
-{
-    if (G_UNLIKELY(!g_random_dev))
-        g_critical("g_random = %p, have you initialized the random library?",
-                   (gpointer) g_random_dev);
-
-    return g_rand_double_range(g_random_dev, lower, upper);
-}
-
-gboolean
-random_boolean(void)
-{
-    if (G_UNLIKELY(!g_random_dev))
-        g_critical("g_random = %p, have you initialized the random library?",
-                   (gpointer) g_random_dev);
-
-    return g_rand_boolean(g_random_dev);
 }
 
 // saving images

@@ -37,21 +37,6 @@ set_log_handler_domain(const gchar *domain);
 GFileOutputStream *
 open_log_file(const gchar *name);
 
-guint32
-random_seed(void);
-
-gint
-random_int(void);
-
-gint
-random_int_range(gint lower_inclusive, gint upper_inclusive);
-
-gdouble
-random_double(void);
-
-gdouble
-random_double_range(gdouble lower_inclusive, gdouble upper_exclusive);
-
 void
 set_save_images(gboolean save);
 

@@ -103,7 +103,6 @@ picture_setup(void)
         NULL);
     // clang-format on
     set_log_handler_file("test-picture.txt");
-    init_random();
     GError *error = NULL;
     g_image  = psy_image_new(g_img_width, g_img_height, PSY_IMAGE_FORMAT_RGB);
     g_canvas = psy_image_canvas_new(g_canvas_width, g_canvas_height);
@@ -158,7 +157,6 @@ picture_teardown(void)
     g_object_unref(file);
     g_free(g_path);
 
-    deinitialize_random();
     set_log_handler_file(NULL);
     g_object_unref(g_init);
 }

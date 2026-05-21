@@ -61,8 +61,6 @@ visual_stimulus_teardown(void)
 
     set_log_handler_file(NULL);
 
-    deinitialize_random();
-
     g_clear_object(&g_init);
 }
 

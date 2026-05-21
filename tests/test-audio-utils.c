@@ -32,7 +32,7 @@ audio_utils_psy_int_to_sample_rate(void)
                     PSY_AUDIO_SAMPLE_RATE_192000);
 
     // Could fail very occasionally
-    g_assert_cmpint(psy_int_to_sample_rate(random_int_range(0, G_MAXINT)),
+    g_assert_cmpint(psy_int_to_sample_rate(g_test_rand_int_range(0, G_MAXINT)),
                     ==,
                     PSY_AUDIO_SAMPLE_RATE_UNKNOWN);
 }
@@ -126,8 +126,6 @@ main(int argc, char **argv)
 {
     g_test_init(&argc, &argv, NULL);
 
-    init_random();
-
     g_test_add_func("/audio-utils/psy-int-to-sample-rate",
                     audio_utils_psy_int_to_sample_rate);
     g_test_add_func("/audio-utils/psy-num-audio-samples-to-duration",
@@ -136,8 +134,6 @@ main(int argc, char **argv)
                     audio_utils_psy_duration_to_num_audio_samples);
 
     int ret = g_test_run();
-
-    deinitialize_random();
 
     return ret;
 }
