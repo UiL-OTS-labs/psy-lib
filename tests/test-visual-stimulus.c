@@ -1,8 +1,4 @@
 
-#include <criterion/criterion.h>
-#include <criterion/internal/test.h>
-#include <criterion/logging.h>
-#include <criterion/new/assert.h>
 #include <math.h>
 #include <psylib.h>
 
@@ -26,17 +22,15 @@ visual_stimulus_setup(void)
     g_init = g_object_new(
         PSY_TYPE_INITIALIZER, "gstreamer", FALSE, "portaudio", FALSE, NULL);
 
-    init_random();
-
     set_log_handler_file("test-visual-stimulus.txt");
     g_debug("Entering %s", __func__);
     g_canvas     = psy_image_canvas_new(WIDTH, HEIGHT);
-    g_stim_color = psy_color_new_rgbi(random_int_range(0, 255),
-                                      random_int_range(0, 255),
-                                      random_int_range(0, 255));
-    g_bg_color   = psy_color_new_rgbi(random_int_range(0, 255),
-                                    random_int_range(0, 255),
-                                    random_int_range(0, 255));
+    g_stim_color = psy_color_new_rgbi(g_test_rand_int_range(0, 255),
+                                      g_test_rand_int_range(0, 255),
+                                      g_test_rand_int_range(0, 255));
+    g_bg_color   = psy_color_new_rgbi(g_test_rand_int_range(0, 255),
+                                    g_test_rand_int_range(0, 255),
+                                    g_test_rand_int_range(0, 255));
 
     PsyTimePoint *temp = psy_image_canvas_get_time(g_canvas);
     g_tp_start         = psy_time_point_add(
@@ -44,15 +38,15 @@ visual_stimulus_setup(void)
     psy_time_point_free(temp);
 
     if (!g_canvas || !g_stim_color || !g_bg_color || !g_tp_start) {
-        cr_log_warn("Oops critical object NULL in :%s", __func__);
+        g_warning("Oops critical object NULL in :%s", __func__);
         return;
     }
 
     // make random but significantly different colors
-    while (psy_color_equal_eps(g_stim_color, g_bg_color, 0.25)) {
-        psy_color_set_redi(g_stim_color, random_int_range(0, 255));
-        psy_color_set_greeni(g_stim_color, random_int_range(0, 255));
-        psy_color_set_bluei(g_stim_color, random_int_range(0, 255));
+    while (psy_color_equal_eps(g_stim_color, g_bg_color, 0.25f)) {
+        psy_color_set_redi(g_stim_color, g_test_rand_int_range(0, 255));
+        psy_color_set_greeni(g_stim_color, g_test_rand_int_range(0, 255));
+        psy_color_set_bluei(g_stim_color, g_test_rand_int_range(0, 255));
     }
 }
 
@@ -71,10 +65,6 @@ visual_stimulus_teardown(void)
 
     g_clear_object(&g_init);
 }
-
-TestSuite(vstim,
-          .init = visual_stimulus_setup,
-          .fini = visual_stimulus_teardown);
 
 /**
  * compute_surface_area_by_color:
@@ -176,15 +166,14 @@ circle_area(gdouble radius)
     return radius * radius * M_PI;
 }
 
-Test(vstim,
-     default_values,
-     .description = "Visual stimuli have sane default values")
+static void
+test_vstim_default_values(void)
 {
     PsyCircle *circle        = psy_circle_new(PSY_CANVAS(g_canvas));
     PsyColor  *default_color = psy_color_new();
 
-    cr_assert(ne(circle, NULL), "Circles can be created");
-
+    g_assert_nonnull(circle);
+    g_assert_nonnull(default_color);
     gfloat x, y, z, scale_x, scale_y, rotation;
 
     // clang-format off
@@ -198,32 +187,33 @@ Test(vstim,
                  NULL);
     // clang-format on
 
-    cr_expect(eq(x, 0), "The default x = 0");
-    cr_expect(eq(y, 0), "The default y = 0");
-    cr_expect(eq(z, 0), "The default z = 0");
+    g_assert_cmpfloat(x, ==, 0); // The default x = 0
+    g_assert_cmpfloat(y, ==, 0); // The default y = 0
+    g_assert_cmpfloat(z, ==, 0); // The default z = 0
 
-    cr_expect(eq(scale_x, 1), "The default x scaling = 1");
-    cr_expect(eq(scale_y, 1), "The default y scaling = 1");
+    g_assert_cmpfloat(scale_x, ==, 1); // The default x scaling = 1
+    g_assert_cmpfloat(scale_y, ==, 1); // The default y scaling = 1
 
-    cr_expect(eq(rotation, 0), "The default isn't rotated");
+    g_assert_cmpfloat(rotation, ==, 0); // The default isn't rotated
 
     PsyColor *color
         = psy_visual_stimulus_get_color(PSY_VISUAL_STIMULUS(circle));
-    cr_assert(ne(color, NULL));
-    cr_assert(
-        all(ne(default_color, color),
-            eq(psy_color_equal(default_color, color), TRUE)),
-        "The color value should equal the color it has been created with");
+    g_assert_nonnull(color);
+
+    // It should return a deep copy of the color
+    g_assert_cmphex((uintptr_t) default_color, !=, (uintptr_t) color);
+    g_assert_true(psy_color_equal(default_color, color));
 
     g_object_unref(circle);
     g_object_unref(default_color);
 }
 
-Test(vstim, scale, .description = "Visual stimuli can be scaled")
+static void
+test_vstim_scale(void)
 {
     const gfloat radius       = 50;
     const gfloat num_vertices = 100;
-    const gfloat scale        = (float) random_double_range(1.5, 2.5);
+    const gfloat scale        = (float) g_test_rand_double_range(1.5, 2.5);
     PsyDuration *frame_dur    = psy_canvas_get_frame_dur(PSY_CANVAS(g_canvas));
     PsyDuration *stim_dur     = psy_duration_multiply_scalar(frame_dur, 10);
     PsyImage    *image        = NULL;
@@ -240,18 +230,19 @@ Test(vstim, scale, .description = "Visual stimuli can be scaled")
     g_object_set(circle, "scale", scale, NULL);
     g_object_get(circle, "scale_x", &x, "scale_y", &y, NULL);
 
-    cr_expect(eq(x, scale),
-              "setting the scale property scales in the x_direction");
-    cr_expect(eq(y, scale),
-              "setting the scale property scales in the y direction");
+    // setting the scale property scales in the x_direction
+    g_assert_cmpfloat(x, ==, scale);
+    // setting the scale property scales in the y direction
+    g_assert_cmpfloat(y, ==, scale);
 
     g_object_set(circle, "scale_x", scale / 2, NULL);
     g_object_set(circle, "scale_y", scale * 2, NULL);
 
     g_object_get(circle, "scale_x", &x, "scale_y", &y, NULL);
 
-    cr_expect(all(eq(x, scale / 2), eq(y, scale * 2)),
-              "x and y can be scaled separately");
+    // x and y can be scaled separately
+    g_assert_cmpfloat(x, ==, scale / 2);
+    g_assert_cmpfloat(y, ==, scale * 2);
 
     g_object_set(circle, "scale", 1.0, NULL);
     psy_stimulus_play_for(PSY_STIMULUS(circle), g_tp_start, stim_dur);
@@ -268,8 +259,8 @@ Test(vstim, scale, .description = "Visual stimuli can be scaled")
     gfloat margin
         = (float) circle_area(radius) - (float) circle_area(radius - .5);
 
-    cr_expect(epsilon_eq(area, comp_area, margin),
-              "The obtained area should math the mathematical area");
+    // The obtained area should math the mathematical area
+    g_assert_cmpfloat_with_epsilon(area, comp_area, margin);
 
     // double scaling and check whether scaled stimulus has expected surface
     g_object_set(circle, "scale", 2.0, NULL);
@@ -282,8 +273,8 @@ Test(vstim, scale, .description = "Visual stimuli can be scaled")
     margin    = (float) circle_area(radius * 2)
              - (float) circle_area((radius * 2) - .5);
 
-    cr_expect(epsilon_eq(area, comp_area, margin),
-              "A bigger circle gives a bigger area");
+    // A bigger circle gives a bigger area
+    g_assert_cmpfloat_with_epsilon(area, comp_area, margin);
 
     if (save_images())
         save_image_tmp_png(image, "%s-scale-%d.png", __func__, 2);
@@ -293,13 +284,14 @@ Test(vstim, scale, .description = "Visual stimuli can be scaled")
     psy_duration_free(stim_dur);
 }
 
-Test(vstim, translate, .description = "Stimuli can be translated")
+static void
+test_vstim_translate(void)
 {
-    gfloat radius       = random_double_range(10, 20);
+    gfloat radius       = (float) g_test_rand_double_range(10, 20);
     guint  num_vertices = 100;
 
-    gfloat  obtain_x, tx = (float) random_double_range(-100, 100);
-    gfloat  obtain_y, ty = (float) random_double_range(-100, 100);
+    gfloat  obtain_x, tx = (float) g_test_rand_double_range(-100, 100);
+    gfloat  obtain_y, ty = (float) g_test_rand_double_range(-100, 100);
     gdouble avg_x, avg_y;
 
     psy_canvas_reset(PSY_CANVAS(g_canvas));
@@ -317,9 +309,9 @@ Test(vstim, translate, .description = "Stimuli can be translated")
 
     g_object_get(circle, "x", &obtain_x, "y", &obtain_y, NULL);
 
-    cr_expect(
-        all(epsilon_eq(obtain_x, tx, 1e-9), epsilon_eq(obtain_y, ty, 1e-9)),
-        "the properties gotten from the stimulus should match the input");
+    // the properties gotten from the stimulus should match the input
+    g_assert_cmpfloat_with_epsilon(obtain_x, tx, 1e-9);
+    g_assert_cmpfloat_with_epsilon(obtain_y, ty, 1e-9);
 
     psy_image_canvas_iterate(g_canvas);
     image = psy_canvas_get_image(PSY_CANVAS(g_canvas));
@@ -334,8 +326,8 @@ Test(vstim, translate, .description = "Stimuli can be translated")
                                &avg_x,
                                &avg_y);
     g_info("\ntx =%lf, ty%lf, avg_x=%lf, avg_y=%lf\n", tx, ty, avg_x, avg_y);
-    cr_expect(epsilon_eq(avg_x, tx, 1));
-    cr_expect(epsilon_eq(avg_y, ty, 1));
+    g_assert_cmpfloat_with_epsilon(avg_x, tx, 1);
+    g_assert_cmpfloat_with_epsilon(avg_y, ty, 1);
 
     if (save_images()) {
         save_image_tmp_png(image,
@@ -352,7 +344,8 @@ Test(vstim, translate, .description = "Stimuli can be translated")
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wcomment"
 
-Test(vstim, rotate, .description = "visual stimuli can be rotated")
+static void
+test_vstim_rotate(void)
 {
     psy_canvas_reset(PSY_CANVAS(g_canvas));
     psy_canvas_set_background_color(PSY_CANVAS(g_canvas), g_bg_color);
@@ -365,7 +358,7 @@ Test(vstim, rotate, .description = "visual stimuli can be rotated")
     psy_visual_stimulus_set_color(PSY_VISUAL_STIMULUS(rect), g_stim_color);
     psy_visual_stimulus_set_rotation_deg(PSY_VISUAL_STIMULUS(rect), angle_0);
     g_object_get(rect, "rotation", &radians, NULL);
-    cr_assert(epsilon_eq(radians, expected, 1e-9));
+    g_assert_cmpfloat_with_epsilon(radians, expected, 1e-9);
 
     PsyDuration *dur = psy_duration_new_ms(50); // 3 frames
 
@@ -417,17 +410,17 @@ Test(vstim, rotate, .description = "visual stimuli can be rotated")
     PsyColor *c8 = psy_image_get_pixel(image, y8, x8);
     PsyColor *c9 = psy_image_get_pixel(image, y9, x9);
 
-    cr_expect(not(psy_color_equal_eps(g_stim_color, c1, 1.0 / 255)));
-    cr_expect(psy_color_equal_eps(g_stim_color, c2, 1.0 / 255));
-    cr_expect(not(psy_color_equal_eps(g_stim_color, c3, 1.0 / 255)));
+    g_assert_false(psy_color_equal_eps(g_stim_color, c1, 1.0 / 255));
+    g_assert_true(psy_color_equal_eps(g_stim_color, c2, 1.0 / 255));
+    g_assert_false(psy_color_equal_eps(g_stim_color, c3, 1.0 / 255));
 
-    cr_expect(not(psy_color_equal_eps(g_stim_color, c4, 1.0 / 255)));
-    cr_expect(psy_color_equal_eps(g_stim_color, c5, 1.0 / 255));
-    cr_expect(not(psy_color_equal_eps(g_stim_color, c6, 1.0 / 255)));
+    g_assert_false(psy_color_equal_eps(g_stim_color, c4, 1.0 / 255));
+    g_assert_true(psy_color_equal_eps(g_stim_color, c5, 1.0 / 255));
+    g_assert_false(psy_color_equal_eps(g_stim_color, c6, 1.0 / 255));
 
-    cr_expect(not(psy_color_equal_eps(g_stim_color, c7, 1.0 / 255)));
-    cr_expect(psy_color_equal_eps(g_stim_color, c8, 1.0 / 255));
-    cr_expect(not(psy_color_equal_eps(g_stim_color, c9, 1.0 / 255)));
+    g_assert_false(psy_color_equal_eps(g_stim_color, c7, 1.0 / 255));
+    g_assert_true(psy_color_equal_eps(g_stim_color, c8, 1.0 / 255));
+    g_assert_false(psy_color_equal_eps(g_stim_color, c9, 1.0 / 255));
 
     g_object_unref(c1);
     g_object_unref(c2);
@@ -453,7 +446,7 @@ Test(vstim, rotate, .description = "visual stimuli can be rotated")
     psy_visual_stimulus_set_rotation_deg(PSY_VISUAL_STIMULUS(rect), angle_45);
     g_object_get(rect, "rotation", &radians, NULL);
     expected = 1.0 / 4 * M_PI;
-    cr_expect(epsilon_eq(radians, expected, 1e-9));
+    g_assert_cmpfloat_with_epsilon(radians, expected, 1e-9);
 
     psy_image_canvas_iterate(g_canvas);
     image = psy_canvas_get_image(PSY_CANVAS(g_canvas));
@@ -470,17 +463,17 @@ Test(vstim, rotate, .description = "visual stimuli can be rotated")
     c8 = psy_image_get_pixel(image, y8, x8);
     c9 = psy_image_get_pixel(image, y9, x9);
 
-    cr_expect(psy_color_equal_eps(g_stim_color, c1, 1.0 / 255));
-    cr_expect(not(psy_color_equal_eps(g_stim_color, c2, 1.0 / 255)));
-    cr_expect(not(psy_color_equal_eps(g_stim_color, c3, 1.0 / 255)));
+    g_assert_true(psy_color_equal_eps(g_stim_color, c1, 1.0 / 255));
+    g_assert_false(psy_color_equal_eps(g_stim_color, c2, 1.0 / 255));
+    g_assert_false(psy_color_equal_eps(g_stim_color, c3, 1.0 / 255));
 
-    cr_expect(not(psy_color_equal_eps(g_stim_color, c4, 1.0 / 255)));
-    cr_expect(psy_color_equal_eps(g_stim_color, c5, 1.0 / 255));
-    cr_expect(not(psy_color_equal_eps(g_stim_color, c6, 1.0 / 255)));
+    g_assert_false(psy_color_equal_eps(g_stim_color, c4, 1.0 / 255));
+    g_assert_true(psy_color_equal_eps(g_stim_color, c5, 1.0 / 255));
+    g_assert_false(psy_color_equal_eps(g_stim_color, c6, 1.0 / 255));
 
-    cr_expect(not(psy_color_equal_eps(g_stim_color, c7, 1.0 / 255)));
-    cr_expect(not(psy_color_equal_eps(g_stim_color, c8, 1.0 / 255)));
-    cr_expect(psy_color_equal_eps(g_stim_color, c9, 1.0 / 255));
+    g_assert_false(psy_color_equal_eps(g_stim_color, c7, 1.0 / 255));
+    g_assert_false(psy_color_equal_eps(g_stim_color, c8, 1.0 / 255));
+    g_assert_true(psy_color_equal_eps(g_stim_color, c9, 1.0 / 255));
 
     g_object_unref(c1);
     g_object_unref(c2);
@@ -507,7 +500,7 @@ Test(vstim, rotate, .description = "visual stimuli can be rotated")
 
     g_object_get(rect, "rotation", &radians, NULL);
     expected = -1.0 / 4 * M_PI;
-    cr_expect(epsilon_eq(radians, expected, 1e-9));
+    g_assert_cmpfloat_with_epsilon(radians, expected, 1e-9);
 
     psy_image_canvas_iterate(g_canvas);
     image = psy_canvas_get_image(PSY_CANVAS(g_canvas));
@@ -524,17 +517,17 @@ Test(vstim, rotate, .description = "visual stimuli can be rotated")
     c8 = psy_image_get_pixel(image, y8, x8);
     c9 = psy_image_get_pixel(image, y9, x9);
 
-    cr_expect(not(psy_color_equal_eps(g_stim_color, c1, 1.0f / 255)));
-    cr_expect(not(psy_color_equal_eps(g_stim_color, c2, 1.0f / 255)));
-    cr_expect(psy_color_equal_eps(g_stim_color, c3, 1.0f / 255));
+    g_assert_false(psy_color_equal_eps(g_stim_color, c1, 1.0f / 255));
+    g_assert_false(psy_color_equal_eps(g_stim_color, c2, 1.0f / 255));
+    g_assert_true(psy_color_equal_eps(g_stim_color, c3, 1.0f / 255));
 
-    cr_expect(not(psy_color_equal_eps(g_stim_color, c4, 1.0f / 255)));
-    cr_expect(psy_color_equal_eps(g_stim_color, c5, 1.0f / 255));
-    cr_expect(not(psy_color_equal_eps(g_stim_color, c6, 1.0f / 255)));
+    g_assert_false(psy_color_equal_eps(g_stim_color, c4, 1.0f / 255));
+    g_assert_true(psy_color_equal_eps(g_stim_color, c5, 1.0f / 255));
+    g_assert_false(psy_color_equal_eps(g_stim_color, c6, 1.0f / 255));
 
-    cr_expect(psy_color_equal_eps(g_stim_color, c7, 1.0f / 255));
-    cr_expect(not(psy_color_equal_eps(g_stim_color, c8, 1.0f / 255)));
-    cr_expect(not(psy_color_equal_eps(g_stim_color, c9, 1.0f / 255)));
+    g_assert_true(psy_color_equal_eps(g_stim_color, c7, 1.0f / 255));
+    g_assert_false(psy_color_equal_eps(g_stim_color, c8, 1.0f / 255));
+    g_assert_false(psy_color_equal_eps(g_stim_color, c9, 1.0f / 255));
 
     g_object_unref(c1);
     g_object_unref(c2);
@@ -553,10 +546,8 @@ Test(vstim, rotate, .description = "visual stimuli can be rotated")
 
 #pragma GCC diagnostic push
 
-Test(vstim,
-     draworder_same_z,
-     .description = "The draw order dictates the see able with the same z "
-                    "depends on draw order")
+static void
+test_vstim_draworder_same_z(void)
 {
     psy_canvas_reset(PSY_CANVAS(g_canvas));
     psy_canvas_set_background_color(PSY_CANVAS(g_canvas), g_bg_color);
@@ -595,8 +586,8 @@ Test(vstim,
     g_object_get(rect1, "z", &z1, NULL);
     g_object_get(rect2, "z", &z2, NULL);
 
-    cr_expect(epsilon_eq(z1, 0.0f, 0));
-    cr_expect(epsilon_eq(z2, 0.0f, 0));
+    g_assert_cmpfloat(z1, ==, 0);
+    g_assert_cmpfloat(z2, ==, 0);
 
     // The order matters of the next two is significant as both should have
     // equal z values. According to the philosophy of psylib, visual stimuli
@@ -614,7 +605,7 @@ Test(vstim,
 
     PsyColor *test_color = psy_image_get_pixel(image, HEIGHT / 2, WIDTH / 2);
 
-    cr_expect(psy_color_equal_eps(test_color, rect2_color, 1.0 / 255));
+    g_assert_true(psy_color_equal_eps(test_color, rect2_color, 1.0 / 255));
 
     g_clear_object(&image);
 
@@ -635,7 +626,7 @@ Test(vstim,
 
     test_color = psy_image_get_pixel(image, HEIGHT / 2, WIDTH / 2);
 
-    cr_expect(psy_color_equal_eps(test_color, rect1_color, 1.0 / 255));
+    g_assert_true(psy_color_equal_eps(test_color, rect1_color, 1.0 / 255));
 
     g_object_unref(image);
     g_object_unref(test_color);
@@ -646,10 +637,8 @@ Test(vstim,
     psy_duration_free(dur);
 }
 
-Test(vstim,
-     draworder_different_z,
-     .description
-     = "With different z, the z value determines the visible stimuli?")
+static void
+test_vstim_draworder_different_z(void)
 {
     psy_canvas_reset(PSY_CANVAS(g_canvas));
     psy_canvas_set_background_color(PSY_CANVAS(g_canvas), g_bg_color);
@@ -691,8 +680,8 @@ Test(vstim,
     g_object_get(rect1, "z", &z1out, NULL);
     g_object_get(rect2, "z", &z2out, NULL);
 
-    cr_assert(epsilon_eq(z1, z1out, 0));
-    cr_assert(epsilon_eq(z2, z2out, 0));
+    g_assert_cmpfloat(z1, ==, z1out);
+    g_assert_cmpfloat(z2, ==, z2out);
 
     // When the z-values are different, the one with the highest value
     // is "closer" to the user, and will be displayed.
@@ -708,7 +697,7 @@ Test(vstim,
 
     PsyColor *test_color = psy_image_get_pixel(image, HEIGHT / 2, WIDTH / 2);
 
-    cr_assert(psy_color_equal_eps(test_color, rect2_color, 1.0 / 255));
+    g_assert_true(psy_color_equal_eps(test_color, rect2_color, 1.0 / 255));
     g_clear_object(&image);
 
     psy_canvas_reset(PSY_CANVAS(g_canvas));
@@ -721,8 +710,8 @@ Test(vstim,
     g_object_get(rect1, "z", &z1out, NULL);
     g_object_get(rect2, "z", &z2out, NULL);
 
-    cr_expect(epsilon_eq(z1, z2out, 0));
-    cr_expect(epsilon_eq(z2, z1out, 0));
+    g_assert_cmpfloat(z1, ==, z2out);
+    g_assert_cmpfloat(z2, ==, z1out);
 
     psy_stimulus_play_for(PSY_STIMULUS(rect1), g_tp_start, dur);
     psy_stimulus_play_for(PSY_STIMULUS(rect2), g_tp_start, dur);
@@ -735,7 +724,7 @@ Test(vstim,
 
     test_color = psy_image_get_pixel(image, HEIGHT / 2, WIDTH / 2);
 
-    cr_assert(psy_color_equal_eps(test_color, rect1_color, 1.0 / 255));
+    g_assert_true(psy_color_equal_eps(test_color, rect1_color, 1.0 / 255));
 
     g_object_unref(image);
     g_object_unref(test_color);
@@ -744,4 +733,26 @@ Test(vstim,
     g_object_unref(rect2_color);
     g_object_unref(rect1_color);
     psy_duration_free(dur);
+}
+
+int
+main(int argc, char **argv)
+{
+    g_test_init(&argc, &argv, NULL);
+
+    visual_stimulus_setup();
+
+    g_test_add_func("/vstim/default_values", test_vstim_default_values);
+    g_test_add_func("/vstim/scale", test_vstim_scale);
+    g_test_add_func("/vstim/translate", test_vstim_translate);
+    g_test_add_func("/vstim/rotate", test_vstim_rotate);
+    g_test_add_func("/vstim/draworder_same_z", test_vstim_draworder_same_z);
+    g_test_add_func("/vstim/draworder_different_z",
+                    test_vstim_draworder_different_z);
+
+    int ret = g_test_run();
+
+    visual_stimulus_teardown();
+
+    return ret;
 }

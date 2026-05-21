@@ -1,9 +1,4 @@
-
-
-#include "psy-init.h"
 #include "unit-test-utilities.h"
-#include <criterion/criterion.h>
-#include <criterion/new/assert.h>
 #include <psylib.h>
 
 PsyAudioDevice *g_device = NULL;
@@ -35,8 +30,7 @@ wave_setup(void)
 
     psy_audio_device_open(g_device, &error);
     if (error) {
-        g_critical("Unable to open audio device: %s", error->message);
-        cr_log_warn("Unable to open a audio device: %s", error->message);
+        g_message("Unable to open audio device: %s", error->message);
         return;
     }
 
@@ -63,8 +57,6 @@ wave_teardown(void)
     set_log_handler_file(NULL);
     psy_initializer_free(g_init);
 }
-
-TestSuite(wave, .init = wave_setup, .fini = wave_teardown);
 
 static gboolean
 quit_loop(gpointer data)
@@ -112,16 +104,17 @@ wave_stopped(PsyStimulus *self, PsyTimePoint *tp, gpointer data)
     g_main_loop_quit(status->loop);
 }
 
-Test(wave, create)
+static void
+test_wave_create(void)
 {
     if (!g_device) {
-        cr_log_warn("No audio device: skipping: %s", __func__);
+        g_test_skip_printf("No audio device: skipping: %s", __func__);
         return;
     }
     PsyWave *tone = psy_wave_new(g_device);
     g_object_set(tone, "num-channels", 2, NULL);
 
-    cr_assert(ne(tone, NULL), "It must be possible to create wave's");
+    g_assert_nonnull(tone);
 
     gdouble     default_volume, default_freq;
     PsyWaveForm wave;
@@ -137,16 +130,16 @@ Test(wave, create)
 
     g_object_unref(tone);
 
-    cr_expect(eq(int, wave, PSY_WAVE_FORM_SINE),
-              "The default wave form is sine");
-    cr_expect(eq(default_freq, 440.0), "The default frequency is 440");
-    cr_expect(eq(default_volume, 0.5), "The default volume is .5");
+    g_assert_cmpint(wave, ==, PSY_WAVE_FORM_SINE);
+    g_assert_cmpfloat(default_freq, ==, 440.0);
+    g_assert_cmpfloat(default_volume, ==, 0.5);
 }
 
-Test(wave, set_running)
+static void
+test_wave_set_running(void)
 {
     if (!g_device) {
-        cr_log_warn("No audio device: skipping: %s", __func__);
+        g_test_skip_printf("No audio device: skipping: %s", __func__);
         return;
     }
     PsyWave *tone = psy_wave_new(g_device);
@@ -156,32 +149,29 @@ Test(wave, set_running)
 
     gboolean running;
 
-    cr_assert(tone != NULL);
+    g_assert_nonnull(tone);
 
     g_object_get(tone, "running", &running, NULL);
-    cr_assert(
-        eq(running, FALSE),
-        "The tone is not running by default"); // should be initially !running
+    g_assert_false(running);
 
     g_object_set(tone, "running", TRUE, NULL);
     g_object_get(tone, "running", &running, NULL);
-    cr_assert(eq(running, TRUE),
-              "The tone should now be running"); // should now be running
+    g_assert_true(running); // should now be running
 
     g_object_set(tone, "running", FALSE, NULL);
     g_object_get(tone, "running", &running, NULL);
 
-    cr_assert(eq(running, FALSE),
-              "Until we turn it off"); // until we turn it of
+    g_assert_false(running); // until we turn it of
 
     g_object_unref(tone);
     psy_duration_free(dur);
 }
 
-Test(wave, play)
+static void
+test_wave_play(void)
 {
     if (!g_device) {
-        cr_log_warn("No audio device: skipping: %s", __func__);
+        g_test_skip_printf("No audio device: skipping: %s", __func__);
         return;
     }
     PsyWave      *tone     = psy_wave_new(g_device);
@@ -197,7 +187,7 @@ Test(wave, play)
     g_object_set(tone, "duration", dur, NULL);
     g_object_set(tone, "running", TRUE, NULL);
 
-    cr_assert(ne(tone, NULL));
+    g_assert_nonnull(tone);
 
     WaveStatus status = {.loop = loop};
 
@@ -207,8 +197,7 @@ Test(wave, play)
     g_signal_connect(tone, "stopped", G_CALLBACK(wave_stopped), &status);
 
     psy_audio_device_start(g_device, &error);
-    cr_expect(eq(error, NULL),
-              "No should be no errors opening the audio device");
+    g_assert_no_error(error);
     if (error) {
         g_error("Unable to start the audio device: %s\n", error->message);
         g_clear_error(&error);
@@ -231,14 +220,15 @@ Test(wave, play)
     g_message("tone refcount = %u", ((GObject *) tone)->ref_count);
     g_object_unref(tone);
 
-    cr_expect(eq(status.started, TRUE), "We expect the tone has started");
-    cr_expect(eq(status.stopped, TRUE), "We expect the tone has stopped");
+    g_assert_true(status.started); // We expect the tone has started
+    g_assert_true(status.stopped); // We expect the tone has stopped
 }
 
-Test(wave, play_noise)
+static void
+test_wave_play_noise(void)
 {
     if (!g_device) {
-        cr_log_warn("No audio device: skipping: %s", __func__);
+        g_test_skip_printf("No audio device: skipping: %s", __func__);
         return;
     }
     PsyWave      *tone     = psy_wave_new(g_device);
@@ -248,7 +238,7 @@ Test(wave, play_noise)
     PsyDuration  *dur      = psy_duration_new(.250);
     PsyTimePoint *tp_start = psy_time_point_add(now, dur);
 
-    cr_assert(ne(tone, NULL));
+    g_assert_nonnull(tone);
 
     PsyWaveForm wave = PSY_WAVE_FORM_WHITE_UNIFORM_NOISE;
 
@@ -272,7 +262,7 @@ Test(wave, play_noise)
     g_signal_connect(tone, "stopped", G_CALLBACK(wave_stopped), &status);
 
     psy_audio_device_start(g_device, &error);
-    cr_expect(zero(error));
+    g_assert_no_error(error);
     if (error) {
         g_error("Unable to start the audio device: %s\n", error->message);
         g_clear_error(&error);
@@ -295,6 +285,25 @@ Test(wave, play_noise)
 
     g_object_unref(tone);
 
-    cr_expect(status.started, "The tone should have started.");
-    cr_expect(status.stopped, "The tone should have stopped.");
+    g_assert_true(status.started); //"The tone should have started.
+    g_assert_true(status.stopped); //"The tone should have stopped.
+}
+
+int
+main(int argc, char **argv)
+{
+    g_test_init(&argc, &argv, NULL);
+
+    wave_setup();
+
+    g_test_add_func("/wave/create", test_wave_create);
+    g_test_add_func("/wave/set_running", test_wave_set_running);
+    g_test_add_func("/wave/play", test_wave_play);
+    g_test_add_func("/wave/play_noise", test_wave_play_noise);
+
+    int ret = g_test_run();
+
+    wave_teardown();
+
+    return ret;
 }

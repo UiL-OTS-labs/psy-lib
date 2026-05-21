@@ -257,25 +257,25 @@ test_utilities = executable(
 )
 test('test-utilities', test_utilities, protocol: 'tap',)
 
-# test_visual_stimulus = executable(
-#     'test-visual-stimulus',
-#     files('test-visual-stimulus.c', 'unit-test-utilities.c'),
-#     dependencies: [psy_dep, criterion_dep],
-#     c_args : UNIT_PP_ARGS,
-#     cpp_args : UNIT_PP_ARGS,
-# )
-# test('test-visual-stimulus', test_visual_stimulus,)
-# 
-# 
-# test_wave = executable(
-#     'test-wave',
-#     files('test-wave.c', 'unit-test-utilities.c'),
-#     dependencies: [psy_dep, criterion_dep],
-#     c_args : UNIT_PP_ARGS,
-#     cpp_args : UNIT_PP_ARGS,
-# )
-# test('test-wave', test_wave, is_parallel: false, args: ['-j1'])
-# 
+test_visual_stimulus = executable(
+    'test-visual-stimulus',
+    files('test-visual-stimulus.c', 'unit-test-utilities.c'),
+    dependencies: [psy_dep],
+    c_args : UNIT_PP_ARGS,
+    cpp_args : UNIT_PP_ARGS,
+)
+
+test('test-visual-stimulus', test_visual_stimulus, protocol: 'tap')
+ 
+test_wave = executable(
+    'test-wave',
+    files('test-wave.c', 'unit-test-utilities.c'),
+    dependencies: [psy_dep],
+    c_args : UNIT_PP_ARGS,
+    cpp_args : UNIT_PP_ARGS,
+)
+test('test-wave', test_wave, is_parallel: false, protocol: 'tap')
+
 # test_vector = executable(
 #     'test-vector',
 #     files('test-vector.c'),
