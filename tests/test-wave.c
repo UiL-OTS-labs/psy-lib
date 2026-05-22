@@ -30,6 +30,7 @@ wave_setup(void)
     psy_audio_device_open(g_device, &error);
     if (error) {
         g_message("Unable to open audio device: %s", error->message);
+        g_clear_object(&g_device);
         return;
     }
 
@@ -44,13 +45,10 @@ wave_setup(void)
 static void
 wave_teardown(void)
 {
-    if (g_device)
+    if (g_device) {
         psy_audio_device_close(g_device);
-
-    g_message("%s: g_device refcount = %u",
-              __func__,
-              ((GObject *) g_device)->ref_count);
-    g_object_unref(g_device);
+        g_object_unref(g_device);
+    }
     g_device = NULL;
 
     psy_initializer_free(g_init);
