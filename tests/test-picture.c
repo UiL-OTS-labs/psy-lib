@@ -102,7 +102,7 @@ picture_setup(void)
         "portaudio", FALSE,
         NULL);
     // clang-format on
-    set_log_handler_file("test-picture.txt");
+
     GError *error = NULL;
     g_image  = psy_image_new(g_img_width, g_img_height, PSY_IMAGE_FORMAT_RGB);
     g_canvas = psy_image_canvas_new(g_canvas_width, g_canvas_height);
@@ -157,7 +157,6 @@ picture_teardown(void)
     g_object_unref(file);
     g_free(g_path);
 
-    set_log_handler_file(NULL);
     g_object_unref(g_init);
 }
 
@@ -405,6 +404,13 @@ int
 main(int argc, char **argv)
 {
     g_test_init(&argc, &argv, NULL);
+
+    UnitTestUtilsInit init_utils = {.log_file      = "test-picture.txt",
+                                    .domains       = NULL,
+                                    .log_level     = G_LOG_LEVEL_INFO,
+                                    .save_pictures = TRUE};
+
+    unit_test_utils_init(&init_utils);
 
     picture_setup();
 

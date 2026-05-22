@@ -11,21 +11,6 @@ const int NUM_SIMULTANEOUS = 25;
 // make this configurable for CI
 #define UPPER_BOUND 10000
 
-static void
-timer_setup(void)
-{
-    install_log_handler();
-    set_log_handler_level(G_LOG_LEVEL_DEBUG);
-    set_log_handler_file("test-timer.txt");
-}
-
-static void
-timer_teardown(void)
-{
-    set_log_handler_file(NULL);
-    remove_log_handler();
-}
-
 // Have some utilities present
 
 typedef struct {
@@ -504,7 +489,12 @@ main(int argc, char **argv)
 {
     g_test_init(&argc, &argv, NULL);
 
-    timer_setup();
+    UnitTestUtilsInit init_utils = {.log_file      = "test-timer.txt",
+                                    .domains       = NULL,
+                                    .log_level     = G_LOG_LEVEL_INFO,
+                                    .save_pictures = TRUE};
+
+    unit_test_utils_init(&init_utils);
 
     g_test_add_func("/timer/create", test_timer_timer_create);
     g_test_add_func("/timer/set_fire_time", test_timer_set_fire_time);
@@ -513,9 +503,5 @@ main(int argc, char **argv)
     g_test_add_func("/timer/fire_async", test_timer_fire_async);
     g_test_add_func("/timer/fire_simultaneously", test_timer_simultaneous);
 
-    int save = g_test_run();
-
-    timer_teardown();
-
-    return save;
+    return g_test_run();
 }

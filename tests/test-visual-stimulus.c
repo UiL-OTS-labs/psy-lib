@@ -22,7 +22,6 @@ visual_stimulus_setup(void)
     g_init = g_object_new(
         PSY_TYPE_INITIALIZER, "gstreamer", FALSE, "portaudio", FALSE, NULL);
 
-    set_log_handler_file("test-visual-stimulus.txt");
     g_debug("Entering %s", __func__);
     g_canvas     = psy_image_canvas_new(WIDTH, HEIGHT);
     g_stim_color = psy_color_new_rgbi(g_test_rand_int_range(0, 255),
@@ -58,8 +57,6 @@ visual_stimulus_teardown(void)
     g_clear_object(&g_stim_color);
     g_clear_object(&g_bg_color);
     g_clear_pointer(&g_tp_start, psy_time_point_free);
-
-    set_log_handler_file(NULL);
 
     g_clear_object(&g_init);
 }
@@ -737,6 +734,13 @@ int
 main(int argc, char **argv)
 {
     g_test_init(&argc, &argv, NULL);
+
+    UnitTestUtilsInit init_utils = {.log_file      = "test-visual-stimulus.txt",
+                                    .domains       = NULL,
+                                    .log_level     = G_LOG_LEVEL_INFO,
+                                    .save_pictures = TRUE};
+
+    unit_test_utils_init(&init_utils);
 
     visual_stimulus_setup();
 

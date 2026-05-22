@@ -200,7 +200,12 @@ test_image_get_bytes(void)
 int
 main(int argc, char **argv)
 {
-    set_log_handler_file("test-image.txt");
+    UnitTestUtilsInit init_utils = {.log_file      = "test-image.txt",
+                                    .domains       = NULL,
+                                    .log_level     = G_LOG_LEVEL_INFO,
+                                    .save_pictures = TRUE};
+
+    unit_test_utils_init(&init_utils);
 
     g_test_init(&argc, &argv, NULL);
 
@@ -211,9 +216,5 @@ main(int argc, char **argv)
     g_test_add_func("/image/set_pixel", test_image_set_pixel);
     g_test_add_func("/image/get_bytes", test_image_get_bytes);
 
-    int save = g_test_run();
-
-    set_log_handler_file(NULL);
-
-    return save;
+    return g_test_run();
 }

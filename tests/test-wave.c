@@ -15,7 +15,6 @@ static void
 wave_setup(void)
 {
     g_init = psy_initializer_new();
-    set_log_handler_file("test-wave.txt");
 
     g_device         = psy_audio_device_new();
     gchar  *dev_name = NULL;
@@ -54,7 +53,6 @@ wave_teardown(void)
     g_object_unref(g_device);
     g_device = NULL;
 
-    set_log_handler_file(NULL);
     psy_initializer_free(g_init);
 }
 
@@ -293,6 +291,13 @@ int
 main(int argc, char **argv)
 {
     g_test_init(&argc, &argv, NULL);
+
+    UnitTestUtilsInit init_utils = {.log_file      = "test-wave.txt",
+                                    .domains       = NULL,
+                                    .log_level     = G_LOG_LEVEL_INFO,
+                                    .save_pictures = TRUE};
+
+    unit_test_utils_init(&init_utils);
 
     wave_setup();
 

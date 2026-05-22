@@ -54,8 +54,6 @@ cross_teardown(CrossFixture *fix, gconstpointer unused)
     g_clear_object(&fix->stim_color);
     g_clear_object(&fix->bg_color);
     g_clear_pointer(&fix->tp_start, psy_time_point_free);
-
-    set_log_handler_file(NULL);
 }
 
 static void
@@ -223,12 +221,15 @@ main(int argc, char **argv)
 {
     g_test_init(&argc, &argv, NULL);
 
-    // perhaps call set_save_images() here
+    UnitTestUtilsInit init_utils = {.log_file      = "test-cross.txt",
+                                    .domains       = NULL,
+                                    .log_level     = G_LOG_LEVEL_INFO,
+                                    .save_pictures = TRUE};
+
+    unit_test_utils_init(&init_utils);
 
     PsyInitializer *init = g_object_new(
         PSY_TYPE_INITIALIZER, "portaudio", FALSE, "gstreamer", FALSE, NULL);
-
-    set_log_handler_file("test-visual-stimuli.txt");
 
     g_test_add("/cross/default_values",
                CrossFixture,
@@ -245,8 +246,6 @@ main(int argc, char **argv)
                cross_teardown);
 
     int save = g_test_run();
-
-    set_log_handler_file(NULL);
 
     g_object_unref(init);
     init = NULL;
