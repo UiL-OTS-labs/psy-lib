@@ -2,43 +2,19 @@
 #pragma once
 
 #include <psylib.h>
+#include <stdbool.h>
 
 G_BEGIN_DECLS
-gboolean
-init_random(void);
 
-gboolean
-init_random_with_seed(guint32 seed);
-
-void
-deinitialize_random(void);
-
-// Override default log hander
-void
-install_log_handler(void);
-
-// remove log hander and associated data
-void
-remove_log_handler(void);
-
-// set the level threshold default is G_LOG_LEVEL_INFO
-void
-set_log_handler_level(GLogLevelFlags level);
-
-// set the output file written to /tmp/psy-unit-tests/log/file
-void
-set_log_handler_file(const gchar *file);
-
-// Capture only this domain, the rest is ignored. if null every domain is
-// logged.
-void
-set_log_handler_domain(const gchar *domain);
-
-GFileOutputStream *
-open_log_file(const gchar *name);
+typedef struct UnitTestUtilsInit {
+    const char    *log_file;
+    GLogLevelFlags log_level;
+    bool           save_pictures;
+    const char   **domains; // null terminated; may be null
+} UnitTestUtilsInit;
 
 void
-set_save_images(gboolean save);
+unit_test_utils_init(UnitTestUtilsInit *init_info);
 
 gboolean
 save_images(void);
