@@ -33,6 +33,8 @@ wave_setup(void)
         g_clear_object(&g_device);
         return;
     }
+    g_clear_object(&g_device);
+    return;
 
     g_object_get(g_device, "name", &dev_name, NULL);
     g_message("test-wave uses audio device: %s", dev_name);
