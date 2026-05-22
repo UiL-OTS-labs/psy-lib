@@ -1,11 +1,10 @@
 
-#include <criterion/criterion.h>
-#include <criterion/new/assert.h>
 #include <math.h>
 
 #include "../psy/psy-vector.h"
 
-Test(vector, create)
+static void
+test_vector_create(void)
 {
     PsyVector *vec = psy_vector_new();
     g_assert(vec != NULL);
@@ -13,33 +12,34 @@ Test(vector, create)
 
     psy_vector_free(vec);
     vec = psy_vector_new_x(1.0f);
-    cr_assert(ne(vec, NULL), "Vectors can be created");
+    g_assert_nonnull(vec);
 
     g_object_get(vec, "x", &x, "y", &y, "z", &z, NULL);
-    cr_expect(eq(x, 1.0f));
-    cr_expect(eq(y, 0.0f));
-    cr_expect(eq(z, 0.0f));
+    g_assert_cmpfloat(x, ==, 1.0f);
+    g_assert_cmpfloat(y, ==, 0.0f);
+    g_assert_cmpfloat(z, ==, 0.0f);
     psy_vector_free(vec);
 
     vec = psy_vector_new_xy(10, 10);
-    cr_assert(vec != NULL);
+    g_assert_nonnull(vec);
     g_object_get(vec, "x", &x, "y", &y, "z", &z, NULL);
-    cr_assert(eq(x, 10));
-    cr_assert(eq(y, 10));
-    cr_assert(eq(z, 0));
+    g_assert_cmpfloat(x, ==, 10);
+    g_assert_cmpfloat(y, ==, 10);
+    g_assert_cmpfloat(z, ==, 0);
     psy_vector_free(vec);
 
     vec = psy_vector_new_xyz(100, 100, 100);
-    cr_assert(ne(vec, NULL));
+    g_assert_nonnull(vec);
     g_object_get(vec, "x", &x, "y", &y, "z", &z, NULL);
-    cr_expect(eq(x, 100));
-    cr_expect(eq(y, 100));
-    cr_expect(eq(z, 100));
+    g_assert_cmpfloat(x, ==, 100);
+    g_assert_cmpfloat(y, ==, 100);
+    g_assert_cmpfloat(z, ==, 100);
 
     psy_vector_free(vec);
 }
 
-Test(vector, magnitude)
+static void
+test_vector_magnitude(void)
 {
     gfloat     x = 10, y = 20, z = 40;
     PsyVector *vec = psy_vector_new_xyz(x, y, z);
@@ -47,15 +47,16 @@ Test(vector, magnitude)
     gfloat     expected = sqrtf(x * x + y * y + z * z);
     magnitude           = psy_vector_magnitude(vec);
     g_object_get(vec, "length", &length, NULL);
-    gfloat epsilon = 1e-6f;
+    gfloat epsilon = 1e-9f;
 
-    cr_expect(epsilon_eq(magnitude, expected, epsilon));
-    cr_expect(epsilon_eq(length, magnitude, 0.0));
+    g_assert_cmpfloat_with_epsilon(magnitude, expected, epsilon);
+    g_assert_cmpfloat_with_epsilon(length, magnitude, epsilon);
 
     g_object_unref(vec);
 }
 
-Test(vector, unit)
+static void
+test_vector_unit(void)
 {
     gfloat     x = 10, y = 20, z = 40;
     gfloat     length;
@@ -63,20 +64,23 @@ Test(vector, unit)
     PsyVector *vec     = psy_vector_new_xyz(x, y, z);
     PsyVector *unit    = psy_vector_unit(vec);
 
+    // A unit vector has a length of 1.0
     length = psy_vector_magnitude(unit);
-    cr_expect(epsilon_eq(length, 1.0f, epsilon),
-              "A unit vector has a length of 1.0");
+    g_assert_cmpfloat_with_epsilon(length, 1.0f, epsilon);
+
     psy_vector_free(vec);
     psy_vector_free(unit);
 
+    // null vectors don't have a direction, so no unit vector exists
     vec  = psy_vector_new();
     unit = psy_vector_unit(vec);
-    cr_expect(eq(unit, NULL),
-              "null vectors don't have a direction, so no unit exists");
+    g_assert_null(unit);
+
     psy_vector_free(vec);
 }
 
-Test(vector, negate)
+static void
+test_vector_negate(void)
 {
     gfloat     x = 10, y = 20, z = 40;
     gfloat     mx, my, mz;
@@ -86,18 +90,20 @@ Test(vector, negate)
     g_object_get(negated, "x", &mx, "y", &my, "z", &mz, NULL);
 
     psy_vector_magnitude(vec);
-    cr_expect(eq(mx, -10));
-    cr_expect(eq(my, -20));
-    cr_expect(eq(mz, -40));
+    g_assert_cmpfloat(mx, ==, -10);
+    g_assert_cmpfloat(my, ==, -20);
+    g_assert_cmpfloat(mz, ==, -40);
 
-    cr_expect(eq(psy_vector_magnitude(vec), psy_vector_magnitude(negated)),
-              "The negated vector should have the same magnitude");
+    // The negated vector should have the same magnitude
+    g_assert_cmpfloat(
+        psy_vector_magnitude(vec), ==, psy_vector_magnitude(negated));
 
     psy_vector_free(vec);
     psy_vector_free(negated);
 }
 
-Test(vector, add_scalar)
+static void
+test_vector_add_scalar(void)
 {
     gfloat     x = 10, y = 20, z = 40;
     gfloat     scalar = 2;
@@ -106,15 +112,16 @@ Test(vector, add_scalar)
     PsyVector *result = psy_vector_add_s(vec, scalar);
     g_object_get(result, "x", &rx, "y", &ry, "z", &rz, NULL);
 
-    cr_expect(eq(rx, 12));
-    cr_expect(eq(ry, 22));
-    cr_expect(eq(rz, 42));
+    g_assert_cmpfloat(rx, ==, 12);
+    g_assert_cmpfloat(ry, ==, 22);
+    g_assert_cmpfloat(rz, ==, 42);
 
     psy_vector_free(vec);
     psy_vector_free(result);
 }
 
-Test(vector, add_vector)
+static void
+test_vector_add_vector(void)
 {
     gfloat     x = 10, y = 20, z = 40;
     PsyVector *v1     = psy_vector_new_xyz(x, y, z);
@@ -122,7 +129,8 @@ Test(vector, add_vector)
     PsyVector *result = psy_vector_add(v1, v2);
     PsyVector *v3     = psy_vector_mul_s(v1, 2.0f);
 
-    cr_expect(all(psy_vector_equals(result, v3)));
+    // Adding two vectors is the same as multiplying with
+    g_assert_true(psy_vector_equals(result, v3));
 
     psy_vector_free(v1);
     psy_vector_free(v2);
@@ -130,7 +138,8 @@ Test(vector, add_vector)
     psy_vector_free(result);
 }
 
-Test(vector, subtract_scalar)
+static void
+test_vector_subtract_scalar(void)
 {
     gfloat     x = 10, y = 20, z = 40;
     gfloat     scalar = 2;
@@ -138,15 +147,16 @@ Test(vector, subtract_scalar)
     PsyVector *vec    = psy_vector_new_xyz(x, y, z);
     PsyVector *result = psy_vector_sub_s(vec, scalar);
     g_object_get(result, "x", &rx, "y", &ry, "z", &rz, NULL);
-    cr_expect(eq(rx, x - scalar));
-    cr_expect(eq(ry, y - scalar));
-    cr_expect(eq(rz, z - scalar));
+    g_assert_cmpfloat(rx, ==, x - scalar);
+    g_assert_cmpfloat(ry, ==, y - scalar);
+    g_assert_cmpfloat(rz, ==, z - scalar);
 
     psy_vector_free(vec);
     psy_vector_free(result);
 }
 
-Test(vector, subtract_vector)
+static void
+test_vector_subtract_vector(void)
 {
     gfloat     x = 10, y = 20, z = 40;
     PsyVector *v1       = psy_vector_new_xyz(x, y, z);
@@ -154,7 +164,8 @@ Test(vector, subtract_vector)
     PsyVector *result   = psy_vector_sub(v1, v2);
     PsyVector *expected = psy_vector_new();
 
-    cr_expect(all(psy_vector_equals(result, expected)));
+    // subtracting two the same vectors results in a null vector
+    g_assert_true(psy_vector_equals(result, expected));
 
     psy_vector_free(v1);
     psy_vector_free(v2);
@@ -162,7 +173,8 @@ Test(vector, subtract_vector)
     psy_vector_free(result);
 }
 
-Test(vector, mul_scalar)
+static void
+test_vector_mul_scalar(void)
 {
     gfloat     x = 10, y = 20, z = 40;
     gfloat     scalar = 2.0f;
@@ -170,27 +182,29 @@ Test(vector, mul_scalar)
     PsyVector *result = psy_vector_mul_s(v1, scalar);
     PsyVector *expected
         = psy_vector_new_xyz(x * scalar, y * scalar, z * scalar);
-    cr_expect(all(psy_vector_equals(expected, result)));
+    g_assert_true(psy_vector_equals(expected, result));
     psy_vector_free(v1);
     psy_vector_free(result);
     psy_vector_free(expected);
 }
 
-Test(vector, dot)
+static void
+test_vector_dot(void)
 {
     PsyVector *v1, *v2;
     v1         = psy_vector_new_xyz(1, 0, 0);
     v2         = psy_vector_new_xyz(0, 1, 0);
     gfloat cos = psy_vector_dot(v1, v2);
-    cr_expect(epsilon_eq(cos, 0.0f, 0.0));
+    g_assert_cmpfloat(cos, ==, 0.0f);
 
     cos = psy_vector_dot(v2, v1);
-    cr_expect(eq(cos, 0.0f));
+    g_assert_cmpfloat(cos, ==, 0.0f);
     psy_vector_free(v1);
     psy_vector_free(v2);
 }
 
-Test(vector, cross_product)
+static void
+test_vector_cross_product(void)
 {
     PsyVector *v1, *v2, *v3, *result, *result_reversed, *v3min;
     v1    = psy_vector_new_xyz(1, 0, 0);
@@ -199,10 +213,10 @@ Test(vector, cross_product)
     v3min = psy_vector_negate(v3);
 
     result = psy_vector_cross(v1, v2);
-    cr_expect(all(psy_vector_equals(v3, result)));
+    g_assert_true(psy_vector_equals(v3, result));
 
     result_reversed = psy_vector_cross(v2, v1);
-    cr_expect(all(psy_vector_equals(v3min, result_reversed)));
+    g_assert_true(psy_vector_equals(v3min, result_reversed));
 
     psy_vector_free(v1);
     psy_vector_free(v2);
@@ -210,4 +224,24 @@ Test(vector, cross_product)
     psy_vector_free(v3min);
     psy_vector_free(result);
     psy_vector_free(result_reversed);
+}
+
+int
+main(int argc, char **argv)
+{
+    g_test_init(&argc, &argv, NULL);
+
+    g_test_add_func("/vector/create", test_vector_create);
+    g_test_add_func("/vector/magnitude", test_vector_magnitude);
+    g_test_add_func("/vector/unit", test_vector_unit);
+    g_test_add_func("/vector/negate", test_vector_negate);
+    g_test_add_func("/vector/add_scalar", test_vector_add_scalar);
+    g_test_add_func("/vector/add_vector", test_vector_add_vector);
+    g_test_add_func("/vector/subtract_scalar", test_vector_subtract_scalar);
+    g_test_add_func("/vector/subtract_vector", test_vector_subtract_vector);
+    g_test_add_func("/vector/mul_scalar", test_vector_mul_scalar);
+    g_test_add_func("/vector/dot", test_vector_dot);
+    g_test_add_func("/vector/cross", test_vector_cross_product);
+
+    return g_test_run();
 }

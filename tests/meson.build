@@ -265,7 +265,7 @@ test_visual_stimulus = executable(
     cpp_args : UNIT_PP_ARGS,
 )
 
-test('test-visual-stimulus', test_visual_stimulus, protocol: 'tap')
+test('test-visual-stimulus', test_visual_stimulus, protocol: 'tap',)
  
 test_wave = executable(
     'test-wave',
@@ -274,32 +274,32 @@ test_wave = executable(
     c_args : UNIT_PP_ARGS,
     cpp_args : UNIT_PP_ARGS,
 )
-test('test-wave', test_wave, is_parallel: false, protocol: 'tap')
+test('test-wave', test_wave, is_parallel: false, protocol: 'tap',)
 
-# test_vector = executable(
-#     'test-vector',
-#     files('test-vector.c'),
-#     dependencies: [psy_dep, criterion_dep],
-#     c_args : UNIT_PP_ARGS,
-#     cpp_args : UNIT_PP_ARGS,
-# )
-# test('test-vector', test_vector)
-# 
-# test_vector3 = executable(
-#     'test-vector3',
-#     files('test-vector3.c'),
-#     dependencies: [psy_dep, criterion_dep],
-#     c_args : UNIT_PP_ARGS,
-#     cpp_args : UNIT_PP_ARGS,
-# )
-# test('test-vector3', test_vector3)
-# 
-# test_vector4 = executable(
-#     'test-vector4',
-#     files('test-vector4.c'),
-#     dependencies: [psy_dep, criterion_dep],
-#     c_args : UNIT_PP_ARGS,
-#     cpp_args : UNIT_PP_ARGS,
-# )
-# test('test-vector4', test_vector4)
+test_vector = executable(
+    'test-vector',
+    files('test-vector.c'),
+    dependencies: [psy_dep],
+    c_args : UNIT_PP_ARGS,
+    cpp_args : UNIT_PP_ARGS,
+)
+test('test-vector', test_vector, protocol: 'tap',)
+
+test_vector3 = executable(
+    'test-vector3',
+    files('test-vector3.c'),
+    dependencies: [psy_dep],
+    c_args : UNIT_PP_ARGS,
+    cpp_args : UNIT_PP_ARGS,
+)
+test('test-vector3', test_vector3, protocol:'tap',)
+
+test_vector4 = executable(
+    'test-vector4',
+    files('test-vector4.c'),
+    dependencies: [psy_dep],
+    c_args : UNIT_PP_ARGS,
+    cpp_args : UNIT_PP_ARGS,
+)
+test('test-vector4', test_vector4, protocol: 'tap')
 
