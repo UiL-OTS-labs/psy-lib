@@ -194,7 +194,13 @@ auditory_stimulus_set_duration(PsyStimulus *self, PsyDuration *stim_dur)
         = psy_auditory_stimulus_get_instance_private(
             PSY_AUDITORY_STIMULUS(self));
 
-    PsyDuration *frame_dur = psy_audio_device_get_frame_dur(priv->audio_device);
+    GError      *error = NULL;
+    PsyDuration *frame_dur
+        = psy_audio_device_get_frame_dur(priv->audio_device, NULL);
+    if (!frame_dur) {
+        g_warning("Unable to set stimulus duration: %s", error->message);
+        return;
+    }
 
     if (psy_duration_less(stim_dur, frame_dur)) {
         g_warning("Specified duration is less than one frame");
