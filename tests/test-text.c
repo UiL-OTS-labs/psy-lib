@@ -1,7 +1,4 @@
 
-#include <criterion/criterion.h>
-#include <criterion/internal/test.h>
-#include <criterion/new/assert.h>
 #include <psylib.h>
 
 #include "unit-test-utilities.h"
