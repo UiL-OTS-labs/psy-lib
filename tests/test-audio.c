@@ -10,7 +10,12 @@ typedef struct {
     AudioBackend backend;
 } AudioTestParams;
 
-static const char *JACK      = "jack";
+typedef struct AudioFixture {
+    bool devices_available;
+} AudioFixture;
+
+static const char *JACK = "jack";
+
 static const char *PORTAUDIO = "portaudio";
 static const char *ALSA      = "ALSA";
 
@@ -85,6 +90,34 @@ pick_backend_allocater(AudioBackend be)
 #endif
 
     return create_device;
+}
+
+void
+audio_test_setup(AudioFixture *fix, gconstpointer data)
+{
+    const AudioTestParams *params = data;
+
+    audio_backend_allocater_func create_device
+        = pick_backend_allocater(params->backend);
+    if (create_device == 0) {
+        fix->devices_available = FALSE;
+        return;
+    }
+
+    // Test if there are any devices, otherwise we skip test trying to use them
+    // e.g. opening etc.
+    PsyAudioDevice *dev = create_device();
+
+    PsyAudioDeviceInfo **infos = NULL;
+    guint                num_infos;
+
+    psy_audio_device_enumerate_devices(dev, &infos, &num_infos);
+    for (size_t i = 0; i < num_infos; i++) {
+        psy_audio_device_info_free(infos[i]);
+    }
+    g_free(infos);
+
+    fix->devices_available = num_infos > 0 ? TRUE : FALSE;
 }
 
 /* ********* setup test parameters ************* */
@@ -167,7 +200,6 @@ audio_device_enumerate(const void *data)
             psy_audio_device_info_free(infos[i]);
         g_free(infos);
     }
-
     g_object_unref(device);
 }
 
@@ -205,7 +237,7 @@ quit_loop(gpointer data)
 }
 
 static void
-audio_device_open(const void *data)
+audio_device_open(AudioFixture *fix, const void *data)
 {
     const AudioTestParams *params = data;
 
@@ -215,6 +247,12 @@ audio_device_open(const void *data)
     audio_backend_allocater_func create_device = pick_backend_allocater(be);
     if (create_device == NULL) {
         g_test_skip_printf("No device for backend %s", backend);
+        return;
+    }
+
+    if (!fix->devices_available) {
+        g_message("skipping: %s: no devices available to open", __func__);
+        g_test_skip("No devices available to open");
         return;
     }
 
@@ -270,13 +308,13 @@ main(int argc, char **argv)
 #if defined HAVE_PORTAUDIO
         {
             .test_name = "/audio/create-pa-device",
-            .backend   = BE_PORTAUDIO
+            .backend   = BE_PORTAUDIO,
         },
 #endif
 #if defined HAVE_JACK
         {
             .test_name = "/audio/create-jack-device",
-            .test.backend = BE_JACK },
+            .backend = BE_JACK },
 #endif
 #if defined HAVE_ALSA
         {
@@ -297,7 +335,7 @@ main(int argc, char **argv)
 #if defined HAVE_PORTAUDIO
         {
             .test_name = "/audio/pa-device-enumerate",
-            .backend   = BE_PORTAUDIO
+            .backend   = BE_PORTAUDIO,
         },
 #endif
 #if defined HAVE_JACK
@@ -344,9 +382,13 @@ main(int argc, char **argv)
     };
     // clang-format on
 
-    for (size_t i = 0; i < G_N_ELEMENTS(enumerate_tests); i++) {
-        g_test_add_data_func(
-            open_tests[i].test_name, &open_tests[i], audio_device_open);
+    for (size_t i = 0; i < G_N_ELEMENTS(open_tests); i++) {
+        g_test_add(open_tests[i].test_name,
+                   AudioFixture,
+                   &open_tests[i],
+                   audio_test_setup,
+                   audio_device_open,
+                   NULL);
     }
 
     return g_test_run();
