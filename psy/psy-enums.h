@@ -15,6 +15,7 @@
  *      found.
  * @PSY_AUDIO_DEVICE_ERROR_CLOSED: Unable to perform this operation when the
  *      device is not open.
+ * @PSY_AUDIO_DEVICE_ERROR_NO_DEVICES: There seem to be no devices available
  * @PSY_AUDIO_DEVICE_ERROR_FAILED: unspecific error read the error message
  *      for more info.
  *
@@ -27,6 +28,7 @@ typedef enum {
     PSY_AUDIO_DEVICE_ERROR_OPEN_NAME,
     PSY_AUDIO_DEVICE_ERROR_OPEN_NO_MATCH,
     PSY_AUDIO_DEVICE_ERROR_CLOSED,
+    PSY_AUDIO_DEVICE_ERROR_NO_DEVICES,
     PSY_AUDIO_DEVICE_ERROR_FAILED,
 } PsyAudioDeviceError;
 

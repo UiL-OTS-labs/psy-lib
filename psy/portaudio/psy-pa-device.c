@@ -443,8 +443,13 @@ pa_determine_device(PsyPADevice         *self,
     psy_audio_device_enumerate_devices(
         PSY_AUDIO_DEVICE(self), &infos, &num_infos);
 
-    if (num_infos == 0)
+    if (num_infos == 0) {
+        g_set_error(error,
+                    PSY_AUDIO_DEVICE_ERROR,
+                    PSY_AUDIO_DEVICE_ERROR_NO_DEVICES,
+                    "There seem to be no audio devices available");
         return -1;
+    }
 
     if (name && g_strcmp0(name, "") != 0) {
         for (guint i = 0; i < num_infos; i++) {
