@@ -27,12 +27,14 @@ wave_setup(void)
             NULL);
     // clang-format on
 
+    g_message("%s:Opening audio device", __func__);
     psy_audio_device_open(g_device, &error);
     if (error) {
         g_message("Unable to open audio device: %s", error->message);
         g_clear_object(&g_device);
         return;
     }
+    g_message("%s: Opened audio device", __func__);
 
     g_object_get(g_device, "name", &dev_name, NULL);
     g_message("test-wave uses audio device: %s", dev_name);
@@ -45,6 +47,7 @@ wave_setup(void)
 static void
 wave_teardown(void)
 {
+    g_message("Closing audio device");
     if (g_device) {
         psy_audio_device_close(g_device);
         g_object_unref(g_device);
@@ -52,6 +55,7 @@ wave_teardown(void)
     g_device = NULL;
 
     psy_initializer_free(g_init);
+    g_message("%s:done", __func__);
 }
 
 static gboolean
@@ -167,6 +171,7 @@ static void
 test_wave_play(void)
 {
     if (!g_device) {
+        g_message("Skipping unit test: %s", g_test_get_path());
         g_test_skip_printf("No audio device: skipping: %s", __func__);
         return;
     }
