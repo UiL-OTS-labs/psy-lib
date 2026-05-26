@@ -1,4 +1,5 @@
 
+win_ci = 'win_ci'
 cc = meson.get_compiler('c')
 
 #preprocessor args for the unit tests
@@ -50,7 +51,7 @@ timer_test = executable(
     files('timer-test.c'),
     dependencies:[psy_dep]
 )
-test('timer-test', timer_test)
+test('timer-test', timer_test, suite:[win_ci],)
 
 
 timer_cancellation_no_loop = executable(
@@ -64,7 +65,8 @@ env = environment({'G_DEBUG':'fatal-warnings'})
 test(
     'timer-cancellation-no-loop',
     timer_cancellation_no_loop,
-    env:env
+    env:env,
+    suite:[win_ci],
 )
 
 test_audio = executable(
@@ -80,7 +82,8 @@ test('test-audio',
     test_audio,
     is_parallel : false,
     args: ['-j1'], # So also the criterion test should not run in parallel
-    protocol: 'tap'
+    protocol: 'tap',
+    suite: [win_ci],
 )
 
 test_audio_channel_mapping = executable(
@@ -91,7 +94,7 @@ test_audio_channel_mapping = executable(
     cpp_args : UNIT_PP_ARGS,
 )
 
-test('test-audio-channel-mapping', test_audio_channel_mapping, protocol: 'tap')
+test('test-audio-channel-mapping', test_audio_channel_mapping, protocol: 'tap', suite: [win_ci],)
 
 test_audio_utils = executable(
     'test-audio-utils',
@@ -100,7 +103,7 @@ test_audio_utils = executable(
     c_args : UNIT_PP_ARGS,
     cpp_args : UNIT_PP_ARGS,
 )
-test('test-audio-utils', test_audio_utils, protocol: 'tap')
+test('test-audio-utils', test_audio_utils, protocol: 'tap', suite: [win_ci],)
 
 # perhaps skip this on windows for now
 test_canvas = executable(
@@ -110,7 +113,7 @@ test_canvas = executable(
     c_args : UNIT_PP_ARGS,
     cpp_args : UNIT_PP_ARGS,
 )
-test('test-canvas', test_canvas, protocol: 'tap')
+test('test-canvas', test_canvas, protocol: 'tap', suite: [],)
 
 test_color = executable(
     'test-color',
@@ -119,7 +122,7 @@ test_color = executable(
     c_args : UNIT_PP_ARGS,
     cpp_args : UNIT_PP_ARGS,
 )
-test('test-color', test_color, protocol: 'tap')
+test('test-color', test_color, protocol: 'tap', suite: [win_ci])
 
 
 #may skip on win32
@@ -130,7 +133,7 @@ test_cross = executable(
     c_args : UNIT_PP_ARGS,
     cpp_args : UNIT_PP_ARGS,
 )
-test('test-cross', test_cross, protocol: 'tap')
+test('test-cross', test_cross, protocol: 'tap', suite:[],)
 
 test_image = executable(
     'test-image',
@@ -139,7 +142,7 @@ test_image = executable(
     c_args : UNIT_PP_ARGS,
     cpp_args : UNIT_PP_ARGS,
 )
-test('test-image', test_image, protocol:'tap')
+test('test-image', test_image, protocol:'tap', suite:[win_ci],)
 
 test_init = executable(
     'test-init',
@@ -148,7 +151,7 @@ test_init = executable(
     c_args : UNIT_PP_ARGS,
     cpp_args : UNIT_PP_ARGS,
 )
-test('test-init', test_init, protocol:'tap')
+test('test-init', test_init, protocol:'tap', suite: [win_ci],)
 
 test_gl_canvas = executable(
     'test-gl-canvas',
@@ -157,7 +160,7 @@ test_gl_canvas = executable(
     c_args : UNIT_PP_ARGS,
     cpp_args : UNIT_PP_ARGS,
 )
-test('test-gl-canvas', test_gl_canvas, protocol:'tap')
+test('test-gl-canvas', test_gl_canvas, protocol:'tap', suite: [],)
          
 test_gl_utils = executable(
     'test-gl-utils',
@@ -166,7 +169,7 @@ test_gl_utils = executable(
     c_args : UNIT_PP_ARGS,
     cpp_args : UNIT_PP_ARGS,
 )
-test('test-gl-utils', test_gl_utils, protocol: 'tap')
+test('test-gl-utils', test_gl_utils, protocol: 'tap', suite: [],)
  
 test_matrix4 = executable (
     'test-matrix4',
@@ -175,7 +178,7 @@ test_matrix4 = executable (
     c_args : UNIT_PP_ARGS,
     cpp_args : UNIT_PP_ARGS,
 )
-test('test-matrix4', test_matrix4, protocol: 'tap')
+test('test-matrix4', test_matrix4, protocol: 'tap', suite: [win_ci],)
 
 test_parallel = executable(
     'test-parallel',
@@ -184,7 +187,7 @@ test_parallel = executable(
     c_args : UNIT_PP_ARGS,
     cpp_args : UNIT_PP_ARGS,
 )
-test('test-parallel', test_parallel, protocol: 'tap')
+test('test-parallel', test_parallel, protocol: 'tap', suite: [win_ci],)
  
 test_picture = executable (
     'test-picture',
@@ -193,7 +196,7 @@ test_picture = executable (
     c_args : UNIT_PP_ARGS,
     cpp_args : UNIT_PP_ARGS,
 )
-test('test-picture', test_picture, protocol: 'tap',is_parallel: false,)
+test('test-picture', test_picture, protocol: 'tap',is_parallel: false, suite:[],)
  
 test_queue = executable(
     'test-queue',
@@ -202,7 +205,7 @@ test_queue = executable(
     c_args : UNIT_PP_ARGS,
     cpp_args : UNIT_PP_ARGS,
 )
-test('test-queue', test_queue,)
+test('test-queue', test_queue, protocol: 'tap', suite: [win_ci],)
 
 test_ref_count = executable('test-refcount',
     files('test-ref-count.c',),
@@ -210,7 +213,7 @@ test_ref_count = executable('test-refcount',
     c_args : UNIT_PP_ARGS,
     cpp_args : UNIT_PP_ARGS,
 )
-test('test-ref-count', test_ref_count, protocol: 'tap')
+test('test-ref-count', test_ref_count, protocol: 'tap', suite: [win_ci],)
 
 test_stepping = executable(
     'test-stepping',
@@ -219,7 +222,7 @@ test_stepping = executable(
     c_args : UNIT_PP_ARGS,
     cpp_args : UNIT_PP_ARGS,
 )
-test('test-stepping', test_stepping, protocol: 'tap')
+test('test-stepping', test_stepping, protocol: 'tap', suite: [win_ci],)
 
 test_text = executable(
     'test-text',
@@ -228,7 +231,7 @@ test_text = executable(
     c_args : UNIT_PP_ARGS,
     cpp_args : UNIT_PP_ARGS,
 )
-test('test-text', test_text, protocol: 'tap')
+test('test-text', test_text, protocol: 'tap', suite: [],)
 
 test_time_utilities = executable(
     'test-time-utilities',
@@ -237,7 +240,7 @@ test_time_utilities = executable(
     c_args : UNIT_PP_ARGS,
     cpp_args : UNIT_PP_ARGS,
 )
-test('test-time-utilities', test_time_utilities, protocol: 'tap',)
+test('test-time-utilities', test_time_utilities, protocol: 'tap', suite: [win_ci],)
 
 test_timer = executable(
     'test-timer',
@@ -246,7 +249,7 @@ test_timer = executable(
     c_args : UNIT_PP_ARGS,
     cpp_args : UNIT_PP_ARGS,
 )
-test('test-timer.c', test_timer, is_parallel: false, protocol: 'tap')
+test('test-timer.c', test_timer, is_parallel: false, protocol: 'tap', suite:[win_ci],)
 
 test_utilities = executable(
     'test-utilities',
@@ -255,7 +258,7 @@ test_utilities = executable(
     c_args : UNIT_PP_ARGS,
     cpp_args : UNIT_PP_ARGS,
 )
-test('test-utilities', test_utilities, protocol: 'tap',)
+test('test-utilities', test_utilities, protocol: 'tap', suite:[win_ci],)
 
 test_visual_stimulus = executable(
     'test-visual-stimulus',
@@ -265,7 +268,7 @@ test_visual_stimulus = executable(
     cpp_args : UNIT_PP_ARGS,
 )
 
-test('test-visual-stimulus', test_visual_stimulus, protocol: 'tap',)
+test('test-visual-stimulus', test_visual_stimulus, protocol: 'tap', suite: [], )
  
 test_wave = executable(
     'test-wave',
@@ -274,7 +277,7 @@ test_wave = executable(
     c_args : UNIT_PP_ARGS,
     cpp_args : UNIT_PP_ARGS,
 )
-test('test-wave', test_wave, is_parallel: false, protocol: 'tap',)
+test('test-wave', test_wave, is_parallel: false, protocol: 'tap', suite: [win_ci],)
 
 test_vector = executable(
     'test-vector',
@@ -283,7 +286,7 @@ test_vector = executable(
     c_args : UNIT_PP_ARGS,
     cpp_args : UNIT_PP_ARGS,
 )
-test('test-vector', test_vector, protocol: 'tap',)
+test('test-vector', test_vector, protocol: 'tap', suite:[win_ci],)
 
 test_vector3 = executable(
     'test-vector3',
@@ -292,7 +295,7 @@ test_vector3 = executable(
     c_args : UNIT_PP_ARGS,
     cpp_args : UNIT_PP_ARGS,
 )
-test('test-vector3', test_vector3, protocol:'tap',)
+test('test-vector3', test_vector3, protocol:'tap', suite:[win_ci],)
 
 test_vector4 = executable(
     'test-vector4',
@@ -301,5 +304,5 @@ test_vector4 = executable(
     c_args : UNIT_PP_ARGS,
     cpp_args : UNIT_PP_ARGS,
 )
-test('test-vector4', test_vector4, protocol: 'tap')
+test('test-vector4', test_vector4, protocol: 'tap', suite: [win_ci],)
 
