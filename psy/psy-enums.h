@@ -13,6 +13,9 @@
  * @PSY_AUDIO_DEVICE_ERROR_OPEN_NAME: Unable to open a device with this name.
  * @PSY_AUDIO_DEVICE_ERROR_OPEN_NO_MATCH: Unable to open, no matching devices
  *      found.
+ * @PSY_AUDIO_DEVICE_ERROR_CLOSED: Unable to perform this operation when the
+ *      device is not open.
+ * @PSY_AUDIO_DEVICE_ERROR_NO_DEVICES: There seem to be no devices available
  * @PSY_AUDIO_DEVICE_ERROR_FAILED: unspecific error read the error message
  *      for more info.
  *
@@ -24,6 +27,8 @@ typedef enum {
     PSY_AUDIO_DEVICE_ERROR_OPEN,
     PSY_AUDIO_DEVICE_ERROR_OPEN_NAME,
     PSY_AUDIO_DEVICE_ERROR_OPEN_NO_MATCH,
+    PSY_AUDIO_DEVICE_ERROR_CLOSED,
+    PSY_AUDIO_DEVICE_ERROR_NO_DEVICES,
     PSY_AUDIO_DEVICE_ERROR_FAILED,
 } PsyAudioDeviceError;
 
@@ -109,6 +114,26 @@ typedef enum {
     PSY_AUDIO_CHANNEL_STRATEGY_DEFAULT
     = PSY_AUDIO_CHANNEL_STRATEGY_DUPLICATE_INPUTS
 } PsyAudioChannelStrategy;
+
+/**
+ * PsyAudioChannelMapError:
+ * @PSY_AUDIO_CHANNEL_MAP_ERROR_INVALID_VALUE: This error may be raised,
+ *      when some one sets/adds a [struct@Psy.AudioChannelMapping] with an
+ *      invalid value contained. e.g. negative channel, or would map to a
+ *      channel larger than or equal to the
+ *      [struct@AudioChannelMap].num_source_channels or
+ *      .num_sink_channels
+ * @PSY_AUDIO_CHANNEL_MAP_INVALID_INDEX e.g setting a map on a position where
+ *      there is no space for.
+ * @PSY_AUDIO_CHANNEL_MAP_ERROR_FAILED unspecific error
+ *
+ * Errors related to mapping input to output channels.
+ */
+typedef enum {
+    PSY_AUDIO_CHANNEL_MAP_ERROR_INVALID_VALUE,
+    PSY_AUDIO_CHANNEL_MAP_ERROR_INVALID_INDEX,
+    PSY_AUDIO_CHANNEL_MAP_ERROR_FAILED,
+} PsyAudioChannelMapError;
 
 /**
  * PsyBaudRate:
@@ -325,11 +350,22 @@ typedef enum {
 /**
  * PsyStepError:
  * @PSY_STEP_ERROR_NO_SUCH_LOOP: An error returned when the traversing the step
- *                               and its parents to find a loop.
+ *                               and its parents to find a loop and no loop was
+ *                               found.
+ * @PSY_STEP_ERROR_CHILD_HAS_PARENT: An error that is returned when a child is
+ *                               added to a step but it already has a parent.
+ * @PSY_STEP_ERROR_INVALID_CHILD: This error might occur when adding a step to
+ *                               itself.
  * @PSY_STEP_ERROR_FAILED: A unspecific error occurred.
+ *
+ * Step error can occur when you try an operation that would create a structure
+ * that is invalid. e.g. adding a loop to it self. Psylib also doesn't allow
+ * a structure that one child step has multiple parents.
  */
 typedef enum {
     PSY_STEP_ERROR_NO_SUCH_LOOP,
+    PSY_STEP_ERROR_CHILD_HAS_PARENT,
+    PSY_STEP_ERROR_INVALID_CHILD,
     PSY_STEP_ERROR_FAILED,
 } PsyStepError;
 

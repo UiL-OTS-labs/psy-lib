@@ -4,6 +4,7 @@
 #include <pango/pango.h>
 #include <pango/pangocairo.h>
 
+#include "pango/pango-font.h"
 #include "psy-clock.h"
 #include "psy-enums.h"
 #include "psy-text-artist.h"
@@ -115,6 +116,27 @@ text_get_property(GObject    *object,
 }
 
 static void
+text_dispose(GObject *object)
+{
+    PsyTextPrivate *priv = psy_text_get_instance_private(PSY_TEXT(object));
+
+    g_clear_object(&priv->font_color);
+
+    G_OBJECT_CLASS(psy_text_parent_class)->dispose(object);
+}
+
+static void
+text_finalize(GObject *object)
+{
+    PsyTextPrivate *priv = psy_text_get_instance_private(PSY_TEXT(object));
+
+    g_clear_pointer(&priv->font_description, pango_font_description_free);
+    g_clear_pointer(&priv->content, g_free);
+
+    G_OBJECT_CLASS(psy_text_parent_class)->finalize(object);
+}
+
+static void
 psy_text_init(PsyText *self)
 {
     PsyTextPrivate *priv = psy_text_get_instance_private(self);
@@ -175,6 +197,8 @@ psy_text_class_init(PsyTextClass *klass)
     GObjectClass *object_class = G_OBJECT_CLASS(klass);
     object_class->get_property = text_get_property;
     object_class->set_property = text_set_property;
+    object_class->dispose      = text_dispose;
+    object_class->finalize     = text_finalize;
 
     PsyVisualStimulusClass *vstim_cls = PSY_VISUAL_STIMULUS_CLASS(klass);
     vstim_cls->create_artist          = text_create_artist;

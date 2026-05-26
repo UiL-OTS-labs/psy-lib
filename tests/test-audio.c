@@ -1,16 +1,41 @@
-
-
-#include <CUnit/CUnit.h>
 #include <psylib.h>
 
+#include "psy-audio-device.h"
 #include "unit-test-utilities.h"
 
-typedef PsyAudioDevice *(*audio_backend_allocater_func)(void);
-audio_backend_allocater_func g_current_backend_allocater = NULL;
+typedef enum AudioBackend { BE_PORTAUDIO, BE_ALSA, BE_JACK } AudioBackend;
 
-typedef struct AudioBackendAllocater {
-    audio_backend_allocater_func alloc;
-} AudioBackendAllocater;
+typedef struct {
+    const char  *test_name;
+    AudioBackend backend;
+} AudioTestParams;
+
+typedef struct AudioFixture {
+    bool devices_available;
+} AudioFixture;
+
+static const char *JACK = "jack";
+
+static const char *PORTAUDIO = "portaudio";
+static const char *ALSA      = "ALSA";
+
+static const char *
+backend_to_str(AudioBackend be)
+{
+    switch (be) {
+    case BE_PORTAUDIO:
+        return PORTAUDIO;
+    case BE_ALSA:
+        return ALSA;
+    case BE_JACK:
+        return JACK;
+    default:
+        g_assert_not_reached();
+        return NULL;
+    }
+}
+
+typedef PsyAudioDevice *(*audio_backend_allocater_func)(void);
 
 #if defined HAVE_PORTAUDIO
 PsyAudioDevice *
@@ -18,8 +43,6 @@ alloc_pa_device(void)
 {
     return PSY_AUDIO_DEVICE(psy_pa_device_new());
 }
-
-AudioBackendAllocater pa_allocater = {.alloc = alloc_pa_device};
 #endif
 
 #if defined HAVE_JACK2
@@ -28,31 +51,104 @@ alloc_jack_device(void)
 {
     return psy_jack_audio_device_new();
 }
-
-AudioBackendAllocater jack_allocater = {.alloc = alloc_jack_device};
 #endif
 
 #if defined HAVE_ALSA
 PsyAudioDevice *
 alloc_alsa_device(void)
 {
-    #pragma message "Returning NULL isn't nice."
-    // return psy_alsa_audio_device_new();
+    // TODO
     return NULL;
 }
-
-AudioBackendAllocater alsa_allocater = {.alloc = alloc_alsa_device};
 #endif
 
-static void
-audio_device_create(void)
+static audio_backend_allocater_func
+pick_backend_allocater(AudioBackend be)
 {
-    PsyAudioDevice    *device = g_current_backend_allocater();
+    audio_backend_allocater_func create_device = NULL;
+#ifdef HAVE_PORTAUDIO
+    if (be == BE_PORTAUDIO) {
+        g_info("Using %s as backend", PORTAUDIO);
+        create_device = alloc_pa_device;
+    }
+#endif
+
+#ifdef HAVE_ALSA
+    if (be == BE_ALSA) {
+        g_info("alsa backend isn't yet implemented");
+        create_device = alloc_alsa_device;
+        return NULL;
+    }
+#endif
+
+#ifdef HAVE_JACK
+    if (be == BE_JACK) {
+        g_info("jack backend isn't yet implemented, and probably won't");
+        create_device = alloc_jack_device();
+        return NULL;
+    }
+#endif
+
+    return create_device;
+}
+
+void
+audio_test_setup(AudioFixture *fix, gconstpointer data)
+{
+    const AudioTestParams *params = data;
+
+    audio_backend_allocater_func create_device
+        = pick_backend_allocater(params->backend);
+    if (create_device == 0) {
+        fix->devices_available = FALSE;
+        return;
+    }
+
+    // Test if there are any devices, otherwise we skip test trying to use them
+    // e.g. opening etc.
+    PsyAudioDevice *dev = create_device();
+
+    PsyAudioDeviceInfo **infos = NULL;
+    guint                num_infos;
+
+    psy_audio_device_enumerate_devices(dev, &infos, &num_infos);
+    for (size_t i = 0; i < num_infos; i++) {
+        psy_audio_device_info_free(infos[i]);
+    }
+    g_free(infos);
+
+    fix->devices_available = num_infos > 0 ? TRUE : FALSE;
+}
+
+/* ********* setup test parameters ************* */
+
+static void
+audio_device_create(const void *data)
+{
+    const AudioTestParams       *params  = data;
+    const char                  *backend = backend_to_str(params->backend);
+    audio_backend_allocater_func create_device = NULL;
+
+    g_info("audio_device_create with backend: %s", backend);
+
+    create_device = pick_backend_allocater(params->backend);
+
+    // handles currently unimplemented devices without marking failed test
+    if (create_device == NULL) {
+        g_test_skip_printf("Skipping %s: as backend %s isn't ready yet",
+                           params->test_name,
+                           backend);
+        return;
+    }
+
+    g_assert_nonnull(create_device);
+
+    PsyAudioDevice    *device = create_device();
     gboolean           is_open;
     PsyAudioSampleRate sample_rate;
     gchar             *name;
 
-    CU_ASSERT_PTR_NOT_NULL_FATAL(device);
+    g_assert_nonnull(device);
 
     // clang-format off
     g_object_get(device,
@@ -61,9 +157,10 @@ audio_device_create(void)
                  "name", &name,
                  NULL);
     // clang-format on
-    CU_ASSERT_FALSE(is_open);
-    CU_ASSERT_EQUAL(sample_rate, PSY_AUDIO_SAMPLE_RATE_48000);
-    CU_ASSERT_STRING_EQUAL(name, "");
+
+    g_assert_false(is_open);
+    g_assert_cmpint(sample_rate, ==, PSY_AUDIO_SAMPLE_RATE_48000);
+    g_assert_cmpstr(name, ==, "");
 
     g_free(name);
 
@@ -71,9 +168,24 @@ audio_device_create(void)
 }
 
 static void
-audio_device_enumerate(void)
+audio_device_enumerate(const void *data)
 {
-    PsyAudioDevice *device = g_current_backend_allocater();
+    const AudioTestParams *params = data;
+
+    int         be      = params->backend;
+    const char *backend = backend_to_str(be);
+
+    g_info("audio_device_enumerate with backend: %s", backend);
+
+    audio_backend_allocater_func create_device = NULL;
+
+    create_device = pick_backend_allocater(be);
+    if (create_device == NULL) {
+        g_test_skip_printf("No device for backend %s", backend);
+        return;
+    }
+
+    PsyAudioDevice *device = create_device();
 
     PsyAudioDeviceInfo **infos     = NULL;
     guint                num_infos = 0;
@@ -81,14 +193,13 @@ audio_device_enumerate(void)
     psy_audio_device_enumerate_devices(device, &infos, &num_infos);
 
     if (num_infos > 0) {
-        CU_ASSERT_PTR_NOT_NULL(infos);
+        g_assert_nonnull(infos);
 
         // free mem
         for (guint i = 0; i < num_infos; i++)
             psy_audio_device_info_free(infos[i]);
         g_free(infos);
     }
-
     g_object_unref(device);
 }
 
@@ -126,9 +237,28 @@ quit_loop(gpointer data)
 }
 
 static void
-audio_device_open(void)
+audio_device_open(AudioFixture *fix, const void *data)
 {
-    PsyAudioDevice *device  = g_current_backend_allocater();
+    const AudioTestParams *params = data;
+
+    int         be      = params->backend;
+    const char *backend = backend_to_str(be);
+
+    audio_backend_allocater_func create_device = pick_backend_allocater(be);
+    if (create_device == NULL) {
+        g_test_skip_printf("No device for backend %s", backend);
+        return;
+    }
+
+    if (!fix->devices_available) {
+        g_message("skipping: %s: no devices available to open", __func__);
+        g_test_skip("No devices available to open");
+        return;
+    }
+
+    g_info("audio_device_create with backend: %s", backend);
+
+    PsyAudioDevice *device  = create_device();
     gboolean        is_open = FALSE, started = FALSE;
     gchar          *name;
     GError         *error = NULL;
@@ -139,10 +269,10 @@ audio_device_open(void)
     OnStarted cb_data   = {.loop = loop, .started = FALSE};
     OnStop    stop_data = {.loop = loop, .device = device};
 
-    CU_ASSERT_PTR_NOT_NULL_FATAL(device);
+    g_assert_nonnull(device);
 
     psy_audio_device_open(device, &error);
-    CU_ASSERT_PTR_NULL(error);
+    g_assert_null(error);
 
     // clang-format off
     g_object_get(device,
@@ -155,9 +285,10 @@ audio_device_open(void)
     g_timeout_add(100, G_SOURCE_FUNC(quit_loop), &stop_data);
 
     g_main_loop_run(loop);
-    CU_ASSERT_TRUE(is_open);
-    CU_ASSERT_TRUE(cb_data.started);
-    CU_ASSERT_STRING_EQUAL(name, psy_audio_device_get_default_name(device));
+    g_assert_true(is_open);
+    g_assert_true(cb_data.started);
+
+    g_assert_cmpstr(name, ==, psy_audio_device_get_default_name(device));
 
     g_free(name);
     g_clear_error(&error);
@@ -167,54 +298,98 @@ audio_device_open(void)
 }
 
 int
-add_audio_suite(const gchar *backend)
+main(int argc, char **argv)
 {
-    CU_Suite *suite = CU_add_suite("audio tests", NULL, NULL);
-    CU_Test  *test  = NULL;
 
-    GHashTable *backend_table = NULL;
+    g_test_init(&argc, &argv, NULL);
 
-    backend_table = g_hash_table_new(g_str_hash, g_str_equal);
-
+    // clang-format off
+    AudioTestParams create_tests[] = {
 #if defined HAVE_PORTAUDIO
-    g_hash_table_insert(backend_table, "portaudio", &pa_allocater);
+        {
+            .test_name = "/audio/create-pa-device",
+            .backend   = BE_PORTAUDIO,
+        },
 #endif
-#if defined HAVE_JACK2
-    g_hash_table_insert(backend_table, "jack", &jack_allocater);
+#if defined HAVE_JACK
+        {
+            .test_name = "/audio/create-jack-device",
+            .backend = BE_JACK },
 #endif
 #if defined HAVE_ALSA
-    g_hash_table_insert(backend_table, "alsa", &alsa_allocater);
+        {
+            .test_name = "/audio/create-alsa-device",
+            .backend = BE_ALSA
+        },
 #endif
+    };
+    // clang-format on
 
-    if (g_hash_table_contains(backend_table, backend)) {
-        AudioBackendAllocater *allocater
-            = g_hash_table_lookup(backend_table, backend);
-        g_current_backend_allocater = allocater->alloc;
-    }
-    else {
-        g_printerr(
-            "%s:%d: The current config of psylib doesn't know about audio "
-            "backend :'%s', and the test are trying to use this backend.\n",
-            __FILE__,
-            __LINE__,
-            backend);
-        return 1;
+    for (size_t i = 0; i < G_N_ELEMENTS(create_tests); i++) {
+        g_test_add_data_func(
+            create_tests[i].test_name, &create_tests[i], audio_device_create);
     }
 
-    if (!suite)
-        return 1;
+    // clang-format off
+    AudioTestParams enumerate_tests[] = {
+#if defined HAVE_PORTAUDIO
+        {
+            .test_name = "/audio/pa-device-enumerate",
+            .backend   = BE_PORTAUDIO,
+        },
+#endif
+#if defined HAVE_JACK
+        {
+            .test_name = "/audio/jack-device-enumerate",
+            .backend = BE_JACK,
+        },
+#endif
+#if defined HAVE_ALSA
+        {
+            .test_name = "/audio/alsa-device-enumerate",
+            .backend = BE_ALSA,
+        },
+#endif
+    };
+    // clang-format on
 
-    test = CU_ADD_TEST(suite, audio_device_create);
-    if (!test)
-        return 1;
+    for (size_t i = 0; i < G_N_ELEMENTS(enumerate_tests); i++) {
+        g_test_add_data_func(enumerate_tests[i].test_name,
+                             &enumerate_tests[i],
+                             audio_device_enumerate);
+    }
 
-    test = CU_ADD_TEST(suite, audio_device_enumerate);
-    if (!test)
-        return 1;
+    // clang-format off
+    AudioTestParams open_tests[] = {
+#if defined HAVE_PORTAUDIO
+        {
+            .test_name = "/audio/pa-device-open",
+            .backend   = BE_PORTAUDIO
+        },
+#endif
+#if defined HAVE_JACK
+        {
+            .test_name = "/audio/jack-device-open",
+            .backend = BE_JACK,
+        },
+#endif
+#if defined HAVE_ALSA
+        {
+            .test_name = "/audio/alsa-device-open",
+            .backend = BE_ALSA,
+        },
+#endif
+    };
+    // clang-format on
 
-    test = CU_ADD_TEST(suite, audio_device_open);
-    if (!test)
-        return 1;
+    for (size_t i = 0; i < G_N_ELEMENTS(open_tests); i++) {
+        g_test_add(open_tests[i].test_name,
+                   AudioFixture,
+                   &open_tests[i],
+                   audio_test_setup,
+                   audio_device_open,
+                   NULL);
+    }
 
-    return 0;
+    return g_test_run();
 }

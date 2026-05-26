@@ -1,7 +1,7 @@
 
-#include <CUnit/CUnit.h>
 #include <psylib.h>
 
+#include "gl/psy-gl-canvas.h"
 #include "unit-test-utilities.h"
 
 const gchar *g_correct_vertex_source
@@ -49,28 +49,8 @@ const gchar *g_incorrect_vertex_source
       "    gl_Position = projection * model * vertex;\n"
       "}\n";
 
-static PsyGlCanvas *g_canvas;
-
-static int
-setup_gl_utils_suite(void)
-{
-    // The canvas creates a gl context applicable for all drawing in this
-    // test suite.
-    g_canvas = psy_gl_canvas_new_full(640, 480, FALSE, TRUE, 3, 3);
-
-    return 0;
-}
-
-static int
-tear_down_gl_utils_suite(void)
-{
-    psy_gl_canvas_free(g_canvas);
-
-    return 0;
-}
-
 static void
-test_gl_program(void)
+test_gl_utils_gl_program(void)
 {
     PsyShaderProgram *program = PSY_SHADER_PROGRAM(psy_gl_program_new());
     GError           *error   = NULL;
@@ -78,35 +58,37 @@ test_gl_program(void)
     gboolean          is_linked = FALSE;
     guint             object_id = 0;
 
-    CU_ASSERT_PTR_NOT_NULL_FATAL(program);
+    g_assert_nonnull(program);
 
     psy_shader_program_set_vertex_shader_source(
         program, g_correct_vertex_source, &error);
-    CU_ASSERT_PTR_NULL(error);
+    g_assert_no_error(error);
+
     vertex = psy_shader_program_get_vertex_shader(program);
-    CU_ASSERT(psy_shader_is_compiled(vertex));
+    g_assert_true(psy_shader_is_compiled(vertex));
     g_object_get(vertex, "object-id", &object_id, NULL);
-    CU_ASSERT_NOT_EQUAL(object_id, 0);
+    g_assert_cmpuint(object_id, !=, 0u);
 
     psy_shader_program_set_fragment_shader_source(
         program, g_correct_fragment_source, &error);
-    CU_ASSERT_PTR_NULL(error);
+    g_assert_no_error(error);
+
     fragment = psy_shader_program_get_fragment_shader(program);
-    CU_ASSERT(psy_shader_is_compiled(fragment));
+    (psy_shader_is_compiled(fragment));
 
     psy_shader_program_link(program, &error);
-    CU_ASSERT_PTR_NULL(error);
+    g_assert_no_error(error);
 
     g_object_get(
         program, "is-linked", &is_linked, "object-id", &object_id, NULL);
-    CU_ASSERT_TRUE(is_linked);
-    CU_ASSERT_NOT_EQUAL(object_id, 0);
+    g_assert_true(is_linked);
+    g_assert_cmpuint(object_id, !=, 0u);
 
     psy_gl_program_free(PSY_GL_PROGRAM(program));
 }
 
 static void
-test_emit_of_linking_error(void)
+test_gl_utils_emit_of_linking_error(void)
 {
     PsyShaderProgram *program = PSY_SHADER_PROGRAM(psy_gl_program_new());
     PsyShader        *vertex, *fragment;
@@ -117,30 +99,35 @@ test_emit_of_linking_error(void)
 
     psy_shader_program_set_vertex_shader_source(
         program, g_incorrect_vertex_source, &error1);
-    CU_ASSERT_PTR_NULL(error1);
+    g_assert_no_error(
+        error1); // A source with linker error is still a valid shader source
 
     psy_shader_program_set_fragment_shader_source(
         program, g_correct_fragment_source, &error1);
-    CU_ASSERT_PTR_NULL(error1);
+    g_assert_no_error(error1);
 
     vertex   = psy_shader_program_get_vertex_shader(program);
-    fragment = psy_shader_program_get_vertex_shader(program);
-    CU_ASSERT(psy_shader_is_compiled(vertex));
-    CU_ASSERT(psy_shader_is_compiled(fragment));
+    fragment = psy_shader_program_get_fragment_shader(program);
+
+    g_assert_true(psy_shader_is_compiled(vertex));
+    g_assert_true(psy_shader_is_compiled(fragment));
 
     psy_shader_program_link(program, &error1);
-    CU_ASSERT_PTR_NOT_NULL(error1);
+    g_assert_error(error1, PSY_GL_ERROR, PSY_GL_ERROR_PROGRAM_LINK);
 
     g_object_get(
         program, "is-linked", &is_linked, "object-id", &object_id, NULL);
-    CU_ASSERT_FALSE(is_linked);
-    CU_ASSERT_NOT_EQUAL(object_id, 0);
+    g_assert_false(is_linked);
+    g_assert_cmpuint(
+        object_id,
+        !=,
+        0u); // Although not linked the program should still have an valid id
 
     psy_shader_program_use(program, &error2);
-    CU_ASSERT_PTR_NOT_NULL(error2);
-    CU_ASSERT_EQUAL(error1->code, error2->code)
-    CU_ASSERT_EQUAL(error1->domain, error2->domain)
-    CU_ASSERT_STRING_EQUAL(error1->message, error2->message)
+    // One can't use unlinked programs
+    g_assert_error(error2, error1->domain, error1->code);
+
+    g_assert_cmpstr(error1->message, ==, error2->message);
 
     g_clear_error(&error1);
     g_clear_error(&error2);
@@ -149,46 +136,39 @@ test_emit_of_linking_error(void)
 }
 
 static void
-test_gl_shader_compile_error(void)
+test_gl_utils_gl_shader_compile_error(void)
 {
     GError      *error  = NULL;
     PsyGlShader *shader = PSY_GL_SHADER(psy_gl_vertex_shader_new());
-    CU_ASSERT_PTR_NOT_NULL_FATAL(shader);
+    g_assert_nonnull(shader);
 
     const gchar *source = "compile error source";
 
     psy_shader_set_source(PSY_SHADER(shader), source);
     psy_shader_compile(PSY_SHADER(shader), &error);
-    CU_ASSERT_PTR_NOT_NULL_FATAL(error);
-    CU_ASSERT_EQUAL(error->domain, PSY_GL_ERROR);
-    CU_ASSERT_EQUAL(error->code, PSY_GL_ERROR_SHADER_COMPILE);
-    CU_ASSERT_STRING_EQUAL(psy_shader_get_source(PSY_SHADER(shader)), source);
+
+    g_assert_error(error, PSY_GL_ERROR, PSY_GL_ERROR_SHADER_COMPILE);
+    g_assert_cmpstr(psy_shader_get_source(PSY_SHADER(shader)), ==, source);
 
     g_clear_error(&error);
     psy_gl_vertex_shader_free(PSY_GL_VERTEX_SHADER(shader));
 }
 
 int
-add_gl_utils_suite(void)
+main(int argc, char **argv)
 {
-    CU_Suite *suite = CU_add_suite("psy OpenGL utils suite",
-                                   setup_gl_utils_suite,
-                                   tear_down_gl_utils_suite);
-    CU_Test  *test;
-    if (!suite)
-        return 1;
+    g_test_init(&argc, &argv, NULL);
 
-    test = CU_ADD_TEST(suite, test_gl_program);
-    if (!test)
-        return 1;
+    PsyCanvas *canvas
+        = PSY_CANVAS(psy_gl_canvas_new(640, 480)); // needed for OpenGL context
 
-    test = CU_ADD_TEST(suite, test_emit_of_linking_error);
-    if (!test)
-        return 1;
+    g_test_add_func("/gl_utils/gl_program", test_gl_utils_gl_program);
+    g_test_add_func("/gl_utils/gl_emit_linking_error",
+                    test_gl_utils_emit_of_linking_error);
+    g_test_add_func("/gl_utils/gl_shader_compile_error",
+                    test_gl_utils_gl_shader_compile_error);
 
-    test = CU_ADD_TEST(suite, test_gl_shader_compile_error);
-    if (!test)
-        return 1;
-
-    return 0;
+    int save = g_test_run();
+    g_clear_object(&canvas);
+    return save;
 }

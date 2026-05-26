@@ -1,6 +1,6 @@
 
+win_ci = 'win_ci'
 cc = meson.get_compiler('c')
-cunit_dep = dependency('cunit')
 
 #preprocessor args for the unit tests
 UNIT_PP_ARGS = [
@@ -14,15 +14,6 @@ if buildtype != 'debug' and buildtype != 'debugoptimized'
     UNIT_PP_ARGS += '-DG_DISABLE_ASSERTS=1'
     UNIT_PP_ARGS += '-DNDEBUG=1'
 endif
-
-test_init = executable(
-    'test_init',
-    files('test-init.c', 'munit.c', 'unit-test-utilities.c'),
-    dependencies: psy_dep,
-    c_args : UNIT_PP_ARGS,
-    cpp_args : UNIT_PP_ARGS,
-)
-test('test_init', test_init)
 
 
 test_gtk_window = executable(
@@ -60,23 +51,7 @@ timer_test = executable(
     files('timer-test.c'),
     dependencies:[psy_dep]
 )
-test('timer-test', timer_test)
-
-
-test_timer = executable(
-    'test-timer',
-    files('test-timer.c', 'unit-test-utilities.c', 'munit.c', 'munit.h'),
-    dependencies:[psy_dep],
-    c_args : UNIT_PP_ARGS,
-    cpp_args : UNIT_PP_ARGS,
-)
-
-# We consider the timers to perform well, when the pc is not busy otherwise
-test_timer_args = []
-if get_option('running-in-ci')
-    test_timer_args = ['--param', 'accuracy', '10000']
-endif
-test('test-timer', test_timer, is_parallel:false, args: test_timer_args)
+test('timer-test', timer_test, suite:[win_ci],)
 
 
 timer_cancellation_no_loop = executable(
@@ -90,43 +65,244 @@ env = environment({'G_DEBUG':'fatal-warnings'})
 test(
     'timer-cancellation-no-loop',
     timer_cancellation_no_loop,
-    env:env
+    env:env,
+    suite:[win_ci],
 )
 
-unit_test = executable (
-    'unit-test',
-    files (
-        'main.c',
-        'test-audio.c',
-        'test-audio-channel-mapping.c',
-        'test-audio-utils.c',
-        'test-canvas.c',
-        'test-color.c',
-        'test-cross.c',
-        'test-image.c',
-        'test-gl-canvas.c',
-        'test-gl-utils.c',
-        'test-matrix4.c',
-        'test-parallel.c',
-        'test-picture.c',
-        'test-queue.c',
-        'test-ref-count.c',
-        'test-stepping.c',
-        'test-text.c',
-        'test-time-utilities.c',
-        'test-utility.c',
-        'test-wave.c',
-        'test-visual-stimulus.c',
-        'unit-test-utilities.c',
-        'vector-test.c',
-        'vector3-test.c',
-        'vector4-test.c',
-    ),
-    dependencies : [psy_dep, cunit_dep],
+test_audio = executable(
+    'test-audio',
+    files ('unit-test-utilities.c', 'test-audio.c'),
+    dependencies: [psy_dep],
     c_args : UNIT_PP_ARGS,
     cpp_args : UNIT_PP_ARGS,
 )
 
-# This runs the unit test verbosely and saves the pictures
-# So we get them as artifact in the CI
-test('unit-test', unit_test, args: ['-v', '-S', '-l', 'debug'])
+# One can only open an audio device once
+test('test-audio',
+    test_audio,
+    is_parallel : false,
+    args: ['-j1'], # So also the criterion test should not run in parallel
+    protocol: 'tap',
+    suite: [win_ci],
+)
+
+test_audio_channel_mapping = executable(
+    'test-audio-channel-mapping',
+    files('test-audio-channel-mapping.c', 'unit-test-utilities.c'),
+    dependencies: [psy_dep],
+    c_args : UNIT_PP_ARGS,
+    cpp_args : UNIT_PP_ARGS,
+)
+
+test('test-audio-channel-mapping', test_audio_channel_mapping, protocol: 'tap', suite: [win_ci],)
+
+test_audio_utils = executable(
+    'test-audio-utils',
+    files('test-audio-utils.c', 'unit-test-utilities.c'),
+    dependencies: [psy_dep],
+    c_args : UNIT_PP_ARGS,
+    cpp_args : UNIT_PP_ARGS,
+)
+test('test-audio-utils', test_audio_utils, protocol: 'tap', suite: [win_ci],)
+
+# perhaps skip this on windows for now
+test_canvas = executable(
+    'test-canvas',
+    files('test-canvas.c'),
+    dependencies: [psy_dep],
+    c_args : UNIT_PP_ARGS,
+    cpp_args : UNIT_PP_ARGS,
+)
+test('test-canvas', test_canvas, protocol: 'tap', suite: [],)
+
+test_color = executable(
+    'test-color',
+    files('test-color.c'),
+    dependencies: [psy_dep],
+    c_args : UNIT_PP_ARGS,
+    cpp_args : UNIT_PP_ARGS,
+)
+test('test-color', test_color, protocol: 'tap', suite: [win_ci])
+
+
+#may skip on win32
+test_cross = executable(
+    'test-cross',
+    files('test-cross.c', 'unit-test-utilities.c'),
+    dependencies: [psy_dep],
+    c_args : UNIT_PP_ARGS,
+    cpp_args : UNIT_PP_ARGS,
+)
+test('test-cross', test_cross, protocol: 'tap', suite:[],)
+
+test_image = executable(
+    'test-image',
+    files('test-image.c', 'unit-test-utilities.c'),
+    dependencies: [psy_dep],
+    c_args : UNIT_PP_ARGS,
+    cpp_args : UNIT_PP_ARGS,
+)
+test('test-image', test_image, protocol:'tap', suite:[win_ci],)
+
+test_init = executable(
+    'test-init',
+    files('test-init.c', 'unit-test-utilities.c'),
+    dependencies: [psy_dep],
+    c_args : UNIT_PP_ARGS,
+    cpp_args : UNIT_PP_ARGS,
+)
+test('test-init', test_init, protocol:'tap', suite: [win_ci],)
+
+test_gl_canvas = executable(
+    'test-gl-canvas',
+    files('test-gl-canvas.c'),
+    dependencies: [psy_dep],
+    c_args : UNIT_PP_ARGS,
+    cpp_args : UNIT_PP_ARGS,
+)
+test('test-gl-canvas', test_gl_canvas, protocol:'tap', suite: [],)
+         
+test_gl_utils = executable(
+    'test-gl-utils',
+    files('test-gl-utils.c'),
+    dependencies: [psy_dep],
+    c_args : UNIT_PP_ARGS,
+    cpp_args : UNIT_PP_ARGS,
+)
+test('test-gl-utils', test_gl_utils, protocol: 'tap', suite: [],)
+ 
+test_matrix4 = executable (
+    'test-matrix4',
+    files('test-matrix4.c',),
+    dependencies: [psy_dep],
+    c_args : UNIT_PP_ARGS,
+    cpp_args : UNIT_PP_ARGS,
+)
+test('test-matrix4', test_matrix4, protocol: 'tap', suite: [win_ci],)
+
+test_parallel = executable(
+    'test-parallel',
+    files('test-parallel.c',),
+    dependencies: [psy_dep],
+    c_args : UNIT_PP_ARGS,
+    cpp_args : UNIT_PP_ARGS,
+)
+test('test-parallel', test_parallel, protocol: 'tap', suite: [win_ci],)
+ 
+test_picture = executable (
+    'test-picture',
+    files('test-picture.c', 'unit-test-utilities.c'),
+    dependencies: [psy_dep],
+    c_args : UNIT_PP_ARGS,
+    cpp_args : UNIT_PP_ARGS,
+)
+test('test-picture', test_picture, protocol: 'tap',is_parallel: false, suite:[],)
+ 
+test_queue = executable(
+    'test-queue',
+    files('test-queue.c',),
+    dependencies: [psy_dep],
+    c_args : UNIT_PP_ARGS,
+    cpp_args : UNIT_PP_ARGS,
+)
+test('test-queue', test_queue, protocol: 'tap', suite: [win_ci],)
+
+test_ref_count = executable('test-refcount',
+    files('test-ref-count.c',),
+    dependencies: [psy_dep],
+    c_args : UNIT_PP_ARGS,
+    cpp_args : UNIT_PP_ARGS,
+)
+test('test-ref-count', test_ref_count, protocol: 'tap', suite: [win_ci],)
+
+test_stepping = executable(
+    'test-stepping',
+    files('test-stepping.c',),
+    dependencies: [psy_dep],
+    c_args : UNIT_PP_ARGS,
+    cpp_args : UNIT_PP_ARGS,
+)
+test('test-stepping', test_stepping, protocol: 'tap', suite: [win_ci],)
+
+test_text = executable(
+    'test-text',
+    files('test-text.c', 'unit-test-utilities.c',),
+    dependencies: [psy_dep],
+    c_args : UNIT_PP_ARGS,
+    cpp_args : UNIT_PP_ARGS,
+)
+test('test-text', test_text, protocol: 'tap', suite: [],)
+
+test_time_utilities = executable(
+    'test-time-utilities',
+    files('test-time-utilities.c',),
+    dependencies: [psy_dep],
+    c_args : UNIT_PP_ARGS,
+    cpp_args : UNIT_PP_ARGS,
+)
+test('test-time-utilities', test_time_utilities, protocol: 'tap', suite: [win_ci],)
+
+test_timer = executable(
+    'test-timer',
+    files('test-timer.c', 'unit-test-utilities.c', ),
+    dependencies: [psy_dep],
+    c_args : UNIT_PP_ARGS,
+    cpp_args : UNIT_PP_ARGS,
+)
+test('test-timer.c', test_timer, is_parallel: false, protocol: 'tap', suite:[win_ci],)
+
+test_utilities = executable(
+    'test-utilities',
+    files('test-utility.c',),
+    dependencies: [psy_dep],
+    c_args : UNIT_PP_ARGS,
+    cpp_args : UNIT_PP_ARGS,
+)
+test('test-utilities', test_utilities, protocol: 'tap', suite:[win_ci],)
+
+test_visual_stimulus = executable(
+    'test-visual-stimulus',
+    files('test-visual-stimulus.c', 'unit-test-utilities.c'),
+    dependencies: [psy_dep],
+    c_args : UNIT_PP_ARGS,
+    cpp_args : UNIT_PP_ARGS,
+)
+
+test('test-visual-stimulus', test_visual_stimulus, protocol: 'tap', suite: [], )
+ 
+test_wave = executable(
+    'test-wave',
+    files('test-wave.c', 'unit-test-utilities.c'),
+    dependencies: [psy_dep],
+    c_args : UNIT_PP_ARGS,
+    cpp_args : UNIT_PP_ARGS,
+)
+test('test-wave', test_wave, is_parallel: false, protocol: 'tap', suite: [win_ci],)
+
+test_vector = executable(
+    'test-vector',
+    files('test-vector.c'),
+    dependencies: [psy_dep],
+    c_args : UNIT_PP_ARGS,
+    cpp_args : UNIT_PP_ARGS,
+)
+test('test-vector', test_vector, protocol: 'tap', suite:[win_ci],)
+
+test_vector3 = executable(
+    'test-vector3',
+    files('test-vector3.c'),
+    dependencies: [psy_dep],
+    c_args : UNIT_PP_ARGS,
+    cpp_args : UNIT_PP_ARGS,
+)
+test('test-vector3', test_vector3, protocol:'tap', suite:[win_ci],)
+
+test_vector4 = executable(
+    'test-vector4',
+    files('test-vector4.c'),
+    dependencies: [psy_dep],
+    c_args : UNIT_PP_ARGS,
+    cpp_args : UNIT_PP_ARGS,
+)
+test('test-vector4', test_vector4, protocol: 'tap', suite: [win_ci],)
+

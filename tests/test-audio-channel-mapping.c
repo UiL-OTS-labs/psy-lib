@@ -1,9 +1,7 @@
-
-#include <CUnit/CUnit.h>
 #include <psylib.h>
 
 static void
-test_audio_channel_mapping(void)
+audio_channel_mapping(void)
 {
     const int source = 2;
     const int sink   = 1;
@@ -11,32 +9,34 @@ test_audio_channel_mapping(void)
     PsyAudioChannelMapping *mapping
         = psy_audio_channel_mapping_new(sink, source);
 
-    CU_ASSERT_PTR_NOT_NULL_FATAL(mapping);
+    g_assert_nonnull(mapping);
 
-    CU_ASSERT_EQUAL(mapping->mapped_source, source);
-    CU_ASSERT_EQUAL(mapping->sink_channel, sink);
+    g_assert_cmpint(mapping->mapped_source, ==, source);
+    g_assert_cmpint(mapping->sink_channel, ==, sink);
 
     psy_audio_channel_mapping_free(mapping);
 }
 
 static void
-test_audio_channel_map(void)
+audio_channel_map(void)
 {
     guint num_sinks   = 2;
     guint num_sources = 2;
 
     PsyAudioChannelMap *map = psy_audio_channel_map_new(num_sinks, num_sources);
 
-    CU_ASSERT_EQUAL(psy_audio_channel_map_get_size(map), 0);
-    CU_ASSERT_EQUAL(map->strategy, PSY_AUDIO_CHANNEL_STRATEGY_CUSTOM);
-    CU_ASSERT_EQUAL(map->num_sink_channels, 2);
-    CU_ASSERT_EQUAL(map->num_source_channels, 2);
+    g_assert_nonnull(map);
+
+    g_assert_cmpuint(psy_audio_channel_map_get_size(map), ==, 0);
+    g_assert_cmpuint(map->strategy, ==, PSY_AUDIO_CHANNEL_STRATEGY_CUSTOM);
+    g_assert_cmpuint(map->num_sink_channels, ==, 2);
+    g_assert_cmpuint(map->num_source_channels, ==, 2);
 
     psy_audio_channel_map_free(map);
 }
 
 static void
-test_audio_channel_map_strategy_default22(void)
+audio_channel_map_strategy_default22(void)
 {
     const guint num_sinks   = 2;
     const guint num_sources = 2;
@@ -45,21 +45,21 @@ test_audio_channel_map_strategy_default22(void)
 
     PsyAudioChannelMap *map
         = psy_audio_channel_map_new_strategy(num_sinks, num_sources, strategy);
+    g_assert_nonnull(map);
 
-    CU_ASSERT_EQUAL(psy_audio_channel_map_get_size(map), 2);
-    CU_ASSERT_PTR_NOT_NULL_FATAL(map);
+    g_assert_cmpuint(psy_audio_channel_map_get_size(map), ==, 2);
 
     PsyAudioChannelMapping *m0 = psy_audio_channel_map_get_mapping(map, 0);
     PsyAudioChannelMapping *m1 = psy_audio_channel_map_get_mapping(map, 1);
 
-    CU_ASSERT_PTR_NOT_NULL_FATAL(m0);
-    CU_ASSERT_PTR_NOT_NULL_FATAL(m1);
+    g_assert_nonnull(m0);
+    g_assert_nonnull(m1);
 
-    CU_ASSERT_EQUAL(m0->sink_channel, 0);
-    CU_ASSERT_EQUAL(m0->mapped_source, 0);
+    g_assert_cmpuint(m0->sink_channel, ==, 0);
+    g_assert_cmpuint(m0->mapped_source, ==, 0);
 
-    CU_ASSERT_EQUAL(m1->sink_channel, 1);
-    CU_ASSERT_EQUAL(m1->mapped_source, 1);
+    g_assert_cmpuint(m1->sink_channel, ==, 1);
+    g_assert_cmpuint(m1->mapped_source, ==, 1);
 
     psy_audio_channel_map_free(map);
     psy_audio_channel_mapping_free(m0);
@@ -67,7 +67,7 @@ test_audio_channel_map_strategy_default22(void)
 }
 
 static void
-test_audio_channel_map_strategy_default21(void)
+audio_channel_map_strategy_default21(void)
 {
     const guint num_sinks   = 2;
     const guint num_sources = 1;
@@ -77,20 +77,20 @@ test_audio_channel_map_strategy_default21(void)
     PsyAudioChannelMap *map
         = psy_audio_channel_map_new_strategy(num_sinks, num_sources, strategy);
 
-    CU_ASSERT_PTR_NOT_NULL_FATAL(map);
-    CU_ASSERT_EQUAL(psy_audio_channel_map_get_size(map), 2);
+    g_assert_nonnull(map);
+    g_assert_cmpuint(psy_audio_channel_map_get_size(map), ==, 2);
 
     PsyAudioChannelMapping *m0 = psy_audio_channel_map_get_mapping(map, 0);
     PsyAudioChannelMapping *m1 = psy_audio_channel_map_get_mapping(map, 1);
 
-    CU_ASSERT_PTR_NOT_NULL_FATAL(m0);
-    CU_ASSERT_PTR_NOT_NULL_FATAL(m1);
+    g_assert_nonnull(m0);
+    g_assert_nonnull(m1);
 
-    CU_ASSERT_EQUAL(m0->sink_channel, 0);
-    CU_ASSERT_EQUAL(m0->mapped_source, 0);
+    g_assert_cmpuint(m0->sink_channel, ==, 0);
+    g_assert_cmpuint(m0->mapped_source, ==, 0);
 
-    CU_ASSERT_EQUAL(m1->sink_channel, 1);
-    CU_ASSERT_EQUAL(m1->mapped_source, 0);
+    g_assert_cmpuint(m1->sink_channel, ==, 1);
+    g_assert_cmpuint(m1->mapped_source, ==, 0);
 
     psy_audio_channel_map_free(map);
     psy_audio_channel_mapping_free(m0);
@@ -98,8 +98,10 @@ test_audio_channel_map_strategy_default21(void)
 }
 
 static void
-test_audio_channel_map_strategy_default12(void)
+audio_channel_map_strategy_default12(void)
 {
+    // Avoid crashes by the default handler of the glibs testing frame work
+
     const guint num_sinks   = 1;
     const guint num_sources = 2;
 
@@ -108,24 +110,24 @@ test_audio_channel_map_strategy_default12(void)
     PsyAudioChannelMap *map
         = psy_audio_channel_map_new_strategy(num_sinks, num_sources, strategy);
 
-    CU_ASSERT_EQUAL(psy_audio_channel_map_get_size(map), 1);
-    CU_ASSERT_PTR_NOT_NULL_FATAL(map);
+    g_assert_nonnull(map);
+    g_assert_cmpuint(psy_audio_channel_map_get_size(map), ==, 1);
 
     PsyAudioChannelMapping *m0 = psy_audio_channel_map_get_mapping(map, 0);
     PsyAudioChannelMapping *m1 = psy_audio_channel_map_get_mapping(map, 1);
 
-    CU_ASSERT_PTR_NOT_NULL_FATAL(m0);
-    CU_ASSERT_PTR_NULL(m1);
+    g_assert_nonnull(m0);
+    g_assert_null(m1);
 
-    CU_ASSERT_EQUAL(m0->sink_channel, 0);
-    CU_ASSERT_EQUAL(m0->mapped_source, 0);
+    g_assert_cmpuint(m0->sink_channel, ==, 0);
+    g_assert_cmpuint(m0->mapped_source, ==, 0);
 
     psy_audio_channel_map_free(map);
     psy_audio_channel_mapping_free(m0);
 }
 
 static void
-test_audio_channel_map_strategy_duplicate_inputs22(void)
+audio_channel_map_strategy_duplicate_inputs22(void)
 {
     const guint num_sinks   = 2;
     const guint num_sources = 2;
@@ -136,20 +138,20 @@ test_audio_channel_map_strategy_duplicate_inputs22(void)
     PsyAudioChannelMap *map
         = psy_audio_channel_map_new_strategy(num_sinks, num_sources, strategy);
 
-    CU_ASSERT_EQUAL(psy_audio_channel_map_get_size(map), 2);
-    CU_ASSERT_PTR_NOT_NULL_FATAL(map);
+    g_assert_cmpuint(psy_audio_channel_map_get_size(map), ==, 2u);
+    g_assert_nonnull(map);
 
     PsyAudioChannelMapping *m0 = psy_audio_channel_map_get_mapping(map, 0);
     PsyAudioChannelMapping *m1 = psy_audio_channel_map_get_mapping(map, 1);
 
-    CU_ASSERT_PTR_NOT_NULL_FATAL(m0);
-    CU_ASSERT_PTR_NOT_NULL_FATAL(m1);
+    g_assert_nonnull(m0);
+    g_assert_nonnull(m1);
 
-    CU_ASSERT_EQUAL(m0->sink_channel, 0);
-    CU_ASSERT_EQUAL(m0->mapped_source, 0);
+    g_assert_cmpuint(m0->sink_channel, ==, 0);
+    g_assert_cmpuint(m0->mapped_source, ==, 0);
 
-    CU_ASSERT_EQUAL(m1->sink_channel, 1);
-    CU_ASSERT_EQUAL(m1->mapped_source, 1);
+    g_assert_cmpuint(m1->sink_channel, ==, 1);
+    g_assert_cmpuint(m1->mapped_source, ==, 1);
 
     psy_audio_channel_map_free(map);
     psy_audio_channel_mapping_free(m0);
@@ -157,7 +159,7 @@ test_audio_channel_map_strategy_duplicate_inputs22(void)
 }
 
 static void
-test_audio_channel_map_strategy_duplicate_inputs21(void)
+audio_channel_map_strategy_duplicate_inputs21(void)
 {
     const guint num_sinks   = 2;
     const guint num_sources = 1;
@@ -168,20 +170,20 @@ test_audio_channel_map_strategy_duplicate_inputs21(void)
     PsyAudioChannelMap *map
         = psy_audio_channel_map_new_strategy(num_sinks, num_sources, strategy);
 
-    CU_ASSERT_EQUAL(psy_audio_channel_map_get_size(map), 2);
-    CU_ASSERT_PTR_NOT_NULL_FATAL(map);
+    g_assert_nonnull(map);
+    g_assert_cmpuint(psy_audio_channel_map_get_size(map), ==, 2u);
 
     PsyAudioChannelMapping *m0 = psy_audio_channel_map_get_mapping(map, 0);
     PsyAudioChannelMapping *m1 = psy_audio_channel_map_get_mapping(map, 1);
 
-    CU_ASSERT_PTR_NOT_NULL_FATAL(m0);
-    CU_ASSERT_PTR_NOT_NULL_FATAL(m1);
+    g_assert_nonnull(m0);
+    g_assert_nonnull(m1);
 
-    CU_ASSERT_EQUAL(m0->sink_channel, 0);
-    CU_ASSERT_EQUAL(m0->mapped_source, 0);
+    g_assert_cmpuint(m0->sink_channel, ==, 0);
+    g_assert_cmpuint(m0->mapped_source, ==, 0);
 
-    CU_ASSERT_EQUAL(m1->sink_channel, 1);
-    CU_ASSERT_EQUAL(m1->mapped_source, 0);
+    g_assert_cmpuint(m1->sink_channel, ==, 1);
+    g_assert_cmpuint(m1->mapped_source, ==, 0);
 
     psy_audio_channel_map_free(map);
     psy_audio_channel_mapping_free(m0);
@@ -189,7 +191,7 @@ test_audio_channel_map_strategy_duplicate_inputs21(void)
 }
 
 static void
-test_audio_channel_map_strategy_duplicate_inputs12(void)
+audio_channel_map_strategy_duplicate_inputs12(void)
 {
     const guint num_sinks   = 1;
     const guint num_sources = 2;
@@ -200,17 +202,17 @@ test_audio_channel_map_strategy_duplicate_inputs12(void)
     PsyAudioChannelMap *map
         = psy_audio_channel_map_new_strategy(num_sinks, num_sources, strategy);
 
-    CU_ASSERT_EQUAL(psy_audio_channel_map_get_size(map), 1);
-    CU_ASSERT_PTR_NOT_NULL_FATAL(map);
+    g_assert_nonnull(map);
+    g_assert_cmpuint(psy_audio_channel_map_get_size(map), ==, 1u);
 
     PsyAudioChannelMapping *m0 = psy_audio_channel_map_get_mapping(map, 0);
     PsyAudioChannelMapping *m1 = psy_audio_channel_map_get_mapping(map, 1);
 
-    CU_ASSERT_PTR_NOT_NULL_FATAL(m0);
-    CU_ASSERT_PTR_NULL(m1);
+    g_assert_nonnull(m0);
+    g_assert_null(m1);
 
-    CU_ASSERT_EQUAL(m0->sink_channel, 0);
-    CU_ASSERT_EQUAL(m0->mapped_source, 0);
+    g_assert_cmpuint(m0->sink_channel, ==, 0);
+    g_assert_cmpuint(m0->mapped_source, ==, 0);
 
     psy_audio_channel_map_free(map);
     psy_audio_channel_mapping_free(m0);
@@ -218,7 +220,7 @@ test_audio_channel_map_strategy_duplicate_inputs12(void)
 }
 
 static void
-test_audio_channel_map_strategy_mix_trailing22(void)
+audio_channel_map_strategy_mix_trailing22(void)
 {
     const guint num_sinks   = 2;
     const guint num_sources = 2;
@@ -229,20 +231,20 @@ test_audio_channel_map_strategy_mix_trailing22(void)
     PsyAudioChannelMap *map
         = psy_audio_channel_map_new_strategy(num_sinks, num_sources, strategy);
 
-    CU_ASSERT_EQUAL(psy_audio_channel_map_get_size(map), 2);
-    CU_ASSERT_PTR_NOT_NULL_FATAL(map);
+    g_assert_nonnull(map);
+    g_assert_cmpuint(psy_audio_channel_map_get_size(map), ==, 2u);
 
     PsyAudioChannelMapping *m0 = psy_audio_channel_map_get_mapping(map, 0);
     PsyAudioChannelMapping *m1 = psy_audio_channel_map_get_mapping(map, 1);
 
-    CU_ASSERT_PTR_NOT_NULL_FATAL(m0);
-    CU_ASSERT_PTR_NOT_NULL_FATAL(m1);
+    g_assert_nonnull(m0);
+    g_assert_nonnull(m1);
 
-    CU_ASSERT_EQUAL(m0->sink_channel, 0);
-    CU_ASSERT_EQUAL(m0->mapped_source, 0);
+    g_assert_cmpuint(m0->sink_channel, ==, 0);
+    g_assert_cmpuint(m0->mapped_source, ==, 0);
 
-    CU_ASSERT_EQUAL(m1->sink_channel, 1);
-    CU_ASSERT_EQUAL(m1->mapped_source, 1);
+    g_assert_cmpuint(m1->sink_channel, ==, 1);
+    g_assert_cmpuint(m1->mapped_source, ==, 1);
 
     psy_audio_channel_map_free(map);
     psy_audio_channel_mapping_free(m0);
@@ -250,7 +252,7 @@ test_audio_channel_map_strategy_mix_trailing22(void)
 }
 
 static void
-test_audio_channel_map_strategy_mix_trailing21(void)
+audio_channel_map_strategy_mix_trailing21(void)
 {
     const guint num_sinks   = 2;
     const guint num_sources = 1;
@@ -261,17 +263,17 @@ test_audio_channel_map_strategy_mix_trailing21(void)
     PsyAudioChannelMap *map
         = psy_audio_channel_map_new_strategy(num_sinks, num_sources, strategy);
 
-    CU_ASSERT_EQUAL(psy_audio_channel_map_get_size(map), 1);
-    CU_ASSERT_PTR_NOT_NULL_FATAL(map);
+    g_assert_nonnull(map);
+    g_assert_cmpuint(psy_audio_channel_map_get_size(map), ==, 1u);
 
     PsyAudioChannelMapping *m0 = psy_audio_channel_map_get_mapping(map, 0);
     PsyAudioChannelMapping *m1 = psy_audio_channel_map_get_mapping(map, 1);
 
-    CU_ASSERT_PTR_NOT_NULL_FATAL(m0);
-    CU_ASSERT_PTR_NULL(m1);
+    g_assert_nonnull(m0);
+    g_assert_null(m1);
 
-    CU_ASSERT_EQUAL(m0->sink_channel, 0);
-    CU_ASSERT_EQUAL(m0->mapped_source, 0);
+    g_assert_cmpuint(m0->sink_channel, ==, 0);
+    g_assert_cmpuint(m0->mapped_source, ==, 0);
 
     psy_audio_channel_map_free(map);
     psy_audio_channel_mapping_free(m0);
@@ -279,7 +281,7 @@ test_audio_channel_map_strategy_mix_trailing21(void)
 }
 
 static void
-test_audio_channel_map_strategy_mix_trailing12(void)
+audio_channel_map_strategy_mix_trailing12(void)
 {
     const guint num_sinks   = 1;
     const guint num_sources = 2;
@@ -290,20 +292,20 @@ test_audio_channel_map_strategy_mix_trailing12(void)
     PsyAudioChannelMap *map
         = psy_audio_channel_map_new_strategy(num_sinks, num_sources, strategy);
 
-    CU_ASSERT_EQUAL(psy_audio_channel_map_get_size(map), 2);
-    CU_ASSERT_PTR_NOT_NULL_FATAL(map);
+    g_assert_nonnull(map);
+    g_assert_cmpuint(psy_audio_channel_map_get_size(map), ==, 2u);
 
     PsyAudioChannelMapping *m0 = psy_audio_channel_map_get_mapping(map, 0);
     PsyAudioChannelMapping *m1 = psy_audio_channel_map_get_mapping(map, 1);
 
-    CU_ASSERT_PTR_NOT_NULL_FATAL(m0);
-    CU_ASSERT_PTR_NOT_NULL_FATAL(m1);
+    g_assert_nonnull(m0);
+    g_assert_nonnull(m1);
 
-    CU_ASSERT_EQUAL(m0->sink_channel, 0);
-    CU_ASSERT_EQUAL(m0->mapped_source, 0);
+    g_assert_cmpuint(m0->sink_channel, ==, 0);
+    g_assert_cmpuint(m0->mapped_source, ==, 0);
 
-    CU_ASSERT_EQUAL(m1->sink_channel, 0);
-    CU_ASSERT_EQUAL(m1->mapped_source, 1);
+    g_assert_cmpuint(m1->sink_channel, ==, 0);
+    g_assert_cmpuint(m1->mapped_source, ==, 1);
 
     psy_audio_channel_map_free(map);
     psy_audio_channel_mapping_free(m0);
@@ -311,9 +313,11 @@ test_audio_channel_map_strategy_mix_trailing12(void)
 }
 
 static void
-test_audio_channel_map_add_mapping(void)
+audio_channel_map_add_mapping(void)
 {
-    gboolean            result;
+    gboolean result;
+    GError  *error = NULL;
+
     PsyAudioChannelMap *map = psy_audio_channel_map_new(2, 2);
 
     // reverses audio channels
@@ -328,28 +332,38 @@ test_audio_channel_map_add_mapping(void)
     PsyAudioChannelMapping *rm1 = NULL;
     PsyAudioChannelMapping *rm2 = NULL;
 
-    result = psy_audio_channel_map_add(map, m1);
-    CU_ASSERT_TRUE(result);
-    result = psy_audio_channel_map_add(map, m2);
-    CU_ASSERT_TRUE(result);
-    CU_ASSERT_EQUAL(psy_audio_channel_map_get_size(map), 2);
+    result = psy_audio_channel_map_add(map, m1, &error);
+    g_assert_true(result);
+    g_assert_no_error(error);
+    result = psy_audio_channel_map_add(map, m2, &error);
+    g_assert_true(result);
+    g_assert_no_error(error);
+    g_assert_cmpuint(psy_audio_channel_map_get_size(map), ==, 2u);
 
-    result = psy_audio_channel_map_add(map, i1);
-    CU_ASSERT_FALSE(result);
-    result = psy_audio_channel_map_add(map, i2);
-    CU_ASSERT_FALSE(result);
-    CU_ASSERT_EQUAL(psy_audio_channel_map_get_size(map), 2);
+    result = psy_audio_channel_map_add(map, i1, &error);
+    g_assert_false(result);
+    g_assert_error(error,
+                   PSY_AUDIO_CHANNEL_MAP_ERROR,
+                   PSY_AUDIO_CHANNEL_MAP_ERROR_INVALID_VALUE);
+    g_clear_error(&error);
+    result = psy_audio_channel_map_add(map, i2, &error);
+    g_assert_false(result);
+    g_assert_error(error,
+                   PSY_AUDIO_CHANNEL_MAP_ERROR,
+                   PSY_AUDIO_CHANNEL_MAP_ERROR_INVALID_VALUE);
+    g_clear_error(&error);
+    g_assert_cmpuint(psy_audio_channel_map_get_size(map), ==, 2u);
 
     rm1 = psy_audio_channel_map_get_mapping(map, 0);
     rm2 = psy_audio_channel_map_get_mapping(map, 1);
 
-    CU_ASSERT_PTR_NOT_NULL_FATAL(rm1);
-    CU_ASSERT_PTR_NOT_NULL_FATAL(rm2);
+    g_assert_nonnull(rm1);
+    g_assert_nonnull(rm2);
 
-    CU_ASSERT_EQUAL(m1->sink_channel, rm1->sink_channel);
-    CU_ASSERT_EQUAL(m2->sink_channel, rm2->sink_channel);
-    CU_ASSERT_EQUAL(m1->mapped_source, rm1->mapped_source);
-    CU_ASSERT_EQUAL(m2->mapped_source, rm2->mapped_source);
+    g_assert_cmpuint(m1->sink_channel, ==, rm1->sink_channel);
+    g_assert_cmpuint(m2->sink_channel, ==, rm2->sink_channel);
+    g_assert_cmpuint(m1->mapped_source, ==, rm1->mapped_source);
+    g_assert_cmpuint(m2->mapped_source, ==, rm2->mapped_source);
 
     psy_audio_channel_map_free(map);
     psy_audio_channel_mapping_free(m1);
@@ -361,35 +375,48 @@ test_audio_channel_map_add_mapping(void)
 }
 
 static void
-test_audio_channel_map_set_mapping(void)
+audio_channel_map_set_mapping(void)
 {
-    gboolean            result;
+    gboolean result;
+    GError  *error = NULL;
+
     PsyAudioChannelMap *map = psy_audio_channel_map_new(2, 2);
 
-    CU_ASSERT_PTR_NOT_NULL_FATAL(map);
+    g_assert_nonnull(map);
 
     PsyAudioChannelMapping *m1 = psy_audio_channel_mapping_new(0, 0);
     PsyAudioChannelMapping *m2 = psy_audio_channel_mapping_new(1, 1);
     PsyAudioChannelMapping *r1 = NULL;
     PsyAudioChannelMapping *r2 = NULL;
 
-    result = psy_audio_channel_map_set(map, 0, m1);
-    CU_ASSERT_FALSE(result);
-    result = psy_audio_channel_map_set(map, 1, m2);
-    CU_ASSERT_FALSE(result);
+    result = psy_audio_channel_map_set(map, 0, m1, &error);
+    g_assert_false(result);
+    g_assert_error(error,
+                   PSY_AUDIO_CHANNEL_MAP_ERROR,
+                   PSY_AUDIO_CHANNEL_MAP_ERROR_INVALID_INDEX);
+    g_clear_error(&error);
+
+    result = psy_audio_channel_map_set(map, 1, m2, &error);
+    g_assert_false(result);
+    g_assert_error(error,
+                   PSY_AUDIO_CHANNEL_MAP_ERROR,
+                   PSY_AUDIO_CHANNEL_MAP_ERROR_INVALID_INDEX);
+    g_clear_error(&error);
 
     psy_audio_channel_map_set_size(map, 2);
 
-    result = psy_audio_channel_map_set(map, 0, m1);
-    CU_ASSERT_TRUE(result);
-    result = psy_audio_channel_map_set(map, 1, m2);
-    CU_ASSERT_TRUE(result);
+    result = psy_audio_channel_map_set(map, 0, m1, &error);
+    g_assert_true(result);
+    g_assert_no_error(error);
+    result = psy_audio_channel_map_set(map, 1, m2, &error);
+    g_assert_true(result);
+    g_assert_no_error(error);
 
     r1 = psy_audio_channel_map_get_mapping(map, 0);
     r2 = psy_audio_channel_map_get_mapping(map, 1);
 
-    CU_ASSERT_TRUE(psy_audio_channel_mapping_eq(m1, r1));
-    CU_ASSERT_TRUE(psy_audio_channel_mapping_eq(m2, r2));
+    g_assert_true(psy_audio_channel_mapping_eq(m1, r1));
+    g_assert_true(psy_audio_channel_mapping_eq(m2, r2));
 
     g_clear_pointer(&r1, psy_audio_channel_mapping_free);
     g_clear_pointer(&r2, psy_audio_channel_mapping_free);
@@ -400,14 +427,33 @@ test_audio_channel_map_set_mapping(void)
     PsyAudioChannelMapping *i4 = psy_audio_channel_mapping_new(0, -1);
 
     // It should not be possible to add mapping with negative of to tall values
-    result = psy_audio_channel_map_set(map, 0, i1);
-    CU_ASSERT_FALSE(result);
-    result = psy_audio_channel_map_set(map, 0, i2);
-    CU_ASSERT_FALSE(result);
-    result = psy_audio_channel_map_set(map, 0, i3);
-    CU_ASSERT_FALSE(result);
-    result = psy_audio_channel_map_set(map, 0, i4);
-    CU_ASSERT_FALSE(result);
+    result = psy_audio_channel_map_set(map, 0, i1, &error);
+    g_assert_false(result);
+    g_assert_error(error,
+                   PSY_AUDIO_CHANNEL_MAP_ERROR,
+                   PSY_AUDIO_CHANNEL_MAP_ERROR_INVALID_VALUE);
+    g_clear_error(&error);
+
+    result = psy_audio_channel_map_set(map, 0, i2, &error);
+    g_assert_false(result);
+    g_assert_error(error,
+                   PSY_AUDIO_CHANNEL_MAP_ERROR,
+                   PSY_AUDIO_CHANNEL_MAP_ERROR_INVALID_VALUE);
+    g_clear_error(&error);
+
+    result = psy_audio_channel_map_set(map, 0, i3, &error);
+    g_assert_false(result);
+    g_assert_error(error,
+                   PSY_AUDIO_CHANNEL_MAP_ERROR,
+                   PSY_AUDIO_CHANNEL_MAP_ERROR_INVALID_VALUE);
+    g_clear_error(&error);
+
+    result = psy_audio_channel_map_set(map, 0, i4, &error);
+    g_assert_false(result);
+    g_assert_error(error,
+                   PSY_AUDIO_CHANNEL_MAP_ERROR,
+                   PSY_AUDIO_CHANNEL_MAP_ERROR_INVALID_VALUE);
+    g_clear_error(&error);
 
     g_clear_pointer(&i1, psy_audio_channel_mapping_free);
     g_clear_pointer(&i2, psy_audio_channel_mapping_free);
@@ -418,8 +464,8 @@ test_audio_channel_map_set_mapping(void)
     r2 = psy_audio_channel_map_get_mapping(map, 1);
 
     // invalid adding of mapping should not touch existing
-    CU_ASSERT_TRUE(psy_audio_channel_mapping_eq(m1, r1));
-    CU_ASSERT_TRUE(psy_audio_channel_mapping_eq(m2, r2));
+    g_assert_true(psy_audio_channel_mapping_eq(m1, r1));
+    g_assert_true(psy_audio_channel_mapping_eq(m2, r2));
 
     g_clear_pointer(&r1, psy_audio_channel_mapping_free);
     g_clear_pointer(&r2, psy_audio_channel_mapping_free);
@@ -430,68 +476,38 @@ test_audio_channel_map_set_mapping(void)
 }
 
 int
-add_audio_channel_mapping_suite(void)
+main(int argc, char **argv)
 {
-    CU_Suite *suite = CU_add_suite("Audio channel mapping tests", NULL, NULL);
-    CU_Test  *test  = NULL;
+    g_test_init(&argc, &argv, NULL);
 
-    if (!suite)
-        return 1;
+    g_test_add_func("/audio-channel/mapping", audio_channel_mapping);
+    g_test_add_func("/audio-channel/map", audio_channel_map);
 
-    test = CU_ADD_TEST(suite, test_audio_channel_mapping);
-    if (!test)
-        return 1;
+    g_test_add_func("/audio-channel/stategy-default22",
+                    audio_channel_map_strategy_default22);
+    g_test_add_func("/audio-channel/stategy-default21",
+                    audio_channel_map_strategy_default21);
+    g_test_add_func("/audio-channel/stategy-default12",
+                    audio_channel_map_strategy_default12);
 
-    test = CU_ADD_TEST(suite, test_audio_channel_map);
-    if (!test)
-        return 1;
+    g_test_add_func("/audio-channel/stategy-duplicate-inputs22",
+                    audio_channel_map_strategy_duplicate_inputs22);
+    g_test_add_func("/audio-channel/stategy-duplicate-inputs21",
+                    audio_channel_map_strategy_duplicate_inputs21);
+    g_test_add_func("/audio-channel/stategy-duplicate-inputs12",
+                    audio_channel_map_strategy_duplicate_inputs12);
 
-    test = CU_ADD_TEST(suite, test_audio_channel_map_strategy_default22);
-    if (!test)
-        return 1;
+    g_test_add_func("/audio-channel/stategy-mix-trailing22",
+                    audio_channel_map_strategy_mix_trailing22);
+    g_test_add_func("/audio-channel/stategy-mix-trailing21",
+                    audio_channel_map_strategy_mix_trailing21);
+    g_test_add_func("/audio-channel/stategy-mix-trailing12",
+                    audio_channel_map_strategy_mix_trailing12);
 
-    test = CU_ADD_TEST(suite, test_audio_channel_map_strategy_default21);
-    if (!test)
-        return 1;
+    g_test_add_func("/audio-channel-map/add-mapping",
+                    audio_channel_map_add_mapping);
+    g_test_add_func("/audio-channel-map/set-mapping",
+                    audio_channel_map_set_mapping);
 
-    test = CU_ADD_TEST(suite, test_audio_channel_map_strategy_default12);
-    if (!test)
-        return 1;
-
-    test = CU_ADD_TEST(suite,
-                       test_audio_channel_map_strategy_duplicate_inputs22);
-    if (!test)
-        return 1;
-
-    test = CU_ADD_TEST(suite,
-                       test_audio_channel_map_strategy_duplicate_inputs21);
-    if (!test)
-        return 1;
-
-    test = CU_ADD_TEST(suite,
-                       test_audio_channel_map_strategy_duplicate_inputs12);
-    if (!test)
-        return 1;
-
-    test = CU_ADD_TEST(suite, test_audio_channel_map_strategy_mix_trailing22);
-    if (!test)
-        return 1;
-
-    test = CU_ADD_TEST(suite, test_audio_channel_map_strategy_mix_trailing21);
-    if (!test)
-        return 1;
-
-    test = CU_ADD_TEST(suite, test_audio_channel_map_strategy_mix_trailing12);
-    if (!test)
-        return 1;
-
-    test = CU_ADD_TEST(suite, test_audio_channel_map_add_mapping);
-    if (!test)
-        return 1;
-
-    test = CU_ADD_TEST(suite, test_audio_channel_map_set_mapping);
-    if (!test)
-        return 1;
-
-    return 0;
+    return g_test_run();
 }

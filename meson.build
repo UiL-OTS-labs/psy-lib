@@ -65,7 +65,7 @@ gstreamer_dep = dependency(
 gstreamer_app_dep = dependency(
     'gstreamer-app-1.0',
     version : gstreamer_req
-  )
+)
 
 gtk_dep = dependency(
     'gtk4',
@@ -154,16 +154,15 @@ if wbemuuid_dep.found()
     psy_deps += wbemuuid_dep
 endif
 
+psy_deps += m_dep
+psy_deps += winmm_dep
+psy_deps += kernel32_dep
+
 message('the depencies are: ')
 foreach dep : psy_deps
     message(' - ', dep.name())
 endforeach
 
-
-
-psy_deps += m_dep
-psy_deps += winmm_dep
-psy_deps += kernel32_dep
 
 gnome = import('gnome')
 fs = import ('fs')

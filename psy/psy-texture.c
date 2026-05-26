@@ -153,6 +153,8 @@ psy_texture_finalize(GObject *object)
         g_free(priv->path);
 
     g_mutex_clear(&priv->lock);
+
+    G_OBJECT_CLASS(psy_texture_parent_class)->finalize(object);
 }
 
 static void
@@ -346,7 +348,7 @@ read_file(PsyTexture *texture, GFile *file, GError **error)
 on_error:
     g_object_unref(istream);
     if (*error) {
-        g_object_unref(bytes);
+        g_byte_array_free(bytes, TRUE);
         bytes = NULL;
     }
     return bytes;
@@ -390,7 +392,14 @@ load_and_decode(PsyTexture *self, GFile *file, GError **error)
     if (*error) {
         return;
     }
+    if (!bytes) {
+        g_critical("Expected bytes to be initialized");
+        return;
+    }
+
     decode_picture(self, bytes, file, error);
+
+    g_byte_array_free(bytes, TRUE);
 }
 
 static void

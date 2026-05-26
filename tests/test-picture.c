@@ -1,7 +1,5 @@
 
-#include <CUnit/CUnit.h>
-#include <psy-image-canvas.h>
-#include <psy-picture.h>
+#include <psylib.h>
 #include <stdbool.h>
 
 #include "unit-test-utilities.h"
@@ -15,6 +13,8 @@ static PsyImage       *g_image;
 static PsyImageCanvas *g_canvas;
 static PsyTimePoint   *g_tstart;
 static char           *g_path;
+
+static PsyInitializer *g_init = NULL;
 
 static bool
 is_upper_left(guint width, guint height, guint row, guint col)
@@ -55,10 +55,10 @@ init_squares(PsyImage *image)
      * 0x0000ff  | 0xff00ff *
      *           |          *
      ************************/
-    guint w      = psy_image_get_width(image);
-    guint h      = psy_image_get_height(image);
-    guint stride = psy_image_get_stride(image);
-    guint nc     = psy_image_get_num_channels(image);
+    gsize w      = psy_image_get_width(image);
+    gsize h      = psy_image_get_height(image);
+    gsize stride = psy_image_get_stride(image);
+    gsize nc     = psy_image_get_num_channels(image);
 
     guint8 *bytes = psy_image_get_ptr(image);
     for (guint row = 0; row < h; row++) {
@@ -92,10 +92,17 @@ init_squares(PsyImage *image)
     }
 }
 
-static int
+static void
 picture_setup(void)
 {
-    set_log_handler_file("test-picture.txt");
+    // clang-format off
+    g_init = g_object_new(
+        PSY_TYPE_INITIALIZER,
+        "gstreamer", FALSE,
+        "portaudio", FALSE,
+        NULL);
+    // clang-format on
+
     GError *error = NULL;
     g_image  = psy_image_new(g_img_width, g_img_height, PSY_IMAGE_FORMAT_RGB);
     g_canvas = psy_image_canvas_new(g_canvas_width, g_canvas_height);
@@ -119,13 +126,19 @@ picture_setup(void)
     }
 
     psy_image_save_path(g_image, g_path, "png", &error);
+    if (error) {
+        g_critical("Unable to save image: %s", error->message);
+        g_clear_error(&error);
+    }
 
     psy_drawing_context_load_files_as_texture(context, &g_path, 1, &error);
-
-    return g_image && g_canvas && g_path ? 0 : 1;
+    if (error) {
+        g_critical("Unable upload file as texture: %s", error->message);
+        g_clear_error(&error);
+    }
 }
 
-static int
+static void
 picture_teardown(void)
 {
     GError *error = NULL;
@@ -139,17 +152,16 @@ picture_teardown(void)
     g_file_delete(file, NULL, &error);
     if (error) {
         g_warning("Unable to delete %s:%s\n", g_path, error->message);
+        g_clear_error(&error);
     }
     g_object_unref(file);
     g_free(g_path);
 
-    set_log_handler_file(NULL);
-
-    return 0;
+    g_object_unref(g_init);
 }
 
 static void
-picture_default_values(void)
+test_picture_default_values(void)
 {
     PsyPicture *picture = psy_picture_new(PSY_CANVAS(g_canvas));
 
@@ -163,14 +175,15 @@ picture_default_values(void)
             "size-strategy", &strategy,
             NULL);
     // clang-format on
-    CU_ASSERT_EQUAL(strategy, PSY_PICTURE_STRATEGY_AUTOMATIC);
-    CU_ASSERT_EQUAL(filename, NULL);
+
+    g_assert_cmpint(strategy, ==, PSY_PICTURE_STRATEGY_AUTOMATIC);
+    g_assert_null(filename);
 
     g_object_unref(picture);
 }
 
 static void
-picture_with_filename(void)
+test_picture_with_filename(void)
 {
     PsyPicture *picture
         = psy_picture_new_filename(PSY_CANVAS(g_canvas), g_path);
@@ -185,8 +198,9 @@ picture_with_filename(void)
             "size-strategy", &strategy,
             NULL);
     // clang-format on
-    CU_ASSERT_EQUAL(strategy, PSY_PICTURE_STRATEGY_AUTOMATIC);
-    CU_ASSERT_STRING_EQUAL(filename, g_path);
+
+    g_assert_cmpint(strategy, ==, PSY_PICTURE_STRATEGY_AUTOMATIC);
+    g_assert_cmpstr(filename, ==, g_path);
 
     g_free(filename);
     g_object_unref(picture);
@@ -205,7 +219,7 @@ on_resize(PsyPicture *picture, gfloat width, gfloat height, gpointer data)
 }
 
 static void
-picture_draw_auto_resize(void)
+test_picture_draw_auto_resize(void)
 {
     PsyPictureSizeStrategy strat_static;
     PsyPictureSizeStrategy strat_dynamic;
@@ -220,8 +234,8 @@ picture_draw_auto_resize(void)
     g_object_get(pic_static, "size-strategy", &strat_static, NULL);
     g_object_get(pic_dynamic, "size-strategy", &strat_dynamic, NULL);
 
-    CU_ASSERT_EQUAL(strat_static, PSY_PICTURE_STRATEGY_MANUAL);
-    CU_ASSERT_EQUAL(strat_dynamic, PSY_PICTURE_STRATEGY_AUTOMATIC);
+    g_assert_cmpint(strat_static, ==, PSY_PICTURE_STRATEGY_MANUAL);
+    g_assert_cmpint(strat_dynamic, ==, PSY_PICTURE_STRATEGY_AUTOMATIC);
 
     g_signal_connect(
         pic_static, "auto-resize", G_CALLBACK(on_resize), &static_resized);
@@ -233,8 +247,8 @@ picture_draw_auto_resize(void)
 
     psy_image_canvas_iterate(g_canvas);
 
-    CU_ASSERT_TRUE(dynamic_resized);
-    CU_ASSERT_FALSE(static_resized);
+    g_assert_true(dynamic_resized);
+    g_assert_false(static_resized);
 
     g_object_unref(pic_static);
     g_object_unref(pic_dynamic);
@@ -271,8 +285,8 @@ test_colors(PsyImage *image)
     guint lower_bound = g_canvas_height - (g_canvas_height - g_img_height) / 2;
 
     while (num_samples < 10) {
-        guint x = random_int_range(0, g_canvas_width - 1);
-        guint y = random_int_range(0, g_canvas_height - 1);
+        guint x = g_test_rand_int_range(0, (int) g_canvas_width - 1);
+        guint y = g_test_rand_int_range(0, (int) g_canvas_height - 1);
 
         PsyColor *probe = psy_image_get_pixel(image, y, x);
 
@@ -365,7 +379,7 @@ test_colors(PsyImage *image)
  * and not upside down, left side right.
  */
 static void
-picture_test_drawing(void)
+test_picture_test_drawing(void)
 {
     PsyPicture *pic = psy_picture_new_filename(PSY_CANVAS(g_canvas), g_path);
     PsyImage   *image;
@@ -380,37 +394,35 @@ picture_test_drawing(void)
         save_image_tmp_png(image, "%s.png", __func__);
     }
 
-    CU_ASSERT_TRUE(test_colors(image));
+    g_assert_true(test_colors(image));
 
     g_object_unref(pic);
     g_object_unref(image);
 }
 
 int
-add_picture_suite(void)
+main(int argc, char **argv)
 {
-    CU_Suite *suite
-        = CU_add_suite("picture tests", picture_setup, picture_teardown);
-    CU_Test *test = NULL;
+    g_test_init(&argc, &argv, NULL);
 
-    if (!suite)
-        return 1;
+    UnitTestUtilsInit init_utils = {.log_file      = "test-picture.txt",
+                                    .domains       = NULL,
+                                    .log_level     = G_LOG_LEVEL_INFO,
+                                    .save_pictures = TRUE};
 
-    test = CU_ADD_TEST(suite, picture_default_values);
-    if (!test)
-        return 1;
+    unit_test_utils_init(&init_utils);
 
-    test = CU_ADD_TEST(suite, picture_with_filename);
-    if (!test)
-        return 1;
+    picture_setup();
 
-    test = CU_ADD_TEST(suite, picture_draw_auto_resize);
-    if (!test)
-        return 1;
+    g_test_add_func("/picture/default_values", test_picture_default_values);
+    g_test_add_func("/picture/with_filename", test_picture_with_filename);
+    g_test_add_func("/picture/draw_auto_resize", test_picture_draw_auto_resize);
+    g_test_add_func("/picture/test_picture_test_drawing",
+                    test_picture_test_drawing);
 
-    test = CU_ADD_TEST(suite, picture_test_drawing);
-    if (!test)
-        return 1;
+    int save = g_test_run();
 
-    return 0;
+    picture_teardown();
+
+    return save;
 }

@@ -1,14 +1,31 @@
-
-#include <CUnit/CUnit.h>
-#include <CUnit/TestDB.h>
+#include <stdio.h>
 
 #include "hw/psy-parallel-port.h"
 #include "psy-config.h"
+#include <psylib.h>
 
 gint g_port_num = -1;
 
 static void
-parallel_port_create(void)
+setup_parallel_port_suite(void)
+{
+    /* Determine whether we have a parallel port */
+    gint                  n_ports = 0;
+    PsyParallelPortInfo **infos   = NULL;
+
+    PsyParallelPort *port = psy_parallel_port_new();
+    psy_parallel_port_enumerate(port, &infos, &n_ports);
+
+    if (n_ports > 0) {
+        g_assert(infos != NULL);
+        g_port_num = psy_parallel_port_info_port_number(infos[0]);
+    }
+
+    psy_parallel_port_free(port);
+}
+
+static void
+test_parallel_port_create(void)
 {
     guint  pins;
     gchar *name = NULL;
@@ -18,10 +35,6 @@ parallel_port_create(void)
     gboolean is_output, is_input, is_open;
 
     PsyParallelPort *port = psy_parallel_port_new();
-
-    CU_ASSERT_PTR_NOT_NULL(port);
-    if (!port)
-        return;
 
     // clang-format off
     g_object_get(port,
@@ -35,46 +48,52 @@ parallel_port_create(void)
                  NULL);
     // clang-format on
 
-    CU_ASSERT_EQUAL(dir, PSY_IO_DIRECTION_OUT);
-    CU_ASSERT_STRING_EQUAL(name, "");
-    CU_ASSERT_EQUAL(port_num, -1);
-    CU_ASSERT_EQUAL(pins, 0);
+    g_assert_cmpint(dir, ==, PSY_IO_DIRECTION_OUT);
+    g_assert_cmpstr(name, ==, "");
+    g_assert_cmpint(port_num, ==, -1);
+    g_assert_cmpuint(pins, ==, 0u);
 
-    CU_ASSERT_FALSE(psy_parallel_port_is_open(port));
-    CU_ASSERT_FALSE(psy_parallel_port_is_output(port));
-    CU_ASSERT_FALSE(psy_parallel_port_is_input(port));
-    CU_ASSERT_FALSE(is_input);
-    CU_ASSERT_FALSE(is_output);
-    CU_ASSERT_FALSE(is_input);
+    g_assert_false(psy_parallel_port_is_open(port));
+    g_assert_false(psy_parallel_port_is_output(port));
+    g_assert_false(psy_parallel_port_is_input(port));
+    g_assert_false(is_input);
+    g_assert_false(is_output);
+    g_assert_false(is_input);
 
     g_free(name);
     g_object_unref(port);
 }
 
 static void
-parallel_port_as_input(void)
+test_parallel_port_as_input(void)
 {
-
     PsyIoDirection   dir;
-    PsyParallelPort *port = psy_parallel_port_new();
+    PsyParallelPort *port = NULL;
 
-    CU_ASSERT_PTR_NOT_NULL_FATAL(port);
+    port = psy_parallel_port_new();
+
+    g_assert_nonnull(port);
 
     psy_parallel_port_set_direction(port, PSY_IO_DIRECTION_IN);
 
     g_object_get(port, "direction", &dir, NULL);
 
-    CU_ASSERT_EQUAL(dir, PSY_IO_DIRECTION_IN);
+    g_assert_cmpint(dir, ==, PSY_IO_DIRECTION_IN);
 
     g_object_unref(port);
 }
 
 static void
-parallel_port_open(void)
+test_parallel_port_open(void)
 {
     gchar  *name;
     gint    port_num;
     GError *error = NULL;
+
+    if (g_port_num < 0) {
+        g_test_skip("No parallel port available skipping this test");
+        return;
+    }
 
     PsyParallelPort *port = psy_parallel_port_new();
 
@@ -96,8 +115,8 @@ parallel_port_open(void)
 
     psy_parallel_port_open(port, g_port_num, &error);
     gboolean open = psy_parallel_port_is_open(port);
-    CU_ASSERT_TRUE(open);
-    CU_ASSERT_PTR_NULL(error);
+    g_assert_true(open);
+    g_assert_no_error(error);
     if (!open) {
         fprintf(stderr, "Unable to open port: %s", error->message);
         g_clear_error(&error);
@@ -107,16 +126,16 @@ parallel_port_open(void)
 
     g_object_get(port, "port-num", &port_num, "port-name", &name, NULL);
 
-    CU_ASSERT_STRING_EQUAL(name, expected_name);
-    CU_ASSERT_EQUAL(port_num, g_port_num);
+    g_assert_cmpstr(name, ==, expected_name);
+    g_assert_cmpint(port_num, ==, g_port_num);
 
-    CU_ASSERT_TRUE(psy_parallel_port_is_output(port));
-    CU_ASSERT_FALSE(psy_parallel_port_is_input(port));
+    g_assert_true(psy_parallel_port_is_output(port));
+    g_assert_false(psy_parallel_port_is_input(port));
 
     psy_parallel_port_set_direction(port, PSY_IO_DIRECTION_IN);
 
-    CU_ASSERT_FALSE(psy_parallel_port_is_output(port));
-    CU_ASSERT_TRUE(psy_parallel_port_is_input(port));
+    g_assert_false(psy_parallel_port_is_output(port));
+    g_assert_true(psy_parallel_port_is_input(port));
 
     psy_parallel_port_close(port);
     g_free(name);
@@ -124,42 +143,15 @@ parallel_port_open(void)
 }
 
 int
-add_parallel_suite(gint port_num)
+main(int argc, char **argv)
 {
-    // Check for other port implementations here
-#if defined(HAVE_LINUX_PARPORT_H) || defined(_WIN32)
-    CU_Suite *suite = CU_add_suite("parallel port tests", NULL, NULL);
-    CU_Test  *test  = NULL;
+    g_test_init(&argc, &argv, NULL);
 
-    if (!suite)
-        return 1;
+    setup_parallel_port_suite();
 
-    test = CU_add_test(suite,
-                       "ParallelPort gets sensible default values",
-                       parallel_port_create);
-    if (!test)
-        return 1;
+    g_test_add_func("/parallel_port/create", test_parallel_port_create);
+    g_test_add_func("/parallel_port/as_input", test_parallel_port_as_input);
+    g_test_add_func("/parallel_port/open", test_parallel_port_open);
 
-    test = CU_add_test(
-        suite, "Close ports may change to input", parallel_port_as_input);
-    if (!test)
-        return 1;
-
-    if (port_num >= 0) {
-
-        // These test must be enabled via the command line the
-        // will be used as device number to open.
-
-        g_port_num = port_num;
-
-        test = CU_add_test(suite, "ParallelPort open port", parallel_port_open);
-        if (!test)
-            return 1;
-    }
-
-#else
-    #pragma message "Can't test with parallel device"
-#endif
-
-    return 0;
+    return g_test_run();
 }

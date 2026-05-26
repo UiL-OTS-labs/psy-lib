@@ -1,16 +1,12 @@
 
-
-#include <CUnit/CUnit.h>
-#include <CUnit/TestDB.h>
-
-#include "unit-test-utilities.h"
-#include <gl/psy-gl-canvas.h>
+#include <math.h>
+#include <psylib.h>
 
 const gint WIDTH  = 640;
 const gint HEIGHT = 480;
 
 static void
-canvas_initialization(void)
+test_canvas_initialization(void)
 {
     // Use PsyGlCanvas as PsyCanvas is abstract
     PsyGlCanvas *canvas = psy_gl_canvas_new(WIDTH, HEIGHT);
@@ -18,7 +14,7 @@ canvas_initialization(void)
     gint         gl_major, gl_minor;
     gboolean     debug, use_es;
 
-    CU_ASSERT_PTR_NOT_NULL_FATAL(canvas);
+    g_assert_nonnull(canvas);
 
     // clang-format off
     g_object_get(
@@ -31,18 +27,18 @@ canvas_initialization(void)
         "gl-minor", &gl_minor,
         NULL);
     // clang-format on
-    CU_ASSERT_EQUAL(width, WIDTH);
-    CU_ASSERT_EQUAL(gl_major, 3);
-    CU_ASSERT_EQUAL(gl_minor, 3);
-    CU_ASSERT_EQUAL(height, HEIGHT);
-    CU_ASSERT_FALSE(debug);
-    CU_ASSERT_FALSE(use_es);
+    g_assert_cmpint(width, ==, WIDTH);
+    g_assert_cmpint(gl_major, ==, 3);
+    g_assert_cmpint(gl_minor, ==, 3);
+    g_assert_cmpint(height, ==, HEIGHT);
+    g_assert_false(debug);
+    g_assert_false(use_es);
 
     psy_gl_canvas_free(canvas);
 }
 
 static void
-canvas_background_color(void)
+test_canvas_background_color(void)
 {
     PsyGlCanvas *canvas     = psy_gl_canvas_new(WIDTH, HEIGHT);
     PsyColor    *default_bg = NULL;
@@ -50,15 +46,15 @@ canvas_background_color(void)
         PSY_TYPE_COLOR, "r", 0.0f, "g", 0.0f, "b", 0.0f, "a", 0.0f, NULL);
     gfloat r, g, b;
 
-    CU_ASSERT_PTR_NOT_NULL_FATAL(canvas);
+    g_assert_nonnull(canvas);
 
     g_object_get(canvas, "background-color", &default_bg, NULL);
-    CU_ASSERT_PTR_NOT_NULL_FATAL(default_bg);
+    g_assert_nonnull(default_bg);
     g_object_get(default_bg, "r", &r, "g", &g, "b", &b, NULL);
 
-    CU_ASSERT_EQUAL(r, 0.5);
-    CU_ASSERT_EQUAL(g, 0.5);
-    CU_ASSERT_EQUAL(b, 0.5);
+    g_assert_cmpfloat(r, ==, 0.5);
+    g_assert_cmpfloat(g, ==, 0.5);
+    g_assert_cmpfloat(b, ==, 0.5);
 
     // Draw to test whether the color is applied
     psy_image_canvas_iterate(PSY_IMAGE_CANVAS(canvas));
@@ -66,9 +62,9 @@ canvas_background_color(void)
     PsyImage *image = psy_canvas_get_image(PSY_CANVAS(canvas));
     PsyColor *probe = psy_image_get_pixel(
         image,
-        random_int_range(0, (gint) psy_image_get_height(image)) - 1,
-        random_int_range(0, (gint) psy_image_get_width(image)) - 1);
-    CU_ASSERT_TRUE(psy_color_equal_eps(default_bg, probe, 1.0 / 255));
+        g_test_rand_int_range(0, (gint) psy_image_get_height(image)) - 1,
+        g_test_rand_int_range(0, (gint) psy_image_get_width(image)) - 1);
+    g_assert_true(psy_color_equal_eps(default_bg, probe, 1.0 / 255));
 
     g_clear_object(&image);
     g_clear_object(&probe);
@@ -81,9 +77,9 @@ canvas_background_color(void)
     image = psy_canvas_get_image(PSY_CANVAS(canvas));
     probe = psy_image_get_pixel(
         image,
-        random_int_range(0, (gint) psy_image_get_height(image)) - 1,
-        random_int_range(0, (gint) psy_image_get_width(image)) - 1);
-    CU_ASSERT_TRUE(psy_color_equal_eps(new_color, probe, 1.0 / 255));
+        g_test_rand_int_range(0, (gint) psy_image_get_height(image)) - 1,
+        g_test_rand_int_range(0, (gint) psy_image_get_width(image)) - 1);
+    g_assert_true(psy_color_equal_eps(new_color, probe, 1.0 / 255));
 
     g_clear_object(&image);
     g_clear_object(&probe);
@@ -94,7 +90,7 @@ canvas_background_color(void)
 }
 
 static void
-canvas_size_vd(void)
+test_canvas_size_vd(void)
 {
     gfloat width_vd, height_vd;
 
@@ -118,36 +114,26 @@ canvas_size_vd(void)
             NULL);
     // clang-format on
 
-    CU_ASSERT_EQUAL(
+    g_assert_cmpfloat(
         width_vd,
+        ==,
         2 * psy_radians_to_degrees(atan(width_mm / 2.0 / distance_mm)));
-    CU_ASSERT_EQUAL(
+    g_assert_cmpfloat(
         height_vd,
+        ==,
         2 * psy_radians_to_degrees(atan(height_mm / 2.0 / distance_mm)));
 
     g_object_unref(canvas);
 }
 
 int
-add_canvas_suite(void)
+main(int argc, char **argv)
 {
-    CU_Suite *suite = CU_add_suite("canvas tests", NULL, NULL);
-    CU_Test  *test  = NULL;
+    g_test_init(&argc, &argv, NULL);
 
-    if (!suite)
-        return 1;
+    g_test_add_func("/canvas/initialization", test_canvas_initialization);
+    g_test_add_func("/canvas/background_color", test_canvas_background_color);
+    g_test_add_func("/canvas/size_vd", test_canvas_size_vd);
 
-    test = CU_ADD_TEST(suite, canvas_initialization);
-    if (!test)
-        return 1;
-
-    test = CU_ADD_TEST(suite, canvas_background_color);
-    if (!test)
-        return 1;
-
-    test = CU_ADD_TEST(suite, canvas_size_vd);
-    if (!test)
-        return 1;
-
-    return 0;
+    return g_test_run();
 }

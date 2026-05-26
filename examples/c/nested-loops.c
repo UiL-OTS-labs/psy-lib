@@ -1,6 +1,7 @@
 
-#include <psylib.h>
 #include <assert.h>
+#include <psylib.h>
+#include <stdlib.h>
 
 #define STOP 4
 #define INDEX 0
@@ -49,8 +50,9 @@ main(void)
     GMainLoop    *mainloop = g_main_loop_new(NULL, FALSE);
     PsyClock     *clk      = psy_clock_new();
     PsyTimePoint *tp2 = NULL, *tp1 = psy_clock_now(clk);
-    PsyDuration  *dur = NULL;
-    gboolean ret;
+    PsyDuration  *dur   = NULL;
+    GError       *error = NULL;
+    gboolean      ret;
 
     PsyTrial *trial1 = psy_trial_new();
     PsyTrial *trial2 = psy_trial_new();
@@ -59,8 +61,16 @@ main(void)
     PsyLoop *inner = psy_loop_new();
 
     // setup in on_loop_enter.
-    psy_loop_set_step(outer, PSY_STEP(inner));
-    psy_loop_set_step(inner, PSY_STEP(trial1));
+    psy_loop_set_step(outer, PSY_STEP(inner), &error);
+    if (error) {
+        g_printerr("Unable to set step: %s", error->message);
+        return EXIT_FAILURE;
+    }
+    psy_loop_set_step(inner, PSY_STEP(trial1), &error);
+    if (error) {
+        g_printerr("Unable to set step: %s", error->message);
+        return EXIT_FAILURE;
+    }
 
     // We setup the incorrect loops fully at the start.
     // This fails at the second iteration of the outer_incorrect loop
@@ -71,12 +81,24 @@ main(void)
     PsyLoop *inner_incorrect
         = psy_loop_new_full(INDEX, STOP, INC, PSY_LOOP_CONDITION_LESS);
 
-    psy_loop_set_step(outer_incorrect, PSY_STEP(inner_incorrect));
+    psy_loop_set_step(outer_incorrect, PSY_STEP(inner_incorrect), &error);
+    if (error) {
+        g_printerr("Unable to set step: %s", error->message);
+        return EXIT_FAILURE;
+    }
     // pass a copy of trial as otherwise the first loop will destroy it on
     // destruction
-    psy_loop_set_step(inner_incorrect, PSY_STEP(g_object_ref(trial2)));
-    ret = psy_loop_set_step(inner_incorrect, PSY_STEP(trial1));
+    psy_loop_set_step(inner_incorrect, PSY_STEP(g_object_ref(trial2)), &error);
+    if (error) {
+        g_printerr("Unable to set step: %s", error->message);
+        return EXIT_FAILURE;
+    }
+    ret = psy_loop_set_step(inner_incorrect, PSY_STEP(trial1), &error);
     assert(ret == FALSE);
+    assert(error != NULL);
+    if (error) {
+        g_clear_error(&error);
+    }
 
     // Do something when a trial is activated.
     g_signal_connect(trial1, "activate", G_CALLBACK(on_trial_activate), NULL);

@@ -196,7 +196,7 @@ G_MODULE_EXPORT gboolean
 psy_audio_device_get_started(PsyAudioDevice *self);
 
 G_MODULE_EXPORT PsyDuration *
-psy_audio_device_get_frame_dur(PsyAudioDevice *self);
+psy_audio_device_get_frame_dur(PsyAudioDevice *self, GError **error);
 
 G_MODULE_EXPORT PsyDuration *
 psy_audio_device_get_output_latency(PsyAudioDevice *self);

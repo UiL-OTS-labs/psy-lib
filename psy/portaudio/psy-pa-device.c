@@ -443,8 +443,13 @@ pa_determine_device(PsyPADevice         *self,
     psy_audio_device_enumerate_devices(
         PSY_AUDIO_DEVICE(self), &infos, &num_infos);
 
-    if (num_infos == 0)
+    if (num_infos == 0) {
+        g_set_error(error,
+                    PSY_AUDIO_DEVICE_ERROR,
+                    PSY_AUDIO_DEVICE_ERROR_NO_DEVICES,
+                    "There seem to be no audio devices available");
         return -1;
+    }
 
     if (name && g_strcmp0(name, "") != 0) {
         for (guint i = 0; i < num_infos; i++) {
@@ -554,7 +559,13 @@ psy_pa_device_init(PsyPADevice *self)
 static void
 psy_pa_device_dispose(GObject *object)
 {
+    PsyPADevice *device = PSY_PA_DEVICE(object);
+
+    // Will stop and close the stream
     G_OBJECT_CLASS(psy_pa_device_parent_class)->dispose(object);
+
+    // clear after closing the stream.
+    g_clear_object(&device->clk);
 }
 
 static void
@@ -564,6 +575,7 @@ psy_pa_device_finalize(GObject *object)
 
     if (self->pa_initialized) {
         Pa_Terminate();
+        self->pa_initialized = FALSE;
     }
 
     if (self->dev_infos) {

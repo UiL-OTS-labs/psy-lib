@@ -2,12 +2,10 @@
 #include <math.h>
 #include <string.h>
 
-#include <CUnit/CUnit.h>
-
 #include <psylib.h>
 
 static void
-matrix4_create(void)
+test_matrix4_create(void)
 {
     PsyMatrix4 *mat = psy_matrix4_new();
 
@@ -21,14 +19,14 @@ matrix4_create(void)
             NULL);
     // clang-format on
 
-    CU_ASSERT_TRUE(is_null);
-    CU_ASSERT_FALSE(is_identity);
+    g_assert_true(is_null);
+    g_assert_false(is_identity);
 
     psy_matrix4_free(mat);
 }
 
 static void
-matrix4_create_identity(void)
+test_matrix4_create_identity(void)
 {
     PsyMatrix4 *mat = psy_matrix4_new_identity();
 
@@ -42,14 +40,14 @@ matrix4_create_identity(void)
             NULL);
     // clang-format on
 
-    CU_ASSERT_FALSE(is_null);
-    CU_ASSERT_TRUE(is_identity);
+    g_assert_false(is_null);
+    g_assert_true(is_identity);
 
     psy_matrix4_free(mat);
 }
 
 static void
-matrix4_setable_props(void)
+test_matrix4_setable_props(void)
 {
     PsyMatrix4 *mat = psy_matrix4_new();
 
@@ -64,8 +62,8 @@ matrix4_setable_props(void)
             NULL);
     // clang-format on
 
-    CU_ASSERT_TRUE(is_identity);
-    CU_ASSERT_FALSE(is_null);
+    g_assert_true(is_identity);
+    g_assert_false(is_null);
 
     g_object_set(mat, "is-null", TRUE, NULL);
     // clang-format off
@@ -75,31 +73,18 @@ matrix4_setable_props(void)
             NULL);
     // clang-format off
     
-    CU_ASSERT_FALSE(is_identity);
-    CU_ASSERT_TRUE(is_null);
+    g_assert_false(is_identity);
+    g_assert_true(is_null);
 
     psy_matrix4_free(mat);
 }
 
-int
-add_matrix4_suite(void)
-{
-    CU_Suite *suite = CU_add_suite("PsyMatrix4 suite", NULL, NULL);
-    CU_Test  *test;
-    if (!suite)
-        return 1;
+int main(int argc, char** argv) {
+    g_test_init(&argc, &argv, NULL);
 
-    test = CU_ADD_TEST(suite, matrix4_create);
-    if (!test)
-        return 1;
+    g_test_add_func("/matrix4/test_matrix4", test_matrix4_create);
+    g_test_add_func("/matrix4/create_itentity", test_matrix4_create_identity);
+    g_test_add_func("/matrix4/setable_props", test_matrix4_setable_props);
 
-    test = CU_ADD_TEST(suite, matrix4_create_identity);
-    if (!test)
-        return 1;
-    
-    test = CU_ADD_TEST(suite, matrix4_setable_props);
-    if (!test)
-        return 1;
-
-    return 0;
+    return g_test_run();
 }

@@ -1,5 +1,4 @@
 
-#include <CUnit/CUnit.h>
 #include <psylib.h>
 
 #include "unit-test-utilities.h"
@@ -14,37 +13,37 @@ static PsyColor       *g_bg_color   = NULL;
 // scheduled to a frame that has already been drawn.
 static PsyTimePoint *g_tp_start     = NULL;
 
-static int
+static void
 test_text_setup(void)
 {
     g_debug("Entering %s", __func__);
     g_canvas     = psy_image_canvas_new(WIDTH, HEIGHT);
-    g_stim_color = psy_color_new_rgbi(random_int_range(0, 255),
-                                      random_int_range(0, 255),
-                                      random_int_range(0, 255));
-    g_bg_color   = psy_color_new_rgbi(random_int_range(0, 255),
-                                    random_int_range(0, 255),
-                                    random_int_range(0, 255));
+    g_stim_color = psy_color_new_rgbi(g_test_rand_int_range(0, 255),
+                                      g_test_rand_int_range(0, 255),
+                                      g_test_rand_int_range(0, 255));
+    g_bg_color   = psy_color_new_rgbi(g_test_rand_int_range(0, 255),
+                                    g_test_rand_int_range(0, 255),
+                                    g_test_rand_int_range(0, 255));
 
     PsyTimePoint *temp = psy_image_canvas_get_time(g_canvas);
     g_tp_start         = psy_time_point_add(
         temp, psy_canvas_get_frame_dur(PSY_CANVAS(g_canvas)));
     psy_time_point_free(temp);
 
-    if (!g_canvas || !g_stim_color || !g_bg_color || !g_tp_start)
-        return 1;
-
-    // make random but significantly different colors
-    while (psy_color_equal_eps(g_stim_color, g_bg_color, 0.25)) {
-        psy_color_set_redi(g_stim_color, random_int_range(0, 255));
-        psy_color_set_greeni(g_stim_color, random_int_range(0, 255));
-        psy_color_set_bluei(g_stim_color, random_int_range(0, 255));
+    if (!g_canvas || !g_stim_color || !g_bg_color || !g_tp_start) {
+        g_warning("Unable to create a critical object for test-text");
+        return;
     }
 
-    return 0;
+    // make random but significantly different colors
+    while (psy_color_equal_eps(g_stim_color, g_bg_color, 0.25f)) {
+        psy_color_set_redi(g_stim_color, g_test_rand_int_range(0, 255));
+        psy_color_set_greeni(g_stim_color, g_test_rand_int_range(0, 255));
+        psy_color_set_bluei(g_stim_color, g_test_rand_int_range(0, 255));
+    }
 }
 
-static int
+static void
 test_text_teardown(void)
 {
     g_debug("Entering %s", __func__);
@@ -52,21 +51,19 @@ test_text_teardown(void)
     g_clear_object(&g_stim_color);
     g_clear_object(&g_bg_color);
     g_clear_pointer(&g_tp_start, psy_time_point_free);
-
-    return 0;
 }
 
 static void
-text_default_values(void)
+test_text_default_values(void)
 {
     PsyText *text = psy_text_new(PSY_CANVAS(g_canvas));
 
-    CU_ASSERT_PTR_NOT_NULL_FATAL(text);
+    g_assert_nonnull(text);
 
     PsyColor *font_color         = NULL;
     PsyColor *background_color   = NULL;
     PsyColor *default_bg_color   = psy_color_new();
-    PsyColor *default_font_color = psy_color_new_rgb(1.0, 1, 1);
+    PsyColor *default_font_color = psy_color_new_rgb(1.0f, 1.0f, 1.0f);
     gboolean  is_dirty, use_markup;
 
     // clang-format off
@@ -78,10 +75,10 @@ text_default_values(void)
              NULL);
     // clang-format on
 
-    CU_ASSERT_TRUE(is_dirty); // if it isn't drawn, it's dirty
-    CU_ASSERT_FALSE(use_markup);
-    CU_ASSERT_TRUE(psy_color_equal(default_bg_color, background_color));
-    CU_ASSERT_TRUE(psy_color_equal(default_font_color, font_color));
+    g_assert_true(is_dirty); // if it isn't drawn, it's dirty
+    g_assert_false(use_markup);
+    g_assert_true(psy_color_equal(default_bg_color, background_color));
+    g_assert_true(psy_color_equal(default_font_color, font_color));
 
     g_object_unref(text);
     g_object_unref(font_color);
@@ -91,7 +88,7 @@ text_default_values(void)
 }
 
 static void
-text_markup_text_properties(void)
+test_text_markup_text_properties(void)
 {
     PsyText *text
         = psy_text_new_full(PSY_CANVAS(g_canvas), 0, 0, 640, 480, "", TRUE);
@@ -102,34 +99,32 @@ text_markup_text_properties(void)
     g_object_set(text, "markup", markup, NULL);
     g_object_get(text, "use-markup", &use_markup, NULL);
 
-    CU_ASSERT_TRUE(use_markup);
+    // When setting the markup property it is expected that markup is used
+    g_assert_true(use_markup);
 
     g_object_set(text, "text", some_text, NULL);
     g_object_get(text, "use-markup", &use_markup, NULL);
 
-    CU_ASSERT_FALSE(use_markup);
+    // when setting the text property, it is expected that markup  isn't used
+    g_assert_false(use_markup);
 
     g_object_unref(text);
 }
 
 int
-add_text_suite(void)
+main(int argc, char **argv)
 {
-    CU_Suite *suite
-        = CU_add_suite("Text suite", test_text_setup, test_text_teardown);
+    g_test_init(&argc, &argv, NULL);
 
-    CU_Test *test = NULL;
+    test_text_setup();
 
-    if (!suite)
-        return 1;
+    g_test_add_func("/text/default_values", test_text_default_values);
+    g_test_add_func("/text/markup_properties",
+                    test_text_markup_text_properties);
 
-    test = CU_ADD_TEST(suite, text_default_values);
-    if (!test)
-        return 1;
+    int save = g_test_run();
 
-    test = CU_ADD_TEST(suite, text_markup_text_properties);
-    if (!test)
-        return 1;
+    test_text_teardown();
 
-    return 0;
+    return save;
 }

@@ -952,18 +952,30 @@ psy_audio_device_get_num_output_channels(PsyAudioDevice *self)
 /**
  * psy_audio_device_get_frame_dur:
  * @self: an instance of [class@AudioDevice].
+ * @error:(out)(nullable): An error may be returned here
  *
  * Returns the duration of one sample/frame for the audio device. As the sample
  * rate set might not be a sample rate supported by the hardware, the sample
  * rate might change to a supported rate.
  * So the duration of a frame can be queried once the device is open.
  *
- * Returns:(transfer full): The [struct@Psy.Duration]of a single sample.
+ * Returns:(transfer full)(nullable): The [struct@Psy.Duration]of a single
+ * sample.
  */
 PsyDuration *
-psy_audio_device_get_frame_dur(PsyAudioDevice *self)
+psy_audio_device_get_frame_dur(PsyAudioDevice *self, GError **error)
 {
     g_return_val_if_fail(PSY_IS_AUDIO_DEVICE(self), NULL);
+
+    if (!psy_audio_device_get_is_open(self)) {
+        g_message("%s: device isn't open.", __func__);
+        g_set_error(error,
+                    PSY_AUDIO_DEVICE_ERROR,
+                    PSY_AUDIO_DEVICE_ERROR_CLOSED,
+                    "Unable to get frame dur when the device is closed");
+        return NULL;
+    }
+
     g_return_val_if_fail(psy_audio_device_get_is_open(self), NULL);
 
     gdouble dur_flt = 1.0 / psy_audio_device_get_sample_rate(self);

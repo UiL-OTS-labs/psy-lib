@@ -1,69 +1,71 @@
 
-#include <CUnit/CUnit.h>
-#include <glib.h>
+#include <psylib.h>
+
 #include <psy-queue.h>
 
 static void
-queue_create(void)
+test_queue_create(void)
 {
     PsyAudioQueue *queue = psy_audio_queue_new(1234);
 
     gfloat some_float;
 
-    CU_ASSERT_PTR_NOT_NULL_FATAL(queue);
-    CU_ASSERT_EQUAL(psy_audio_queue_size(queue), 0);
-    CU_ASSERT_EQUAL(psy_audio_queue_pop_samples(queue, 1, &some_float), 0);
-    CU_ASSERT_EQUAL(psy_audio_queue_capacity(queue), 1234);
+    g_assert_nonnull(queue);
+
+    g_assert_cmpuint(psy_audio_queue_size(queue), ==, 0u);
+    g_assert_cmpuint(
+        psy_audio_queue_pop_samples(queue, 1, &some_float), ==, 0u);
+    g_assert_cmpuint(psy_audio_queue_capacity(queue), ==, 1234u);
 
     psy_audio_queue_free(queue);
 }
 
 static void
-queue_push_pop(void)
+test_queue_push_pop(void)
 {
     float          input[2048];
     float          output[2048];
     PsyAudioQueue *queue = psy_audio_queue_new(1234);
-    CU_ASSERT_PTR_NOT_NULL_FATAL(queue);
+    g_assert_nonnull(queue);
 
     for (int i = 0; i < 2048; i++) {
-        input[i] = 2048.0 * 1.0 / 2048;
+        input[i] = 2048.0f * 1.0f / 2048;
     }
 
     gsize status = psy_audio_queue_push_samples(queue, 1234, input);
-    CU_ASSERT_EQUAL(status, 1234);
+    g_assert_cmpuint(status, ==, 1234u);
 
     status = psy_audio_queue_push_samples(queue, 1, &input[0]);
-    CU_ASSERT_EQUAL(status, 0);
+    g_assert_cmpuint(status, ==, 0u);
 
     status = psy_audio_queue_pop_samples(queue, 1234, output);
-    CU_ASSERT_EQUAL(status, 1234);
+    g_assert_cmpuint(status, ==, 1234u);
 
     status = psy_audio_queue_pop_samples(queue, 1, &output[0]);
-    CU_ASSERT_EQUAL(status, 0);
+    g_assert_cmpuint(status, ==, 0u);
 
     psy_audio_queue_free(queue);
 }
 
 static void
-queue_clear(void)
+test_queue_clear(void)
 {
-    float          sample = .5;
+    float          sample = .5f;
     PsyAudioQueue *queue  = psy_audio_queue_new(16);
 
     psy_audio_queue_push_samples(queue, 1, &sample);
 
-    CU_ASSERT_EQUAL(psy_audio_queue_size(queue), 1);
+    g_assert_cmpuint(psy_audio_queue_size(queue), ==, 1u);
 
     psy_audio_queue_push_samples(queue, 1, &sample);
     psy_audio_queue_push_samples(queue, 1, &sample);
     psy_audio_queue_push_samples(queue, 1, &sample);
 
-    CU_ASSERT_EQUAL(psy_audio_queue_size(queue), 4);
+    g_assert_cmpuint(psy_audio_queue_size(queue), ==, 4u);
 
     psy_audio_queue_clear(queue);
 
-    CU_ASSERT_EQUAL(psy_audio_queue_size(queue), 0);
+    g_assert_cmpuint(psy_audio_queue_size(queue), ==, 0u);
 
     psy_audio_queue_free(queue);
 }
@@ -124,7 +126,7 @@ pull_samples(gpointer data)
 }
 
 static void
-queue_simultaneous_push_pull(void)
+test_queue_simultaneous_push_pull(void)
 {
     GThread *push_thread = NULL;
     GThread *pull_thread = NULL;
@@ -138,7 +140,7 @@ queue_simultaneous_push_pull(void)
     context.data_out = malloc(context.num_samples * sizeof(float));
 
     for (size_t i = 0; i < context.num_samples; i++)
-        context.data_in[i] = i;
+        context.data_in[i] = (float) i;
 
     memset(context.data_out, 0, context.num_samples * sizeof(float));
 
@@ -154,10 +156,10 @@ queue_simultaneous_push_pull(void)
 
     g_info("Threads are joined.");
 
-    CU_ASSERT_TRUE(memcmp(context.data_in,
-                          context.data_out,
-                          context.num_samples * sizeof(float))
-                   == 0);
+    g_assert_cmpmem(context.data_in,
+                    context.num_samples * sizeof(float),
+                    context.data_out,
+                    context.num_samples * sizeof(float));
 
     psy_audio_queue_free(context.queue);
     free(context.data_in);
@@ -165,29 +167,15 @@ queue_simultaneous_push_pull(void)
 }
 
 int
-add_queue_suite(void)
+main(int argc, char **argv)
 {
-    CU_Suite *suite = CU_add_suite("queue tests", NULL, NULL);
-    CU_Test  *test  = NULL;
+    g_test_init(&argc, &argv, NULL);
 
-    if (!suite)
-        return 1;
+    g_test_add_func("/queue/create", test_queue_create);
+    g_test_add_func("/queue/push_pop", test_queue_push_pop);
+    g_test_add_func("/queue/clear", test_queue_clear);
+    g_test_add_func("/queue/simultaneous_push_pull",
+                    test_queue_simultaneous_push_pull);
 
-    test = CU_ADD_TEST(suite, queue_create);
-    if (!test)
-        return 1;
-
-    test = CU_ADD_TEST(suite, queue_push_pop);
-    if (!test)
-        return 1;
-
-    test = CU_ADD_TEST(suite, queue_clear);
-    if (!test)
-        return 1;
-
-    test = CU_ADD_TEST(suite, queue_simultaneous_push_pull);
-    if (!test)
-        return 1;
-
-    return 0;
+    return g_test_run();
 }

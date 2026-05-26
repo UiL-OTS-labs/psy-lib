@@ -1,69 +1,101 @@
 
-
 #include <psylib.h>
 #include <stdarg.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "unit-test-utilities.h"
 
-// globals
+// forward declaration
 
-static GRand  *g_random_dev;
-static guint32 g_seed;
+// Override default log handler/writer
+void
+install_log_handler(void);
+
+// remove log hander and associated data
+void
+remove_log_handler(void);
+
+// set the level threshold default is G_LOG_LEVEL_INFO
+void
+set_log_handler_level(GLogLevelFlags level);
+
+// set the output file written to /tmp/psy-unit-tests/log/file
+void
+set_log_handler_file(const gchar *file);
+
+// Capture only this domain, the rest is ignored. if null every domain is
+// logged.
+void
+set_log_handler_domain(const gchar *domain);
+
+void
+set_save_images(gboolean save);
+
+GFileOutputStream *
+open_log_file(const gchar *filename);
+
+// globals
 
 static GMutex log_mutex;
 
 static struct log_data {
     GFileOutputStream *stream; // for specific test
-    GFileOutputStream *main;   // for all data
     GLogLevelFlags     level;
-    gchar             *domain; // domains starting with domain are logged.
+    GHashTable *domains; // domains if the domain in domains it is logged.
 } g_log_data;
+
+bool is_initialized;
 
 // folder in platform specific temp dir
 static const gchar *g_unit_test_tmp_dir = "psy-unit-tests/";
 
 gboolean g_save_images = FALSE;
 
-// Random functions
+/* ********** initialization and cleanup *************** */
 
-gboolean
-init_random(void)
+static void
+unit_test_utils_cleanup(void)
 {
-    if (g_random_dev) {
-        g_warning("Random device already initialized");
-        return TRUE;
-    }
-
-    g_seed = psy_random_uint32();
-
-    g_random_dev = g_rand_new_with_seed(g_seed);
-    if (G_LIKELY(g_random_dev))
-        return TRUE;
-    return FALSE;
-}
-
-gboolean
-init_random_with_seed(guint32 seed)
-{
-    if (g_random_dev) {
-        g_warning("Random device already initialized");
-        return TRUE;
-    }
-
-    g_seed = seed;
-
-    g_random_dev = g_rand_new_with_seed(seed);
-    if (G_LIKELY(g_random_dev))
-        return TRUE;
-    return FALSE;
+    remove_log_handler();
+    is_initialized = false;
 }
 
 void
-deinitialize_random(void)
+unit_test_utils_init(UnitTestUtilsInit *init_info)
 {
-    g_clear_pointer(&g_random_dev, g_rand_free);
+    if (!init_info) {
+        g_error("%s, init_info = NULL", __func__);
+    }
+
+    if (is_initialized) {
+        g_error("%s, One should only initialize the unit test utilities once",
+                __func__);
+    }
+
+    if (init_info->log_file) {
+        install_log_handler();
+        set_log_handler_file(init_info->log_file);
+        set_log_handler_level(init_info->log_level);
+    }
+
+    if (init_info->domains) {
+        g_log_data.domains = g_hash_table_new(g_str_hash, g_str_equal);
+
+        for (size_t i = 0; init_info->domains[i] != NULL; i++) {
+            g_hash_table_insert(
+                g_log_data.domains, (void *) init_info->domains[i], NULL);
+        }
+    }
+
+    g_save_images = init_info->save_pictures;
+
+    atexit(unit_test_utils_cleanup);
+
+    is_initialized = true;
 }
+
+/* ********** implementation of logging ************* */
 
 static void
 write_to_output_file(GOutputStream *stream, const char *line)
@@ -74,6 +106,7 @@ write_to_output_file(GOutputStream *stream, const char *line)
     gsize   num_bytes_written;
     gsize   len = strlen(line);
 
+    // writes the line
     while (num_bytes_tot < len && error == NULL) {
         g_output_stream_write_all(G_OUTPUT_STREAM(stream),
                                   &line[num_bytes_tot],
@@ -89,6 +122,7 @@ write_to_output_file(GOutputStream *stream, const char *line)
                 error->message); // terminates
     }
 
+    // writes the line_ending
     len               = strlen(line_ending);
     num_bytes_written = 0;
     num_bytes_tot     = 0;
@@ -129,10 +163,9 @@ psy_unit_test_logger(GLogLevelFlags   log_level,
     }
     g_assert(field);
 
-    if (g_log_data.domain) {
-        size_t len = strlen(g_log_data.domain);
-
-        if (strncmp(g_log_data.domain, field->value, len) != 0) {
+    if (g_log_data.domains) {
+        if (!g_hash_table_lookup_extended(
+                g_log_data.domains, field->value, NULL, NULL)) {
             goto exit; // drop it
         }
     }
@@ -142,9 +175,6 @@ psy_unit_test_logger(GLogLevelFlags   log_level,
 
     if (g_log_data.stream) {
         write_to_output_file(G_OUTPUT_STREAM(g_log_data.stream), line);
-    }
-    if (g_log_data.main) {
-        write_to_output_file(G_OUTPUT_STREAM(g_log_data.main), line);
     }
 
     g_free(line);
@@ -159,24 +189,17 @@ exit:
 void
 install_log_handler(void)
 {
-    g_clear_object(&g_log_data.stream);
-    g_clear_pointer(&g_log_data.domain, g_free);
-
     g_log_data.level = G_LOG_LEVEL_INFO;
-
-    if (!g_log_data.main) {
-        g_log_data.main = open_log_file("main.txt");
-    }
 
     g_log_set_writer_func(psy_unit_test_logger, NULL, NULL);
 }
 
+// cleans up the data related to logging
 void
 remove_log_handler(void)
 {
     g_clear_object(&g_log_data.stream);
-    g_clear_object(&g_log_data.main);
-    g_clear_pointer(&g_log_data.domain, g_free);
+    g_clear_pointer(&g_log_data.domains, g_hash_table_destroy);
 
     // Can't reset the log writer func as g_log_set_writer_func may only be
     // called once
@@ -194,15 +217,6 @@ set_log_handler_file(const gchar *filename)
     g_clear_object(&g_log_data.stream);
     if (filename) {
         g_log_data.stream = open_log_file(filename);
-    }
-}
-
-void
-set_log_handler_domain(const gchar *domain)
-{
-    g_clear_pointer(&g_log_data.domain, g_free);
-    if (domain) {
-        g_log_data.domain = g_strdup(domain);
     }
 }
 
@@ -254,62 +268,6 @@ open_log_file(const gchar *filename)
     g_object_unref(tmp_file);
 
     return ret;
-}
-
-guint
-random_seed(void)
-{
-    return g_seed;
-}
-
-gint
-random_int(void)
-{
-    if (G_UNLIKELY(!g_random_dev))
-        g_critical("g_random = %p, have you initialized the random library?",
-                   (gpointer) g_random_dev);
-
-    return g_rand_int(g_random_dev);
-}
-
-gint
-random_int_range(gint lower, gint upper)
-{
-    if (G_UNLIKELY(!g_random_dev))
-        g_critical("g_random = %p, have you initialized the random library?",
-                   (gpointer) g_random_dev);
-
-    return g_rand_int_range(g_random_dev, lower, upper);
-}
-
-gdouble
-random_double(void)
-{
-    if (G_UNLIKELY(!g_random_dev))
-        g_critical("g_random = %p, have you initialized the random library?",
-                   (gpointer) g_random_dev);
-
-    return g_rand_double(g_random_dev);
-}
-
-gdouble
-random_double_range(gdouble lower, gdouble upper)
-{
-    if (G_UNLIKELY(!g_random_dev))
-        g_critical("g_random = %p, have you initialized the random library?",
-                   (gpointer) g_random_dev);
-
-    return g_rand_double_range(g_random_dev, lower, upper);
-}
-
-gboolean
-random_boolean(void)
-{
-    if (G_UNLIKELY(!g_random_dev))
-        g_critical("g_random = %p, have you initialized the random library?",
-                   (gpointer) g_random_dev);
-
-    return g_rand_boolean(g_random_dev);
 }
 
 // saving images

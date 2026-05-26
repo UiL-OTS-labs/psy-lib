@@ -59,6 +59,7 @@ jobs:
           CXX: clang++
       - name: Build
         run: xvfb-run meson compile -C build/
+# run all tests in all suites
       - name: C Unit tests
         run: |
           meson devenv -C build meson test
@@ -113,8 +114,10 @@ jobs:
         run: meson setup build --buildtype=${{matrix.buildtype}}
       - name: build
         run: meson compile -C build
+# run all tests in suites examples and win_ci ideally on windows all test
+# should be run to, but we need to have a working OpenGL context for this.
       - name: test
-        run: meson devenv -C build meson test
+        run: meson devenv -C build meson test --suite win_ci --suite examples
       - uses: actions/upload-artifact@v4
         if: '!cancelled()'
         with:
