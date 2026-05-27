@@ -139,6 +139,10 @@ psy_timer_thread_finalize(GObject *self)
 static gboolean
 psy_timer_thread_add_timer(PsyTimerThread *self, PsyTimer *timer)
 {
+    if (!self->running) {
+        g_info("No new timers are allowed when the thread is stopping");
+        return FALSE;
+    }
     g_ptr_array_add(self->timers, timer);
 
 #if GLIB_CHECK_VERSION(2, 76, 0)
@@ -284,11 +288,12 @@ timer_thread(gpointer data)
 {
     PsyTimerThread *self = data;
 
-    // A maincontext is created and set as thread default. Communication
-    // happens using GAsyncQueue. The context is created in order to avoid
-    // that sources are invoked in the default context
-    GMainContext *context = g_main_context_new();
-    g_main_context_push_thread_default(context);
+    //     // A maincontext is created and set as thread default. Communication
+    //     // happens using GAsyncQueue. The context is created in order to
+    //     avoid
+    //     // that sources are invoked in the default context
+    //     GMainContext *context = g_main_context_new();
+    //     g_main_context_push_thread_default(context);
 
     g_info("TimerThread %p, with thread = %p is running",
            (gpointer) self,
@@ -305,8 +310,8 @@ timer_thread(gpointer data)
             psy_timer_thread_fire_timers(self);
         }
     }
-    g_main_context_pop_thread_default(context);
-    g_main_context_unref(context);
+    //     g_main_context_pop_thread_default(context);
+    //     g_main_context_unref(context);
 
     return data;
 }
