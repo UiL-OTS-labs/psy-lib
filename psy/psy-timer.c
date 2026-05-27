@@ -14,6 +14,15 @@
 #include "psy-time-point.h"
 #include "psy-timer-private.h"
 
+#define MUTEX_LOCK(mut)                                                        \
+    do {                                                                       \
+    g_mutex_lock((mut))
+
+#define MUTEX_UNLOCK(mut)                                                      \
+    g_mutex_unlock((mut));                                                     \
+    }                                                                          \
+    while (0)
+
 typedef struct FireData {
     PsyTimer     *timer;
     PsyTimePoint *fire_time;
@@ -38,7 +47,8 @@ typedef struct _PsyTimer {
     PsyTimerAsyncCb callback;
     gpointer        callback_data;
 
-    guint source_id;
+    GMutex source_id_lock;
+    guint  source_id;
 } PsyTimer;
 
 typedef enum {
@@ -59,6 +69,7 @@ static void
 psy_timer_init(PsyTimer *self)
 {
     g_debug("Timer %p, %s", (void *) self, __func__);
+    g_mutex_init(&self->source_id_lock);
     self->context = g_main_context_get_thread_default();
     self->queue   = g_async_queue_new();
 }
@@ -71,12 +82,17 @@ timer_dispose(GObject *obj)
 
     psy_timer_cancel(self);
 
+    MUTEX_LOCK(&self->source_id_lock);
+
     if (self->source_id) {
         GSource *source
             = g_main_context_find_source_by_id(self->context, self->source_id);
         g_source_destroy(source);
         self->source_id = 0;
     }
+    MUTEX_UNLOCK(&self->source_id_lock);
+
+    g_mutex_clear(&self->source_id_lock);
 
     G_OBJECT_CLASS(psy_timer_parent_class)->dispose(obj);
 }
@@ -152,7 +168,9 @@ thread_default_fire(FireData *data)
     psy_timer_emit_fire(data->timer, data->fire_time);
 
     // Make sure it is not cleared again
+    MUTEX_LOCK(&data->timer->source_id_lock);
     data->timer->source_id = 0;
+    MUTEX_UNLOCK(&data->timer->source_id_lock);
 
     return G_SOURCE_REMOVE;
 }
@@ -303,11 +321,14 @@ psy_timer_cancel(PsyTimer *self)
     if (!self->fire_time)
         return;
 
+    timer_private_cancel_timer(self);
+
+    MUTEX_LOCK(&self->source_id_lock);
+
     g_debug("Timer %p,%s: request thread to cancel timer, source_id = %u",
             (void *) self,
             __func__,
             self->source_id);
-    timer_private_cancel_timer(self);
     // Check whether the thread has already issued a fire
     if (self->source_id) {
         GSource *Source
@@ -315,6 +336,8 @@ psy_timer_cancel(PsyTimer *self)
         g_source_destroy(Source);
         self->source_id = 0;
     }
+    MUTEX_UNLOCK(&self->source_id_lock);
+
     g_clear_pointer(&self->fire_time, psy_time_point_free);
 }
 
@@ -385,7 +408,9 @@ psy_timer_fire(PsyTimer *self, PsyTimePoint *tp)
                           G_SOURCE_FUNC(thread_default_fire),
                           data,
                           (GDestroyNotify) fire_data_free);
+    MUTEX_LOCK(&self->source_id_lock);
     self->source_id = g_source_attach(source, self->context);
+    MUTEX_UNLOCK(&self->source_id_lock);
 
     g_source_unref(source);
 }
