@@ -249,7 +249,7 @@ test_timer = executable(
     c_args : UNIT_PP_ARGS,
     cpp_args : UNIT_PP_ARGS,
 )
-test('test-timer.c', test_timer, is_parallel: false, protocol: 'tap', suite:[win_ci],)
+test('test-timer', test_timer, is_parallel: false, protocol: 'tap', suite:[win_ci],)
 
 test_utilities = executable(
     'test-utilities',

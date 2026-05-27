@@ -14,19 +14,15 @@ const int NUM_SIMULTANEOUS = 25;
 // Have some utilities present
 
 typedef struct {
-    PsyInitializer *init;
-    GMainLoop      *loop;
-    GMainContext   *context;
-    int             num_fired;
+    GMainLoop    *loop;
+    GMainContext *context;
+    int           num_fired;
 } TimerTestUtilities;
 
 static TimerTestUtilities *
 timer_test_utilities_new(void)
 {
     TimerTestUtilities *ret = g_new(TimerTestUtilities, 1);
-
-    ret->init = g_object_new(
-        PSY_TYPE_INITIALIZER, "gstreamer", FALSE, "portaudio", FALSE, NULL);
 
     ret->context = g_main_context_new();
     g_main_context_push_thread_default(ret->context);
@@ -44,8 +40,6 @@ timer_test_utilities_free(TimerTestUtilities *utils)
     g_clear_pointer(&utils->loop, g_main_loop_unref);
     g_main_context_pop_thread_default(utils->context);
     g_clear_pointer(&utils->context, g_main_context_unref);
-
-    g_clear_object(&utils->init);
 
     g_free(utils);
 }
@@ -173,10 +167,10 @@ typedef struct {
 } TimerFireAccuratelyTest;
 
 static TimerFireAccuratelyTest *
-timer_fire_accuratately_test_new(TimerTestUtilities *utils,
-                                 PsyClock           *clk,
-                                 PsyTimer           *timer,
-                                 PsyTimePoint       *scheduled)
+timer_fire_accurately_test_new(TimerTestUtilities *utils,
+                               PsyClock           *clk,
+                               PsyTimer           *timer,
+                               PsyTimePoint       *scheduled)
 {
     TimerFireAccuratelyTest *ret = g_new0(TimerFireAccuratelyTest, 1);
 
@@ -192,7 +186,7 @@ timer_fire_accuratately_test_new(TimerTestUtilities *utils,
 }
 
 static void
-timer_fire_accuratately_test_free(gpointer data)
+timer_fire_accurately_test_free(gpointer data)
 {
     TimerFireAccuratelyTest *test_data = data;
 
@@ -230,7 +224,7 @@ test_timer_fire_accurately(void)
     PsyClock           *clk   = psy_clock_new();
     PsyTimePoint       *now   = psy_clock_now(clk);
     GPtrArray          *timer_data
-        = g_ptr_array_new_full(NUM_TIMERS, timer_fire_accuratately_test_free);
+        = g_ptr_array_new_full(NUM_TIMERS, timer_fire_accurately_test_free);
 
     g_info("Timer accuracy test");
 
@@ -246,7 +240,7 @@ test_timer_fire_accurately(void)
 
         g_object_set(t1, "fire-time", time_future, NULL);
         TimerFireAccuratelyTest *test_data
-            = timer_fire_accuratately_test_new(utils, clk, t1, time_future);
+            = timer_fire_accurately_test_new(utils, clk, t1, time_future);
 
         g_signal_connect(
             t1, "fired", G_CALLBACK(on_timer_fire_accurately), test_data);
@@ -283,7 +277,7 @@ test_timer_fire_accurately(void)
     num_correct        = NUM_TIMERS - n_failed;
     gdouble percentage = (double) num_correct / NUM_TIMERS * 100;
 
-    // 90%% of timers are expected to finish on time
+    // 90% of timers are expected to finish on time
     g_assert_cmpfloat(percentage, >, 90.0);
 
     g_ptr_array_unref(timer_data);
@@ -332,7 +326,7 @@ test_timer_fire_async(void)
     PsyTimePoint       *now   = psy_clock_now(clk);
 
     GPtrArray *timer_data
-        = g_ptr_array_new_full(NUM_TIMERS, timer_fire_accuratately_test_free);
+        = g_ptr_array_new_full(NUM_TIMERS, timer_fire_accurately_test_free);
 
     gint upper_time_bound = UPPER_BOUND;
 
@@ -347,7 +341,7 @@ test_timer_fire_async(void)
         psy_duration_free(dur);
 
         TimerFireAccuratelyTest *test_data
-            = timer_fire_accuratately_test_new(utils, clk, t1, time_future);
+            = timer_fire_accurately_test_new(utils, clk, t1, time_future);
         psy_timer_set_async_fire_cb(t1, fire_async_cb, test_data);
 
         g_object_set(t1, "fire-time", time_future, NULL);
@@ -386,7 +380,7 @@ test_timer_fire_async(void)
     num_correct        = NUM_TIMERS - n_failed;
     gdouble percentage = (double) num_correct / NUM_TIMERS * 100;
 
-    // "expect 90%% of the timers to fire accurately
+    // expect 90% of the timers to fire accurately
     g_assert_cmpfloat(percentage, >, 90.0);
 
     g_ptr_array_unref(timer_data);
@@ -398,7 +392,7 @@ test_timer_fire_async(void)
 }
 
 static void
-on_timer_fire_simutaneously(PsyTimer *t, PsyTimePoint *tp, gpointer data)
+on_timer_fire_simultaneously(PsyTimer *t, PsyTimePoint *tp, gpointer data)
 {
     (void) t;
     (void) tp;
@@ -423,7 +417,7 @@ test_timer_simultaneous(void)
     PsyClock           *clk        = psy_clock_new();
     PsyTimePoint       *now        = psy_clock_now(clk);
     GPtrArray          *timer_data = g_ptr_array_new_full(
-        NUM_SIMULTANEOUS, timer_fire_accuratately_test_free);
+        NUM_SIMULTANEOUS, timer_fire_accurately_test_free);
     PsyDuration *dur = psy_duration_new_ms(100);
 
     g_info("Timer simultaneous test");
@@ -434,15 +428,15 @@ test_timer_simultaneous(void)
 
         PsyTimer *t1 = psy_timer_new();
 
-        // freed by the function timer_fire_accuratately_test_free
+        // freed by the function timer_fire_accurately_test_free
         PsyTimePoint *time_future = psy_time_point_add(now, dur);
 
         TimerFireAccuratelyTest *test_data
-            = timer_fire_accuratately_test_new(utils, clk, t1, time_future);
+            = timer_fire_accurately_test_new(utils, clk, t1, time_future);
 
         g_object_set(t1, "fire-time", time_future, NULL);
         g_signal_connect(
-            t1, "fired", G_CALLBACK(on_timer_fire_simutaneously), test_data);
+            t1, "fired", G_CALLBACK(on_timer_fire_simultaneously), test_data);
 
         g_ptr_array_add(timer_data, test_data);
     }
@@ -472,7 +466,7 @@ test_timer_simultaneous(void)
 
     num_correct        = NUM_SIMULTANEOUS - n_failed;
     gdouble percentage = (double) num_correct / NUM_SIMULTANEOUS * 100;
-    // Expect that at least 90 of timers is fired in time
+    // Expect that at least 90% of timers is fired in time
     g_assert_cmpfloat(percentage, >, 90.0);
 
     psy_duration_free(dur);
@@ -488,10 +482,12 @@ int
 main(int argc, char **argv)
 {
     g_test_init(&argc, &argv, NULL);
+    PsyInitializer *init = g_object_new(
+        PSY_TYPE_INITIALIZER, "gstreamer", FALSE, "portaudio", FALSE, NULL);
 
     UnitTestUtilsInit init_utils = {.log_file      = "test-timer.txt",
                                     .domains       = NULL,
-                                    .log_level     = G_LOG_LEVEL_INFO,
+                                    .log_level     = G_LOG_LEVEL_DEBUG,
                                     .save_pictures = TRUE};
 
     unit_test_utils_init(&init_utils);
@@ -503,5 +499,7 @@ main(int argc, char **argv)
     g_test_add_func("/timer/fire_async", test_timer_fire_async);
     g_test_add_func("/timer/fire_simultaneously", test_timer_simultaneous);
 
-    return g_test_run();
+    int ret = g_test_run();
+    g_clear_object(&init);
+    return ret;
 }
